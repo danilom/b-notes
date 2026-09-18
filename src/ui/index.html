@@ -12,6 +12,10 @@
         one place and the whole interface follows.
       */
       :root {
+        /* Native parts we don't draw ourselves — the search box's own clear
+           button, focus rings, any default scrollbar we miss — follow this. */
+        color-scheme: light;
+
         --accent-h: 212;
         --accent-s: 58%;
         --ui-font: Tahoma, 'Segoe UI', sans-serif;
@@ -58,6 +62,8 @@
         --l-page: 99%;
         --l-chosen: 34%;
         --l-chosen-soft: 85%;
+        --l-thumb: 72%;
+        --l-thumb-hover: 55%;
         --l-shadow: 12%;
         --shadow-alpha: 0.3;
         --swatch-edge: rgb(0 0 0 / 0.15);
@@ -89,6 +95,8 @@
         percentage that reads as a tint at 93% reads as mud at 15%.
       */
       :root[data-mode='dark'] {
+        color-scheme: dark;
+
         --surface: calc(var(--accent-s) * 0.42);
         --muted: calc(var(--accent-s) * 0.3);
 
@@ -102,6 +110,8 @@
         --l-page: 12%;
         --l-chosen: 72%;
         --l-chosen-soft: 30%;
+        --l-thumb: 34%;
+        --l-thumb-hover: 48%;
         --l-shadow: 2%;
         --shadow-alpha: 0.6;
         --swatch-edge: rgb(255 255 255 / 0.25);
@@ -161,6 +171,40 @@
         display: flex;
         flex-direction: column;
         padding-top: 0.8rem;
+      }
+
+      /*
+        Chromium's own scrollbars ignore all of the above and stay grey, which
+        in dark mode reads as a strip of somebody else's window down the side of
+        ours. Safe to style with the -webkit- pseudo-elements because Chromium
+        is the only engine this will ever run in.
+
+        Wide rather than fashionable: the whole 14px is the target even though
+        only 8px of it is painted, and he is aiming with an unsteady hand on a
+        trackpad. Thin scrollbars are a young person's affordance.
+      */
+      ::-webkit-scrollbar {
+        width: 14px;
+        height: 14px;
+      }
+
+      ::-webkit-scrollbar-track,
+      ::-webkit-scrollbar-corner {
+        background: transparent;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        /* Painted inside a transparent border so the thumb floats clear of the
+           edge instead of being welded to it. */
+        border: 3px solid transparent;
+        border-radius: 7px;
+        background: hsl(var(--accent-h) var(--surface) var(--l-thumb));
+        background-clip: padding-box;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: hsl(var(--accent-h) var(--surface) var(--l-thumb-hover));
+        background-clip: padding-box;
       }
 
       button {
