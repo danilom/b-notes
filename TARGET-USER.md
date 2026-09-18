@@ -237,6 +237,12 @@ translating them.
 **Serbian uses the direct singular imperative, not the polite plural** — *Obriši*,
 not *Obrišite*. The app talks to one person it knows.
 
+Some English interface words have no Serbian equivalent — there is no word for
+*undo*; *poništi* is cancel and *vrati* is return. Those labels have to become
+short descriptive phrases instead, which means Serbian and English strings can
+differ a lot in length. Layouts need to tolerate that rather than assume a button
+fits its English width.
+
 Practical consequence: UI text lives in one place from the start. Retrofitting
 that after strings have been scattered through the code is the expensive version.
 
