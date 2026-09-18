@@ -26,6 +26,7 @@ The consequences that shape the code:
 - Roughly 600 texts, possibly more. Search is the primary way he finds anything, not scrolling.
 - He writes Serbian in Latin script and frequently drops the diacritics (`sdzcc` for `šđžčć`). Search must match with or without them, in both directions, or he won't find his own writing.
 - UI text is Serbian (Latin) and English, Serbian first. Keep every string in one place from the start — retrofitting that later is the expensive version.
+- The app addresses him as *ti*, never *vi* — direct singular imperative, `Obriši` not `Obrišite`. It speaks ekavian (`pre`, not `prije`) even though he writes ijekavian: both read as ordinary Serbian to him, and ekavian is shorter, which matters in the narrow column beside his titles. Sample prose in the test corpus stays ijekavian — that stands in for his writing, not for the app's voice.
 - He arrives with several hundred existing texts in `.txt`/`.md` and/or ResophNotes XML, already containing near-duplicate drafts of the same essay. Migration is part of the versioning design, not a separate import chore.
 
 When the tradeoff is between "powerful" and "impossible to get wrong", choose impossible to get wrong.

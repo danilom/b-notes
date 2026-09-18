@@ -3,9 +3,14 @@ export type Language = 'sr' | 'en';
 /**
  * Every word he reads lives here.
  *
- * Serbian first — it's what he writes in. Serbian uses the direct singular
- * imperative, never the polite plural: *Obriši*, not *Obrišite*. The app is
- * talking to one person it knows.
+ * Serbian first — it's what he writes in. Two rules the strings must hold to:
+ *
+ * - The direct singular imperative, never the polite plural: *Obriši*, not
+ *   *Obrišite*. The app is talking to one person it knows.
+ * - Ekavian, not ijekavian: *pre*, not *prije*. He writes ijekavian, so this
+ *   isn't his own dialect — it's chosen because ekavian is consistently
+ *   shorter, and these strings sit in a narrow column beside his titles. Both
+ *   read as ordinary Serbian to him; only the width differs.
  */
 const TEXT = {
   sr: {
@@ -24,8 +29,8 @@ const TEXT = {
     saving: 'Čuvam…',
     notSaved: 'Nije sačuvano',
     startWriting: 'Počni pisati',
-    minutesAgo: (n: number) => `prije ${n} ${plural(n, 'minut', 'minuta', 'minuta')}`,
-    hoursAgo: (n: number) => `prije ${n} ${plural(n, 'sat', 'sata', 'sati')}`,
+    minutesAgo: (n: number) => `pre ${n} ${plural(n, 'minut', 'minuta', 'minuta')}`,
+    hoursAgo: (n: number) => `pre ${n} ${plural(n, 'sat', 'sata', 'sati')}`,
     yesterday: 'juče',
     noteCount: (n: number) => `${n} ${plural(n, 'tekst', 'teksta', 'tekstova')}`,
   },
