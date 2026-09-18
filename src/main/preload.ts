@@ -7,4 +7,11 @@ const notes = {
   create: (title: string) => ipcRenderer.invoke('notes:create', title),
 };
 
+const log = {
+  info: (message: string, detail?: unknown) => ipcRenderer.send('log:write', 'info', message, detail),
+  warn: (message: string, detail?: unknown) => ipcRenderer.send('log:write', 'warn', message, detail),
+  error: (message: string, detail?: unknown) => ipcRenderer.send('log:write', 'error', message, detail),
+};
+
 contextBridge.exposeInMainWorld('notes', notes);
+contextBridge.exposeInMainWorld('log', log);

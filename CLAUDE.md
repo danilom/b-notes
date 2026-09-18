@@ -63,6 +63,32 @@ When the tradeoff is between "powerful" and "impossible to get wrong", choose im
 - Validate external input at the boundary before it enters the system — above all, anything read off disk. Don't trust inferred types from `JSON.parse`.
 - Failing to write a file is the one error that must never be silent internally, even though the user never sees it. Log it and retry.
 
+## Logging
+
+Everything goes to a log file (`src/main/log.ts`, written under `userData/logs`,
+pruned at 30 days or 10MB — whichever comes first, both configurable). Electron
+detaches stdout on Windows, so anything not written to that file is invisible,
+including during startup. Assume the log is the only account of what happened:
+he reports problems by phone, vaguely, days later.
+
+Log:
+
+- Every significant operation — a note opened, saved, created, renamed; a
+  conflicted copy detected or resolved; the notes folder being located.
+- Every UI interaction except typing — buttons, selections, navigation.
+- Every error, including ones recovered from silently. *Especially* those: an
+  error he never saw is one he can't tell us about.
+
+Don't log:
+
+- Note contents, or fragments of them. His essays are private, the files get
+  large, and the logs may eventually leave the machine (see `TODO.md`).
+- Anything per-keystroke. Writes are synchronous so entries survive a crash,
+  which makes them too expensive to do on a spinning disk at typing speed.
+
+Renderer code logs through the `window.log` bridge, which reaches the same file;
+in a plain browser tab it falls back to the console.
+
 ## Comments
 
 - Comment *why*, not *what*. Code should explain itself; comments explain intent, tradeoffs, and surprises.

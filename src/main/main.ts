@@ -1,11 +1,23 @@
 import { BrowserWindow, app, ipcMain } from 'electron';
 import path from 'node:path';
 
+import { LOG_LEVELS, createFileLogger } from './log.ts';
 import { createFileNoteStore } from './note-store.ts';
 
 // The machines this runs on have old integrated GPUs, where acceleration causes
 // more rendering glitches than it prevents.
 app.disableHardwareAcceleration();
+
+// `userData` rather than `getPath('logs')` because it resolves before the app is
+// ready, and startup is exactly when we most need somewhere to write.
+const log = createFileLogger(path.join(app.getPath('userData'), 'logs'));
+const rendererLog = log.scoped('renderer');
+
+// Nothing here reaches a terminal: Electron detaches stdout on Windows, so an
+// unhandled failure is invisible unless it lands in the log file. Neither of
+// these quits — he may have text on screen, and staying up beats a tidy exit.
+process.on('uncaughtException', (error) => log.error('Uncaught exception', error));
+process.on('unhandledRejection', (reason) => log.error('Unhandled rejection', reason));
 
 // Where notes live is not settled: they belong in the Dropbox folder, which
 // needs detecting at first run. Documents keeps the scaffold runnable until then.
@@ -17,12 +29,28 @@ function asString(value: unknown, name: string): string {
   return value;
 }
 
-ipcMain.handle('notes:list', () => store.list());
-ipcMain.handle('notes:read', (_event, id: unknown) => store.read(asString(id, 'id')));
-ipcMain.handle('notes:write', (_event, id: unknown, text: unknown) =>
-  store.write(asString(id, 'id'), asString(text, 'text')),
-);
-ipcMain.handle('notes:create', (_event, title: unknown) => store.create(asString(title, 'title')));
+function handle(channel: string, handler: (args: unknown[]) => Promise<unknown>): void {
+  ipcMain.handle(channel, async (_event, ...args: unknown[]) => {
+    try {
+      return await handler(args);
+    } catch (error) {
+      log.error(`${channel} failed`, error);
+      throw error;
+    }
+  });
+}
+
+handle('notes:list', () => store.list());
+handle('notes:read', (args) => store.read(asString(args[0], 'id')));
+handle('notes:write', (args) => store.write(asString(args[0], 'id'), asString(args[1], 'text')));
+handle('notes:create', (args) => store.create(asString(args[0], 'title')));
+
+ipcMain.on('log:write', (_event, level: unknown, message: unknown, detail: unknown) => {
+  // Coerced rather than validated: a malformed log call should still leave a
+  // trace, since it means something upstream is already wrong.
+  const chosen = LOG_LEVELS.find((candidate) => candidate === level) ?? 'info';
+  rendererLog[chosen](typeof message === 'string' ? message : String(message), detail);
+});
 
 async function createWindow(): Promise<void> {
   const window = new BrowserWindow({
@@ -39,14 +67,20 @@ async function createWindow(): Promise<void> {
   // the failure rather than hanging invisibly.
   window.once('ready-to-show', () => window.show());
   window.webContents.on('did-fail-load', (_event, code, description, url) => {
-    console.error(`Renderer failed to load ${url}: ${description} (${code})`);
+    log.error('Renderer failed to load', { url, description, code });
     window.destroy();
+  });
+  window.webContents.on('render-process-gone', (_event, details) => {
+    log.error('Renderer process gone', details);
   });
 
   await window.loadFile(path.join(import.meta.dirname, 'index.html'));
 }
 
-app.on('window-all-closed', () => app.quit());
+app.on('window-all-closed', () => {
+  log.info('All windows closed, quitting');
+  app.quit();
+});
 
 /**
  * Deliberately not top-level `await`. This entry point is an ES module, and
@@ -54,11 +88,13 @@ app.on('window-all-closed', () => app.quit());
  * awaiting `whenReady()` at the top level deadlocks and no window ever opens.
  */
 async function start(): Promise<void> {
+  log.info('Starting', { version: app.getVersion(), electron: process.versions.electron, notesDir });
   await app.whenReady();
   await createWindow();
+  log.info('Window open');
 }
 
 start().catch((error: unknown) => {
-  console.error('Failed to start', error);
+  log.error('Failed to start', error);
   app.quit();
 });
