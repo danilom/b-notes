@@ -1,0 +1,17 @@
+import { contextBridge, ipcRenderer } from 'electron';
+
+const notes = {
+  list: () => ipcRenderer.invoke('notes:list'),
+  read: (id: string) => ipcRenderer.invoke('notes:read', id),
+  write: (id: string, text: string) => ipcRenderer.invoke('notes:write', id, text),
+  create: (title: string) => ipcRenderer.invoke('notes:create', title),
+};
+
+const log = {
+  info: (message: string, detail?: unknown) => ipcRenderer.send('log:write', 'info', message, detail),
+  warn: (message: string, detail?: unknown) => ipcRenderer.send('log:write', 'warn', message, detail),
+  error: (message: string, detail?: unknown) => ipcRenderer.send('log:write', 'error', message, detail),
+};
+
+contextBridge.exposeInMainWorld('notes', notes);
+contextBridge.exposeInMainWorld('log', log);

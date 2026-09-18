@@ -1,0 +1,28 @@
+{
+  "name": "brano-notes",
+  "version": "0.1.2",
+  "private": true,
+  "description": "A quiet editor for long-form writing.",
+  "author": "brano-notes",
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "npm run build && electron .",
+    "ui": "node scripts/build.mjs && node scripts/serve.mjs",
+    "typecheck": "tsc",
+    "test": "node --test",
+    "dist": "node scripts/clean.mjs && node scripts/build.mjs && electron-builder",
+    "release": "node scripts/clean.mjs && node scripts/build.mjs && electron-builder --publish always"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.1",
+    "electron": "^44.4.2",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  }
+}

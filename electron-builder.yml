@@ -1,0 +1,37 @@
+appId: com.brano-notes.app
+productName: brano-notes
+
+directories:
+  output: release
+
+# esbuild has already bundled everything but electron-updater, which stays
+# external because it resolves parts of itself at runtime.
+files:
+  - dist/**/*
+  - package.json
+
+win:
+  target: nsis
+
+nsis:
+  # No wizard and no questions: the install is done in person, and every choice
+  # offered is a choice that can be got wrong later.
+  oneClick: true
+  perMachine: false
+  allowToChangeInstallationDirectory: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  # He launches from the desktop shortcut, so it needs a name he'd recognise.
+  shortcutName: brano-notes
+  # Default is "brano-notes Setup 0.1.1.exe"; spaces end up percent-encoded in
+  # the update URLs and awkward to type on a command line.
+  artifactName: ${name}-setup-${version}.${ext}
+
+publish:
+  provider: github
+  owner: danilom
+  repo: b-notes
+  # electron-builder drafts releases by default, and electron-updater cannot see
+  # a draft — so a forgotten "publish" button would silently mean no updates
+  # ever. Test the build locally with `npm run dist` before `npm run release`.
+  releaseType: release
