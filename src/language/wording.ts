@@ -32,6 +32,8 @@ const TEXT = {
     minutesAgo: (n: number) => `pre ${n} ${plural(n, 'minut', 'minuta', 'minuta')}`,
     hoursAgo: (n: number) => `pre ${n} ${plural(n, 'sat', 'sata', 'sati')}`,
     yesterday: 'juče',
+    dayAndMonth: (date: Date) => `${date.getDate()}. ${MONTHS_SR[date.getMonth()]}`,
+    year: (date: Date) => `${date.getFullYear()}.`,
     noteCount: (n: number) => `${n} ${plural(n, 'tekst', 'teksta', 'tekstova')}`,
   },
   en: {
@@ -53,6 +55,8 @@ const TEXT = {
     minutesAgo: (n: number) => `${n} minute${n === 1 ? '' : 's'} ago`,
     hoursAgo: (n: number) => `${n} hour${n === 1 ? '' : 's'} ago`,
     yesterday: 'yesterday',
+    dayAndMonth: (date: Date) => date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }),
+    year: (date: Date) => String(date.getFullYear()),
     noteCount: (n: number) => `${n} text${n === 1 ? '' : 's'}`,
   },
 } satisfies Record<Language, Record<string, string | ((...args: never[]) => string)>>;
@@ -88,9 +92,27 @@ export function strings(language: Language): (typeof TEXT)['sr'] {
   return TEXT[language];
 }
 
+const DAY_MS = 86400000;
+
 /**
- * When a text was last touched, in the terms he'd use out loud: minutes, then
- * hours, then yesterday, then a date. Never a bare timestamp.
+ * How long the day-and-month form stays meaningful.
+ *
+ * It carries no year, so it starts lying the moment it can be confused with the
+ * same date twelve months back. Eleven months keeps it clear of that, and is
+ * deliberately not shorter: his writing spans years, so almost everything in the
+ * list is past this line anyway and a tighter threshold would only cost
+ * precision on the recent end without narrowing the column.
+ */
+const DAY_AND_MONTH_MS = 330 * DAY_MS;
+
+/**
+ * When a text was last touched, in the terms he'd use out loud.
+ *
+ * Precision decays with age — minutes, hours, yesterday, a date, finally just a
+ * year — because that's how the answer stops being useful. For something from
+ * 2019 the day and month tell him nothing; which year it was from tells him
+ * where he was in his life. It also keeps the column's widest forms on the
+ * newest rows, of which there are only ever a handful.
  */
 export function describeWhen(at: number, language: Language, now = Date.now()): string {
   const words = strings(language);
@@ -104,10 +126,7 @@ export function describeWhen(at: number, language: Language, now = Date.now()): 
   startOfToday.setHours(0, 0, 0, 0);
 
   if (at >= startOfToday.getTime()) return words.hoursAgo(Math.floor(minutes / 60));
-  if (at >= startOfToday.getTime() - 86400000) return words.yesterday;
-
-  if (language === 'en') {
-    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
-  }
-  return `${date.getDate()}. ${MONTHS_SR[date.getMonth()]}`;
+  if (at >= startOfToday.getTime() - DAY_MS) return words.yesterday;
+  if (now - at < DAY_AND_MONTH_MS) return words.dayAndMonth(date);
+  return words.year(date);
 }
