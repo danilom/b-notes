@@ -140,7 +140,7 @@ describe('saving', () => {
   it('creates a note named after his first line', async () => {
     const { store } = await emptyStore();
 
-    assert.equal(await store.save(null, 'O zimi\n\nTekst.'), 'O zimi.txt');
+    assert.equal(await store.save(null, 'O zimi\n\nTekst.'), 'O zimi');
   });
 
   it('refuses to create anything for an empty new note', async () => {
@@ -156,7 +156,7 @@ describe('saving', () => {
 
     const second = await store.save(first, 'O ljetu\n\nTekst.');
 
-    assert.equal(second, 'O ljetu.txt');
+    assert.equal(second, 'O ljetu');
     assert.deepEqual(await readdir(dir), ['O ljetu.txt']);
   });
 
@@ -179,8 +179,8 @@ describe('saving', () => {
   it('gives a second note with the same first line its own file', async () => {
     const { store } = await emptyStore();
 
-    assert.equal(await store.save(null, 'O zimi\n\nJedan.'), 'O zimi.txt');
-    assert.equal(await store.save(null, 'O zimi\n\nDva.'), 'O zimi (1).txt');
+    assert.equal(await store.save(null, 'O zimi\n\nJedan.'), 'O zimi');
+    assert.equal(await store.save(null, 'O zimi\n\nDva.'), 'O zimi (1)');
   });
 
   it('does not let the suffix accumulate when a duplicate is edited', async () => {
@@ -190,7 +190,7 @@ describe('saving', () => {
     let id = await store.save(null, 'O zimi\n\nDva.');
     for (let round = 0; round < 5; round += 1) id = await store.save(id, `O zimi\n\nDva. ${round}`);
 
-    assert.equal(id, 'O zimi (1).txt');
+    assert.equal(id, 'O zimi (1)');
   });
 
   it('numbers a third duplicate without reusing the second name', async () => {
@@ -198,7 +198,7 @@ describe('saving', () => {
     await store.save(null, 'Ponovljeni\n\nJedan.');
     await store.save(null, 'Ponovljeni\n\nDva.');
 
-    assert.equal(await store.save(null, 'Ponovljeni\n\nTri.'), 'Ponovljeni (2).txt');
+    assert.equal(await store.save(null, 'Ponovljeni\n\nTri.'), 'Ponovljeni (2)');
   });
 
   it('emptying an existing note keeps the file, since that is how he deletes', async () => {
@@ -214,7 +214,7 @@ describe('saving', () => {
     const { store } = await emptyStore();
     const id = await store.save(null, 'O zimi\n\nTekst.');
 
-    assert.equal(await store.save(id, ''), 'O zimi.txt');
+    assert.equal(await store.save(id, ''), 'O zimi');
   });
 
   it('refuses an id that points outside the notes folder', async () => {
@@ -287,6 +287,72 @@ describe('moving a note out of the way', () => {
     const { store } = await emptyStore();
 
     await assert.rejects(() => store.moveToDeleted('../../secrets.txt'));
+  });
+});
+
+describe('two files wanting one id', () => {
+  /**
+   * His corpus already holds both `.txt` and `.md`, so a pair claiming the same
+   * id will turn up eventually. Losing one would be a note vanishing from his
+   * list, which is the failure this app exists to prevent.
+   */
+  async function bothExtensions() {
+    const made = await emptyStore();
+    await writeFile(path.join(made.dir, 'Esej o zimi.txt'), 'Esej o zimi\n\nIz txt.', 'utf8');
+    await writeFile(path.join(made.dir, 'Esej o zimi.md'), 'Esej o zimi\n\nIz md.', 'utf8');
+    return made;
+  }
+
+  it('keeps both, rather than one replacing the other', async () => {
+    const { store } = await bothExtensions();
+
+    assert.equal((await store.list()).length, 2);
+  });
+
+  it('gives them different ids', async () => {
+    const { store } = await bothExtensions();
+
+    const ids = (await store.list()).map((note) => note.id);
+
+    assert.deepEqual([...ids].sort(), ['Esej o zimi', 'Esej o zimi (1)']);
+  });
+
+  it('lets our own format keep the plain id', async () => {
+    const { store } = await bothExtensions();
+
+    const plain = (await store.list()).find((note) => note.id === 'Esej o zimi');
+
+    assert.ok(plain?.text.includes('Iz txt.'));
+  });
+
+  it('assigns the same ids every time, so nothing moves between runs', async () => {
+    const { store } = await bothExtensions();
+
+    const first = (await store.list()).map((note) => note.id);
+    const second = (await store.list()).map((note) => note.id);
+
+    assert.deepEqual(first, second);
+  });
+
+  it('reaches the right file through the borrowed id', async () => {
+    const { store } = await bothExtensions();
+
+    assert.ok((await store.read('Esej o zimi (1)')).includes('Iz md.'));
+  });
+
+  it('leaves his files where they are rather than renaming one', async () => {
+    const { dir, store } = await bothExtensions();
+    await store.list();
+
+    assert.deepEqual((await readdir(dir)).sort(), ['Esej o zimi.md', 'Esej o zimi.txt']);
+  });
+
+  it('keeps a .md note as .md when he edits it', async () => {
+    const { dir, store } = await bothExtensions();
+
+    await store.save('Esej o zimi (1)', 'Esej o zimi\n\nIz md, izmijenjeno.');
+
+    assert.equal((await readdir(dir)).includes('Esej o zimi.md'), true);
   });
 });
 

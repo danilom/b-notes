@@ -1,24 +1,25 @@
-import { baseOf, fileNameBase, nextFreeName } from './note-naming.ts';
+import { baseOf, fileNameBase, nextFreeId } from './note-naming.ts';
 import { survivedTooLittle } from './note.ts';
 import { titleFrom } from './note-title.ts';
 
 /**
- * What a save should do. Deciding is shared; carrying it out is each store's
- * own business, so the browser cannot drift from the real thing.
+ * What a save should do. Deciding is shared; carrying it out is each host's own
+ * business, so the browser cannot drift from the real thing.
+ *
+ * Everything here is in ids — the extensionless name. Which file an id lives in,
+ * and whether that file ends `.txt` or `.md`, is storage's concern.
  */
 export type SaveAction =
   | { kind: 'none' }
   | { kind: 'write'; id: string }
   | { kind: 'writeAndRename'; id: string; to: string };
 
-/**
- * What the store can tell us, asked for only when needed.
- *
- * Both are lazy because the common case — typing into a note whose opening
- * lines haven't changed — needs neither, and that save happens constantly.
- */
 export interface SaveContext {
-  takenNames: () => Promise<ReadonlySet<string>>;
+  takenIds: () => Promise<ReadonlySet<string>>;
+  /**
+   * The text as it was. Read only when a rename is on the table, because on a
+   * 145KB essay it is the expensive part of a save.
+   */
   previousText: () => Promise<string>;
 }
 
@@ -33,25 +34,24 @@ export async function planSave(
 
   const base = fileNameBase(titleFrom(text));
 
-  if (id === null) return { kind: 'write', id: nextFreeName(base, null, await context.takenNames()) };
+  if (id === null) return { kind: 'write', id: nextFreeId(base, null, await context.takenIds()) };
 
-  // The filename already reflects his opening lines, so leave it be. This is
-  // most saves, and it's why nothing above has been read yet.
+  // The id already reflects his opening lines, so leave it be. This is most
+  // saves, and it's why the old text hasn't been read.
   if (baseOf(id) === base) return { kind: 'write', id };
 
   // Trimming is ordinary and should still rename. But when almost nothing
-  // survived, the text wasn't shortened, it was replaced — and the old filename
-  // is then the last evidence of what the note was.
+  // survived, the text wasn't shortened, it was replaced — and the old name is
+  // then the last evidence of what the note was.
   if (survivedTooLittle(await context.previousText(), text)) return { kind: 'write', id };
 
-  return { kind: 'writeAndRename', id, to: nextFreeName(base, id, await context.takenNames()) };
+  return { kind: 'writeAndRename', id, to: nextFreeId(base, id, await context.takenIds()) };
 }
 
 /**
- * The name a put-away note takes. Keeps the name it had — after an emptying
- * that's all that's left of it — and never overwrites a deleted note that
- * already has it.
+ * The id a put-away note takes. Keeps the one it had — after an emptying that's
+ * all that's left of it — and never overwrites a note already put away under it.
  */
-export function deletedNameFor(id: string, takenInDeleted: ReadonlySet<string>): string {
-  return nextFreeName(baseOf(id), null, takenInDeleted);
+export function deletedIdFor(id: string, takenInDeleted: ReadonlySet<string>): string {
+  return nextFreeId(baseOf(id), null, takenInDeleted);
 }
