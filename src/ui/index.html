@@ -16,8 +16,12 @@
         --chosen-soft: #dbe8f7;
         --toolbar: #e8e6e2;
 
-        /* Sans for everything that is the app talking; serif for his writing. */
-        --ui-font: system-ui, 'Segoe UI', sans-serif;
+        /* Sans for everything that is the app talking; serif for his writing.
+           Tahoma rather than the Windows default: the same open, large-x-height
+           letterforms as Verdana, which he reads more easily at this size, but
+           drawn narrow enough that titles in the pane don't start ellipsising.
+           Ships with every Windows, so nothing to bundle. */
+        --ui-font: Tahoma, 'Segoe UI', sans-serif;
         --writing-font: Georgia, 'Times New Roman', serif;
 
         /* He is elderly. The app is a tenth larger than it would otherwise be,
