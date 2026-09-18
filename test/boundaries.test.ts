@@ -36,6 +36,28 @@ async function offenders(folder: string, forbidden: RegExp): Promise<string[]> {
 
 /** The folders that run everywhere, and so can depend on nothing host-specific. */
 const PORTABLE = ['notes', 'platform', 'language', 'ui'];
+const HOSTS = ['hosts/electron', 'hosts/mockup'];
+
+/** Every import of something under `ui/`, with the names taken from it. */
+async function reachesIntoUi(
+  folder: string,
+): Promise<{ file: string; from: string; names: string[] }[]> {
+  const found: { file: string; from: string; names: string[] }[] = [];
+  for (const file of await sourceFiles(folder)) {
+    const text = await readFile(file, 'utf8');
+    for (const match of text.matchAll(/import\s+(?:type\s+)?(?:\{([^}]*)\}|\S+)\s+from\s+'([^']*\/ui\/[^']*)'/g)) {
+      found.push({
+        file,
+        from: match[2] ?? '',
+        names: (match[1] ?? '')
+          .split(',')
+          .map((name) => name.trim())
+          .filter((name) => name.length > 0),
+      });
+    }
+  }
+  return found;
+}
 
 describe('where code is allowed to reach', () => {
   for (const folder of PORTABLE) {
@@ -89,12 +111,27 @@ describe('where code is allowed to reach', () => {
   }
 
   it('lets a host start the interface, which is what a host is for', async () => {
-    for (const host of ['hosts/electron', 'hosts/mockup']) {
+    for (const host of HOSTS) {
       const entry = await importsIn(path.join(SOURCE, host, 'browser-entry.ts'));
       assert.ok(
         entry.some((specifier) => specifier.includes('ui/ui-app')),
         host,
       );
+    }
+  });
+
+  /**
+   * A host is the composition root: it assembles capabilities and opens one
+   * door. Reaching further into the interface — at the list, at the editor —
+   * would make it a second place the interface is wired together, which is the
+   * thing this whole arrangement exists to prevent.
+   */
+  it('gives hosts one door into the interface and no more', async () => {
+    for (const host of HOSTS) {
+      for (const used of await reachesIntoUi(host)) {
+        assert.equal(used.from.endsWith('/ui/ui-app.ts'), true, `${used.file} imports ${used.from}`);
+        assert.deepEqual(used.names, ['startApp'], used.file);
+      }
     }
   });
 });
