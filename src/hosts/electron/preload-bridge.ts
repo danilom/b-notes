@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webFrame } from 'electron';
 
 /**
  * Everything the packaged app hands the interface: somewhere to keep files, and
@@ -24,6 +24,14 @@ const log = {
   error: (message: string, detail?: unknown) => ipcRenderer.send('log:write', 'error', message, detail),
 };
 
+/**
+ * Chromium's own zoom, which is why the app doesn't reimplement it: it scales
+ * type, spacing, borders and scrollbars together and gets sub-pixel rendering
+ * right, which nothing we wrote in CSS would.
+ */
+const setZoom = (factor: number) => webFrame.setZoomFactor(factor);
+
 contextBridge.exposeInMainWorld('files', files);
+contextBridge.exposeInMainWorld('setZoom', setZoom);
 contextBridge.exposeInMainWorld('folders', folders);
 contextBridge.exposeInMainWorld('log', log);

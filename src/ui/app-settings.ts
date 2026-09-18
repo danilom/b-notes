@@ -3,10 +3,11 @@ import type { FileSystem } from '../platform/file-system.ts';
 import {
   type Appearance,
   DEFAULT_APPEARANCE,
+  clampZoom,
   isAccentChoice,
   isFontChoice,
   isModeChoice,
-  isSizeChoice,
+  isZoom,
 } from './appearance.ts';
 
 /**
@@ -36,7 +37,7 @@ export interface SharedSettings {
  * overnight for no reason he could name.
  */
 export interface LocalSettings {
-  size: Appearance['size'];
+  zoom: Appearance['zoom'];
   mode: Appearance['mode'];
 }
 
@@ -88,7 +89,9 @@ export function settingsFrom(
     language: language === 'en' || language === 'sr' ? language : DEFAULT_SETTINGS.language,
     font: isFontChoice(shared['font']) ? shared['font'] : DEFAULT_SETTINGS.font,
     accent: isAccentChoice(shared['accent']) ? shared['accent'] : DEFAULT_SETTINGS.accent,
-    size: isSizeChoice(local['size']) ? local['size'] : DEFAULT_SETTINGS.size,
+    // Clamped rather than rejected: a file naming a zoom we no longer allow
+    // still means he wanted it big, so bring it to the nearest size we do.
+    zoom: isZoom(local['zoom']) ? clampZoom(local['zoom']) : DEFAULT_SETTINGS.zoom,
     mode: isModeChoice(local['mode']) ? local['mode'] : DEFAULT_SETTINGS.mode,
   };
 }
@@ -117,7 +120,7 @@ async function writeSettings(
   folders: SettingsFolders,
   settings: Settings,
 ): Promise<void> {
-  const { language, font, accent, size, mode } = settings;
+  const { language, font, accent, zoom, mode } = settings;
   const sharedPath = `${folders.writingFolder}/${SHARED_FILE}`;
   const localPath = `${folders.appFolder}/${LOCAL_FILE}`;
 
@@ -130,7 +133,7 @@ async function writeSettings(
   // handful of times, against a bookkeeping mistake that would lose a choice.
   await Promise.all([
     files.write(sharedPath, `${JSON.stringify({ ...shared, language, font, accent }, null, 2)}\n`),
-    files.write(localPath, `${JSON.stringify({ ...local, size, mode }, null, 2)}\n`),
+    files.write(localPath, `${JSON.stringify({ ...local, zoom, mode }, null, 2)}\n`),
   ]);
 }
 

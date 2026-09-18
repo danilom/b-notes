@@ -8,6 +8,7 @@ declare global {
     files?: FileSystem;
     folders?: () => Promise<{ writing: string; app: string }>;
     log?: Log;
+    setZoom?: (factor: number) => void;
   }
 }
 
@@ -22,7 +23,13 @@ async function main(): Promise<void> {
   const files = window.files;
   const folders = window.folders;
   const log = window.log;
-  if (files === undefined || folders === undefined || log === undefined) {
+  const setZoom = window.setZoom;
+  if (
+    files === undefined ||
+    folders === undefined ||
+    log === undefined ||
+    setZoom === undefined
+  ) {
     throw new Error('No bridge to the app: the preload script did not run.');
   }
 
@@ -36,6 +43,7 @@ async function main(): Promise<void> {
     writingFolder: where.writing,
     appFolder: where.app,
     log,
+    setZoom,
   };
 
   await startApp(host);

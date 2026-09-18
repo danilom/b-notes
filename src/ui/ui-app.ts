@@ -4,7 +4,7 @@ import { type Note, isEmptied } from '../notes/note.ts';
 import { BUILD_STAMP } from '../platform/build-info.ts';
 import type { Host } from '../platform/host.ts';
 import type { Log } from '../platform/logging.ts';
-import { type Appearance, applyAppearance } from './appearance.ts';
+import { type Appearance, DEFAULT_APPEARANCE, applyAppearance, stepZoom } from './appearance.ts';
 import { openAppearancePanel } from './appearance-panel.ts';
 import { readSession, writeSession } from './app-session.ts';
 import {
@@ -70,6 +70,14 @@ let store: ReturnType<typeof createNoteStore>;
 let settings: Settings;
 let saveSettings: (settings: Settings) => void;
 let closeAppearance: (() => void) | null = null;
+
+/**
+ * Puts an appearance on screen, both halves of it.
+ *
+ * The stylesheet's half and the window's zoom move together here so that the
+ * panel, the keyboard and startup can't drift apart on which is in charge.
+ */
+let showAppearanceOf: (appearance: Appearance) => void;
 
 let notes: Note[] = [];
 let openId: string | null = null;
@@ -196,9 +204,8 @@ function showAppearance(): void {
   if (closeAppearance !== null) return;
 
   closeAppearance = openAppearancePanel(appearancePane, settings, language, {
-    // Nothing to do: the panel has already put it on screen, and nothing is
-    // written until he says to keep it.
-    onPreview: () => {},
+    // Shown, not kept. Nothing reaches the disk until he says so.
+    onPreview: showAppearanceOf,
 
     onKeep: (appearance: Appearance) => {
       settings = { ...settings, ...appearance };
@@ -209,8 +216,8 @@ function showAppearance(): void {
 
     onCancel: () => {
       // Whatever he was trying out goes back to what he walked in with. It was
-      // never saved, so putting the document back is the whole of the undo.
-      applyAppearance(document.documentElement, settings);
+      // never saved, so putting it back on screen is the whole of the undo.
+      showAppearanceOf(settings);
       hideAppearance();
     },
   });
@@ -223,6 +230,30 @@ function hideAppearance(): void {
 }
 
 appearanceButton.addEventListener('click', showAppearance);
+
+/**
+ * The shortcut every browser has taught him, pointed at our own setting.
+ *
+ * Chromium's own Ctrl+ is gone with the menu it lived on, deliberately: this
+ * way one thing changes the size, it is bounded, it is written down, and it can
+ * be named over the telephone. It works without opening the panel at all, on
+ * the text he is actually reading.
+ */
+window.addEventListener('keydown', (event) => {
+  if (!event.ctrlKey || event.altKey || event.metaKey) return;
+
+  const zoom =
+    event.key === '+' || event.key === '=' ? stepZoom(settings.zoom, 1)
+    : event.key === '-' ? stepZoom(settings.zoom, -1)
+    : event.key === '0' ? DEFAULT_APPEARANCE.zoom
+    : null;
+  if (zoom === null) return;
+
+  event.preventDefault();
+  settings = { ...settings, zoom };
+  showAppearanceOf(settings);
+  saveSettings(settings);
+});
 
 /**
  * Starts the interface on whatever host it's given.
@@ -243,9 +274,14 @@ export async function startApp(host: Host): Promise<void> {
   language = settings.language;
   words = strings(language);
 
+  showAppearanceOf = (appearance) => {
+    applyAppearance(document.documentElement, appearance);
+    host.setZoom(appearance.zoom);
+  };
+
   // Before the first paint, so he never sees the app in someone else's colours
-  // and then watch it change under him.
-  applyAppearance(document.documentElement, settings);
+  // and then watches it change under him.
+  showAppearanceOf(settings);
 
   saveSettings = createSettingsWriter(host.files, folders, (error: unknown) => {
     log.error('Could not keep how he likes the app set up', describeError(error));

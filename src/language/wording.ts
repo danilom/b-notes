@@ -23,8 +23,10 @@ const TEXT = {
     appearanceSize: 'Veličina',
     appearanceColour: 'Boja',
     appearanceMode: 'Pozadina',
+    appearanceReset: 'Vrati na početno',
+    appearanceSmaller: 'Manje',
+    appearanceLarger: 'Veće',
     modeNames: { light: 'Svetla', dark: 'Tamna' },
-    sizeNames: { small: 'Mala', normal: 'Normalna', large: 'Veća', largest: 'Najveća' },
     accentNames: {
       blue: 'Plava',
       teal: 'Tirkizna',
@@ -62,8 +64,10 @@ const TEXT = {
     appearanceSize: 'Size',
     appearanceColour: 'Colour',
     appearanceMode: 'Background',
+    appearanceReset: 'Back to the start',
+    appearanceSmaller: 'Smaller',
+    appearanceLarger: 'Larger',
     modeNames: { light: 'Light', dark: 'Dark' },
-    sizeNames: { small: 'Small', normal: 'Normal', large: 'Larger', largest: 'Largest' },
     accentNames: {
       blue: 'Blue',
       teal: 'Teal',

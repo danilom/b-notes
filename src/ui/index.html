@@ -433,9 +433,32 @@
         margin-top: 1.6rem;
       }
 
+      /* Pushed to the far end, so it is never what he hits going for U redu. */
+      .reset {
+        margin-right: auto;
+        border-color: transparent;
+        background: none;
+        color: var(--quiet);
+      }
+
+      .reset:hover:not(:disabled) {
+        border-color: var(--line);
+        background: var(--panel);
+        color: var(--ink);
+      }
+
+      .reset:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+
       .panel footer button {
         min-width: 6.5rem;
         padding: 0.5rem 1rem;
+      }
+
+      .panel footer .reset {
+        min-width: 0;
       }
 
       /* The one the eye should land on, and the one Enter already triggers. */
@@ -474,10 +497,34 @@
         padding: 0.5rem 0.85rem;
       }
 
-      /* Each step drawn at its own size — the ladder is the label. */
-      .size-choice {
-        min-width: 3.6rem;
+      .zoom-row {
+        align-items: center;
+      }
+
+      /* Big square targets. These are the two buttons in the panel he is most
+         likely to press more than once, and the only ones he presses to feel
+         his way rather than to pick something. */
+      .zoom-step {
+        min-width: 2.9rem;
+        font-size: 1.25em;
         line-height: 1;
+      }
+
+      .zoom-step:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+
+      .zoom-step:disabled:hover {
+        border-color: var(--line);
+      }
+
+      /* The only part of how the app looks that can be read out over a phone. */
+      .zoom-reading {
+        min-width: 4rem;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+        color: var(--quiet);
       }
 
       /* No name beside it. He has known what these colours are called for

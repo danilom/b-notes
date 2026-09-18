@@ -1,5 +1,14 @@
 import { type Language, strings } from '../language/wording.ts';
-import { ACCENTS, type Appearance, FONTS, MODES, SIZES, applyAppearance } from './appearance.ts';
+import {
+  ACCENTS,
+  type Appearance,
+  DEFAULT_APPEARANCE,
+  FONTS,
+  MAX_ZOOM,
+  MIN_ZOOM,
+  MODES,
+  stepZoom,
+} from './appearance.ts';
 import { icon } from './icons.ts';
 
 /**
@@ -14,19 +23,11 @@ import { icon } from './icons.ts';
  * where being able to back out is what makes experimenting safe.
  */
 export interface PanelHandlers {
-  /** Shown but not kept. Applied to the document already; nothing to store. */
+  /** Put it on screen without keeping it. The panel applies nothing itself. */
   onPreview: (appearance: Appearance) => void;
   onKeep: (appearance: Appearance) => void;
   onCancel: () => void;
 }
-
-/**
- * Shown at each step instead of naming it. Two letters rather than a word
- * because the difference between the steps is the whole point, and a word makes
- * the widest step wide rather than large. Not translated: these are letterforms
- * standing for letterforms, and they read the same to him in either language.
- */
-const SIZE_SAMPLE = 'Aa';
 
 interface OptionSpec<T extends string> {
   value: T;
@@ -39,6 +40,9 @@ interface OptionSpec<T extends string> {
   style?: Partial<CSSStyleDeclaration>;
   swatch?: string;
 }
+
+/** Everything "back to the start" puts back, which is all of it. */
+const MODE_KEYS = ['font', 'zoom', 'accent', 'mode'] as const satisfies readonly (keyof Appearance)[];
 
 /** `Object.keys` widens to `string`, which loses every one of these unions. */
 function choicesIn<T extends string>(record: Record<T, unknown>): T[] {
@@ -97,6 +101,61 @@ function optionGroup<T extends string>(
 }
 
 /**
+ * A pair of buttons and a reading, rather than a row of named sizes.
+ *
+ * The named steps asked him to judge four samples against each other inside a
+ * fixed-size panel and predict which would suit a whole essay. Bigger and
+ * smaller ask a far easier question — is this comfortable yet? — against the
+ * real thing behind the panel, and they go on asking it as far as he wants.
+ *
+ * The percentage is there for the telephone. It is the only part of how the app
+ * looks that can be said out loud, which is what makes "what does it say?" a
+ * question with an answer.
+ */
+function zoomGroup(
+  words: ReturnType<typeof strings>,
+  chosen: Appearance,
+  change: (next: Appearance) => void,
+): HTMLElement {
+  const group = document.createElement('section');
+  group.className = 'choice-group';
+
+  const title = document.createElement('h2');
+  title.textContent = words.appearanceSize;
+
+  const row = document.createElement('div');
+  row.className = 'choices zoom-row';
+
+  const step = (direction: 1 | -1, name: string, glyph: string): HTMLButtonElement => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'choice zoom-step';
+    button.textContent = glyph;
+    button.title = name;
+    button.setAttribute('aria-label', name);
+    const next = stepZoom(chosen.zoom, direction);
+    // Stopped rather than hidden at the ends: a button that vanishes is a
+    // button he has to find again.
+    button.disabled = next === chosen.zoom;
+    button.addEventListener('click', () => change({ ...chosen, zoom: next }));
+    return button;
+  };
+
+  const reading = document.createElement('span');
+  reading.className = 'zoom-reading';
+  reading.textContent = `${Math.round(chosen.zoom * 100)}%`;
+  reading.setAttribute('aria-live', 'polite');
+
+  row.append(
+    step(-1, words.appearanceSmaller, '−'),
+    reading,
+    step(1, words.appearanceLarger, '+'),
+  );
+  group.append(title, row);
+  return group;
+}
+
+/**
  * Builds the panel's contents for the choices as they currently stand.
  *
  * Rebuilt outright on every change rather than patched, because it is a dozen
@@ -112,7 +171,6 @@ function fill(
   const words = strings(language);
 
   const change = (next: Appearance): void => {
-    applyAppearance(document.documentElement, next);
     handlers.onPreview(next);
     fill(panel, next, language, handlers);
   };
@@ -150,18 +208,7 @@ function fill(
     (font) => change({ ...chosen, font }),
   );
 
-  const sizes = optionGroup(
-    words.appearanceSize,
-    choicesIn(SIZES).map((value) => ({
-      value,
-      name: words.sizeNames[value],
-      label: SIZE_SAMPLE,
-      className: 'size-choice',
-      style: { fontSize: `${(13 * SIZES[value]).toFixed(1)}px` },
-    })),
-    chosen.size,
-    (size) => change({ ...chosen, size }),
-  );
+  const sizes = zoomGroup(words, chosen, change);
 
   const accents = optionGroup(
     words.appearanceColour,
@@ -187,7 +234,17 @@ function fill(
   );
 
   // Windows order, bottom right, because that is where his hand already goes.
+  // Everything back to how it came, off on its own at the other end so it is
+  // never what he hits while aiming for U redu. It previews like any other
+  // change, so Otkaži still undoes it.
   const footer = document.createElement('footer');
+  const reset = document.createElement('button');
+  reset.type = 'button';
+  reset.className = 'reset';
+  reset.textContent = words.appearanceReset;
+  reset.disabled = MODE_KEYS.every((key) => chosen[key] === DEFAULT_APPEARANCE[key]);
+  reset.addEventListener('click', () => change({ ...DEFAULT_APPEARANCE }));
+
   const keep = document.createElement('button');
   keep.type = 'button';
   keep.className = 'keep';
@@ -198,7 +255,7 @@ function fill(
   cancel.type = 'button';
   cancel.textContent = words.appearanceCancel;
   cancel.addEventListener('click', handlers.onCancel);
-  footer.append(keep, cancel);
+  footer.append(reset, keep, cancel);
 
   panel.replaceChildren(header, fonts, sizes, accents, modes, footer);
   keep.focus();

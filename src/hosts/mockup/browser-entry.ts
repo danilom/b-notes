@@ -19,6 +19,15 @@ const consoleLog: Log = {
 };
 
 /**
+ * There is no window to scale in a tab we don't own, so the document is scaled
+ * instead. `zoom` is Chromium's own property and lays out the same way its
+ * window zoom does, which is close enough for developing against.
+ */
+function setZoom(factor: number): void {
+  document.documentElement.style.zoom = String(factor);
+}
+
+/**
  * The browser's host, where the interface is developed.
  *
  * It provides the same capabilities the packaged app does, backed by a pretend
@@ -33,6 +42,7 @@ async function main(): Promise<void> {
     writingFolder: MOCK_WRITING_FOLDER,
     appFolder: MOCK_APP_FOLDER,
     log: consoleLog,
+    setZoom,
   };
 
   await startApp(host);

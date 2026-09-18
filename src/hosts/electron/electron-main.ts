@@ -1,4 +1,4 @@
-import { BrowserWindow, app, ipcMain } from 'electron';
+import { BrowserWindow, Menu, app, ipcMain } from 'electron';
 import path from 'node:path';
 
 import { BUILD_STAMP } from '../../platform/build-info.ts';
@@ -9,6 +9,20 @@ import { startUpdateChecks } from './app-updates.ts';
 // The machines this runs on have old integrated GPUs, where acceleration causes
 // more rendering glitches than it prevents.
 app.disableHardwareAcceleration();
+
+/**
+ * No menu bar.
+ *
+ * Electron installs a default one when we don't, and it is a row of things he
+ * must never reach: Toggle Developer Tools, which fills half his screen with
+ * something that looks like the app breaking; Force Reload; and full screen,
+ * which hides the window, and a window he cannot see is work he believes is
+ * gone. None of it is worth a menu holding nothing of ours.
+ *
+ * Ctrl+C and the rest of the editing shortcuts are Chromium's own and keep
+ * working inside a textarea without any menu item to back them.
+ */
+Menu.setApplicationMenu(null);
 
 const runMode = app.isPackaged ? 'installed' : 'dev';
 
@@ -88,6 +102,10 @@ async function createWindow(): Promise<void> {
   // Showing only once painted avoids the white flash, which is slow and ugly on
   // an old disk. It also means a failed load leaves no window at all, so surface
   // the failure rather than hanging invisibly.
+  // Pinch on a trackpad zooms in Chromium by default, and he would have no idea
+  // what he had done or how to undo it. Zoom is ours to change, from one place.
+  await window.webContents.setVisualZoomLevelLimits(1, 1);
+
   window.once('ready-to-show', () => window.show());
   window.webContents.on('did-fail-load', (_event, code, description, url) => {
     log.error('Renderer failed to load', { url, description, code });

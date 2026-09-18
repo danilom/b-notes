@@ -21,4 +21,15 @@ export interface Host {
   /** Ours: the log, what he had open, how he likes the app set up. */
   readonly appFolder: string;
   readonly log: Log;
+  /**
+   * Scales the whole window, exactly as Ctrl+ and Ctrl- do in a browser.
+   *
+   * A host capability because only the host knows how: the packaged app has
+   * Chromium's own zoom, and a plain browser tab has to fake it. Doing it
+   * ourselves in CSS would mean re-deriving every padding and border from a
+   * factor, and getting a worse result than the engine already gives away.
+   *
+   * @param factor 1 is unscaled; 1.5 makes everything half again as large.
+   */
+  readonly setZoom: (factor: number) => void;
 }

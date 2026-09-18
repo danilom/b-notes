@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type { FileSystem } from '../src/platform/file-system.ts';
+import { MAX_ZOOM, MIN_ZOOM } from '../src/ui/appearance.ts';
 import {
   DEFAULT_SETTINGS,
   type Settings,
@@ -67,11 +68,21 @@ describe('reading how he likes the app set up', () => {
   });
 
   it('takes the screen settings from this machine and the rest from his writing folder', () => {
-    const settings = settingsFrom({ font: 'corbel', accent: 'red' }, { size: 'largest', mode: 'dark' });
+    const settings = settingsFrom({ font: 'corbel', accent: 'red' }, { zoom: 1.4, mode: 'dark' });
     assert.equal(settings.font, 'corbel');
     assert.equal(settings.accent, 'red');
-    assert.equal(settings.size, 'largest');
+    assert.equal(settings.zoom, 1.4);
     assert.equal(settings.mode, 'dark');
+  });
+
+  it('brings a zoom from outside the allowed range to the nearest one allowed', () => {
+    assert.equal(settingsFrom({}, { zoom: 12 }).zoom, MAX_ZOOM);
+    assert.equal(settingsFrom({}, { zoom: 0.01 }).zoom, MIN_ZOOM);
+  });
+
+  it('falls back when the stored zoom is not a number at all', () => {
+    assert.equal(settingsFrom({}, { zoom: 'veliko' }).zoom, DEFAULT_SETTINGS.zoom);
+    assert.equal(settingsFrom({}, { zoom: null }).zoom, DEFAULT_SETTINGS.zoom);
   });
 
   it('never takes dark from the shared file, which would reach across his machines', () => {
@@ -92,7 +103,7 @@ describe('saving how he likes the app set up', () => {
     // Three clicks in quick succession, faster than a write completes.
     save(settings({ accent: 'green' }));
     save(settings({ accent: 'green', font: 'corbel' }));
-    save(settings({ accent: 'green', font: 'corbel', size: 'large' }));
+    save(settings({ accent: 'green', font: 'corbel', zoom: 1.21 }));
 
     await world.finishNewestFirst();
     await world.finishAll();
@@ -101,7 +112,7 @@ describe('saving how he likes the app set up', () => {
       language: 'sr',
       accent: 'green',
       font: 'corbel',
-      size: 'large',
+      zoom: 1.21,
       mode: 'light',
     });
   });
