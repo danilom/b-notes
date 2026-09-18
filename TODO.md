@@ -29,6 +29,24 @@ moment it vanished, a restored version can be described in his own words —
 him diff two texts in his head. Recognising the missing sentence is a far easier
 task than comparing two near-identical drafts.
 
+## P1 — Come back exactly as he left it
+
+Reopen the text he was last editing, scrolled and with the cursor where it was.
+Continuity across restarts is worth more against "it disappeared" than any list
+design.
+
+Be selective about what else is restored, though. **Reopening the app is his way
+out of any mess he thinks he's in**, so restoring too much would take away that
+escape. Restore the open text; don't reopen a version panel; and clear any search
+— a filtered list on startup looks exactly like texts having gone missing.
+
+## P2/P3 — Suggest similar texts
+
+When a text has likely siblings, offer a quiet "Slični tekstovi (3)" on that
+text, using fuzzy matching. It meets the three-to-five-variants problem at the
+only moment it matters — when he's looking at one of them — and stays silent when
+the match is uncertain. Needs developing.
+
 ## P3 — Diacritic-insensitive search
 
 He writes Serbian in Latin script and often drops the diacritics, inconsistently:

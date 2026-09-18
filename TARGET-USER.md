@@ -234,6 +234,9 @@ Every string has to be plain, unambiguous, and speakable over the phone, in both
 languages. Expect to spend real effort tuning the messages rather than
 translating them.
 
+**Serbian uses the direct singular imperative, not the polite plural** — *Obriši*,
+not *Obrišite*. The app talks to one person it knows.
+
 Practical consequence: UI text lives in one place from the start. Retrofitting
 that after strings have been scattered through the code is the expensive version.
 
