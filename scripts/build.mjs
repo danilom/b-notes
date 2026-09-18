@@ -23,10 +23,8 @@ function buildStamp() {
     `${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
   const commit = git(['rev-parse', '--short', 'HEAD']) || 'unknown';
-  // A hash alone would misidentify a build made from an edited tree.
-  const dirty = git(['status', '--porcelain']) === '' ? '' : '+';
 
-  return `${when} ${commit}${dirty}`;
+  return `${when} ${commit}`;
 }
 
 const shared = {

@@ -2,9 +2,7 @@
 declare const __BUILD_STAMP__: string | undefined;
 
 /**
- * Identifies the running build, e.g. `2026-09-18 17:31 0ab32cd`. A trailing `+`
- * means the working tree had uncommitted changes, so the hash alone won't
- * reproduce it.
+ * Identifies the running build, e.g. `2026-09-18 17:31 0ab32cd`.
  *
  * Reported by him over the phone, so it has to be short enough to read aloud.
  */
