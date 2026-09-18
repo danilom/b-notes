@@ -47,6 +47,17 @@ are for refining it afterwards.
 - **Does he know his texts are in Dropbox?** And does it reassure him or worry
   him?
 
+## A note on his data
+
+His texts are private and are not to be read wholesale, including by Claude. Two
+ways to learn from the corpus without that:
+
+- **Filenames alone.** ResophNotes names files from each note's first line, so a
+  bare list of filenames shows how many near-duplicate clusters exist and how
+  consistently he titles things — without exposing any content.
+- **Aggregates only.** A script run locally that reports similarity
+  distributions, cluster sizes and counts, never text.
+
 ## To check on the machines themselves
 
 - How many texts does he have now? (The 2021 Simplenote backup had ~600.)
