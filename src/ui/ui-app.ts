@@ -66,8 +66,10 @@ function draw(): void {
 }
 
 function showStatus(): void {
+  // Nothing open and nothing typed: there is no state to report yet, and the
+  // line is for reporting, not for telling him to get on with it.
   if (openId === null && editor.value.trim().length === 0) {
-    status.textContent = words.startWriting;
+    status.textContent = '';
     return;
   }
   if (saveTimer !== undefined) {

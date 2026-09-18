@@ -39,8 +39,8 @@ describe('describing when a text was last touched', () => {
 
   it('drops to the year alone once the day and month could mean either year', () => {
     assert.equal(ago(329 * DAY), '25. oktobra');
-    assert.equal(ago(331 * DAY), '2025.');
-    assert.equal(ago(2000 * DAY), '2021.');
+    assert.equal(ago(331 * DAY), '2025');
+    assert.equal(ago(2000 * DAY), '2021');
   });
 
   it('gets the three Serbian plural forms right, which he would notice', () => {
