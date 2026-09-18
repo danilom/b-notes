@@ -1,4 +1,4 @@
-import { BrowserWindow, Menu, app, ipcMain } from 'electron';
+import { BrowserWindow, Menu, app, ipcMain, screen } from 'electron';
 import path from 'node:path';
 
 import { BUILD_STAMP } from '../../platform/build-info.ts';
@@ -97,6 +97,29 @@ ipcMain.on('log:write', (_event, level: unknown, message: unknown, detail: unkno
   rendererLog[chosen](typeof message === 'string' ? message : String(message), detail);
 });
 
+/**
+ * Maximises the window, then takes its maximise button away.
+ *
+ * One shape of window, and he cannot change it: maximised is the only size
+ * where the list and his writing both have room, and a window shrunk to a
+ * sliver by a stray drag is, to him, work that has gone. Minimise stays, since
+ * he reopens from the pinned taskbar icon and there is no tray for it to
+ * vanish into the way ResophNotes had.
+ *
+ * The order is the part that matters, and it is not guessable. Windows works
+ * out maximised geometry from the window's style at the moment it maximises,
+ * and a window with no maximise box is sized to exactly the work area instead
+ * of overhanging it by the border width. Its borders then stay on screen as a
+ * pale strip above the taskbar, and it costs 13x14 pixels of his writing.
+ * Maximising while the button still exists and removing it afterwards keeps
+ * the right geometry and still greys the button out.
+ */
+function maximizeFully(window: BrowserWindow): void {
+  window.setMaximizable(true);
+  window.maximize();
+  window.setMaximizable(false);
+}
+
 let mainWindow: BrowserWindow | null = null;
 
 async function createWindow(): Promise<BrowserWindow> {
@@ -106,26 +129,17 @@ async function createWindow(): Promise<BrowserWindow> {
     width: 1100,
     height: 800,
     show: false,
-    /**
-     * One shape of window, and he cannot change it.
-     *
-     * Maximised is the only size where the list and his writing both have room,
-     * and a window shrunk to a sliver by a stray drag is, to him, work that has
-     * gone. Minimise stays: he reopens from the pinned taskbar icon, and
-     * there's no tray for it to vanish into the way ResophNotes had.
-     */
-    maximizable: false,
     webPreferences: {
       preload: path.join(import.meta.dirname, 'preload.cjs'),
     },
   });
 
-  window.maximize();
+  maximizeFully(window);
 
   // A disabled maximise button is not the only way out of maximised: Win+Down,
   // Aero Snap and a double-click on the title bar all do it too. Whichever
   // route it takes, it goes straight back.
-  window.on('unmaximize', () => window.maximize());
+  window.on('unmaximize', () => maximizeFully(window));
 
   mainWindow = window;
   window.on('closed', () => {
@@ -168,7 +182,14 @@ async function start(): Promise<void> {
   });
   await app.whenReady();
   const window = await createWindow();
-  log.info('Window open', { maximized: window.isMaximized() });
+  // Bounds against the work area, because "a window he cannot see" covers a
+  // window that is the wrong size as well as one that is hidden.
+  log.info('Window open', {
+    maximized: window.isMaximized(),
+    bounds: window.getBounds(),
+    workArea: screen.getPrimaryDisplay().workArea,
+    scale: screen.getPrimaryDisplay().scaleFactor,
+  });
   startUpdateChecks(log);
 }
 

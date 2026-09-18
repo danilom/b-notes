@@ -334,5 +334,13 @@ export async function startApp(host: Host): Promise<void> {
     showStatus();
   }
 
-  log.info('Ready', { build: BUILD_STAMP, notes: notes.length, host: host.name });
+  const body = document.body.getBoundingClientRect();
+  log.info('Ready', {
+    build: BUILD_STAMP,
+    notes: notes.length,
+    host: host.name,
+    viewport: { width: window.innerWidth, height: window.innerHeight },
+    body: { width: Math.round(body.width), height: Math.round(body.height) },
+    devicePixelRatio: window.devicePixelRatio,
+  });
 }
