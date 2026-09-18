@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { BUILD_STAMP } from '../shared/build-info.ts';
 import { LOG_LEVELS, createFileLogger } from './log.ts';
-import { createFileNoteStore, sweepEmptiedNotes } from './note-store.ts';
+import { createFileNoteStore } from './note-store.ts';
 import { startUpdateChecks } from './updates.ts';
 
 // The machines this runs on have old integrated GPUs, where acceleration causes
@@ -53,6 +53,7 @@ function handle(channel: string, handler: (args: unknown[]) => Promise<unknown>)
 handle('notes:list', () => store.list());
 handle('notes:read', (args) => store.read(asString(args[0], 'id')));
 handle('notes:save', (args) => store.save(asIdOrNull(args[0], 'id'), asString(args[1], 'text')));
+handle('notes:moveToDeleted', (args) => store.moveToDeleted(asString(args[0], 'id')));
 
 ipcMain.on('log:write', (_event, level: unknown, message: unknown, detail: unknown) => {
   // Coerced rather than validated: a malformed log call should still leave a
@@ -111,10 +112,6 @@ async function start(): Promise<void> {
     electron: process.versions.electron,
     notesDir,
   });
-  // Before the window, so the list he first sees has no blank rows in it.
-  const swept = await sweepEmptiedNotes(notesDir);
-  if (swept > 0) log.info('Moved emptied notes to the deleted folder', { count: swept });
-
   await app.whenReady();
   await createWindow();
   log.info('Window open');

@@ -118,39 +118,6 @@ async function freeFileName(dir: string, base: string, own: string | null): Prom
   }
 }
 
-/**
- * Moves emptied notes into the deleted folder, and reports how many moved.
- *
- * Clearing a note's text is how he deletes — he never found Resoph's delete
- * command, and his old corpus carries dozens of files he had emptied out but
- * which still sat in the list. An empty row tells him nothing, so they belong
- * somewhere he can still get at them.
- *
- * Only ever run at startup. Sweeping while he's working would make a note
- * disappear from the list moments after he emptied it, which is precisely the
- * kind of unexplained movement that unsettles him.
- */
-export async function sweepEmptiedNotes(dir: string): Promise<number> {
-  await mkdir(dir, { recursive: true });
-  const entries = await readdir(dir, { withFileTypes: true });
-  let moved = 0;
-
-  for (const entry of entries) {
-    if (!entry.isFile() || !entry.name.endsWith(EXTENSION)) continue;
-
-    const source = path.join(dir, entry.name);
-    if ((await readFile(source, 'utf8')).trim().length > 0) continue;
-
-    const trash = path.join(dir, DELETED_FOLDER);
-    await mkdir(trash, { recursive: true });
-    const name = await freeFileName(trash, baseOf(entry.name), null);
-    await rename(source, path.join(trash, name));
-    moved += 1;
-  }
-
-  return moved;
-}
-
 export function createFileNoteStore(dir: string): NoteStore {
   return {
     async list(): Promise<Note[]> {
@@ -228,6 +195,19 @@ export function createFileNoteStore(dir: string): NoteStore {
       const name = await freeFileName(dir, base, id);
       await rename(current, path.join(dir, name));
       return name;
+    },
+
+    /**
+     * Moves the file into the deleted folder rather than removing it. Keeps its
+     * name, which after an emptying is the only remaining evidence of what the
+     * note was, and never overwrites a deleted note of the same name.
+     */
+    async moveToDeleted(id: string): Promise<void> {
+      const source = notePath(dir, id);
+      const trash = path.join(dir, DELETED_FOLDER);
+      await mkdir(trash, { recursive: true });
+      const name = await freeFileName(trash, baseOf(id), null);
+      await rename(source, path.join(trash, name));
     },
   };
 }

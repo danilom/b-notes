@@ -28,4 +28,14 @@ export interface NoteStore {
    * one passed in, or null when there was nothing worth creating.
    */
   save(id: string | null, text: string): Promise<string | null>;
+  /** Puts a note out of the way without destroying it. */
+  moveToDeleted(id: string): Promise<void>;
+}
+
+/**
+ * Clearing the text is how he deletes — he never found Resoph's delete command,
+ * and his corpus carries dozens of emptied files still sitting in the list.
+ */
+export function isEmptied(note: Note): boolean {
+  return note.text.trim().length === 0;
 }

@@ -1,6 +1,6 @@
 import { BUILD_STAMP } from '../shared/build-info.ts';
 import type { RendererLog } from '../shared/logging.ts';
-import type { Note, NoteStore } from '../shared/notes.ts';
+import { type Note, type NoteStore, isEmptied } from '../shared/notes.ts';
 import { type Language, describeWhen, strings } from '../shared/strings.ts';
 import { createMockNoteStore } from './mock-store.ts';
 import { renderList } from './note-list.ts';
@@ -168,6 +168,16 @@ async function start(): Promise<void> {
   search.setAttribute('aria-label', words.searchLabel);
 
   notes = await store.list();
+
+  // Emptied notes are put away at startup, never while he's working — a note
+  // vanishing moments after he cleared it is the unexplained movement that
+  // unsettles him. An empty row tells him nothing either way.
+  const emptied = notes.filter(isEmptied);
+  if (emptied.length > 0) {
+    for (const note of emptied) await store.moveToDeleted(note.id);
+    notes = await store.list();
+    log.info('Put emptied texts away', { count: emptied.length });
+  }
 
   // Reopen what he was last in. The search is deliberately not restored — a
   // filtered list on startup looks exactly like texts having gone missing.

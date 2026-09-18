@@ -10,7 +10,6 @@ import {
   createFileNoteStore,
   fileNameBase,
   isConflictedCopy,
-  sweepEmptiedNotes,
   survivedTooLittle,
 } from '../src/main/note-store.ts';
 import { titleFrom } from '../src/shared/title.ts';
@@ -244,74 +243,53 @@ describe('survivedTooLittle', () => {
   });
 });
 
-describe('sweeping emptied notes', () => {
-  it('moves an emptied note into the deleted folder', async () => {
+describe('moving a note out of the way', () => {
+  it('puts it in the deleted folder', async () => {
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nTekst.');
+
+    await store.moveToDeleted(id ?? '');
+
+    assert.deepEqual(await readdir(path.join(dir, DELETED_FOLDER)), ['O zimi.txt']);
+    assert.equal((await readdir(dir)).includes('O zimi.txt'), false);
+  });
+
+  it('keeps the name it had, which after an emptying is all that is left', async () => {
     const { dir, store } = await emptyStore();
     const id = await store.save(null, 'O zimi\n\nTekst.');
     await store.save(id, '');
 
-    assert.equal(await sweepEmptiedNotes(dir), 1);
+    await store.moveToDeleted(id ?? '');
+
     assert.deepEqual(await readdir(path.join(dir, DELETED_FOLDER)), ['O zimi.txt']);
   });
 
-  it('treats a note holding only whitespace as emptied', async () => {
-    const { dir } = await emptyStore();
-    await writeFile(path.join(dir, 'Prazan.txt'), '  \n\n  ', 'utf8');
-
-    assert.equal(await sweepEmptiedNotes(dir), 1);
-  });
-
-  it('leaves notes that still have text', async () => {
+  it('keeps both when a deleted note of that name is already there', async () => {
     const { dir, store } = await emptyStore();
-    await store.save(null, 'O zimi\n\nTekst.');
+    const first = await store.save(null, 'Ponovljeni\n\nJedan.');
+    await store.moveToDeleted(first ?? '');
+    const second = await store.save(null, 'Ponovljeni\n\nDva.');
 
-    assert.equal(await sweepEmptiedNotes(dir), 0);
-    assert.deepEqual(await readdir(dir), ['O zimi.txt']);
-  });
-
-  it('creates no deleted folder when there is nothing to move', async () => {
-    const { dir, store } = await emptyStore();
-    await store.save(null, 'O zimi\n\nTekst.');
-
-    await sweepEmptiedNotes(dir);
-
-    assert.equal((await readdir(dir)).includes(DELETED_FOLDER), false);
-  });
-
-  it('keeps both when a deleted note of the same name is already there', async () => {
-    const { dir, store } = await emptyStore();
-    const first = await store.save(null, 'Isti');
-    await store.save(first, '');
-    await sweepEmptiedNotes(dir);
-    const second = await store.save(null, 'Isti');
-    await store.save(second, '');
-
-    await sweepEmptiedNotes(dir);
+    await store.moveToDeleted(second ?? '');
 
     assert.deepEqual((await readdir(path.join(dir, DELETED_FOLDER))).sort(), [
-      'Isti (1).txt',
-      'Isti.txt',
+      'Ponovljeni (1).txt',
+      'Ponovljeni.txt',
     ]);
   });
 
-  it('does not touch what is already in the deleted folder', async () => {
-    const { dir, store } = await emptyStore();
-    const id = await store.save(null, 'Isti');
-    await store.save(id, '');
+  it('refuses an id that points outside the notes folder', async () => {
+    const { store } = await emptyStore();
 
-    await sweepEmptiedNotes(dir);
-    await sweepEmptiedNotes(dir);
-
-    assert.deepEqual(await readdir(path.join(dir, DELETED_FOLDER)), ['Isti.txt']);
+    await assert.rejects(() => store.moveToDeleted('../../secrets.txt'));
   });
 });
 
 describe('listing', () => {
   it('ignores the deleted folder', async () => {
-    const { dir, store } = await emptyStore();
-    const id = await store.save(null, 'Isti\n\nTekst.');
-    await store.save(id, '');
-    await sweepEmptiedNotes(dir);
+    const { store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nTekst.');
+    await store.moveToDeleted(id ?? '');
 
     assert.deepEqual(await store.list(), []);
   });

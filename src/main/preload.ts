@@ -4,6 +4,7 @@ const notes = {
   list: () => ipcRenderer.invoke('notes:list'),
   read: (id: string) => ipcRenderer.invoke('notes:read', id),
   save: (id: string | null, text: string) => ipcRenderer.invoke('notes:save', id, text),
+  moveToDeleted: (id: string) => ipcRenderer.invoke('notes:moveToDeleted', id),
 };
 
 const log = {
