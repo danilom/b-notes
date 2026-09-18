@@ -23,22 +23,39 @@
         --writing-font: Georgia, 'Times New Roman', serif;
 
         /*
-          Monochrome, but not neutral. The greys carry a little of his hue, so
-          the colour he picked reads as the app's own rather than as something
-          laid on top of a grey one.
-        */
-        --ink: hsl(var(--accent-h) 12% 11%);
-        --quiet: hsl(var(--accent-h) 8% 37%);
-        --faint: hsl(var(--accent-h) 10% 60%);
-        --line: hsl(var(--accent-h) 12% 84%);
-        --page: hsl(var(--accent-h) 30% 99.5%);
-        --panel: hsl(var(--accent-h) 16% 96%);
-        --toolbar: hsl(var(--accent-h) 16% 92%);
-        --hover: hsl(var(--accent-h) 16% 93%);
+          Monochrome in the literal sense: one hue, and everything on screen is
+          a shade of it. Not greys with a rumour of colour in them — at the
+          lightness a surface needs, a saturation low enough to be "tasteful"
+          is simply invisible, and the eye then reads the near-neutral as warm
+          whatever hue it was nominally given.
 
-        /* The accent proper, spent only where something must be pointed at. */
-        --chosen: hsl(var(--accent-h) var(--accent-s) 38%);
-        --chosen-soft: hsl(var(--accent-h) calc(var(--accent-s) * 0.6) 90%);
+          Three saturations do all the work. Every colour below is one of them
+          at some lightness, which is what keeps six themes from needing six
+          hand-picked palettes.
+        */
+        --strong: var(--accent-s);
+        --surface: calc(var(--accent-s) * 0.62);
+        --muted: calc(var(--accent-s) * 0.38);
+
+        --ink: hsl(var(--accent-h) var(--muted) 13%);
+        --quiet: hsl(var(--accent-h) var(--muted) 34%);
+        /* 38%, not the 53% that looked right: measured against the pane, 53%
+           gave the date column 2.8:1 and 44% still left the paler themes under
+           4.5:1. Quiet has to stop short of faint, and where the two disagree
+           the measurement wins over the eye — his are not mine. */
+        --faint: hsl(var(--accent-h) var(--muted) 38%);
+        --line: hsl(var(--accent-h) var(--surface) 78%);
+        --toolbar: hsl(var(--accent-h) var(--surface) 87%);
+        --hover: hsl(var(--accent-h) var(--surface) 89%);
+        --panel: hsl(var(--accent-h) var(--surface) 93%);
+
+        /* The one surface that stays out of it. He reads essays off this for
+           hours, and a tinted page is tiring in a way a tinted frame is not. */
+        --page: hsl(var(--accent-h) var(--muted) 99%);
+
+        /* Full strength, and only where something must be pointed at. */
+        --chosen: hsl(var(--accent-h) var(--strong) 34%);
+        --chosen-soft: hsl(var(--accent-h) var(--strong) 85%);
       }
 
       /* Carries the same tenth into every padding, gap and width below. */
@@ -267,7 +284,7 @@
         align-items: center;
         justify-content: center;
         padding: 1.5rem;
-        background: hsl(var(--accent-h) 20% 18% / 0.32);
+        background: hsl(var(--accent-h) var(--surface) 15% / 0.38);
       }
 
       #appearance[hidden] {
@@ -282,7 +299,7 @@
         border: 1px solid var(--line);
         border-radius: 8px;
         background: var(--page);
-        box-shadow: 0 12px 44px hsl(var(--accent-h) 25% 12% / 0.28);
+        box-shadow: 0 12px 44px hsl(var(--accent-h) var(--surface) 12% / 0.3);
       }
 
       .panel header {
