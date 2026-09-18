@@ -27,5 +27,6 @@ nsis:
   disableWebInstaller: true
 
 publish:
-  provider: generic
-  url: https://updates.invalid/brano-notes/
+  provider: github
+  owner: danilom
+  repo: b-notes
