@@ -8,12 +8,36 @@ export interface ListView {
   notes: readonly Note[];
   query: string;
   openId: string | null;
+  /**
+   * A text he has asked for but not yet written into, so one with no file
+   * behind it. Shown so the list answers the instant he clicks, rather than a
+   * second later when the first autosave lands.
+   */
+  draft: Draft | null;
   language: Language;
 }
 
-interface Section {
+export interface Draft {
+  /** When he asked for it: shown as its time, and sorts it to the top. */
+  startedAt: number;
+}
+
+/**
+ * One line of the list, whether or not there's a file behind it.
+ *
+ * A draft has no `id`, which is also precisely what marks it as the open one —
+ * `openId` is null exactly while the draft is what he's in.
+ */
+export interface Row {
+  id: string | null;
+  title: string;
+  text: string;
+  updatedAt: number;
+}
+
+export interface Section {
   heading: string;
-  notes: readonly Note[];
+  rows: readonly Row[];
   /** Shown but pushed down and dimmed — never removed from the list. */
   aside?: boolean;
 }
@@ -22,10 +46,27 @@ interface Section {
  * Matching ignores case. It deliberately does not yet ignore diacritics, which
  * he uses inconsistently — that's a known gap, tracked in TODO.md.
  */
-export function matches(note: Note, query: string): boolean {
+export function matches(row: { text: string }, query: string): boolean {
   const needle = query.trim().toLowerCase();
   if (needle.length === 0) return true;
-  return note.text.toLowerCase().includes(needle);
+  return row.text.toLowerCase().includes(needle);
+}
+
+function rowsFor(view: ListView): Row[] {
+  const words = strings(view.language);
+  const rows: Row[] = view.notes.map((note) => ({
+    id: note.id,
+    title: note.title.length > 0 ? note.title : words.untitled,
+    text: note.text,
+    updatedAt: note.updatedAt,
+  }));
+
+  // Empty text, so a search can never claim the draft as a match: it falls into
+  // the dimmed section on its own, the same way anything unmatched does.
+  if (view.draft !== null) {
+    rows.push({ id: null, title: words.untitled, text: '', updatedAt: view.draft.startedAt });
+  }
+  return rows;
 }
 
 /**
@@ -35,48 +76,51 @@ export function matches(note: Note, query: string): boolean {
  */
 export function sectionsFor(view: ListView): Section[] {
   const words = strings(view.language);
-  const byRecency = [...view.notes].sort((a, b) => b.updatedAt - a.updatedAt);
-  const all = [...view.notes].sort((a, b) => a.title.localeCompare(b.title, 'sr'));
+  const rows = rowsFor(view);
+  const byRecency = [...rows].sort((a, b) => b.updatedAt - a.updatedAt);
+  const all = [...rows].sort((a, b) => a.title.localeCompare(b.title, 'sr'));
 
   if (view.query.trim().length === 0) {
     return [
-      { heading: words.sectionRecent, notes: byRecency.slice(0, RECENT_COUNT) },
-      { heading: words.sectionAll, notes: all },
+      { heading: words.sectionRecent, rows: byRecency.slice(0, RECENT_COUNT) },
+      { heading: words.sectionAll, rows: all },
     ];
   }
 
-  const found = byRecency.filter((note) => matches(note, view.query));
-  const rest = all.filter((note) => !matches(note, view.query));
+  const found = byRecency.filter((row) => matches(row, view.query));
+  const rest = all.filter((row) => !matches(row, view.query));
   return [
-    { heading: words.sectionFound, notes: found },
-    { heading: words.sectionAll, notes: rest, aside: true },
+    { heading: words.sectionFound, rows: found },
+    { heading: words.sectionAll, rows: rest, aside: true },
   ];
 }
 
-function noteRow(note: Note, view: ListView, aside: boolean): HTMLElement {
-  const words = strings(view.language);
-  const row = document.createElement('div');
-  row.className = aside ? 'note aside' : 'note';
-  row.dataset['id'] = note.id;
-  if (note.id === view.openId) row.setAttribute('aria-current', 'true');
+function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
+  const element = document.createElement('div');
+  element.className = aside ? 'note aside' : 'note';
+
+  // The draft gets no id, so clicking it has nothing to open — it is already
+  // what he is in, and there is no file to read.
+  if (row.id !== null) element.dataset['id'] = row.id;
+  if (row.id === view.openId) element.setAttribute('aria-current', 'true');
 
   const title = document.createElement('span');
   title.className = 'note-title';
-  title.textContent = note.title.length > 0 ? note.title : words.untitled;
+  title.textContent = row.title;
 
   const when = document.createElement('span');
   when.className = 'note-when';
-  when.textContent = describeWhen(note.updatedAt, view.language);
+  when.textContent = describeWhen(row.updatedAt, view.language);
 
-  row.append(title, when);
-  return row;
+  element.append(title, when);
+  return element;
 }
 
 export function renderList(container: HTMLElement, view: ListView): void {
   const words = strings(view.language);
   container.replaceChildren();
 
-  if (view.notes.length === 0) {
+  if (view.notes.length === 0 && view.draft === null) {
     const empty = document.createElement('div');
     empty.className = 'empty';
     empty.textContent = words.noNotesYet;
@@ -85,14 +129,14 @@ export function renderList(container: HTMLElement, view: ListView): void {
   }
 
   for (const section of sectionsFor(view)) {
-    if (section.notes.length === 0 && section.aside === true) continue;
+    if (section.rows.length === 0 && section.aside === true) continue;
 
     const heading = document.createElement('div');
     heading.className = 'section';
-    heading.textContent = `${section.heading} · ${words.noteCount(section.notes.length)}`;
+    heading.textContent = `${section.heading} · ${words.noteCount(section.rows.length)}`;
     container.append(heading);
 
-    if (section.notes.length === 0) {
+    if (section.rows.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'empty';
       empty.textContent = words.nothingFound;
@@ -100,8 +144,8 @@ export function renderList(container: HTMLElement, view: ListView): void {
       continue;
     }
 
-    for (const note of section.notes) {
-      container.append(noteRow(note, view, section.aside === true));
+    for (const row of section.rows) {
+      container.append(rowElement(row, view, section.aside === true));
     }
   }
 }

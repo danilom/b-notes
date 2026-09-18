@@ -6,7 +6,7 @@ import type { Host } from '../platform/host.ts';
 import type { Log } from '../platform/logging.ts';
 import { readSession, writeSession } from './app-session.ts';
 import { readSettings } from './app-settings.ts';
-import { renderList } from './note-list.ts';
+import { type Draft, renderList } from './note-list.ts';
 
 /** Long enough that he isn't saved mid-word, short enough to never lose a thought. */
 const AUTOSAVE_IDLE_MS = 800;
@@ -58,11 +58,18 @@ let store: ReturnType<typeof createNoteStore>;
 
 let notes: Note[] = [];
 let openId: string | null = null;
+
+/**
+ * The text he has started but which isn't on disk yet. It exists only so the
+ * list has something to show him immediately; `openId` being null is what
+ * actually means "the new one is what's open".
+ */
+let draft: Draft | null = null;
 let savedAt: number | null = null;
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
 function draw(): void {
-  renderList(listPane, { notes, query: search.value, openId, language });
+  renderList(listPane, { notes, query: search.value, openId, draft, language });
 }
 
 function showStatus(): void {
@@ -90,6 +97,7 @@ async function saveNow(): Promise<void> {
   const wasNew = openId === null;
   openId = id;
   savedAt = Date.now();
+  draft = null;
   remember(id);
 
   // Reload rather than patch: saving can rename the note, which moves it in the
@@ -125,6 +133,7 @@ async function open(id: string): Promise<void> {
   openId = id;
   editor.value = note.text;
   savedAt = note.updatedAt;
+  draft = null;
   remember(id);
   editor.setSelectionRange(0, 0);
   editor.scrollTop = 0;
@@ -139,7 +148,15 @@ listPane.addEventListener('click', (event) => {
   if (id !== undefined) void open(id);
 });
 
-editor.addEventListener('input', scheduleSave);
+editor.addEventListener('input', () => {
+  // He can also start a new text simply by typing, without going near the
+  // button. Either way it belongs in the list from the first keystroke.
+  if (openId === null && draft === null) {
+    draft = { startedAt: Date.now() };
+    draw();
+  }
+  scheduleSave();
+});
 
 search.addEventListener('input', () => {
   draw();
@@ -149,6 +166,10 @@ newNote.addEventListener('click', () => {
   openId = null;
   savedAt = null;
   editor.value = '';
+  // Listed straight away, empty and untitled. Waiting for the first autosave
+  // would leave him a second of having clicked and nothing having happened,
+  // which is the second in which he clicks again.
+  draft = { startedAt: Date.now() };
   remember(null);
   draw();
   showStatus();
