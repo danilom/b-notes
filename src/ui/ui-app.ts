@@ -51,6 +51,7 @@ const editor = element('editor', HTMLTextAreaElement);
 const status = element('status', HTMLDivElement);
 const search = element('search', HTMLInputElement);
 const newNote = element('new-note', HTMLButtonElement);
+const newNoteLabel = element('new-note-label', HTMLSpanElement);
 
 /** Built here from whatever filesystem the host provides. */
 let store: ReturnType<typeof createNoteStore>;
@@ -177,7 +178,7 @@ export async function startApp(host: Host): Promise<void> {
   };
 
   store = createNoteStore(host.files, host.writingFolder);
-  newNote.textContent = words.newNote;
+  newNoteLabel.textContent = words.newNote;
   search.placeholder = words.searchPlaceholder;
   search.setAttribute('aria-label', words.searchLabel);
 

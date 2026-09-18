@@ -105,6 +105,16 @@
       #new-note {
         align-self: flex-start;
         padding: 0.45rem 0.8rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+      }
+
+      /* Sized in em so it grows with the text, including when he zooms. */
+      #new-note svg {
+        width: 1.05em;
+        height: 1.05em;
+        flex: none;
       }
 
       #search-row {
@@ -218,7 +228,30 @@
   <body>
     <div id="side">
       <div id="toolbar">
-        <button id="new-note" type="button"></button>
+        <!--
+          The icon sits beside the words, never instead of them. He writes
+          instructions down for himself, and "click Novi tekst" is a sentence
+          that works on the telephone where "the little page symbol" is not.
+        -->
+        <button id="new-note" type="button">
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path
+              d="M3.5 1.5h5l4 4v9h-9z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M8.5 1.5v4h4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <span id="new-note-label"></span>
+        </button>
       </div>
       <div id="finder">
         <div id="search-row">
