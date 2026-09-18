@@ -14,6 +14,7 @@
         --panel: #f4f3f1;
         --chosen: #1d5fa8;
         --chosen-soft: #dbe8f7;
+        --toolbar: #e8e6e2;
 
         /* Sans for everything that is the app talking; serif for his writing. */
         --ui-font: system-ui, 'Segoe UI', sans-serif;
@@ -59,12 +60,24 @@
         background: var(--panel);
       }
 
-      #top {
-        padding: 0.9rem;
+      /*
+        Two regions, not one. The toolbar is the app's own strip; the search box
+        belongs with the list, because searching is how the list changes. Having
+        them share a box read as though search and the button were a pair, which
+        they are not.
+      */
+      #toolbar {
+        padding: 0.55rem 0.9rem;
+        background: var(--toolbar);
+        border-bottom: 1px solid var(--line);
+      }
+
+      #finder {
+        flex: 1;
+        min-height: 0;
         display: flex;
         flex-direction: column;
-        gap: 0.7rem;
-        border-bottom: 1px solid var(--line);
+        padding-top: 0.8rem;
       }
 
       button {
@@ -98,6 +111,7 @@
         display: flex;
         gap: 0.4rem;
         align-items: center;
+        padding: 0 0.9rem 0.5rem;
       }
 
       #search {
@@ -203,13 +217,15 @@
   </head>
   <body>
     <div id="side">
-      <div id="top">
+      <div id="toolbar">
         <button id="new-note" type="button"></button>
+      </div>
+      <div id="finder">
         <div id="search-row">
           <input id="search" type="search" autocomplete="off" />
         </div>
+        <div id="list"></div>
       </div>
-      <div id="list"></div>
     </div>
 
     <div id="main">
