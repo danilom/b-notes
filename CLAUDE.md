@@ -41,9 +41,15 @@ When the tradeoff is between "powerful" and "impossible to get wrong", choose im
 
 Shipping a new version:
 
-1. Bump `version` in `package.json`. electron-updater compares versions, so an unbumped build is invisible to it.
+1. Bump `version` in `package.json` and commit. electron-updater compares versions, so an unbumped build is invisible to it.
 2. `npm run dist` builds the installer locally into `release/` without publishing. Test it.
-3. `npm run release` builds and uploads to GitHub Releases. Needs `GH_TOKEN` in the environment, a token with `public_repo` scope. That token is only for uploading — the app reads public releases anonymously and no token is ever bundled into it.
+3. **Tag that commit and push the tag** (`git tag -a v0.1.2 -m "Version 0.1.2" && git push origin v0.1.2`). GitHub refuses to create a non-draft release without an existing tag, and `releaseType: release` means ours are never drafts. Skip this and electron-builder tags the *default branch* instead, producing a release that points at code you didn't build.
+4. `npm run release` builds and uploads. Needs `GH_TOKEN` in the environment, a token with `public_repo` scope. That token is only for uploading — the app reads public releases anonymously and none is ever bundled into it.
+5. **Check the release actually has all three assets**: the installer, its `.blockmap`, and `latest.yml`. electron-builder's GitHub publisher has repeatedly uploaded only the blockmap and reported success, which leaves an update no client can use. If assets are missing, upload them from `release/` by hand — they're internally consistent, so don't rebuild, because a rebuild changes the installer's hash and desyncs it from what's already there:
+
+   `gh release upload v0.1.2 release/*.exe release/latest.yml release/*.blockmap --clobber`
+
+6. Expect a minute of 404s on the asset URLs after uploading; that's CDN propagation, not a failed upload.
 
 ## TypeScript
 
