@@ -4,6 +4,25 @@
 
 # TODO
 
+## Idea — snapshot on risk, not on a timer
+
+Autosaving is only dangerous when text goes away. If the new content contains
+the old content, the edit is pure insertion and nothing can be lost, so it can be
+written freely. If it doesn't, something vanished: a few characters is ordinary
+editing, but a large removal — above all one replacing most of the text — is the
+suspected select-all-then-type failure, and deserves a snapshot taken *before*
+the write lands.
+
+It must never block the edit. He genuinely does cut for brevity; the point is
+only to make that recoverable.
+
+Two things fall out of it. Snapshots become rare and meaningful instead of
+hundreds of near-identical copies of an essay he's fiddling with, which bounds
+version storage. And it gives an undo that survives closing the app, which
+ordinary undo doesn't.
+
+Threshold still to decide, and worth testing against real editing.
+
 ## P3 — Diacritic-insensitive search
 
 He writes Serbian in Latin script and often drops the diacritics, inconsistently:

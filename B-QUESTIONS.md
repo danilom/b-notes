@@ -72,6 +72,11 @@ ways to learn from the corpus without that:
 - Where do the files actually live — Dropbox, local folders, ResophNotes' own
   storage, or all three?
 - Which format is authoritative: `.txt`/`.md`, or ResophNotes XML?
+- **Does his Dropbox folder actually contain "conflicted copy" files?** The risk
+  was inferred from several machines syncing while offline, not observed — the
+  `(1)` duplicates in the backup look like Simplenote's sync rather than
+  Dropbox's. A directory listing settles it, and a fair amount of design has been
+  hanging off the assumption.
 - What are the "gremlins"? Failing disk, full disk, aggressive antivirus, or
   something else. May explain some of the losses.
 - What is his screen like — size, resolution, scaling? Decides default text size,
