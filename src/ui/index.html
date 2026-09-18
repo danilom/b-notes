@@ -18,8 +18,16 @@
         /* Sans for everything that is the app talking; serif for his writing. */
         --ui-font: system-ui, 'Segoe UI', sans-serif;
         --writing-font: Georgia, 'Times New Roman', serif;
-        --ui-size: 15px;
-        --text-size: 18px;
+
+        /* He is elderly. The app is a tenth larger than it would otherwise be,
+           and his own writing a fifth. */
+        --ui-size: 16.5px;
+        --text-size: 21.6px;
+      }
+
+      /* Carries the same tenth into every padding, gap and width below. */
+      html {
+        font-size: 110%;
       }
 
       * {
