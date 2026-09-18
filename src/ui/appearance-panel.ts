@@ -1,25 +1,23 @@
 import { type Language, strings } from '../language/wording.ts';
-import {
-  ACCENTS,
-  type Appearance,
-  FONTS,
-  SIZES,
-  applyAppearance,
-} from './appearance.ts';
+import { ACCENTS, type Appearance, FONTS, SIZES, applyAppearance } from './appearance.ts';
+import { icon } from './icons.ts';
 
 /**
  * The one place he is asked to make a choice about the app rather than about
  * his writing.
  *
- * Nothing here is confirmed and nothing is cancelled. Every choice takes effect
- * on the spot and is written straight away, so the way out is simply a way out
- * — there is no state this panel can be closed into that differs from what he
- * can already see behind it.
+ * Deliberately the one corner of the app that behaves like a Windows dialog
+ * rather than like the rest of it: choices preview live, but nothing is kept
+ * until he says so, and the X, Escape and Otkaži all put it back exactly as he
+ * found it. Everywhere else his work saves itself and there is nothing to undo.
+ * Here he is experimenting with how things look, which is precisely the case
+ * where being able to back out is what makes experimenting safe.
  */
 export interface PanelHandlers {
-  /** Called on every change, with the whole of his choices, already applied. */
-  onChange: (appearance: Appearance) => void;
-  onClose: () => void;
+  /** Shown but not kept. Applied to the document already; nothing to store. */
+  onPreview: (appearance: Appearance) => void;
+  onKeep: (appearance: Appearance) => void;
+  onCancel: () => void;
 }
 
 interface OptionSpec<T extends string> {
@@ -56,7 +54,7 @@ function optionGroup<T extends string>(
   for (const option of options) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = option.swatch === undefined ? 'choice' : 'choice swatch-choice';
+    button.className = 'choice';
     button.setAttribute('aria-pressed', String(option.value === chosen));
     if (option.style !== undefined) Object.assign(button.style, option.style);
 
@@ -88,7 +86,7 @@ function optionGroup<T extends string>(
  */
 function fill(
   panel: HTMLElement,
-  appearance: Appearance,
+  chosen: Appearance,
   language: Language,
   handlers: PanelHandlers,
 ): void {
@@ -96,34 +94,39 @@ function fill(
 
   const change = (next: Appearance): void => {
     applyAppearance(document.documentElement, next);
-    handlers.onChange(next);
+    handlers.onPreview(next);
     fill(panel, next, language, handlers);
   };
 
   const header = document.createElement('header');
   const title = document.createElement('h1');
   title.textContent = words.appearance;
-  const done = document.createElement('button');
-  done.type = 'button';
-  done.className = 'done';
-  done.textContent = words.appearanceDone;
-  done.addEventListener('click', handlers.onClose);
-  header.append(title, done);
+
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'close';
+  // The one convention he has never had to be taught. It means what it means
+  // on every window he has ever shut: leave, and leave nothing behind.
+  close.title = words.appearanceClose;
+  close.setAttribute('aria-label', words.appearanceClose);
+  close.append(icon('close'));
+  close.addEventListener('click', handlers.onCancel);
+  header.append(title, close);
 
   const fonts = optionGroup(
-    words.appearanceLetters,
+    words.appearanceFont,
     choicesIn(FONTS).map((value) => ({
       value,
       label: FONTS[value].label,
-      // Each face set in itself: its name means nothing to him, its shape does.
-      // Scaled the same way the app scales it, so the sample is honest.
+      // Each face set in itself, and scaled the way the app scales it, so what
+      // he is looking at is what he would get.
       style: {
         fontFamily: FONTS[value].stack,
         fontSize: `${(15 * FONTS[value].scale).toFixed(1)}px`,
       },
     })),
-    appearance.font,
-    (font) => change({ ...appearance, font }),
+    chosen.font,
+    (font) => change({ ...chosen, font }),
   );
 
   const sizes = optionGroup(
@@ -131,10 +134,10 @@ function fill(
     choicesIn(SIZES).map((value) => ({
       value,
       label: words.sizeNames[value],
-      style: { fontSize: `${(14 * SIZES[value]).toFixed(1)}px` },
+      style: { fontSize: `${(13 * SIZES[value]).toFixed(1)}px` },
     })),
-    appearance.size,
-    (size) => change({ ...appearance, size }),
+    chosen.size,
+    (size) => change({ ...chosen, size }),
   );
 
   const accents = optionGroup(
@@ -144,19 +147,35 @@ function fill(
       label: words.accentNames[value],
       swatch: `hsl(${ACCENTS[value].hue} ${ACCENTS[value].saturation}% 45%)`,
     })),
-    appearance.accent,
-    (accent) => change({ ...appearance, accent }),
+    chosen.accent,
+    (accent) => change({ ...chosen, accent }),
   );
 
-  panel.replaceChildren(header, fonts, sizes, accents);
-  done.focus();
+  // Windows order, bottom right, because that is where his hand already goes.
+  const footer = document.createElement('footer');
+  const keep = document.createElement('button');
+  keep.type = 'button';
+  keep.className = 'keep';
+  keep.textContent = words.appearanceKeep;
+  keep.addEventListener('click', () => handlers.onKeep(chosen));
+
+  const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.textContent = words.appearanceCancel;
+  cancel.addEventListener('click', handlers.onCancel);
+  footer.append(keep, cancel);
+
+  panel.replaceChildren(header, fonts, sizes, accents, footer);
+  keep.focus();
 }
 
 /**
  * Opens the panel over the app.
  *
- * @returns a function that closes it, for the caller that needs to close it
- * from somewhere other than its own button.
+ * @param appearance what he has now, which is both the starting point and what
+ * cancelling puts back.
+ * @returns a function that takes the panel down, for the caller to use once it
+ * has decided what to do about the choices inside it.
  */
 export function openAppearancePanel(
   container: HTMLElement,
@@ -164,15 +183,15 @@ export function openAppearancePanel(
   language: Language,
   handlers: PanelHandlers,
 ): () => void {
+  function onKey(event: KeyboardEvent): void {
+    if (event.key === 'Escape') handlers.onCancel();
+  }
+
   const close = (): void => {
     container.hidden = true;
     container.replaceChildren();
     document.removeEventListener('keydown', onKey);
   };
-
-  function onKey(event: KeyboardEvent): void {
-    if (event.key === 'Escape') handlers.onClose();
-  }
 
   const panel = document.createElement('div');
   panel.className = 'panel';
@@ -183,11 +202,8 @@ export function openAppearancePanel(
   container.replaceChildren(panel);
   container.hidden = false;
 
-  // Anywhere outside the panel closes it. There is nothing to lose by closing,
-  // so the more ways out the better.
-  container.addEventListener('click', (event) => {
-    if (event.target === container) handlers.onClose();
-  });
+  // No click-outside-to-close. Everywhere else in the app a stray click costs
+  // him nothing, but here it would throw away colours he was still choosing.
   document.addEventListener('keydown', onKey);
 
   return close;

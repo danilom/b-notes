@@ -13,6 +13,7 @@ import {
   createSettingsWriter,
   readSettings,
 } from './app-settings.ts';
+import { icon } from './icons.ts';
 import { type Draft, renderList } from './note-list.ts';
 
 /** Long enough that he isn't saved mid-word, short enough to never lose a thought. */
@@ -55,11 +56,12 @@ function element<T extends Element>(id: string, kind: new () => T): T {
 
 const listPane = element('list', HTMLDivElement);
 const editor = element('editor', HTMLTextAreaElement);
-const status = element('status', HTMLDivElement);
+const statusText = element('status-text', HTMLSpanElement);
 const search = element('search', HTMLInputElement);
 const newNote = element('new-note', HTMLButtonElement);
 const newNoteLabel = element('new-note-label', HTMLSpanElement);
 const appearanceButton = element('appearance-button', HTMLButtonElement);
+const appearanceLabel = element('appearance-label', HTMLSpanElement);
 const appearancePane = element('appearance', HTMLDivElement);
 
 /** Built here from whatever filesystem the host provides. */
@@ -89,14 +91,14 @@ function showStatus(): void {
   // Nothing open and nothing typed: there is no state to report yet, and the
   // line is for reporting, not for telling him to get on with it.
   if (openId === null && editor.value.trim().length === 0) {
-    status.textContent = '';
+    statusText.textContent = '';
     return;
   }
   if (saveTimer !== undefined) {
-    status.textContent = words.saving;
+    statusText.textContent = words.saving;
     return;
   }
-  status.textContent =
+  statusText.textContent =
     savedAt === null
       ? words.notSaved
       : words.savedAgo(describeWhen(savedAt, language));
@@ -126,7 +128,7 @@ function scheduleSave(): void {
   saveTimer = setTimeout(() => {
     saveTimer = undefined;
     saveNow().catch((error: unknown) => {
-      status.textContent = words.notSaved;
+      statusText.textContent = words.notSaved;
       log.error('Could not save', describeError(error));
     });
   }, AUTOSAVE_IDLE_MS);
@@ -194,15 +196,23 @@ function showAppearance(): void {
   if (closeAppearance !== null) return;
 
   closeAppearance = openAppearancePanel(appearancePane, settings, language, {
-    // Applied to the document by the panel itself; all that's left is to keep
-    // it, which happens on every click rather than on the way out — there is
-    // then no way of leaving that loses what he just chose.
-    onChange: (appearance: Appearance) => {
+    // Nothing to do: the panel has already put it on screen, and nothing is
+    // written until he says to keep it.
+    onPreview: () => {},
+
+    onKeep: (appearance: Appearance) => {
       settings = { ...settings, ...appearance };
       saveSettings(settings);
       log.info('Changed how the app looks', appearance);
+      hideAppearance();
     },
-    onClose: hideAppearance,
+
+    onCancel: () => {
+      // Whatever he was trying out goes back to what he walked in with. It was
+      // never saved, so putting the document back is the whole of the undo.
+      applyAppearance(document.documentElement, settings);
+      hideAppearance();
+    },
   });
 }
 
@@ -252,10 +262,9 @@ export async function startApp(host: Host): Promise<void> {
 
   store = createNoteStore(host.files, host.writingFolder);
   newNoteLabel.textContent = words.newNote;
-  // Named only to the mouse and to a screen reader: the gear carries it on
-  // screen, where the words would cost more room than a yearly visit deserves.
-  appearanceButton.title = words.appearance;
-  appearanceButton.setAttribute('aria-label', words.appearance);
+  newNote.prepend(icon('new-text'));
+  appearanceLabel.textContent = words.appearance;
+  appearanceButton.prepend(icon('appearance'));
   search.placeholder = words.searchPlaceholder;
   search.setAttribute('aria-label', words.searchLabel);
 

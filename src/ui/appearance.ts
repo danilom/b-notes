@@ -10,7 +10,7 @@
  */
 
 export type FontChoice = 'tahoma' | 'calibri' | 'corbel' | 'verdana' | 'segoe';
-export type SizeChoice = 'normal' | 'large' | 'larger' | 'largest';
+export type SizeChoice = 'small' | 'normal' | 'large' | 'largest';
 export type AccentChoice = 'blue' | 'teal' | 'green' | 'gold' | 'red' | 'violet';
 
 export interface Appearance {
@@ -46,11 +46,15 @@ export const FONTS = {
   segoe: { label: 'Segoe UI', stack: "'Segoe UI', system-ui, sans-serif", scale: 1 },
 } as const satisfies Record<FontChoice, FontFace>;
 
-/** Steps rather than a slider: four things to choose between, not a number to get right. */
+/**
+ * Steps rather than a slider: four things to choose between, not a number to
+ * get right. The step named for normal is the one he starts on, so `small` is
+ * genuinely a step down rather than the bottom of a ladder that only climbs.
+ */
 export const SIZES = {
-  normal: 1,
-  large: 1.15,
-  larger: 1.3,
+  small: 1,
+  normal: 1.15,
+  large: 1.3,
   largest: 1.5,
 } as const satisfies Record<SizeChoice, number>;
 

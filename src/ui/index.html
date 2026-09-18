@@ -101,8 +101,6 @@
       #toolbar {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 0.5rem;
         padding: 0.55rem 0.9rem;
         background: var(--toolbar);
         border-bottom: 1px solid var(--line);
@@ -121,7 +119,7 @@
         padding: 0.6rem 0.9rem;
         border: 1px solid var(--line);
         border-radius: 4px;
-        background: #fff;
+        background: var(--page);
         color: var(--ink);
         cursor: pointer;
       }
@@ -146,17 +144,20 @@
       }
 
       /*
-        Quieter than quiet: no border and no fill until he reaches for it. He
-        will use this a handful of times ever, and it sits in the corner of the
-        one screen he looks at all day.
+        Down in the status bar rather than up in the toolbar: it belongs with
+        the things the app says about itself, not with the one action he takes
+        all day. Quiet until he reaches for it.
       */
       #appearance-button {
         display: inline-flex;
         align-items: center;
-        padding: 0.4rem;
+        gap: 0.4rem;
+        margin-left: auto;
+        padding: 0.3rem 0.6rem;
         border-color: transparent;
         background: none;
         color: var(--quiet);
+        font-size: 0.92em;
       }
 
       #appearance-button:hover {
@@ -170,14 +171,14 @@
         greyed so an icon stays a mark beside the words rather than competing
         with them.
       */
-      #toolbar svg {
+      button svg {
         width: 1.15em;
         height: 1.15em;
         flex: none;
         color: var(--faint);
       }
 
-      #toolbar button:hover svg {
+      button:hover svg {
         color: var(--quiet);
       }
 
@@ -195,7 +196,7 @@
         padding: 0.55rem 0.6rem;
         border: 1px solid var(--line);
         border-radius: 4px;
-        background: #fff;
+        background: var(--page);
         color: var(--ink);
       }
 
@@ -265,13 +266,14 @@
       }
 
       #status {
-        padding: 0.6rem 1.4rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.45rem 0.9rem 0.45rem 1.4rem;
         border-top: 1px solid var(--line);
         background: var(--panel);
         color: var(--quiet);
-        min-height: 2.4rem;
-        display: flex;
-        align-items: center;
+        min-height: 2.6rem;
       }
 
       /* ---- letters and colours ---- */
@@ -307,6 +309,36 @@
         align-items: center;
         justify-content: space-between;
         gap: 1rem;
+      }
+
+      .close {
+        display: inline-flex;
+        padding: 0.4rem;
+        border-color: transparent;
+        background: none;
+      }
+
+      .close:hover {
+        border-color: var(--line);
+        background: var(--panel);
+      }
+
+      .panel footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        margin-top: 1.6rem;
+      }
+
+      .panel footer button {
+        min-width: 6.5rem;
+        padding: 0.5rem 1rem;
+      }
+
+      /* The one the eye should land on, and the one Enter already triggers. */
+      .keep {
+        border-color: var(--chosen);
+        box-shadow: inset 0 0 0 1px var(--chosen);
       }
 
       .panel h1 {
@@ -378,50 +410,12 @@
           The icon sits beside the words, never instead of them. He writes
           instructions down for himself, and "click Novi tekst" is a sentence
           that works on the telephone where "the little page symbol" is not.
+          Both icons are built in icons.ts, so there is one set and one weight.
         -->
         <button id="new-note" type="button">
-          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <path
-              d="M3.5 1.5h5l4 4v9h-9z"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.2"
-              stroke-linejoin="round"
-            />
-            <path
-              d="M8.5 1.5v4h4"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.2"
-              stroke-linejoin="round"
-            />
-          </svg>
           <span id="new-note-label"></span>
         </button>
 
-        <!--
-          A gear, alone, at the far edge. The rule that an icon never stands
-          without its words is about things he has to do; this is a thing he and I
-          set up together once and he then leaves alone, and naming it in the
-          toolbar would give a one-off more prominence than the writing.
-        -->
-        <button id="appearance-button" type="button">
-          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <path
-              d="M8 5.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.2"
-            />
-            <path
-              d="M6.9 1.8h2.2l.25 1.6 1.1.64 1.5-.62 1.1 1.9-1.2 1.05v1.28l1.2 1.05-1.1 1.9-1.5-.62-1.1.64-.25 1.6H6.9l-.25-1.6-1.1-.64-1.5.62-1.1-1.9L4.15 8.65V7.37L2.95 6.32l1.1-1.9 1.5.62 1.1-.64z"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.2"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
       </div>
       <div id="finder">
         <div id="search-row">
@@ -433,7 +427,12 @@
 
     <div id="main">
       <textarea id="editor" spellcheck="false"></textarea>
-      <div id="status"></div>
+      <div id="status">
+        <span id="status-text"></span>
+        <button id="appearance-button" type="button">
+          <span id="appearance-label"></span>
+        </button>
+      </div>
     </div>
 
     <div id="appearance" hidden></div>

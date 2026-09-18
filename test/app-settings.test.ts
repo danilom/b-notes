@@ -18,7 +18,7 @@ function slowFiles() {
   const waiting: (() => void)[] = [];
 
   const files: FileSystem = {
-    list: async () => [...stored.keys()],
+    list: async () => [...stored.keys()].map((path) => ({ path, updatedAt: 0, bytes: 0 })),
     read: async (path) => {
       const text = stored.get(path);
       if (text === undefined) throw new Error(`no such file: ${path}`);
