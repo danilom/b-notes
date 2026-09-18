@@ -63,6 +63,7 @@
         --l-page: 100%;
         --l-chosen: 38%;
         --l-chosen-soft: 91%;
+        --l-on-chosen: 99%;
         --l-thumb: 82%;
         --l-thumb-hover: 68%;
         --l-shadow: 12%;
@@ -85,6 +86,8 @@
         /* Full strength, and only where something must be pointed at. */
         --chosen: hsl(var(--accent-h) var(--strong) var(--l-chosen));
         --chosen-soft: hsl(var(--accent-h) var(--strong) var(--l-chosen-soft));
+        /* Whatever can be read on top of a solid accent, either way up. */
+        --on-chosen: hsl(var(--accent-h) var(--muted) var(--l-on-chosen));
       }
 
       /*
@@ -113,6 +116,7 @@
         --l-page: 14%;
         --l-chosen: 70%;
         --l-chosen-soft: 31%;
+        --l-on-chosen: 10%;
         --l-thumb: 34%;
         --l-thumb-hover: 48%;
         --l-shadow: 2%;
@@ -591,17 +595,32 @@
         height: 1.4em;
       }
 
+      /*
+        What he has chosen is filled, not tinted.
+
+        A pale wash of the accent sat two points of lightness from the hover
+        colour — near enough to read as the same thing, different enough to
+        read as a mistake, and pale fills look disabled rather than chosen
+        anyway. Solid is what Windows has meant by "selected" for thirty years
+        and cannot be mistaken for "your pointer is here".
+      */
       .choice[aria-pressed='true'],
-      .choice[aria-pressed='true']:hover:not(:disabled) {
+      .choice[aria-pressed='true']:hover:not(:disabled),
+      .choice[aria-pressed='true']:active:not(:disabled) {
         border-color: var(--chosen);
-        background: var(--chosen-soft);
-        box-shadow: inset 0 0 0 1px var(--chosen);
+        background: var(--chosen);
+        color: var(--on-chosen);
+        box-shadow: none;
       }
 
-      /* The one he has already picked still answers a click, even though it
-         has nothing new to say. */
-      .choice[aria-pressed='true']:active:not(:disabled) {
-        background: var(--chosen-soft);
+      /* Except here: the swatch is the sample, and filling the button behind it
+         would paint over the very thing he is choosing. A ring instead. */
+      .colour-choice[aria-pressed='true'],
+      .colour-choice[aria-pressed='true']:hover:not(:disabled),
+      .colour-choice[aria-pressed='true']:active:not(:disabled) {
+        background: var(--page);
+        border-color: var(--chosen);
+        box-shadow: inset 0 0 0 2px var(--chosen);
       }
 
       .swatch {
