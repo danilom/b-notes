@@ -52,6 +52,28 @@ From a filename listing of a Simplenote backup (~590 live notes plus ~95 in
 trash). His titles are his first lines, so they are content and are not
 reproduced here.
 
+- **Pinning is his one organising habit, and he does it well.** Of 592 live
+  notes, 113 are pinned. Their median lifespan — creation to last edit — is 516
+  days, against 2 days for unpinned ones, and *not one* pinned note was left
+  unedited after creation, where 118 unpinned ones were. Pinning reliably marks
+  what he genuinely returns to. **That flag is the most valuable metadata he has
+  and must survive migration intact.** The pinned set is his real working corpus;
+  it is also roughly what a first screen should show him.
+- **Two populations share one list.** 169 notes were never edited after creation
+  and another 123 only on their first day — 42% touched once and abandoned. About
+  90 files are under 100 bytes, meaning the file holds a title and nothing else:
+  an idea jotted, never written. Median note lifespan is 4.6 days; the top decile
+  runs 629 days and one text spans 6.4 years. Sustained essays and one-line jots
+  need to coexist without the jots burying the essays.
+- **Copies are mostly deliberate, not sync debris.** Siblings within a cluster are
+  created a median 177 days apart; only a handful appear within a day. He returns
+  to a piece after months and starts a fresh copy — versioning by copying, which
+  matches the version words he writes into titles. Same-day `(1)` duplicates are
+  the genuine sync artefacts, and they're the minority.
+- **`(1)` duplicates cannot be dropped automatically.** Their sizes differ from
+  the original, and the `(1)` is sometimes the larger, more developed text — in
+  one case 512 bytes against a 35-byte original. Deleting by suffix would destroy
+  real work.
 - **He already versions by filename, and it isn't working.** Stems repeat with
   numeric prefixes, single-letter prefixes and roman numerals. More telling, he
   writes *status* into titles: final version, last final version, penultimate,
@@ -71,8 +93,15 @@ reproduced here.
   both query and text; supplying missing ones wouldn't match.
 - **Seventy-six notes are untitled**, ten live and sixty-six in trash. A
   migration that imports them as empty entries ruins the first impression.
-- **Trash can be neither discarded nor trusted.** It holds ~95 files, several
-  duplicating live notes under identical titles.
+- **Trash can be neither discarded nor trusted.** It holds ~95 files: 66 are
+  genuinely empty and safe to skip, but the rest carry real text, the largest
+  26KB. The trash folder is Simplenote's own, not something he curated — he
+  appears never to have used the delete function, instead emptying a note's text
+  and leaving the entry in place.
+- **Two facts that bound the engineering.** The entire corpus is about 3.3MB, so
+  search can be brute-force with no index needed for speed. The largest single
+  text is 145KB, which the editor must stay responsive on with a 4GB
+  spinning-disk laptop.
 - **Titles are first lines truncated to about forty characters**, frequently
   mid-word. Use the whole first line; the truncation is itself a reason he can't
   tell two notes apart.
@@ -105,8 +134,12 @@ Two anecdotes that say a lot:
   is reassuring and fine. What must never happen is the app *requiring* him to
   save, or leaving saving as something he could fail to do.
 - He reports things having "disappeared" when a window is minimised, closed, or
-  possibly just covered by another window. It isn't fully established which. To
-  him, a window he can't see is work that is gone.
+  possibly just covered by another window. To him, a window he can't see is work
+  that is gone. **His ResophNotes configuration has "Minimize to System Tray"
+  enabled**, which removes the window from the taskbar altogether and leaves it
+  only in the tray — so at least some of these disappearances are literal, not a
+  misperception. Our app must never hide itself from the taskbar, and probably
+  shouldn't offer minimising at all.
 
 ## What he has used
 
