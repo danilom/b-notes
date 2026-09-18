@@ -38,8 +38,8 @@
           hand-picked palettes.
         */
         --strong: var(--accent-s);
-        --surface: calc(var(--accent-s) * 0.62);
-        --muted: calc(var(--accent-s) * 0.38);
+        --surface: calc(var(--accent-s) * 0.22);
+        --muted: calc(var(--accent-s) * 0.1);
 
         /*
           Lightness is the only thing light and dark disagree about, so it is
@@ -52,18 +52,18 @@
           themes under 4.5:1. Where the eye and the measurement disagree the
           measurement wins — his eyes are not mine.
         */
-        --l-ink: 13%;
-        --l-quiet: 34%;
-        --l-faint: 38%;
-        --l-line: 78%;
-        --l-toolbar: 87%;
-        --l-hover: 89%;
-        --l-panel: 93%;
-        --l-page: 99%;
-        --l-chosen: 34%;
-        --l-chosen-soft: 85%;
-        --l-thumb: 72%;
-        --l-thumb-hover: 55%;
+        --l-ink: 15%;
+        --l-quiet: 38%;
+        --l-faint: 42%;
+        --l-line: 86%;
+        --l-toolbar: 93%;
+        --l-hover: 93.5%;
+        --l-panel: 96.5%;
+        --l-page: 100%;
+        --l-chosen: 38%;
+        --l-chosen-soft: 91%;
+        --l-thumb: 82%;
+        --l-thumb-hover: 68%;
         --l-shadow: 12%;
         --shadow-alpha: 0.3;
         --swatch-edge: rgb(0 0 0 / 0.15);
@@ -97,19 +97,19 @@
       :root[data-mode='dark'] {
         color-scheme: dark;
 
-        --surface: calc(var(--accent-s) * 0.42);
-        --muted: calc(var(--accent-s) * 0.3);
+        --surface: calc(var(--accent-s) * 0.35);
+        --muted: calc(var(--accent-s) * 0.22);
 
-        --l-ink: 91%;
-        --l-quiet: 66%;
-        --l-faint: 62%;
-        --l-line: 30%;
-        --l-toolbar: 19%;
-        --l-hover: 24%;
-        --l-panel: 16%;
-        --l-page: 12%;
-        --l-chosen: 72%;
-        --l-chosen-soft: 30%;
+        --l-ink: 88%;
+        --l-quiet: 64%;
+        --l-faint: 60%;
+        --l-line: 27%;
+        --l-toolbar: 20%;
+        --l-hover: 23%;
+        --l-panel: 18%;
+        --l-page: 14%;
+        --l-chosen: 70%;
+        --l-chosen-soft: 31%;
         --l-thumb: 34%;
         --l-thumb-hover: 48%;
         --l-shadow: 2%;
@@ -280,6 +280,13 @@
         gap: 0.4rem;
         align-items: center;
         padding: 0 0.9rem 0.5rem;
+      }
+
+      /* Left to itself this is Chromium's own grey, which belongs to no theme
+         and sits badly beside the section headings a few pixels below it. */
+      ::placeholder {
+        color: var(--faint);
+        opacity: 1;
       }
 
       #search {
