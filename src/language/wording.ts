@@ -15,6 +15,20 @@ export type Language = 'sr' | 'en';
 const TEXT = {
   sr: {
     newNote: 'Novi tekst',
+    appearance: 'Slova i boje',
+    appearanceDone: 'Gotovo',
+    appearanceLetters: 'Slova',
+    appearanceSize: 'Veličina slova',
+    appearanceColour: 'Boja',
+    sizeNames: { normal: 'Normalna', large: 'Veća', larger: 'Još veća', largest: 'Najveća' },
+    accentNames: {
+      blue: 'Plava',
+      teal: 'Tirkizna',
+      green: 'Zelena',
+      gold: 'Zlatna',
+      red: 'Crvena',
+      violet: 'Ljubičasta',
+    },
     searchLabel: 'Traži',
     searchPlaceholder: 'Traži po svemu napisanom',
     clearSearch: 'Poništi traženje',
@@ -36,6 +50,20 @@ const TEXT = {
   },
   en: {
     newNote: 'New text',
+    appearance: 'Letters and colours',
+    appearanceDone: 'Done',
+    appearanceLetters: 'Letters',
+    appearanceSize: 'Letter size',
+    appearanceColour: 'Colour',
+    sizeNames: { normal: 'Normal', large: 'Larger', larger: 'Larger still', largest: 'Largest' },
+    accentNames: {
+      blue: 'Blue',
+      teal: 'Teal',
+      green: 'Green',
+      gold: 'Gold',
+      red: 'Red',
+      violet: 'Violet',
+    },
     searchLabel: 'Search',
     searchPlaceholder: 'Search everything written',
     clearSearch: 'Clear the search',
@@ -55,7 +83,10 @@ const TEXT = {
     year: (date: Date) => String(date.getFullYear()),
     noteCount: (n: number) => `${n} text${n === 1 ? '' : 's'}`,
   },
-} satisfies Record<Language, Record<string, string | ((...args: never[]) => string)>>;
+} satisfies Record<
+  Language,
+  Record<string, string | Record<string, string> | ((...args: never[]) => string)>
+>;
 
 /**
  * Serbian has three plural forms and he would notice them being wrong:

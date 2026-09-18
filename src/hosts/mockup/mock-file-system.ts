@@ -4,7 +4,7 @@ const KEY = 'b-notes:mock-files';
 
 /** Where the browser host pretends his writing and our own files live. */
 export const MOCK_WRITING_FOLDER = 'Tekstovi';
-export const MOCK_APP_FOLDER = 'Podaci';
+export const MOCK_APP_FOLDER = 'Podaci'; 
 
 interface StoredFile {
   text: string;

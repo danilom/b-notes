@@ -5,29 +5,40 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'" />
     <title>b-notes</title>
     <style>
+      /*
+        These five are the only values set directly, and `applyAppearance` in
+        appearance.ts overwrites them on this element from what he has chosen.
+        Everything below them is derived, so a colour or a size is changed in
+        one place and the whole interface follows.
+      */
       :root {
-        --ink: #1a1a1a;
-        --quiet: #5c5c5c;
-        --faint: #9a9a9a;
-        --line: #d4d4d4;
-        --page: #ffffff;
-        --panel: #f4f3f1;
-        --chosen: #1d5fa8;
-        --chosen-soft: #dbe8f7;
-        --toolbar: #e8e6e2;
-
-        /* Sans for everything that is the app talking; serif for his writing.
-           Tahoma rather than the Windows default: the same open, large-x-height
-           letterforms as Verdana, which he reads more easily at this size, but
-           drawn narrow enough that titles in the pane don't start ellipsising.
-           Ships with every Windows, so nothing to bundle. */
+        --accent-h: 212;
+        --accent-s: 58%;
         --ui-font: Tahoma, 'Segoe UI', sans-serif;
-        --writing-font: Georgia, 'Times New Roman', serif;
-
-        /* He is elderly. The app is a tenth larger than it would otherwise be,
-           and his own writing a fifth. */
         --ui-size: 16.5px;
         --text-size: 21.6px;
+
+        /* Serif for his writing, and not his to change: it is the one thing on
+           screen that should look the same to him everywhere. */
+        --writing-font: Georgia, 'Times New Roman', serif;
+
+        /*
+          Monochrome, but not neutral. The greys carry a little of his hue, so
+          the colour he picked reads as the app's own rather than as something
+          laid on top of a grey one.
+        */
+        --ink: hsl(var(--accent-h) 12% 11%);
+        --quiet: hsl(var(--accent-h) 8% 37%);
+        --faint: hsl(var(--accent-h) 10% 60%);
+        --line: hsl(var(--accent-h) 12% 84%);
+        --page: hsl(var(--accent-h) 30% 99.5%);
+        --panel: hsl(var(--accent-h) 16% 96%);
+        --toolbar: hsl(var(--accent-h) 16% 92%);
+        --hover: hsl(var(--accent-h) 16% 93%);
+
+        /* The accent proper, spent only where something must be pointed at. */
+        --chosen: hsl(var(--accent-h) var(--accent-s) 38%);
+        --chosen-soft: hsl(var(--accent-h) calc(var(--accent-s) * 0.6) 90%);
       }
 
       /* Carries the same tenth into every padding, gap and width below. */
@@ -71,6 +82,10 @@
         they are not.
       */
       #toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
         padding: 0.55rem 0.9rem;
         background: var(--toolbar);
         border-bottom: 1px solid var(--line);
@@ -107,7 +122,6 @@
         shouldn't be the rarer one.
       */
       #new-note {
-        align-self: flex-start;
         padding: 0.45rem 0.8rem;
         display: inline-flex;
         align-items: center;
@@ -115,18 +129,38 @@
       }
 
       /*
-        Sized in em so it grows with the text, including when he zooms, and
-        greyed so it stays a mark beside the words rather than competing with
-        them. The words are what he reads; the icon is only what he aims at.
+        Quieter than quiet: no border and no fill until he reaches for it. He
+        will use this a handful of times ever, and it sits in the corner of the
+        one screen he looks at all day.
       */
-      #new-note svg {
-        width: 1.05em;
-        height: 1.05em;
+      #appearance-button {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.4rem;
+        border-color: transparent;
+        background: none;
+        color: var(--quiet);
+      }
+
+      #appearance-button:hover {
+        border-color: var(--line);
+        background: var(--page);
+        color: var(--ink);
+      }
+
+      /*
+        Sized in em so they grow with the text, including when he zooms, and
+        greyed so an icon stays a mark beside the words rather than competing
+        with them.
+      */
+      #toolbar svg {
+        width: 1.15em;
+        height: 1.15em;
         flex: none;
         color: var(--faint);
       }
 
-      #new-note:hover svg {
+      #toolbar button:hover svg {
         color: var(--quiet);
       }
 
@@ -173,7 +207,7 @@
       }
 
       .note:hover {
-        background: #eceae7;
+        background: var(--hover);
       }
 
       .note[aria-current='true'] {
@@ -223,6 +257,88 @@
         align-items: center;
       }
 
+      /* ---- letters and colours ---- */
+
+      #appearance {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        background: hsl(var(--accent-h) 20% 18% / 0.32);
+      }
+
+      #appearance[hidden] {
+        display: none;
+      }
+
+      .panel {
+        width: min(32rem, 100%);
+        max-height: 100%;
+        overflow-y: auto;
+        padding: 1.1rem 1.4rem 1.6rem;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--page);
+        box-shadow: 0 12px 44px hsl(var(--accent-h) 25% 12% / 0.28);
+      }
+
+      .panel header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .panel h1 {
+        margin: 0;
+        font-size: 1.12em;
+      }
+
+      .panel h2 {
+        margin: 1.2rem 0 0.5rem;
+        font-size: 0.78em;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--quiet);
+      }
+
+      .choices {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+      }
+
+      /* Deliberately large targets: his hands are not steady on a trackpad. */
+      .choice {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-height: 2.7rem;
+        padding: 0.5rem 0.85rem;
+      }
+
+      .choice[aria-pressed='true'] {
+        border-color: var(--chosen);
+        background: var(--chosen-soft);
+        box-shadow: inset 0 0 0 1px var(--chosen);
+      }
+
+      .swatch {
+        width: 1.05em;
+        height: 1.05em;
+        flex: none;
+        border-radius: 50%;
+        box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.15);
+      }
+
+      .done {
+        padding: 0.45rem 1rem;
+      }
+
       #editor {
         font-family: var(--writing-font);
         font-size: var(--text-size);
@@ -265,6 +381,30 @@
           </svg>
           <span id="new-note-label"></span>
         </button>
+
+        <!--
+          A gear, alone, at the far edge. The rule that an icon never stands
+          without its words is about things he has to do; this is a thing he and I
+          set up together once and he then leaves alone, and naming it in the
+          toolbar would give a one-off more prominence than the writing.
+        -->
+        <button id="appearance-button" type="button">
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path
+              d="M8 5.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.2"
+            />
+            <path
+              d="M6.9 1.8h2.2l.25 1.6 1.1.64 1.5-.62 1.1 1.9-1.2 1.05v1.28l1.2 1.05-1.1 1.9-1.5-.62-1.1.64-.25 1.6H6.9l-.25-1.6-1.1-.64-1.5.62-1.1-1.9L4.15 8.65V7.37L2.95 6.32l1.1-1.9 1.5.62 1.1-.64z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
       </div>
       <div id="finder">
         <div id="search-row">
@@ -278,6 +418,8 @@
       <textarea id="editor" spellcheck="false"></textarea>
       <div id="status"></div>
     </div>
+
+    <div id="appearance" hidden></div>
 
     <script src="renderer.js"></script>
   </body>

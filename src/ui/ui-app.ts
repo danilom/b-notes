@@ -4,8 +4,15 @@ import { type Note, isEmptied } from '../notes/note.ts';
 import { BUILD_STAMP } from '../platform/build-info.ts';
 import type { Host } from '../platform/host.ts';
 import type { Log } from '../platform/logging.ts';
+import { type Appearance, applyAppearance } from './appearance.ts';
+import { openAppearancePanel } from './appearance-panel.ts';
 import { readSession, writeSession } from './app-session.ts';
-import { readSettings } from './app-settings.ts';
+import {
+  type Settings,
+  type SettingsFolders,
+  createSettingsWriter,
+  readSettings,
+} from './app-settings.ts';
 import { type Draft, renderList } from './note-list.ts';
 
 /** Long enough that he isn't saved mid-word, short enough to never lose a thought. */
@@ -52,9 +59,15 @@ const status = element('status', HTMLDivElement);
 const search = element('search', HTMLInputElement);
 const newNote = element('new-note', HTMLButtonElement);
 const newNoteLabel = element('new-note-label', HTMLSpanElement);
+const appearanceButton = element('appearance-button', HTMLButtonElement);
+const appearancePane = element('appearance', HTMLDivElement);
 
 /** Built here from whatever filesystem the host provides. */
 let store: ReturnType<typeof createNoteStore>;
+
+let settings: Settings;
+let saveSettings: (settings: Settings) => void;
+let closeAppearance: (() => void) | null = null;
 
 let notes: Note[] = [];
 let openId: string | null = null;
@@ -177,6 +190,30 @@ newNote.addEventListener('click', () => {
   log.info('Started a new text');
 });
 
+function showAppearance(): void {
+  if (closeAppearance !== null) return;
+
+  closeAppearance = openAppearancePanel(appearancePane, settings, language, {
+    // Applied to the document by the panel itself; all that's left is to keep
+    // it, which happens on every click rather than on the way out — there is
+    // then no way of leaving that loses what he just chose.
+    onChange: (appearance: Appearance) => {
+      settings = { ...settings, ...appearance };
+      saveSettings(settings);
+      log.info('Changed how the app looks', appearance);
+    },
+    onClose: hideAppearance,
+  });
+}
+
+function hideAppearance(): void {
+  closeAppearance?.();
+  closeAppearance = null;
+  appearanceButton.focus();
+}
+
+appearanceButton.addEventListener('click', showAppearance);
+
 /**
  * Starts the interface on whatever host it's given.
  *
@@ -188,8 +225,21 @@ export async function startApp(host: Host): Promise<void> {
   log = host.log;
   reportUncaught();
 
-  language = (await readSettings(host.files, host.appFolder)).language;
+  const folders: SettingsFolders = {
+    writingFolder: host.writingFolder,
+    appFolder: host.appFolder,
+  };
+  settings = await readSettings(host.files, folders);
+  language = settings.language;
   words = strings(language);
+
+  // Before the first paint, so he never sees the app in someone else's colours
+  // and then watch it change under him.
+  applyAppearance(document.documentElement, settings);
+
+  saveSettings = createSettingsWriter(host.files, folders, (error: unknown) => {
+    log.error('Could not keep how he likes the app set up', describeError(error));
+  });
 
   // Written as he moves between texts, and never waited on: remembering where
   // he was is worth nothing next to what he's typing, so a failure here is
@@ -202,6 +252,10 @@ export async function startApp(host: Host): Promise<void> {
 
   store = createNoteStore(host.files, host.writingFolder);
   newNoteLabel.textContent = words.newNote;
+  // Named only to the mouse and to a screen reader: the gear carries it on
+  // screen, where the words would cost more room than a yearly visit deserves.
+  appearanceButton.title = words.appearance;
+  appearanceButton.setAttribute('aria-label', words.appearance);
   search.placeholder = words.searchPlaceholder;
   search.setAttribute('aria-label', words.searchLabel);
 

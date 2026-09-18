@@ -52,6 +52,21 @@ When the tradeoff is between "powerful" and "impossible to get wrong", choose im
 | `src/hosts/electron/` | only the packaged app | lifecycle, the preload bridge, updates, the log file, the real filesystem |
 | `src/hosts/mockup/` | only the browser | a pretend filesystem, and the test corpus it's filled with |
 
+### Where his things are kept
+
+| file | folder | why there |
+| --- | --- | --- |
+| his texts | writing folder (Dropbox) | backed up and synced; he never sees the path |
+| `settings.json` | writing folder | which letters and which colour are taste, and travel with him |
+| `screen.json` | `userData` | how big the letters are is the screen in front of him, not taste — syncing it would have one machine keep undoing the other |
+| `session.json` | `userData` | which text he had open, on this machine |
+| `logs/` | `userData` | ours, per machine, safe to delete |
+
+Everything in `userData` is safe to delete: it costs him a window position and a
+colour, never a word. Both settings files are written by laying the keys we know
+over whatever is already in the file, so an old build coming back after months
+cannot strip a setting a newer one wrote.
+
 Everything above `hosts/` runs in both; `hosts/` is where that stops. The two
 inside it are alternatives to one another — each wires the same pieces together
 against a different environment, which is why they reach into `notes/` and `ui/`
