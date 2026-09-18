@@ -23,8 +23,9 @@ nsis:
   createStartMenuShortcut: true
   # He launches from the desktop shortcut, so it needs a name he'd recognise.
   shortcutName: brano-notes
-  # Updates are downloaded by the running app, never fetched through a browser.
-  disableWebInstaller: true
+  # Default is "brano-notes Setup 0.1.1.exe"; spaces end up percent-encoded in
+  # the update URLs and awkward to type on a command line.
+  artifactName: ${name}-setup-${version}.${ext}
 
 publish:
   provider: github

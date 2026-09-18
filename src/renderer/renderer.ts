@@ -1,4 +1,4 @@
-import { BUILD_STAMP } from '../shared/build-info.ts';
+import { APP_VERSION, BUILD_STAMP } from '../shared/build-info.ts';
 import type { RendererLog } from '../shared/logging.ts';
 import type { NoteStore } from '../shared/notes.ts';
 import { createMockNoteStore } from './mock-store.ts';
@@ -55,7 +55,7 @@ const store: NoteStore = preloaded ?? createMockNoteStore();
 
 async function report(): Promise<void> {
   element('backend').textContent = preloaded ? 'filesystem (via IPC)' : 'localStorage mock';
-  element('build').textContent = BUILD_STAMP;
+  element('build').textContent = `${APP_VERSION} (${BUILD_STAMP})`;
 
   try {
     const notes = await store.list();

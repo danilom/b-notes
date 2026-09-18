@@ -33,6 +33,8 @@ export function startUpdateChecks(log: Logger): void {
 
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
+  // Updates are fetched by the app itself, never through a browser download.
+  autoUpdater.disableWebInstaller = true;
 
   autoUpdater.on('checking-for-update', () => updates.info('Checking for update'));
   autoUpdater.on('update-available', (info) => updates.info('Update available', { version: info.version }));

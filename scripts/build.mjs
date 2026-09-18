@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { cp, mkdir } from 'node:fs/promises';
+import { cp, mkdir, readFile } from 'node:fs/promises';
 
 import * as esbuild from 'esbuild';
 
@@ -27,11 +27,16 @@ function buildStamp() {
   return `${when} ${commit}`;
 }
 
+const { version } = JSON.parse(await readFile('package.json', 'utf8'));
+
 const shared = {
   bundle: true,
   sourcemap: true,
   logLevel: 'info',
-  define: { __BUILD_STAMP__: JSON.stringify(buildStamp()) },
+  define: {
+    __BUILD_STAMP__: JSON.stringify(buildStamp()),
+    __APP_VERSION__: JSON.stringify(version),
+  },
 };
 
 const targets = [
