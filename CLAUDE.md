@@ -28,6 +28,7 @@ When the tradeoff is between "powerful" and "impossible to get wrong", choose im
 - Keep Electron APIs (`app.getPath`, `dialog`, …) at the edges. Core logic takes paths as parameters so it runs — and can be tested — under plain Node.
 - Target Windows 10 and later, so there's no Electron version ceiling. (Electron 23+ dropped Windows 7/8; not a constraint for us.)
 - Consider `app.disableHardwareAcceleration()` — on old Intel GPUs it tends to fix rendering glitches as well as reduce load.
+- Never use top-level `await` in the main process entry. It's an ES module, and Electron waits for that module to finish evaluating before emitting `ready`, so `await app.whenReady()` at the top level deadlocks: the app starts, opens no window, and prints nothing. Electron's stdout isn't attached to the terminal on Windows, so this failure is completely silent — trace to a file when debugging startup.
 
 ## Distribution
 

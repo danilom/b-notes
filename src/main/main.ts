@@ -24,7 +24,7 @@ ipcMain.handle('notes:write', (_event, id: unknown, text: unknown) =>
 );
 ipcMain.handle('notes:create', (_event, title: unknown) => store.create(asString(title, 'title')));
 
-function createWindow(): void {
+async function createWindow(): Promise<void> {
   const window = new BrowserWindow({
     width: 1100,
     height: 800,
@@ -34,12 +34,31 @@ function createWindow(): void {
     },
   });
 
-  // Showing only once painted avoids the white flash, which is slow and ugly on an old disk.
+  // Showing only once painted avoids the white flash, which is slow and ugly on
+  // an old disk. It also means a failed load leaves no window at all, so surface
+  // the failure rather than hanging invisibly.
   window.once('ready-to-show', () => window.show());
-  void window.loadFile(path.join(import.meta.dirname, 'index.html'));
+  window.webContents.on('did-fail-load', (_event, code, description, url) => {
+    console.error(`Renderer failed to load ${url}: ${description} (${code})`);
+    window.destroy();
+  });
+
+  await window.loadFile(path.join(import.meta.dirname, 'index.html'));
 }
 
 app.on('window-all-closed', () => app.quit());
 
-await app.whenReady();
-createWindow();
+/**
+ * Deliberately not top-level `await`. This entry point is an ES module, and
+ * Electron waits for it to finish evaluating before emitting `ready` — so
+ * awaiting `whenReady()` at the top level deadlocks and no window ever opens.
+ */
+async function start(): Promise<void> {
+  await app.whenReady();
+  await createWindow();
+}
+
+start().catch((error: unknown) => {
+  console.error('Failed to start', error);
+  app.quit();
+});
