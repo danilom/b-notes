@@ -4,14 +4,16 @@ import { type Note, isEmptied } from '../notes/note.ts';
 import { BUILD_STAMP } from '../platform/build-info.ts';
 import type { Host } from '../platform/host.ts';
 import type { Log } from '../platform/logging.ts';
+import { readSession, writeSession } from './app-session.ts';
+import { readSettings } from './app-settings.ts';
 import { renderList } from './note-list.ts';
 
 /** Long enough that he isn't saved mid-word, short enough to never lose a thought. */
 const AUTOSAVE_IDLE_MS = 800;
-const LAST_OPEN_KEY = 'b-notes:last-open';
 
-const language: Language = 'sr';
-const words = strings(language);
+let language: Language;
+let words: ReturnType<typeof strings>;
+let remember: (openNoteId: string | null) => void;
 
 /** Both come from the host, and nothing here reaches past it for them. */
 let log: Log;
@@ -85,7 +87,7 @@ async function saveNow(): Promise<void> {
   const wasNew = openId === null;
   openId = id;
   savedAt = Date.now();
-  window.localStorage.setItem(LAST_OPEN_KEY, id);
+  remember(id);
 
   // Reload rather than patch: saving can rename the note, which moves it in the
   // list, and a stale entry is exactly the kind of thing that reads as loss.
@@ -120,7 +122,7 @@ async function open(id: string): Promise<void> {
   openId = id;
   editor.value = note.text;
   savedAt = note.updatedAt;
-  window.localStorage.setItem(LAST_OPEN_KEY, id);
+  remember(id);
   editor.setSelectionRange(0, 0);
   editor.scrollTop = 0;
   draw();
@@ -144,7 +146,7 @@ newNote.addEventListener('click', () => {
   openId = null;
   savedAt = null;
   editor.value = '';
-  window.localStorage.removeItem(LAST_OPEN_KEY);
+  remember(null);
   draw();
   showStatus();
   editor.focus();
@@ -162,7 +164,19 @@ export async function startApp(host: Host): Promise<void> {
   log = host.log;
   reportUncaught();
 
-  store = createNoteStore(host.files);
+  language = (await readSettings(host.files, host.appFolder)).language;
+  words = strings(language);
+
+  // Written as he moves between texts, and never waited on: remembering where
+  // he was is worth nothing next to what he's typing, so a failure here is
+  // logged and otherwise ignored.
+  remember = (openNoteId) => {
+    writeSession(host.files, host.appFolder, { openNoteId }).catch((error: unknown) => {
+      log.warn('Could not remember which text is open', describeError(error));
+    });
+  };
+
+  store = createNoteStore(host.files, host.writingFolder);
   newNote.textContent = words.newNote;
   search.placeholder = words.searchPlaceholder;
   search.setAttribute('aria-label', words.searchLabel);
@@ -189,9 +203,9 @@ export async function startApp(host: Host): Promise<void> {
 
   // Reopen what he was last in. The search is deliberately not restored — a
   // filtered list on startup looks exactly like texts having gone missing.
-  const last = window.localStorage.getItem(LAST_OPEN_KEY);
-  if (last !== null && notes.some((note) => note.id === last)) {
-    await open(last);
+  const { openNoteId } = await readSession(host.files, host.appFolder);
+  if (openNoteId !== null && notes.some((note) => note.id === openNoteId)) {
+    await open(openNoteId);
   } else {
     draw();
     showStatus();

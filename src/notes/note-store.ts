@@ -1,6 +1,5 @@
 import type { FileInfo, FileSystem } from '../platform/file-system.ts';
 import {
-  CONVERTIBLE_EXTENSIONS,
   DELETED_FOLDER,
   EXTENSION,
   idOf,
@@ -14,34 +13,36 @@ import { deletedIdFor, planSave } from './note-saving.ts';
 import { titleFrom } from './note-title.ts';
 import type { Note, NoteStore } from './note.ts';
 
+const nameOf = (path: string): string => path.split('/').at(-1) ?? path;
+
 /**
  * Everything that knows what a note is, built on nothing but somewhere to keep
  * files. One implementation, so the browser behaves exactly as the app does.
  *
- * Notes are addressed by id — the name without the extension. Which file an id
- * lives in is resolved here and nowhere else, so the rest of the app never has
- * to know that `.md` files exist at all.
+ * Notes are addressed by id — the name without the extension or any folder. The
+ * path a note actually lives at is worked out here and nowhere else, so nothing
+ * above this knows where his writing is kept.
  */
-export function createNoteStore(files: FileSystem): NoteStore {
+export function createNoteStore(files: FileSystem, folder: string): NoteStore {
+  const at = (...parts: string[]): string => [folder, ...parts].join('/');
+
   /**
    * Every note's id and the file it lives in. One extension, so an id can only
    * ever name one file.
    */
   async function noteFiles(): Promise<Map<string, FileInfo>> {
     const byId = new Map<string, FileInfo>();
-    for (const file of await files.list()) {
-      if (!isNoteFile(file.path) || isConflictedCopy(file.path)) continue;
-      byId.set(idOf(file.path), file);
+    for (const file of await files.list(folder)) {
+      const name = nameOf(file.path);
+      if (!isNoteFile(name) || isConflictedCopy(name)) continue;
+      byId.set(idOf(name), file);
     }
     return byId;
   }
 
-  async function idsIn(folder: string): Promise<Set<string>> {
-    const ids = new Set<string>();
-    for (const file of await files.list(folder)) {
-      ids.add(idOf(file.path.split('/').at(-1) ?? ''));
-    }
-    return ids;
+  async function idsPutAway(): Promise<Set<string>> {
+    const found = await files.list(at(DELETED_FOLDER)).catch(() => []);
+    return new Set(found.map((file) => idOf(nameOf(file.path))));
   }
 
   return {
@@ -63,23 +64,26 @@ export function createNoteStore(files: FileSystem): NoteStore {
      * otherwise be invisible in the list, which reads to him as loss.
      */
     async convertToPlainText(): Promise<{ converted: number; refused: string[] }> {
-      const all = await files.list();
-      const taken = new Set(all.filter((file) => isNoteFile(file.path)).map((file) => idOf(file.path)));
+      const all = await files.list(folder);
+      const taken = new Set(
+        all.filter((file) => isNoteFile(nameOf(file.path))).map((file) => idOf(nameOf(file.path))),
+      );
 
       let converted = 0;
       const refused: string[] = [];
 
       for (const file of all) {
-        if (!isConvertibleNoteFile(file.path) || isConflictedCopy(file.path)) continue;
+        const name = nameOf(file.path);
+        if (!isConvertibleNoteFile(name) || isConflictedCopy(name)) continue;
 
-        const id = nextFreeId(idOf(file.path), null, taken);
+        const id = nextFreeId(idOf(name), null, taken);
         try {
-          await files.rename(file.path, `${id}${EXTENSION}`);
+          await files.rename(file.path, at(`${id}${EXTENSION}`));
           taken.add(id);
           converted += 1;
         } catch {
           // One file held open elsewhere shouldn't stop the rest converting.
-          refused.push(file.path);
+          refused.push(name);
         }
       }
 
@@ -117,16 +121,15 @@ export function createNoteStore(files: FileSystem): NoteStore {
 
       const action = await planSave(id, text, {
         takenIds: async () => new Set(existing.keys()),
-        previousText: async () =>
-          current === undefined ? '' : files.read(current).catch(() => ''),
+        previousText: async () => (current === undefined ? '' : files.read(current).catch(() => '')),
       });
 
       if (action.kind === 'none') return null;
 
-      await files.write(`${action.id}${EXTENSION}`, text);
+      await files.write(at(`${action.id}${EXTENSION}`), text);
       if (action.kind === 'write') return action.id;
 
-      await files.rename(`${action.id}${EXTENSION}`, `${action.to}${EXTENSION}`);
+      await files.rename(at(`${action.id}${EXTENSION}`), at(`${action.to}${EXTENSION}`));
       return action.to;
     },
 
@@ -134,8 +137,8 @@ export function createNoteStore(files: FileSystem): NoteStore {
       const file = (await noteFiles()).get(requireNoteId(id));
       if (file === undefined) return;
 
-      const name = deletedIdFor(id, await idsIn(DELETED_FOLDER));
-      await files.rename(file.path, `${DELETED_FOLDER}/${name}${EXTENSION}`);
+      const name = deletedIdFor(id, await idsPutAway());
+      await files.rename(file.path, at(DELETED_FOLDER, `${name}${EXTENSION}`));
     },
   };
 }

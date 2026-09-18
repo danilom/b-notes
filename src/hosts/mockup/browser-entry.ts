@@ -1,7 +1,12 @@
 import type { Host } from '../../platform/host.ts';
 import type { Log } from '../../platform/logging.ts';
 import { startApp } from '../../ui/ui-app.ts';
-import { createMockFileSystem, seedIfEmpty } from './mock-file-system.ts';
+import {
+  MOCK_APP_FOLDER,
+  MOCK_WRITING_FOLDER,
+  createMockFileSystem,
+  seedIfEmpty,
+} from './mock-file-system.ts';
 
 /**
  * There is no log file in a browser, so the console stands in. Good enough for
@@ -22,7 +27,14 @@ const consoleLog: Log = {
 async function main(): Promise<void> {
   await seedIfEmpty();
 
-  const host: Host = { name: 'browser', files: createMockFileSystem(), log: consoleLog };
+  const host: Host = {
+    name: 'browser',
+    files: createMockFileSystem(),
+    writingFolder: MOCK_WRITING_FOLDER,
+    appFolder: MOCK_APP_FOLDER,
+    log: consoleLog,
+  };
+
   await startApp(host);
 }
 

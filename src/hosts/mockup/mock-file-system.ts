@@ -1,6 +1,10 @@
-import { type FileInfo, type FileSystem, requireSafePath } from '../../platform/file-system.ts';
+import type { FileInfo, FileSystem } from '../../platform/file-system.ts';
 
 const KEY = 'b-notes:mock-files';
+
+/** Where the browser host pretends his writing and our own files live. */
+export const MOCK_WRITING_FOLDER = 'Tekstovi';
+export const MOCK_APP_FOLDER = 'Podaci';
 
 interface StoredFile {
   text: string;
@@ -31,19 +35,19 @@ function store(files: Map<string, StoredFile>): void {
   window.localStorage.setItem(KEY, JSON.stringify(Object.fromEntries(files)));
 }
 
-const folderOf = (at: string): string | undefined => {
-  const cut = at.lastIndexOf('/');
-  return cut === -1 ? undefined : at.slice(0, cut);
-};
+const folderOf = (at: string): string => at.slice(0, at.lastIndexOf('/'));
 
 /**
  * Pretend files in the browser, so the interface can be developed without
  * Electron. No sync, no conflicted copies, no disk that can fail — it stands in
  * for the filesystem, not for his machine.
+ *
+ * Paths are keys. Folders exist only because keys contain slashes, which is
+ * enough to behave like the real thing from the app's side.
  */
 export function createMockFileSystem(): FileSystem {
   return {
-    async list(folder?: string): Promise<FileInfo[]> {
+    async list(folder: string): Promise<FileInfo[]> {
       const wanted: FileInfo[] = [];
       for (const [at, file] of load()) {
         if (folderOf(at) !== folder) continue;
@@ -57,23 +61,23 @@ export function createMockFileSystem(): FileSystem {
     },
 
     async read(at: string): Promise<string> {
-      const file = load().get(requireSafePath(at));
+      const file = load().get(at);
       if (file === undefined) throw new Error(`No such file: ${at}`);
       return file.text;
     },
 
     async write(at: string, text: string): Promise<void> {
       const files = load();
-      files.set(requireSafePath(at), { text, updatedAt: Date.now() });
+      files.set(at, { text, updatedAt: Date.now() });
       store(files);
     },
 
     async rename(from: string, to: string): Promise<void> {
       const files = load();
-      const file = files.get(requireSafePath(from));
+      const file = files.get(from);
       if (file === undefined) throw new Error(`No such file: ${from}`);
       files.delete(from);
-      files.set(requireSafePath(to), file);
+      files.set(to, file);
       store(files);
     },
   };
@@ -92,7 +96,10 @@ export async function seedIfEmpty(): Promise<void> {
 
   const seeded = new Map<string, StoredFile>();
   for (const entry of (await response.json()) as { id: string; text: string; updatedAt: number }[]) {
-    seeded.set(entry.id, { text: entry.text, updatedAt: entry.updatedAt });
+    seeded.set(`${MOCK_WRITING_FOLDER}/${entry.id}`, {
+      text: entry.text,
+      updatedAt: entry.updatedAt,
+    });
   }
   store(seeded);
 }

@@ -21,7 +21,7 @@ import { titleFrom } from '../src/notes/note-title.ts';
  */
 async function emptyStore() {
   const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
-  return { dir, store: createNoteStore(createFileSystem(dir)) };
+  return { dir, store: createNoteStore(createFileSystem(), dir.replaceAll("\\", "/")) };
 }
 
 describe('isConflictedCopy', () => {

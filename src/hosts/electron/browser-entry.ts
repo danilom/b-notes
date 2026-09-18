@@ -6,6 +6,7 @@ import { startApp } from '../../ui/ui-app.ts';
 declare global {
   interface Window {
     files?: FileSystem;
+    folders?: () => Promise<{ writing: string; app: string }>;
     log?: Log;
   }
 }
@@ -17,12 +18,27 @@ declare global {
  * notes, and it cannot reach the pretend host beside it — which is what keeps
  * the mock out of what he installs.
  */
-const files = window.files;
-const log = window.log;
-if (files === undefined || log === undefined) {
-  throw new Error('No bridge to the app: the preload script did not run.');
+async function main(): Promise<void> {
+  const files = window.files;
+  const folders = window.folders;
+  const log = window.log;
+  if (files === undefined || folders === undefined || log === undefined) {
+    throw new Error('No bridge to the app: the preload script did not run.');
+  }
+
+  // Only the main process knows where Windows put his Documents folder, so the
+  // locations come across the bridge rather than being worked out here.
+  const where = await folders();
+
+  const host: Host = {
+    name: 'electron',
+    files,
+    writingFolder: where.writing,
+    appFolder: where.app,
+    log,
+  };
+
+  await startApp(host);
 }
 
-const host: Host = { name: 'electron', files, log };
-
-void startApp(host);
+void main();

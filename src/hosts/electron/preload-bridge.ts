@@ -9,11 +9,14 @@ import { contextBridge, ipcRenderer } from 'electron';
  * filesystem in a browser tab.
  */
 const files = {
-  list: (folder?: string) => ipcRenderer.invoke('files:list', folder),
+  list: (folder: string) => ipcRenderer.invoke('files:list', folder),
   read: (path: string) => ipcRenderer.invoke('files:read', path),
   write: (path: string, text: string) => ipcRenderer.invoke('files:write', path, text),
   rename: (from: string, to: string) => ipcRenderer.invoke('files:rename', from, to),
 };
+
+/** Only the main process knows where Windows keeps his Documents folder. */
+const folders = () => ipcRenderer.invoke('app:folders');
 
 const log = {
   info: (message: string, detail?: unknown) => ipcRenderer.send('log:write', 'info', message, detail),
@@ -22,4 +25,5 @@ const log = {
 };
 
 contextBridge.exposeInMainWorld('files', files);
+contextBridge.exposeInMainWorld('folders', folders);
 contextBridge.exposeInMainWorld('log', log);

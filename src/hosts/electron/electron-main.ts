@@ -13,8 +13,11 @@ app.disableHardwareAcceleration();
 const runMode = app.isPackaged ? 'installed' : 'dev';
 
 // `userData` rather than `getPath('logs')` because it resolves before the app is
-// ready, and startup is exactly when we most need somewhere to write.
-const log = createFileLogger(path.join(app.getPath('userData'), 'logs'), runMode);
+// ready, and startup is exactly when we most need somewhere to write. The log,
+// what he had open and how he likes the app set up all live here together — per
+// machine, never synced, and all of it safe to delete.
+const appFolder = app.getPath('userData');
+const log = createFileLogger(path.join(appFolder, 'logs'), runMode);
 const rendererLog = log.scoped('renderer');
 
 // Nothing here reaches a terminal: Electron detaches stdout on Windows, so an
@@ -23,20 +26,19 @@ const rendererLog = log.scoped('renderer');
 process.on('uncaughtException', (error) => log.error('Uncaught exception', error));
 process.on('unhandledRejection', (reason) => log.error('Unhandled rejection', reason));
 
-// Where notes live is not settled: they belong in the Dropbox folder, which
-// needs detecting at first run. Documents keeps the scaffold runnable until then.
-const notesDir = path.join(app.getPath('documents'), 'b-notes');
-const files = createFileSystem(notesDir);
+// Where his writing lives is not settled: it belongs in the Dropbox folder,
+// which needs detecting at first run. Documents keeps this runnable until then.
+// Forward slashes throughout, which is what the filesystem contract expects and
+// which Windows accepts perfectly well.
+const folders = {
+  writing: path.join(app.getPath('documents'), 'b-notes').replaceAll('\\', '/'),
+  app: appFolder.replaceAll('\\', '/'),
+};
+const files = createFileSystem();
 
 function asString(value: unknown, name: string): string {
   if (typeof value !== 'string') throw new TypeError(`${name} must be a string`);
   return value;
-}
-
-/** The root folder is addressed as undefined rather than an empty string. */
-function asFolderOrNone(value: unknown, name: string): string | undefined {
-  if (value === null || value === undefined) return undefined;
-  return asString(value, name);
 }
 
 function handle(channel: string, handler: (args: unknown[]) => Promise<unknown>): void {
@@ -53,7 +55,8 @@ function handle(channel: string, handler: (args: unknown[]) => Promise<unknown>)
 // The bridge offers a filesystem and nothing more. What a note is, and how one
 // is named, saved or put away, is the app's business and lives in shared code —
 // this process has no idea any of it exists.
-handle('files:list', (args) => files.list(asFolderOrNone(args[0], 'folder')));
+handle('app:folders', async () => folders);
+handle('files:list', (args) => files.list(asString(args[0], 'folder')));
 handle('files:read', (args) => files.read(asString(args[0], 'path')));
 handle('files:write', (args) => files.write(asString(args[0], 'path'), asString(args[1], 'text')));
 handle('files:rename', (args) => files.rename(asString(args[0], 'from'), asString(args[1], 'to')));
@@ -113,7 +116,7 @@ async function start(): Promise<void> {
     version: app.getVersion(),
     build: BUILD_STAMP,
     electron: process.versions.electron,
-    notesDir,
+    writing: folders.writing,
   });
   await app.whenReady();
   await createWindow();

@@ -16,5 +16,9 @@ export interface Host {
   /** Which host this is, for the log: `electron` or `browser`. */
   readonly name: string;
   readonly files: FileSystem;
+  /** Where his texts live. He must never be shown this. */
+  readonly writingFolder: string;
+  /** Ours: the log, what he had open, how he likes the app set up. */
+  readonly appFolder: string;
   readonly log: Log;
 }
