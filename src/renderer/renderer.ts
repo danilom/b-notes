@@ -58,6 +58,7 @@ async function report(): Promise<void> {
   try {
     const notes = await store.list();
     element('count').textContent = String(notes.length);
+    log.info('Listed notes', { count: notes.length, backend: preloaded ? 'ipc' : 'mock' });
   } catch (error) {
     element('count').textContent = 'failed — see log';
     log.error('Could not list notes', describeError(error));
