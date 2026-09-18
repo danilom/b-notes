@@ -57,34 +57,51 @@ export const FONTS = {
 } as const satisfies Record<FontChoice, FontFace>;
 
 /**
- * Bounds on how far he can take it.
+ * The sizes he can step through, and they are not ours.
  *
- * Below 0.8 the app is smaller than it has any business being for him; above
- * 2.5 the left pane eats the window and a title is three words wide. Both ends
- * are reachable and neither is a cliff — he simply stops getting bigger.
+ * This is Chromium's own preset ladder — the values Ctrl+ and Ctrl- move
+ * between in Chrome, taken from `kPresetBrowserZoomFactors` — cut down to the
+ * range that suits this app. A geometric step of our own invention was the
+ * obvious thing to write and it was wrong: it produced 121% and 146%, numbers
+ * no browser has ever shown anyone. These are the numbers he has seen every
+ * time he has ever zoomed anything, and 125% is the same 125% Windows offers
+ * him in its own display settings.
+ *
+ * The full ladder runs 25% to 500%. Below 80% the app is smaller than it has
+ * any business being for him; above 250% the left pane eats the window and a
+ * title is three words wide.
  */
-export const MIN_ZOOM = 0.8;
-export const MAX_ZOOM = 2.5;
+export const ZOOM_STEPS = [0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5] as const;
 
-/** A tenth per press: visible enough to be worth the click, small enough to aim with. */
-const ZOOM_STEP = 1.1;
+export const MIN_ZOOM = ZOOM_STEPS[0];
+export const MAX_ZOOM = ZOOM_STEPS[ZOOM_STEPS.length - 1] ?? 1;
 
-export function clampZoom(factor: number): number {
-  if (!Number.isFinite(factor)) return DEFAULT_APPEARANCE.zoom;
-  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, factor));
+function nearestStep(factor: number): number {
+  let nearest = 0;
+  for (let i = 1; i < ZOOM_STEPS.length; i += 1) {
+    const step = ZOOM_STEPS[i] ?? 1;
+    if (Math.abs(step - factor) < Math.abs((ZOOM_STEPS[nearest] ?? 1) - factor)) nearest = i;
+  }
+  return nearest;
 }
 
 /**
- * The next step up or down.
+ * Brings any stored number onto the ladder.
  *
- * Multiplicative rather than additive, because a tenth of the current size is
- * the same apparent jump at every size — a flat 0.1 is a big step at 0.8 and
- * barely visible at 2.5. Rounded so that stepping up and back down again lands
- * exactly where it started rather than drifting.
+ * Snapped rather than merely clamped, so a file written by a build that stepped
+ * differently — or edited by hand — lands on a real step instead of sitting
+ * between two of them, where pressing + would jump somewhere unexpected.
  */
+export function clampZoom(factor: number): number {
+  if (!Number.isFinite(factor)) return DEFAULT_APPEARANCE.zoom;
+  return ZOOM_STEPS[nearestStep(factor)] ?? DEFAULT_APPEARANCE.zoom;
+}
+
+/** The next rung up or down, stopping at either end. */
 export function stepZoom(factor: number, direction: 1 | -1): number {
-  const stepped = direction === 1 ? factor * ZOOM_STEP : factor / ZOOM_STEP;
-  return clampZoom(Math.round(stepped * 100) / 100);
+  const next = nearestStep(factor) + direction;
+  if (next < 0 || next >= ZOOM_STEPS.length) return clampZoom(factor);
+  return ZOOM_STEPS[next] ?? DEFAULT_APPEARANCE.zoom;
 }
 
 export function isZoom(value: unknown): value is number {
