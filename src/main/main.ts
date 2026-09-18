@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { BUILD_STAMP } from '../shared/build-info.ts';
 import { LOG_LEVELS, createFileLogger } from './log.ts';
-import { createFileNoteStore } from './note-store.ts';
+import { createFileNoteStore, sweepEmptiedNotes } from './note-store.ts';
 import { startUpdateChecks } from './updates.ts';
 
 // The machines this runs on have old integrated GPUs, where acceleration causes
@@ -111,6 +111,10 @@ async function start(): Promise<void> {
     electron: process.versions.electron,
     notesDir,
   });
+  // Before the window, so the list he first sees has no blank rows in it.
+  const swept = await sweepEmptiedNotes(notesDir);
+  if (swept > 0) log.info('Moved emptied notes to the deleted folder', { count: swept });
+
   await app.whenReady();
   await createWindow();
   log.info('Window open');

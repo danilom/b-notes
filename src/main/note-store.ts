@@ -12,6 +12,12 @@ import { titleFrom } from '../shared/title.ts';
 const EXTENSION = '.txt';
 const AUTOSAVE_TEMP_SUFFIX = '.saving';
 
+/**
+ * Where emptied notes go. Visible and in his language, because if he ever goes
+ * looking through the folder himself this is the one place he might need.
+ */
+export const DELETED_FOLDER = 'Obrisano';
+
 /** Dropbox renames one side of a sync collision to "essay (Someone's conflicted copy 2026-09-18).txt". */
 const CONFLICTED_COPY = /\(.+conflicted copy \d{4}-\d{2}-\d{2}(?: \d+)?\)/i;
 
@@ -101,6 +107,39 @@ async function freeFileName(dir: string, base: string, own: string | null): Prom
   }
 }
 
+/**
+ * Moves emptied notes into the deleted folder, and reports how many moved.
+ *
+ * Clearing a note's text is how he deletes — he never found Resoph's delete
+ * command, and his old corpus carries dozens of files he had emptied out but
+ * which still sat in the list. An empty row tells him nothing, so they belong
+ * somewhere he can still get at them.
+ *
+ * Only ever run at startup. Sweeping while he's working would make a note
+ * disappear from the list moments after he emptied it, which is precisely the
+ * kind of unexplained movement that unsettles him.
+ */
+export async function sweepEmptiedNotes(dir: string): Promise<number> {
+  await mkdir(dir, { recursive: true });
+  const entries = await readdir(dir, { withFileTypes: true });
+  let moved = 0;
+
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith(EXTENSION)) continue;
+
+    const source = path.join(dir, entry.name);
+    if ((await readFile(source, 'utf8')).trim().length > 0) continue;
+
+    const trash = path.join(dir, DELETED_FOLDER);
+    await mkdir(trash, { recursive: true });
+    const name = await freeFileName(trash, baseOf(entry.name), null);
+    await rename(source, path.join(trash, name));
+    moved += 1;
+  }
+
+  return moved;
+}
+
 export function createFileNoteStore(dir: string): NoteStore {
   return {
     async list(): Promise<NoteSummary[]> {
@@ -156,6 +195,11 @@ export function createFileNoteStore(dir: string): NoteStore {
 
       const current = notePath(dir, id);
       await writeAtomically(current, text);
+
+      // Emptying a note is how he deletes it. Renaming it at that moment would
+      // leave nothing but "Bez naslova", and the old name is the only remaining
+      // evidence of what the note was.
+      if (text.trim().length === 0) return id;
 
       // Same base means the filename already reflects his first line; leaving it
       // alone avoids renaming the file on every keystroke.
