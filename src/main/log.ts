@@ -34,7 +34,8 @@ export interface LogFileInfo {
 
 const FILE_PREFIX = 'brano-notes-';
 const FILE_SUFFIX = '.log';
-const FILE_PATTERN = /^brano-notes-(\d{4}-\d{2}-\d{2})\.log$/;
+/** e.g. brano-notes-2026-09-18-162537-31240.log */
+const FILE_PATTERN = /^brano-notes-(\d{4}-\d{2}-\d{2})-\d{6}-\d+\.log$/;
 const DAY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 function pad(value: number, width = 2): string {
@@ -49,12 +50,15 @@ export function dayStamp(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-export function logFileNameForDay(day: string): string {
-  return `${FILE_PREFIX}${day}${FILE_SUFFIX}`;
-}
-
-export function logFileName(date: Date): string {
-  return logFileNameForDay(dayStamp(date));
+/**
+ * One file per run, named for when it started.
+ *
+ * The pid keeps two instances started in the same second apart, and means a dev
+ * build and the installed one can run together without writing over each other.
+ */
+export function logFileName(date: Date, pid: number): string {
+  const time = `${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+  return `${FILE_PREFIX}${dayStamp(date)}-${time}-${pid}${FILE_SUFFIX}`;
 }
 
 export function parseLogFileDay(fileName: string): string | null {
@@ -101,24 +105,26 @@ export function formatLine(
  * Names to delete, oldest first: anything older than `maxAgeDays`, then the
  * oldest of what remains until the total fits `maxTotalBytes`.
  *
- * The file for `activeDay` is never returned. Deleting it would throw away the
- * current session's entries, which are the ones a live problem needs.
+ * `activeName` is never returned — it's the file this run is writing to, and
+ * it holds exactly the entries a live problem needs.
  */
 export function filesToPrune(
   files: readonly LogFileInfo[],
   retention: LogRetention,
-  activeDay: string,
+  today: string,
+  activeName: string,
 ): string[] {
-  const cutoffDate = dayToDate(activeDay);
+  const cutoffDate = dayToDate(today);
   cutoffDate.setDate(cutoffDate.getDate() - retention.maxAgeDays);
   const cutoff = dayStamp(cutoffDate);
 
-  const sorted = [...files].sort((first, second) => first.day.localeCompare(second.day));
+  // Day and time are fixed width, so the name sorts chronologically.
+  const sorted = [...files].sort((first, second) => first.name.localeCompare(second.name));
   const doomed: string[] = [];
   const surviving: LogFileInfo[] = [];
 
   for (const file of sorted) {
-    if (file.day !== activeDay && file.day < cutoff) {
+    if (file.name !== activeName && file.day < cutoff) {
       doomed.push(file.name);
     } else {
       surviving.push(file);
@@ -128,7 +134,7 @@ export function filesToPrune(
   let total = surviving.reduce((sum, file) => sum + file.sizeBytes, 0);
   for (const file of surviving) {
     if (total <= retention.maxTotalBytes) break;
-    if (file.day === activeDay) continue;
+    if (file.name === activeName) continue;
     doomed.push(file.name);
     total -= file.sizeBytes;
   }
@@ -148,29 +154,28 @@ function readLogFiles(dir: string): LogFileInfo[] {
 
 export function createFileLogger(dir: string, retention: LogRetention = DEFAULT_RETENTION): Logger {
   mkdirSync(dir, { recursive: true });
-  let prunedDay = '';
+
+  const started = new Date();
+  const fileName = logFileName(started, process.pid);
+  const file = path.join(dir, fileName);
+
+  // Pruning happens once, at startup. Nothing rotates while the app is open,
+  // because this run writes to this one file for its whole life.
+  for (const name of filesToPrune(readLogFiles(dir), retention, dayStamp(started), fileName)) {
+    try {
+      unlinkSync(path.join(dir, name));
+    } catch (error) {
+      // Windows refuses to delete a file another instance still has open. Skip
+      // it — the next run will get it — rather than abandoning the whole sweep.
+      console.error(`Could not delete old log ${name}`, error);
+    }
+  }
 
   function write(level: LogLevel, source: string, message: string, detail?: unknown): void {
-    const now = new Date();
-    const day = dayStamp(now);
-
     try {
-      // Pruning on the first write of each day covers both startup and a session
-      // left running past midnight.
-      if (day !== prunedDay) {
-        prunedDay = day;
-        for (const name of filesToPrune(readLogFiles(dir), retention, day)) {
-          unlinkSync(path.join(dir, name));
-        }
-      }
-
       // Synchronous on purpose: an entry buffered when the process dies is an
       // entry lost, and crashes are exactly what this file is for.
-      appendFileSync(
-        path.join(dir, logFileNameForDay(day)),
-        `${formatLine(now, level, source, message, detail)}\n`,
-        'utf8',
-      );
+      appendFileSync(file, `${formatLine(new Date(), level, source, message, detail)}\n`, 'utf8');
     } catch (error) {
       // Logging must never take the app down with it, and this is the one
       // failure that cannot be written to the log.

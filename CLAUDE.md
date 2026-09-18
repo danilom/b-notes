@@ -94,9 +94,21 @@ Don't log:
 - Anything per-keystroke. Writes are synchronous so entries survive a crash,
   which makes them too expensive to do on a spinning disk at typing speed.
 
+One file per run, named for its start time and pid
+(`brano-notes-2026-09-18-162537-31240.log`), so a dev build and the installed one
+can run together without interleaving, and each run reads as its own story. The
+first line of every file says whether the run was `installed` or `development`.
+
 Renderer code logs through the `window.log` bridge, which reaches the same file;
 in a plain browser tab it falls back to the console. `logs.cmd` in the repo root
 opens the folder in Explorer, since the path is otherwise awkward to reach.
+
+A warning for anyone reading these logs through a tool that runs inside a
+Windows Store/MSIX-packaged app: `%APPDATA%` is redirected copy-on-write into
+that package's `LocalCache\Roaming`. Reads can return a stale snapshot while the
+real file keeps growing underneath, which looks exactly like an app that has
+stopped logging. Read the log from an ordinary Explorer window or shell when
+what you're seeing doesn't match what the app should be doing.
 
 ## Comments
 

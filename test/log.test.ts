@@ -11,25 +11,45 @@ import {
 } from '../src/main/log.ts';
 
 const RETENTION: LogRetention = { maxAgeDays: 30, maxTotalBytes: 1000 };
+const TODAY = '2026-09-18';
 
-function file(day: string, sizeBytes: number): LogFileInfo {
-  return { name: `brano-notes-${day}.log`, day, sizeBytes };
+function file(day: string, time: string, sizeBytes: number): LogFileInfo {
+  return { name: `brano-notes-${day}-${time}-1234.log`, day, sizeBytes };
 }
 
+/** The file the current run is writing to, which pruning must never touch. */
+const ACTIVE = file(TODAY, '170000', 10);
+
 describe('logFileName', () => {
-  it('names a file after the local day', () => {
-    assert.equal(logFileName(new Date(2026, 8, 18, 23, 30)), 'brano-notes-2026-09-18.log');
+  it('names a file after the run start time and pid', () => {
+    assert.equal(
+      logFileName(new Date(2026, 8, 18, 16, 25, 37), 31240),
+      'brano-notes-2026-09-18-162537-31240.log',
+    );
+  });
+
+  it('gives two runs in the same second different names', () => {
+    const at = new Date(2026, 8, 18, 16, 25, 37);
+
+    assert.notEqual(logFileName(at, 100), logFileName(at, 200));
+  });
+
+  it('sorts chronologically by name', () => {
+    const earlier = logFileName(new Date(2026, 8, 18, 9, 5, 1), 1);
+    const later = logFileName(new Date(2026, 8, 18, 16, 25, 37), 1);
+
+    assert.ok(earlier < later);
   });
 });
 
 describe('parseLogFileDay', () => {
   it('reads the day back out of a log file name', () => {
-    assert.equal(parseLogFileDay('brano-notes-2026-09-18.log'), '2026-09-18');
+    assert.equal(parseLogFileDay('brano-notes-2026-09-18-162537-31240.log'), '2026-09-18');
   });
 
   it('ignores files that are not ours', () => {
     assert.equal(parseLogFileDay('notes.txt'), null);
-    assert.equal(parseLogFileDay('brano-notes-2026-09.log'), null);
+    assert.equal(parseLogFileDay('brano-notes-2026-09-18.log'), null);
   });
 });
 
@@ -68,77 +88,89 @@ describe('formatLine', () => {
 
 describe('filesToPrune', () => {
   it('keeps everything when inside both limits', () => {
-    const files = [file('2026-09-17', 10), file('2026-09-18', 10)];
+    const files = [file('2026-09-17', '120000', 10), ACTIVE];
 
-    assert.deepEqual(filesToPrune(files, RETENTION, '2026-09-18'), []);
+    assert.deepEqual(filesToPrune(files, RETENTION, TODAY, ACTIVE.name), []);
   });
 
   it('deletes files older than the age limit', () => {
-    const files = [file('2026-08-18', 10), file('2026-09-18', 10)];
+    const old = file('2026-08-18', '120000', 10);
 
-    assert.deepEqual(filesToPrune(files, RETENTION, '2026-09-18'), ['brano-notes-2026-08-18.log']);
+    assert.deepEqual(filesToPrune([old, ACTIVE], RETENTION, TODAY, ACTIVE.name), [old.name]);
   });
 
   it('keeps a file exactly on the age limit', () => {
-    const files = [file('2026-08-19', 10)];
+    const edge = file('2026-08-19', '120000', 10);
 
-    assert.deepEqual(filesToPrune(files, RETENTION, '2026-09-18'), []);
+    assert.deepEqual(filesToPrune([edge, ACTIVE], RETENTION, TODAY, ACTIVE.name), []);
   });
 
   it('stops deleting as soon as the total fits the size limit', () => {
     const files = [
-      file('2026-09-15', 400),
-      file('2026-09-16', 400),
-      file('2026-09-17', 400),
-      file('2026-09-18', 100),
+      file('2026-09-15', '120000', 400),
+      file('2026-09-16', '120000', 400),
+      file('2026-09-17', '120000', 400),
+      ACTIVE,
     ];
 
-    assert.deepEqual(filesToPrune(files, RETENTION, '2026-09-18'), ['brano-notes-2026-09-15.log']);
+    assert.deepEqual(filesToPrune(files, RETENTION, TODAY, ACTIVE.name), [
+      'brano-notes-2026-09-15-120000-1234.log',
+    ]);
   });
 
   it('deletes oldest first until the total fits the size limit', () => {
     const files = [
-      file('2026-09-15', 500),
-      file('2026-09-16', 500),
-      file('2026-09-17', 500),
-      file('2026-09-18', 100),
+      file('2026-09-15', '120000', 500),
+      file('2026-09-16', '120000', 500),
+      file('2026-09-17', '120000', 500),
+      ACTIVE,
     ];
 
-    assert.deepEqual(filesToPrune(files, RETENTION, '2026-09-18'), [
-      'brano-notes-2026-09-15.log',
-      'brano-notes-2026-09-16.log',
+    assert.deepEqual(filesToPrune(files, RETENTION, TODAY, ACTIVE.name), [
+      'brano-notes-2026-09-15-120000-1234.log',
+      'brano-notes-2026-09-16-120000-1234.log',
     ]);
   });
 
-  it('never deletes the active day, even when it alone exceeds the size limit', () => {
-    const files = [file('2026-09-18', 5000)];
+  it('never deletes the active file, even when it alone exceeds the size limit', () => {
+    const huge = file(TODAY, '170000', 5000);
 
-    assert.deepEqual(filesToPrune(files, RETENTION, '2026-09-18'), []);
+    assert.deepEqual(filesToPrune([huge], RETENTION, TODAY, huge.name), []);
   });
 
-  it('keeps the active day while clearing everything else to get under the limit', () => {
-    const files = [file('2026-09-17', 800), file('2026-09-18', 900)];
+  it('deletes an earlier run from today once the total is too large', () => {
+    const earlier = file(TODAY, '090000', 900);
+    const active = file(TODAY, '170000', 900);
 
-    assert.deepEqual(filesToPrune(files, RETENTION, '2026-09-18'), ['brano-notes-2026-09-17.log']);
+    assert.deepEqual(filesToPrune([earlier, active], RETENTION, TODAY, active.name), [earlier.name]);
+  });
+
+  it('orders several runs from one day oldest first', () => {
+    const first = file(TODAY, '090000', 600);
+    const second = file(TODAY, '100000', 600);
+    const active = file(TODAY, '170000', 600);
+
+    assert.deepEqual(filesToPrune([active, second, first], RETENTION, TODAY, active.name), [
+      first.name,
+      second.name,
+    ]);
   });
 
   it('applies both limits together', () => {
-    const files = [
-      file('2026-01-01', 10),
-      file('2026-09-15', 900),
-      file('2026-09-18', 200),
-    ];
+    const ancient = file('2026-01-01', '120000', 10);
+    const large = file('2026-09-15', '120000', 900);
+    const active = file(TODAY, '170000', 200);
 
-    assert.deepEqual(filesToPrune(files, RETENTION, '2026-09-18'), [
-      'brano-notes-2026-01-01.log',
-      'brano-notes-2026-09-15.log',
+    assert.deepEqual(filesToPrune([ancient, large, active], RETENTION, TODAY, active.name), [
+      ancient.name,
+      large.name,
     ]);
   });
 
   it('respects configured thresholds rather than the defaults', () => {
-    const files = [file('2026-09-16', 10), file('2026-09-18', 10)];
+    const old = file('2026-09-16', '120000', 10);
     const strict: LogRetention = { maxAgeDays: 1, maxTotalBytes: 1000 };
 
-    assert.deepEqual(filesToPrune(files, strict, '2026-09-18'), ['brano-notes-2026-09-16.log']);
+    assert.deepEqual(filesToPrune([old, ACTIVE], strict, TODAY, ACTIVE.name), [old.name]);
   });
 });
