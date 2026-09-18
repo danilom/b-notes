@@ -33,30 +33,34 @@ When the tradeoff is between "powerful" and "impossible to get wrong", choose im
 ## Stack
 
 - Electron + TypeScript. The Electron version is pinned deliberately: the app is local-files-only with no network and no untrusted content, so there is no pressure to chase Chromium updates. Don't upgrade it without a concrete reason.
-- Storage sits behind one small async interface with two implementations: a mock backed by `localStorage`, for developing the UI in a plain browser, and the real one over IPC to the desktop process. The interface is async in both, so call sites never change when they're swapped.
-
-### Keep `src/desktop/` thin
-
-`src/desktop/` is the only code that cannot run in a browser: Electron's
-lifecycle, the preload bridge, updates, the log file, and the file operations
-themselves. Everything else belongs in `src/shared/`.
-
-This is not tidiness. The UI is developed and judged in a browser against the
-mock, so **anything implemented only in `src/desktop/` is invisible there** — and
-a mock that behaves differently from the real thing quietly invalidates every
-judgement made against it. That has already happened twice: emptied notes were
-swept only by the real store, and the mock had its own copy of the filename
-collision rule.
-
-The split to aim for: *deleting a file* is a desktop concern, while *what counts
-as deleted, what it gets renamed to, and where it goes* are not. Rules go in
-`src/shared/` where both sides use the same one; only the system call stays
-behind. If a rule has to be written twice, it is in the wrong place.
+- Storage sits behind one small async interface with two implementations: a mock backed by `localStorage`, for developing the UI in a plain browser, and the real one over IPC to the Electron process. The interface is async in both, so call sites never change when they're swapped.
 - Keep Electron APIs (`app.getPath`, `dialog`, …) at the edges. Core logic takes paths as parameters so it runs — and can be tested — under plain Node.
 - Target Windows 10 and later, so there's no Electron version ceiling. (Electron 23+ dropped Windows 7/8; not a constraint for us.)
 - Consider `app.disableHardwareAcceleration()` — on old Intel GPUs it tends to fix rendering glitches as well as reduce load.
 - Never use top-level `await` in the main process entry. It's an ES module, and Electron waits for that module to finish evaluating before emitting `ready`, so `await app.whenReady()` at the top level deadlocks: the app starts, opens no window, and prints nothing. Electron's stdout isn't attached to the terminal on Windows, so this failure is completely silent — trace to a file when debugging startup.
 - Failing to write a file is the one error that must never be silent internally, even though the user never sees it. Log it and retry.
+
+### Keep `src/electron/` thin
+
+`src/electron/` holds the only code a browser cannot run: Electron's lifecycle,
+the preload bridge, updates, the log file, and the file operations themselves.
+Everything else belongs in `src/shared/`.
+
+This is not tidiness. The UI is developed and judged in a browser against the
+mock store, so **anything implemented only in `src/electron/` does not exist
+there** — and a mock that behaves differently from the real thing quietly
+invalidates every judgement made against it. That has already happened twice:
+emptied notes were swept only by the real store, and the mock carried its own
+copy of the filename collision rule.
+
+The split to aim for: *deleting a file* belongs in `src/electron/`, while *what
+counts as deleted, what it gets renamed to, and where it goes* do not. Rules live
+in `src/shared/` where both sides use the same one; only the system call stays
+behind. **If a rule has to be written twice, it is in the wrong place.**
+
+One deliberate exception: `log.ts` stays whole in `src/electron/`, pure retention
+logic and all. The mock has no log file and wants none — nothing in the browser
+needs to agree with it, so there's no divergence to prevent.
 
 ## Distribution
 

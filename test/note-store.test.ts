@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
-import { createFileNoteStore } from '../src/desktop/note-store.ts';
+import { createFileNoteStore } from '../src/electron/note-store.ts';
 import {
   DELETED_FOLDER,
   baseOf,
