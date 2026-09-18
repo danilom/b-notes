@@ -97,11 +97,27 @@ produces 600 flat entries, several of which are near-identical drafts of the sam
 essay, has moved the problem rather than solved it.
 
 So migration is part of the versioning design, not a separate chore. Detecting
-which texts are variants of one another is P1/P2 work. Detection can be
-automatic; **the decision to group them must not be.** Merging is the one
-operation that could destroy something irreplaceable, and it would be doing so
-on the basis of a guess about similarity. The app proposes; a person confirms —
-during migration that person is whoever sets it up, not him.
+which texts are variants of one another is P1/P2 work.
+
+**Migration is triggered, never ambient.** It's an explicit operation someone
+runs, not something the app quietly does to his files in the background. He is
+not the one who runs it.
+
+**But human review cannot be the safety mechanism.** Nobody is going to
+meaningfully audit 600 texts; realistically whoever triggers it glances at the
+result and accepts. So grouping has to be safe by construction rather than safe
+by approval:
+
+- **Nothing is discarded.** Grouping is a layer over the texts, not a rewrite of
+  them. Every version stays individually retrievable.
+- **Every version stays searchable**, not just whichever is considered current.
+  This is what makes a wrong grouping survivable: the text is still there and
+  still findable, merely filed under a heading it doesn't belong to.
+- **Grouping is reversible**, per group and wholesale.
+- **Group conservatively.** The costs are lopsided. Failing to group leaves the
+  mess he already lives with — no worse than today. Grouping wrongly is only
+  untidy, provided the rules above hold. So when similarity is ambiguous, leave
+  the texts apart.
 
 ## What will actually impress him first
 
