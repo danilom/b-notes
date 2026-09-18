@@ -95,6 +95,13 @@ easy, non-confusing way to get old material back.
 - **Old versions are retrievable** without him having to have planned for it.
 - **Clear controls with text labels**, not bare icons. (Exact design to be worked
   out; Resoph's icons were too cryptic.)
+- **Labels name the outcome and the destination, not the mechanism.** "Copy the
+  whole text" invites the question *copy to where* — the clipboard is invisible
+  and can't be reasoned about. Where something lands somewhere he can't see, the
+  label has to say where, and ideally connect to a routine he already has.
+- **Every action visibly confirms it happened.** A button that appears to do
+  nothing is the same problem as the window that disappeared: he has no way to
+  tell success from failure, so he retries, or assumes the worst.
 - **No hidden gotchas and no invisible UI** — nothing that depends on knowing an
   unmarked gesture, shortcut or state.
 - **UI zoom in and out**, which Electron gives us cheaply and which is very
