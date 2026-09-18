@@ -31,6 +31,17 @@ const log = {
  */
 const setZoom = (factor: number) => webFrame.setZoomFactor(factor);
 
+/**
+ * Pinching a trackpad zooms in Chromium by default, and he would have no idea
+ * what he had done or how to undo it. Zoom is ours to change, from one place.
+ *
+ * Here rather than in the main process: `webContents.setVisualZoomLevelLimits`
+ * is answered by a renderer, so awaiting it before a page has loaded waits for
+ * a reply from a frame that does not exist yet and never returns. From this
+ * side there is no round trip to deadlock on.
+ */
+webFrame.setVisualZoomLevelLimits(1, 1);
+
 contextBridge.exposeInMainWorld('files', files);
 contextBridge.exposeInMainWorld('setZoom', setZoom);
 contextBridge.exposeInMainWorld('folders', folders);

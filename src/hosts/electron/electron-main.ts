@@ -55,12 +55,27 @@ function asString(value: unknown, name: string): string {
   return value;
 }
 
+/** A file that isn't there yet. Ordinary, and not the same thing as a failure. */
+function isMissingFile(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { code?: unknown }).code === 'ENOENT'
+  );
+}
+
 function handle(channel: string, handler: (args: unknown[]) => Promise<unknown>): void {
   ipcMain.handle(channel, async (_event, ...args: unknown[]) => {
     try {
       return await handler(args);
     } catch (error) {
-      log.error(`${channel} failed`, error);
+      // Still thrown to the caller, which is the only side that knows whether
+      // an absent file matters. Only the log level is softened: settings and
+      // session are absent on every first run, and three stack traces at ERROR
+      // teach whoever reads this log to skim past exactly the thing it exists
+      // to show them.
+      if (isMissingFile(error)) log.info(`${channel}: nothing there yet`, { args });
+      else log.error(`${channel} failed`, error);
       throw error;
     }
   });
@@ -102,10 +117,6 @@ async function createWindow(): Promise<void> {
   // Showing only once painted avoids the white flash, which is slow and ugly on
   // an old disk. It also means a failed load leaves no window at all, so surface
   // the failure rather than hanging invisibly.
-  // Pinch on a trackpad zooms in Chromium by default, and he would have no idea
-  // what he had done or how to undo it. Zoom is ours to change, from one place.
-  await window.webContents.setVisualZoomLevelLimits(1, 1);
-
   window.once('ready-to-show', () => window.show());
   window.webContents.on('did-fail-load', (_event, code, description, url) => {
     log.error('Renderer failed to load', { url, description, code });
