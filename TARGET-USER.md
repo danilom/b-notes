@@ -73,6 +73,17 @@ He emails his essays to people who read them — often several versions of the s
 piece as he refines it. That is the output of the whole system; everything else
 exists to get a text to a reader.
 
+**The app should not try to own sending.** He already copies and pastes into
+GMail and manages it fine, and that path works today. Anything we added would be
+either a `mailto:` link, which hands him off to whatever Windows thinks the
+default mail client is, or a copy to the clipboard — which is what he's already
+doing. Both add a new way to fail to a route that currently doesn't.
+
+Worth considering for a different reason: a clearly labelled button that copies
+the whole text. Not to help him send it, but so he never needs Ctrl+A. Select-all
+creates a state where the entire essay is selected and one stray keystroke
+replaces it, which is one of the suspected ways he has lost work.
+
 ## What the app has to be
 
 A very clear, very safe sandbox in which he can never lose anything, with an
