@@ -87,7 +87,8 @@ Don't log:
   which makes them too expensive to do on a spinning disk at typing speed.
 
 Renderer code logs through the `window.log` bridge, which reaches the same file;
-in a plain browser tab it falls back to the console.
+in a plain browser tab it falls back to the console. `logs.cmd` in the repo root
+opens the folder in Explorer, since the path is otherwise awkward to reach.
 
 ## Comments
 
