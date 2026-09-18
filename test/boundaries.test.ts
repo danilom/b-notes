@@ -34,33 +34,36 @@ async function offenders(folder: string, forbidden: RegExp): Promise<string[]> {
   return bad;
 }
 
+/** The folders that run everywhere, and so can depend on nothing host-specific. */
+const PORTABLE = ['notes', 'platform', 'language', 'ui'];
+
 describe('where code is allowed to reach', () => {
-  for (const folder of ['notes', 'platform', 'language', 'ui', 'electron']) {
-    it(`keeps the mock out of ${folder}, so it cannot ship`, async () => {
-      assert.deepEqual(await offenders(folder, /mockup/), []);
+  for (const folder of PORTABLE) {
+    it(`keeps hosts out of ${folder}, which has to run in both`, async () => {
+      assert.deepEqual(await offenders(folder, /hosts\/|electron|node:/), []);
     });
   }
 
-  for (const folder of ['notes', 'platform', 'language', 'ui']) {
-    it(`keeps Electron and Node out of ${folder}, which also runs in a browser`, async () => {
-      assert.deepEqual(await offenders(folder, /electron|node:/), []);
-    });
-  }
+  it('keeps Electron and Node out of the mock host, which only runs in a browser', async () => {
+    assert.deepEqual(await offenders('hosts/mockup', /electron|node:/), []);
+  });
 
-  it('keeps Electron and Node out of the mock, which only runs in a browser', async () => {
-    assert.deepEqual(await offenders('mockup', /\.\.\/electron|node:/), []);
+  it('keeps one host out of the other', async () => {
+    assert.deepEqual(await offenders('hosts/electron', /mockup/), []);
+    assert.deepEqual(await offenders('hosts/mockup', /hosts\/electron|\.\.\/electron/), []);
   });
 
   it('keeps the interface out of everything that is not the interface', async () => {
     for (const folder of ['notes', 'platform', 'language']) {
-      assert.deepEqual(await offenders(folder, /\.\.\/ui\//), [], folder);
+      assert.deepEqual(await offenders(folder, /\/ui\//), [], folder);
     }
   });
 
-  it('lets the mock use the interface, since standing in for Electron is the point', async () => {
-    const entry = await importsIn(path.join(SOURCE, 'mockup', 'browser-entry.ts'));
+  it('lets a host wire the pieces together, which is what a host is for', async () => {
+    const entry = await importsIn(path.join(SOURCE, 'hosts', 'mockup', 'browser-entry.ts'));
 
     assert.ok(entry.some((specifier) => specifier.includes('ui/ui-app')));
+    assert.ok(entry.some((specifier) => specifier.includes('notes/note-store')));
   });
 });
 

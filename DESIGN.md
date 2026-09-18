@@ -48,14 +48,18 @@ When the tradeoff is between "powerful" and "impossible to get wrong", choose im
 | `src/platform/` | everywhere | what a platform must provide: the filesystem contract, the log bridge, build identity |
 | `src/language/` | everywhere | every word he reads, in both languages |
 | `src/ui/` | everywhere | the interface itself |
-| `src/electron/` | only the packaged app | lifecycle, the preload bridge, updates, the log file, the real filesystem |
-| `src/mockup/` | only the browser | a pretend filesystem, and the test corpus it's filled with |
+| `src/hosts/electron/` | only the packaged app | lifecycle, the preload bridge, updates, the log file, the real filesystem |
+| `src/hosts/mockup/` | only the browser | a pretend filesystem, and the test corpus it's filled with |
 
-Which gives a dependency direction worth stating plainly:
+Everything above `hosts/` runs in both; `hosts/` is where that stops. The two
+inside it are alternatives to one another — each wires the same pieces together
+against a different environment, which is why they reach into `notes/` and `ui/`
+rather than only into `platform/`. Wiring is what a host is for.
 
 ```
 platform ← notes ← ui → language
-platform ← electron, mockup
+        ↖      ↖      ↖
+         hosts/electron, hosts/mockup
 ```
 
 `notes/` depends on the filesystem *contract* and never on an implementation.

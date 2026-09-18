@@ -1,7 +1,7 @@
 import { mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { type FileInfo, type FileSystem, requireSafePath } from '../platform/file-system.ts';
+import { type FileInfo, type FileSystem, requireSafePath } from '../../platform/file-system.ts';
 
 const WRITING_SUFFIX = '.saving';
 

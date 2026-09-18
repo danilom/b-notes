@@ -1,6 +1,6 @@
-import { createNoteStore } from '../notes/note-store.ts';
+import { createNoteStore } from '../../notes/note-store.ts';
 import { createMockFileSystem, seedIfEmpty } from './mock-file-system.ts';
-import { startApp } from '../ui/ui-app.ts';
+import { startApp } from '../../ui/ui-app.ts';
 
 /**
  * The entry point for a plain browser, where the UI is developed.

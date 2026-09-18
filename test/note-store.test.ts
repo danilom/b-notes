@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
-import { createFileSystem } from '../src/electron/disk-file-system.ts';
+import { createFileSystem } from '../src/hosts/electron/disk-file-system.ts';
 import { createNoteStore } from '../src/notes/note-store.ts';
 import {
   DELETED_FOLDER,

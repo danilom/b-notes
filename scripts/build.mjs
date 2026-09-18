@@ -42,7 +42,7 @@ const shared = {
 const targets = [
   {
     ...shared,
-    entryPoints: ['src/electron/electron-main.ts'],
+    entryPoints: ['src/hosts/electron/electron-main.ts'],
     outfile: 'dist/main.js',
     platform: 'node',
     format: 'esm',
@@ -53,7 +53,7 @@ const targets = [
   {
     // Preload stays CommonJS: an ESM preload would need the sandbox turned off.
     ...shared,
-    entryPoints: ['src/electron/preload-bridge.ts'],
+    entryPoints: ['src/hosts/electron/preload-bridge.ts'],
     outfile: 'dist/preload.cjs',
     platform: 'node',
     format: 'cjs',
@@ -72,7 +72,7 @@ const targets = [
     // The same interface for a plain browser, with the mock behind it. Separate
     // output folder so the two can never be confused for one another.
     ...shared,
-    entryPoints: ['src/mockup/browser-entry.ts'],
+    entryPoints: ['src/hosts/mockup/browser-entry.ts'],
     outfile: 'dist-browser/renderer.js',
     platform: 'browser',
     format: 'iife',
