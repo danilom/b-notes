@@ -52,6 +52,19 @@ When the tradeoff is between "powerful" and "impossible to get wrong", choose im
 `src/electron/` and `src/mockup/` are the two halves of the same seam and should
 both stay small. Everything they don't strictly need belongs in `src/shared/`.
 
+There are two entry points and two builds, so the mock cannot reach what he
+installs:
+
+- `src/renderer/entry.ts` → `dist/` — the installed app. Knows only the real store.
+- `src/mockup/entry.ts` → `dist-browser/` — served by `npm run ui`. Adds the mock.
+
+`src/renderer/app.ts` is handed a store rather than choosing one, so nothing in
+the interface knows the mock exists. `test/boundaries.test.ts` holds the whole
+arrangement in place by reading the imports: nothing outside `src/mockup/` may
+reach into it, and neither the interface nor shared code may import Electron or
+`node:` modules. Those would all fail silently — a mock shipped to him, or a rule
+living on only one side of the seam.
+
 This is not tidiness. The UI is developed and judged in a browser against the
 mock store, so **anything implemented only in `src/electron/` does not exist
 there** — and a mock that behaves differently from the real thing quietly

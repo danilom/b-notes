@@ -2,7 +2,8 @@ import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import path from 'node:path';
 
-const root = path.resolve('dist');
+/** The browser build, which is the one carrying the mock store. */
+const root = path.resolve('dist-browser');
 const port = Number(process.env['PORT'] ?? 5173);
 
 const CONTENT_TYPES = new Map([
@@ -56,5 +57,5 @@ const server = createServer((request, response) => {
 });
 
 server.listen(port, () => {
-  console.log(`serving dist/ on http://localhost:${port}`);
+  console.log(`serving ${path.basename(root)}/ on http://localhost:${port}`);
 });

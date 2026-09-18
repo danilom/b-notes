@@ -1,4 +1,3 @@
-import { createMockNoteStore } from '../mockup/note-store.ts';
 import { BUILD_STAMP } from '../shared/build-info.ts';
 import type { RendererLog } from '../shared/logging.ts';
 import { type Note, type NoteStore, isEmptied } from '../shared/notes.ts';
@@ -61,8 +60,11 @@ const status = element('status', HTMLDivElement);
 const search = element('search', HTMLInputElement);
 const newNote = element('new-note', HTMLButtonElement);
 
-const preloaded = window.notes;
-const store: NoteStore = preloaded ?? createMockNoteStore();
+/**
+ * The store is handed in rather than chosen here, so nothing in the interface
+ * knows the mock exists. It must never reach the app he installs.
+ */
+let store: NoteStore;
 
 let notes: Note[] = [];
 let openId: string | null = null;
@@ -162,7 +164,8 @@ newNote.addEventListener('click', () => {
   log.info('Started a new text');
 });
 
-async function start(): Promise<void> {
+export async function startApp(chosen: NoteStore, backend: string): Promise<void> {
+  store = chosen;
   newNote.textContent = words.newNote;
   search.placeholder = words.searchPlaceholder;
   search.setAttribute('aria-label', words.searchLabel);
@@ -189,7 +192,5 @@ async function start(): Promise<void> {
     showStatus();
   }
 
-  log.info('Ready', { build: BUILD_STAMP, notes: notes.length, backend: preloaded ? 'ipc' : 'mock' });
+  log.info('Ready', { build: BUILD_STAMP, notes: notes.length, backend });
 }
-
-void start();
