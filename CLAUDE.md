@@ -39,6 +39,12 @@ When the tradeoff is between "powerful" and "impossible to get wrong", choose im
 - The update host must support `Accept-Ranges`, or electron-updater can't do a differential download and falls back to fetching the whole installer — 106MB instead of roughly 1MB for a small fix. GitHub Releases supports it; check before moving to any other host.
 - Updates are silent, so a broken updater is silent too. Everything electron-updater reports is routed into the log file; that's the only place it will ever surface.
 
+Shipping a new version:
+
+1. Bump `version` in `package.json`. electron-updater compares versions, so an unbumped build is invisible to it.
+2. `npm run dist` builds the installer locally into `release/` without publishing. Test it.
+3. `npm run release` builds and uploads to GitHub Releases. Needs `GH_TOKEN` in the environment, a token with `public_repo` scope. That token is only for uploading — the app reads public releases anonymously and no token is ever bundled into it.
+
 ## TypeScript
 
 - Use strict TypeScript. Avoid `any`; use `unknown` and narrow properly.

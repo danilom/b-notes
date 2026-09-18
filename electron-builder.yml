@@ -30,3 +30,7 @@ publish:
   provider: github
   owner: danilom
   repo: b-notes
+  # electron-builder drafts releases by default, and electron-updater cannot see
+  # a draft — so a forgotten "publish" button would silently mean no updates
+  # ever. Test the build locally with `npm run dist` before `npm run release`.
+  releaseType: release
