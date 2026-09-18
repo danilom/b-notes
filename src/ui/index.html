@@ -81,11 +81,17 @@
         border-color: var(--quiet);
       }
 
+      /*
+        Top left, where Windows has put "new" for thirty years — he has seen
+        plenty of Windows apps, and the convention is worth more than any
+        arrangement we might invent. Sized to its own words rather than stretched
+        across the pane: starting a text is a common action, but he returns to
+        existing writing far more often, and the loudest thing on screen
+        shouldn't be the rarer one.
+      */
       #new-note {
-        font-weight: bold;
-        background: var(--chosen);
-        border-color: var(--chosen);
-        color: #fff;
+        align-self: flex-start;
+        padding: 0.45rem 0.8rem;
       }
 
       #search-row {
