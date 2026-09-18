@@ -13,6 +13,17 @@ files:
 win:
   target: nsis
 
+# Electron ships 55 locale files at ~49MB. These are Chromium's own strings —
+# context menus, form validation — not our UI text. Keeping only what could be
+# read here saves about 47MB on a slow disk.
+#
+# Chromium's `sr` is Cyrillic and it has no Latin variant, so `hr` stands in for
+# Serbian written in Latin script. Bosnian and Montenegrin aren't shipped at all.
+electronLanguages:
+  - en-US
+  - sr
+  - hr
+
 nsis:
   # No wizard and no questions: the install is done in person, and every choice
   # offered is a choice that can be got wrong later.
