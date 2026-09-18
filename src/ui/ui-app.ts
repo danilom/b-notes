@@ -3,12 +3,12 @@ import { createNoteStore } from '../notes/note-store.ts';
 import { type Note, isEmptied } from '../notes/note.ts';
 import { BUILD_STAMP } from '../platform/build-info.ts';
 import type { FileSystem } from '../platform/file-system.ts';
-import type { RendererLog } from '../platform/log-bridge.ts';
+import type { Log } from '../platform/logging.ts';
 import { renderList } from './note-list.ts';
 
 declare global {
   interface Window {
-    log?: RendererLog;
+    log?: Log;
   }
 }
 
@@ -23,7 +23,7 @@ const words = strings(language);
  * In a browser tab there's no preload script and so no bridge to the log file.
  * The console is the only place left, and it's enough while developing.
  */
-const log: RendererLog = window.log ?? {
+const log: Log = window.log ?? {
   info: (message, detail) => console.info(message, detail),
   warn: (message, detail) => console.warn(message, detail),
   error: (message, detail) => console.error(message, detail),
@@ -166,7 +166,7 @@ newNote.addEventListener('click', () => {
  * Starts the interface on whatever filesystem the host provides.
  *
  * A host supplies somewhere to keep files and nothing else — what a note is,
- * and how one is named, saved or put away, is decided here and in , so
+ * and how one is named, saved or put away, is decided here and in `notes/`, so
  * every host behaves identically.
  */
 export async function startApp(files: FileSystem, backend: string): Promise<void> {
