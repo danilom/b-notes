@@ -5,6 +5,7 @@ import {
   DEFAULT_APPEARANCE,
   isAccentChoice,
   isFontChoice,
+  isModeChoice,
   isSizeChoice,
 } from './appearance.ts';
 
@@ -26,9 +27,17 @@ export interface SharedSettings {
   accent: Appearance['accent'];
 }
 
-/** Stays on the machine, beside the log. */
+/**
+ * Stays on the machine, beside the log.
+ *
+ * Dark is here rather than in the shared file for the same reason size is, and
+ * more sharply: it exists for whoever is working on the app, on the machine
+ * they work on. Syncing it would reach across and turn his screen black
+ * overnight for no reason he could name.
+ */
 export interface LocalSettings {
   size: Appearance['size'];
+  mode: Appearance['mode'];
 }
 
 export type Settings = SharedSettings & LocalSettings;
@@ -80,6 +89,7 @@ export function settingsFrom(
     font: isFontChoice(shared['font']) ? shared['font'] : DEFAULT_SETTINGS.font,
     accent: isAccentChoice(shared['accent']) ? shared['accent'] : DEFAULT_SETTINGS.accent,
     size: isSizeChoice(local['size']) ? local['size'] : DEFAULT_SETTINGS.size,
+    mode: isModeChoice(local['mode']) ? local['mode'] : DEFAULT_SETTINGS.mode,
   };
 }
 
@@ -107,7 +117,7 @@ async function writeSettings(
   folders: SettingsFolders,
   settings: Settings,
 ): Promise<void> {
-  const { language, font, accent, size } = settings;
+  const { language, font, accent, size, mode } = settings;
   const sharedPath = `${folders.writingFolder}/${SHARED_FILE}`;
   const localPath = `${folders.appFolder}/${LOCAL_FILE}`;
 
@@ -120,7 +130,7 @@ async function writeSettings(
   // handful of times, against a bookkeeping mistake that would lose a choice.
   await Promise.all([
     files.write(sharedPath, `${JSON.stringify({ ...shared, language, font, accent }, null, 2)}\n`),
-    files.write(localPath, `${JSON.stringify({ ...local, size }, null, 2)}\n`),
+    files.write(localPath, `${JSON.stringify({ ...local, size, mode }, null, 2)}\n`),
   ]);
 }
 

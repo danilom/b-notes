@@ -37,25 +37,74 @@
         --surface: calc(var(--accent-s) * 0.62);
         --muted: calc(var(--accent-s) * 0.38);
 
-        --ink: hsl(var(--accent-h) var(--muted) 13%);
-        --quiet: hsl(var(--accent-h) var(--muted) 34%);
-        /* 38%, not the 53% that looked right: measured against the pane, 53%
-           gave the date column 2.8:1 and 44% still left the paler themes under
-           4.5:1. Quiet has to stop short of faint, and where the two disagree
-           the measurement wins over the eye — his are not mine. */
-        --faint: hsl(var(--accent-h) var(--muted) 38%);
-        --line: hsl(var(--accent-h) var(--surface) 78%);
-        --toolbar: hsl(var(--accent-h) var(--surface) 87%);
-        --hover: hsl(var(--accent-h) var(--surface) 89%);
-        --panel: hsl(var(--accent-h) var(--surface) 93%);
+        /*
+          Lightness is the only thing light and dark disagree about, so it is
+          the only thing the mode below swaps. Every colour is still one hue at
+          one of three saturations — which is why dark mode needed no second
+          palette, just this ladder turned over.
+
+          38% for --faint, not the 53% that looked right: measured against the
+          pane, 53% gave the date column 2.8:1 and 44% still left the paler
+          themes under 4.5:1. Where the eye and the measurement disagree the
+          measurement wins — his eyes are not mine.
+        */
+        --l-ink: 13%;
+        --l-quiet: 34%;
+        --l-faint: 38%;
+        --l-line: 78%;
+        --l-toolbar: 87%;
+        --l-hover: 89%;
+        --l-panel: 93%;
+        --l-page: 99%;
+        --l-chosen: 34%;
+        --l-chosen-soft: 85%;
+        --l-shadow: 12%;
+        --shadow-alpha: 0.3;
+        --swatch-edge: rgb(0 0 0 / 0.15);
+
+        --ink: hsl(var(--accent-h) var(--muted) var(--l-ink));
+        --quiet: hsl(var(--accent-h) var(--muted) var(--l-quiet));
+        --faint: hsl(var(--accent-h) var(--muted) var(--l-faint));
+        --line: hsl(var(--accent-h) var(--surface) var(--l-line));
+        --toolbar: hsl(var(--accent-h) var(--surface) var(--l-toolbar));
+        --hover: hsl(var(--accent-h) var(--surface) var(--l-hover));
+        --panel: hsl(var(--accent-h) var(--surface) var(--l-panel));
 
         /* The one surface that stays out of it. He reads essays off this for
            hours, and a tinted page is tiring in a way a tinted frame is not. */
-        --page: hsl(var(--accent-h) var(--muted) 99%);
+        --page: hsl(var(--accent-h) var(--muted) var(--l-page));
 
         /* Full strength, and only where something must be pointed at. */
-        --chosen: hsl(var(--accent-h) var(--strong) 34%);
-        --chosen-soft: hsl(var(--accent-h) var(--strong) 85%);
+        --chosen: hsl(var(--accent-h) var(--strong) var(--l-chosen));
+        --chosen-soft: hsl(var(--accent-h) var(--strong) var(--l-chosen-soft));
+      }
+
+      /*
+        Not for him — he would not know why the app had turned black, and
+        "it looks different today" is the same alarm as "it disappeared". It is
+        for whoever is working on the app, which is why the choice is kept on
+        the machine rather than synced across his.
+
+        Saturation comes down as well as lightness turning over: the same
+        percentage that reads as a tint at 93% reads as mud at 15%.
+      */
+      :root[data-mode='dark'] {
+        --surface: calc(var(--accent-s) * 0.42);
+        --muted: calc(var(--accent-s) * 0.3);
+
+        --l-ink: 91%;
+        --l-quiet: 66%;
+        --l-faint: 62%;
+        --l-line: 30%;
+        --l-toolbar: 19%;
+        --l-hover: 24%;
+        --l-panel: 16%;
+        --l-page: 12%;
+        --l-chosen: 72%;
+        --l-chosen-soft: 30%;
+        --l-shadow: 2%;
+        --shadow-alpha: 0.6;
+        --swatch-edge: rgb(255 255 255 / 0.25);
       }
 
       /* Carries the same tenth into every padding, gap and width below. */
@@ -286,7 +335,7 @@
         align-items: center;
         justify-content: center;
         padding: 1.5rem;
-        background: hsl(var(--accent-h) var(--surface) 15% / 0.38);
+        background: hsl(var(--accent-h) var(--surface) var(--l-shadow) / 0.42);
       }
 
       #appearance[hidden] {
@@ -311,7 +360,7 @@
         border: 1px solid var(--line);
         border-radius: 8px;
         background: var(--page);
-        box-shadow: 0 12px 44px hsl(var(--accent-h) var(--surface) 12% / 0.3);
+        box-shadow: 0 12px 44px hsl(var(--accent-h) var(--surface) var(--l-shadow) / var(--shadow-alpha));
       }
 
       .panel header {
@@ -410,7 +459,7 @@
         height: 1.05em;
         flex: none;
         border-radius: 50%;
-        box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.15);
+        box-shadow: inset 0 0 0 1px var(--swatch-edge);
       }
 
       .done {

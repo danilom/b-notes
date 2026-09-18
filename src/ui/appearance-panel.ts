@@ -1,5 +1,5 @@
 import { type Language, strings } from '../language/wording.ts';
-import { ACCENTS, type Appearance, FONTS, SIZES, applyAppearance } from './appearance.ts';
+import { ACCENTS, type Appearance, FONTS, MODES, SIZES, applyAppearance } from './appearance.ts';
 import { icon } from './icons.ts';
 
 /**
@@ -175,6 +175,17 @@ function fill(
     (accent) => change({ ...chosen, accent }),
   );
 
+  const modes = optionGroup(
+    words.appearanceMode,
+    MODES.map((value) => ({
+      value,
+      name: words.modeNames[value],
+      label: words.modeNames[value],
+    })),
+    chosen.mode,
+    (mode) => change({ ...chosen, mode }),
+  );
+
   // Windows order, bottom right, because that is where his hand already goes.
   const footer = document.createElement('footer');
   const keep = document.createElement('button');
@@ -189,7 +200,7 @@ function fill(
   cancel.addEventListener('click', handlers.onCancel);
   footer.append(keep, cancel);
 
-  panel.replaceChildren(header, fonts, sizes, accents, footer);
+  panel.replaceChildren(header, fonts, sizes, accents, modes, footer);
   keep.focus();
 }
 

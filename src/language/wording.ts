@@ -22,6 +22,8 @@ const TEXT = {
     appearanceFont: 'Font',
     appearanceSize: 'Veličina',
     appearanceColour: 'Boja',
+    appearanceMode: 'Pozadina',
+    modeNames: { light: 'Svetla', dark: 'Tamna' },
     sizeNames: { small: 'Mala', normal: 'Normalna', large: 'Veća', largest: 'Najveća' },
     accentNames: {
       blue: 'Plava',
@@ -59,6 +61,8 @@ const TEXT = {
     appearanceFont: 'Font',
     appearanceSize: 'Size',
     appearanceColour: 'Colour',
+    appearanceMode: 'Background',
+    modeNames: { light: 'Light', dark: 'Dark' },
     sizeNames: { small: 'Small', normal: 'Normal', large: 'Larger', largest: 'Largest' },
     accentNames: {
       blue: 'Blue',

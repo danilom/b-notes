@@ -12,18 +12,28 @@
 export type FontChoice = 'tahoma' | 'calibri' | 'corbel' | 'verdana' | 'segoe';
 export type SizeChoice = 'small' | 'normal' | 'large' | 'largest';
 export type AccentChoice = 'blue' | 'teal' | 'green' | 'gold' | 'red' | 'violet';
+export type ModeChoice = 'light' | 'dark';
 
 export interface Appearance {
   font: FontChoice;
   size: SizeChoice;
   accent: AccentChoice;
+  mode: ModeChoice;
 }
 
+/**
+ * Light, always, and never taken from what Windows happens to be set to. He
+ * would have no idea why the app had changed, and "it looks different today" is
+ * the same alarm as "it disappeared".
+ */
 export const DEFAULT_APPEARANCE: Appearance = {
   font: 'tahoma',
   size: 'normal',
   accent: 'blue',
+  mode: 'light',
 };
+
+export const MODES = ['light', 'dark'] as const satisfies readonly ModeChoice[];
 
 interface FontFace {
   /** Shown to him as its own name, set in itself — the only label that means anything. */
@@ -91,6 +101,10 @@ export function isAccentChoice(value: unknown): value is AccentChoice {
   return typeof value === 'string' && Object.hasOwn(ACCENTS, value);
 }
 
+export function isModeChoice(value: unknown): value is ModeChoice {
+  return value === 'light' || value === 'dark';
+}
+
 /**
  * Puts his choices onto the document as the handful of custom properties the
  * stylesheet derives everything else from.
@@ -108,4 +122,8 @@ export function applyAppearance(root: HTMLElement, appearance: Appearance): void
   root.style.setProperty('--text-size', `${(BASE_TEXT_PX * size).toFixed(2)}px`);
   root.style.setProperty('--accent-h', String(accent.hue));
   root.style.setProperty('--accent-s', `${accent.saturation}%`);
+
+  // An attribute rather than another custom property: the stylesheet swaps a
+  // whole ladder of lightnesses on it, which a single value can't express.
+  root.dataset['mode'] = appearance.mode;
 }

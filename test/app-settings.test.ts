@@ -66,11 +66,17 @@ describe('reading how he likes the app set up', () => {
     assert.deepEqual(settingsFrom({}, {}), DEFAULT_SETTINGS);
   });
 
-  it('takes the size from this machine and the rest from his writing folder', () => {
-    const settings = settingsFrom({ font: 'corbel', accent: 'red' }, { size: 'largest' });
+  it('takes the screen settings from this machine and the rest from his writing folder', () => {
+    const settings = settingsFrom({ font: 'corbel', accent: 'red' }, { size: 'largest', mode: 'dark' });
     assert.equal(settings.font, 'corbel');
     assert.equal(settings.accent, 'red');
     assert.equal(settings.size, 'largest');
+    assert.equal(settings.mode, 'dark');
+  });
+
+  it('never takes dark from the shared file, which would reach across his machines', () => {
+    const settings = settingsFrom({ mode: 'dark' }, {});
+    assert.equal(settings.mode, 'light');
   });
 });
 
@@ -96,6 +102,7 @@ describe('saving how he likes the app set up', () => {
       accent: 'green',
       font: 'corbel',
       size: 'large',
+      mode: 'light',
     });
   });
 
