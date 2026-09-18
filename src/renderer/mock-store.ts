@@ -2,6 +2,7 @@ import type { Note, NoteStore } from '../shared/notes.ts';
 import { titleFrom } from '../shared/title.ts';
 
 const KEY = 'b-notes:mock';
+const DELETED_KEY = 'b-notes:mock-deleted';
 
 interface MockNote {
   text: string;
@@ -64,10 +65,38 @@ async function seedIfEmpty(): Promise<void> {
   store(seeded);
 }
 
+let sweptThisSession = false;
+
+/**
+ * Mirrors the startup sweep the real store does, so the browser shows what the
+ * app would actually show. Without it the mock keeps emptied notes in the list
+ * as blank rows and every judgement made here would be against a fiction.
+ *
+ * Once per load, like startup — not while he's working.
+ */
+function sweepEmptied(): void {
+  if (sweptThisSession) return;
+  sweptThisSession = true;
+
+  const notes = load();
+  const emptied = [...notes].filter(([, note]) => note.text.trim().length === 0);
+  if (emptied.length === 0) return;
+
+  const deleted = window.localStorage.getItem(DELETED_KEY);
+  const kept: Record<string, MockNote> = deleted === null ? {} : JSON.parse(deleted);
+  for (const [id, note] of emptied) {
+    kept[id] = note;
+    notes.delete(id);
+  }
+  window.localStorage.setItem(DELETED_KEY, JSON.stringify(kept));
+  store(notes);
+}
+
 export function createMockNoteStore(): NoteStore {
   return {
     async list(): Promise<Note[]> {
       await seedIfEmpty();
+      sweepEmptied();
       return [...load()]
         .map(([id, note]) => ({
           id,
