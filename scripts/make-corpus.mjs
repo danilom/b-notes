@@ -1,6 +1,7 @@
 /**
  * Builds a test corpus shaped like his real one: same titles, sizes and dates,
- * entirely invented prose.
+ * entirely invented prose. The newest handful of texts are dated forward onto
+ * today — see `freshenNewest` for why.
  *
  * His writing is private, so the metadata this reads and the corpus it writes
  * both live under testdata/, which is gitignored. Nothing here prints a title.
@@ -160,7 +161,33 @@ async function loadSources() {
   });
 }
 
+const MINUTE = 60000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+/**
+ * Drags the most recently touched texts forward onto today.
+ *
+ * His archive stops in 2021, so every text in it is old enough to show as a
+ * bare year and the rest of the time ladder — minutes, hours, juče, a date —
+ * never appears while the UI is being developed. These are the texts he'd
+ * plausibly have had open if he were using the app now, so moving them is the
+ * least invented way to cover the whole ladder.
+ *
+ * Offsets are relative, so generating the corpus just after midnight folds the
+ * intra-day ones into "juče". It corrects itself on the next run.
+ */
+function freshenNewest(notes, now = Date.now()) {
+  const offsets = [2 * MINUTE, 40 * MINUTE, 3 * HOUR, 27 * HOUR, 3 * DAY, 11 * DAY, 70 * DAY, 250 * DAY];
+  const newest = [...notes].sort((a, b) => b.modified - a.modified).slice(0, offsets.length);
+  newest.forEach((note, index) => {
+    note.modified = new Date(now - offsets[index]);
+  });
+  return newest.length;
+}
+
 const notes = await loadSources();
+const freshened = freshenNewest(notes);
 await rm(OUT, { recursive: true, force: true });
 await mkdir(OUT, { recursive: true });
 
@@ -218,5 +245,5 @@ const sizes = notes.map((n) => n.bytes).sort((a, b) => a - b);
 console.log(`wrote ${notes.length} files to ${OUT}`);
 console.log(`  total ${(total / 1048576).toFixed(2)} MB`);
 console.log(`  empty ${empties}, title-only ${stubs}, deduped names ${duplicates}`);
-console.log(`  pinned ${notes.filter((n) => n.pinned).length}`);
+console.log(`  pinned ${notes.filter((n) => n.pinned).length}, dated onto today ${freshened}`);
 console.log(`  size p50 ${sizes[Math.floor(sizes.length / 2)]}, p90 ${sizes[Math.floor(sizes.length * 0.9)]}, max ${sizes[sizes.length - 1]}`);
