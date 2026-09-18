@@ -99,15 +99,33 @@ ipcMain.on('log:write', (_event, level: unknown, message: unknown, detail: unkno
 
 let mainWindow: BrowserWindow | null = null;
 
-async function createWindow(): Promise<void> {
+async function createWindow(): Promise<BrowserWindow> {
   const window = new BrowserWindow({
+    // Only ever the restored size, which he should never see. Kept sane in case
+    // a display change leaves Windows no work area to maximise into.
     width: 1100,
     height: 800,
     show: false,
+    /**
+     * One shape of window, and he cannot change it.
+     *
+     * Maximised is the only size where the list and his writing both have room,
+     * and a window shrunk to a sliver by a stray drag is, to him, work that has
+     * gone. Minimise stays: he reopens from the pinned taskbar icon, and
+     * there's no tray for it to vanish into the way ResophNotes had.
+     */
+    maximizable: false,
     webPreferences: {
       preload: path.join(import.meta.dirname, 'preload.cjs'),
     },
   });
+
+  window.maximize();
+
+  // A disabled maximise button is not the only way out of maximised: Win+Down,
+  // Aero Snap and a double-click on the title bar all do it too. Whichever
+  // route it takes, it goes straight back.
+  window.on('unmaximize', () => window.maximize());
 
   mainWindow = window;
   window.on('closed', () => {
@@ -127,6 +145,7 @@ async function createWindow(): Promise<void> {
   });
 
   await window.loadFile(path.join(import.meta.dirname, 'index.html'));
+  return window;
 }
 
 app.on('window-all-closed', () => {
@@ -148,8 +167,8 @@ async function start(): Promise<void> {
     writing: folders.writing,
   });
   await app.whenReady();
-  await createWindow();
-  log.info('Window open');
+  const window = await createWindow();
+  log.info('Window open', { maximized: window.isMaximized() });
   startUpdateChecks(log);
 }
 
