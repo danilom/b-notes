@@ -293,7 +293,17 @@
         display: none;
       }
 
+      /*
+        The panel is the instrument, not the thing being measured. It keeps one
+        face at one size whatever he picks, for two reasons: a sample judged
+        through a lens that changes with it tells him nothing, and at Najveća a
+        panel that grew too would stop fitting on the old laptop's screen. The
+        app behind it is the preview. Colour still reaches it, because colour is
+        not the thing it is measuring.
+      */
       .panel {
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        font-size: 14px;
         width: min(32rem, 100%);
         max-height: 100%;
         overflow-y: auto;
@@ -365,9 +375,28 @@
       .choice {
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 0.5rem;
         min-height: 2.7rem;
         padding: 0.5rem 0.85rem;
+      }
+
+      /* Each step drawn at its own size — the ladder is the label. */
+      .size-choice {
+        min-width: 3.6rem;
+        line-height: 1;
+      }
+
+      /* No name beside it. He has known what these colours are called for
+         eighty years, and six words would only crowd six obvious dots. */
+      .colour-choice {
+        padding: 0.5rem;
+        min-width: 2.7rem;
+      }
+
+      .colour-choice .swatch {
+        width: 1.4em;
+        height: 1.4em;
       }
 
       .choice[aria-pressed='true'] {

@@ -20,9 +20,21 @@ export interface PanelHandlers {
   onCancel: () => void;
 }
 
+/**
+ * Shown at each step instead of naming it. Two letters rather than a word
+ * because the difference between the steps is the whole point, and a word makes
+ * the widest step wide rather than large. Not translated: these are letterforms
+ * standing for letterforms, and they read the same to him in either language.
+ */
+const SIZE_SAMPLE = 'Aa';
+
 interface OptionSpec<T extends string> {
   value: T;
-  label: string;
+  /** What this option is called. Always set, even where nothing is drawn. */
+  name: string;
+  /** What he sees, where that isn't the name — a sample, or nothing at all. */
+  label?: string;
+  className?: string;
   /** Styling for the button itself, so each option looks like what it does. */
   style?: Partial<CSSStyleDeclaration>;
   swatch?: string;
@@ -54,8 +66,13 @@ function optionGroup<T extends string>(
   for (const option of options) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'choice';
+    button.className = option.className === undefined ? 'choice' : `choice ${option.className}`;
     button.setAttribute('aria-pressed', String(option.value === chosen));
+
+    // Named even when unnamed on screen, so the tooltip and a screen reader
+    // both have something better than "button" to say.
+    button.title = option.name;
+    button.setAttribute('aria-label', option.name);
     if (option.style !== undefined) Object.assign(button.style, option.style);
 
     if (option.swatch !== undefined) {
@@ -65,9 +82,11 @@ function optionGroup<T extends string>(
       button.append(dot);
     }
 
-    const label = document.createElement('span');
-    label.textContent = option.label;
-    button.append(label);
+    if (option.label !== undefined) {
+      const label = document.createElement('span');
+      label.textContent = option.label;
+      button.append(label);
+    }
 
     button.addEventListener('click', () => choose(option.value));
     list.append(button);
@@ -113,13 +132,15 @@ function fill(
   close.addEventListener('click', handlers.onCancel);
   header.append(title, close);
 
+  // The one group that still names itself: a face has to be seen to be judged,
+  // and its name set in itself is both the sample and the label.
   const fonts = optionGroup(
     words.appearanceFont,
     choicesIn(FONTS).map((value) => ({
       value,
+      name: FONTS[value].label,
       label: FONTS[value].label,
-      // Each face set in itself, and scaled the way the app scales it, so what
-      // he is looking at is what he would get.
+      // Scaled the way the app scales it, so what he sees is what he'd get.
       style: {
         fontFamily: FONTS[value].stack,
         fontSize: `${(15 * FONTS[value].scale).toFixed(1)}px`,
@@ -133,7 +154,9 @@ function fill(
     words.appearanceSize,
     choicesIn(SIZES).map((value) => ({
       value,
-      label: words.sizeNames[value],
+      name: words.sizeNames[value],
+      label: SIZE_SAMPLE,
+      className: 'size-choice',
       style: { fontSize: `${(13 * SIZES[value]).toFixed(1)}px` },
     })),
     chosen.size,
@@ -144,7 +167,8 @@ function fill(
     words.appearanceColour,
     choicesIn(ACCENTS).map((value) => ({
       value,
-      label: words.accentNames[value],
+      name: words.accentNames[value],
+      className: 'colour-choice',
       swatch: `hsl(${ACCENTS[value].hue} ${ACCENTS[value].saturation}% 45%)`,
     })),
     chosen.accent,
