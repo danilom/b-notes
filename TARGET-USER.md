@@ -46,6 +46,43 @@ With hundreds of notes, search is how he finds anything.
 - He likes to write down instructions for himself, though it's unclear whether he
   ever reads them back.
 
+## What his existing files show
+
+From a filename listing of a Simplenote backup (~590 live notes plus ~95 in
+trash). His titles are his first lines, so they are content and are not
+reproduced here.
+
+- **He already versions by filename, and it isn't working.** Stems repeat with
+  numeric prefixes, single-letter prefixes and roman numerals. More telling, he
+  writes *status* into titles: final version, last final version, penultimate,
+  first version of X, don't touch this, needs cleaning, and blunt self-assessments
+  like weak or worthless. He has nowhere else to record which draft is the good
+  one, so he puts it in the only field available. **A way to mark "this is the
+  current one" is a demonstrated need, not a speculative feature.**
+- **He manipulates sort order.** Sixteen files share a doubled-letter prefix that
+  floats them to the top alphabetically. He is fighting the list order to keep
+  things in reach.
+- **Roughly a fifth to a quarter of files are entangled** in variant clusters.
+  The largest stems run six to ten files; about twenty more are `(1)`-suffixed
+  pairs, which are sync artefacts rather than anything he chose. Most notes are
+  singletons — the mess is real but it is not the whole corpus.
+- **Diacritics are misplaced as often as omitted** — the same word appears with
+  the mark on different letters in different files. Folding must strip marks from
+  both query and text; supplying missing ones wouldn't match.
+- **Seventy-six notes are untitled**, ten live and sixty-six in trash. A
+  migration that imports them as empty entries ruins the first impression.
+- **Trash can be neither discarded nor trusted.** It holds ~95 files, several
+  duplicating live notes under identical titles.
+- **Titles are first lines truncated to about forty characters**, frequently
+  mid-word. Use the whole first line; the truncation is itself a reason he can't
+  tell two notes apart.
+- **Not everything is an essay.** Setup to-dos, birthdays, expenses, an invoice,
+  a travel timetable. The list has to accommodate short utility notes beside long
+  pieces.
+- **Case and spelling vary within a cluster** — the same subject appears in upper
+  and lower case, and proper names appear spelled two ways. Clustering has to be
+  case-insensitive and tolerant of near-misses.
+
 ## What has gone wrong before
 
 He has lost data, fully or partially, on many occasions. The causes were never
