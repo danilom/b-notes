@@ -23,6 +23,12 @@ ordinary undo doesn't.
 
 Threshold still to decide, and worth testing against real editing.
 
+It also gives us something to *show* him. Because we know what vanished at the
+moment it vanished, a restored version can be described in his own words —
+"removed 63 characters: *ne volim januar… polako odlaze*" — rather than making
+him diff two texts in his head. Recognising the missing sentence is a far easier
+task than comparing two near-identical drafts.
+
 ## P3 — Diacritic-insensitive search
 
 He writes Serbian in Latin script and often drops the diacritics, inconsistently:
