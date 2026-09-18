@@ -29,6 +29,21 @@ export interface PanelHandlers {
   onCancel: () => void;
 }
 
+/** A panel that is open, and the two things anyone outside it needs. */
+export interface OpenPanel {
+  close: () => void;
+  /**
+   * What he has chosen so far, which is not yet what is saved.
+   *
+   * The keyboard can change the size while this is open, and it has to step
+   * from what the panel is showing rather than from what is on disk — otherwise
+   * the two disagree about the current size and the panel writes a stale one
+   * back when he presses U redu.
+   */
+  current: () => Appearance;
+  change: (next: Appearance) => void;
+}
+
 interface OptionSpec<T extends string> {
   value: T;
   /** What this option is called. Always set, even where nothing is drawn. */
@@ -40,9 +55,6 @@ interface OptionSpec<T extends string> {
   style?: Partial<CSSStyleDeclaration>;
   swatch?: string;
 }
-
-/** Everything "back to the start" puts back, which is all of it. */
-const MODE_KEYS = ['font', 'zoom', 'accent', 'mode'] as const satisfies readonly (keyof Appearance)[];
 
 /** `Object.keys` widens to `string`, which loses every one of these unions. */
 function choicesIn<T extends string>(record: Record<T, unknown>): T[] {
@@ -167,13 +179,9 @@ function fill(
   chosen: Appearance,
   language: Language,
   handlers: PanelHandlers,
+  change: (next: Appearance) => void,
 ): void {
   const words = strings(language);
-
-  const change = (next: Appearance): void => {
-    handlers.onPreview(next);
-    fill(panel, next, language, handlers);
-  };
 
   const header = document.createElement('header');
   const title = document.createElement('h1');
@@ -242,7 +250,8 @@ function fill(
   reset.type = 'button';
   reset.className = 'reset';
   reset.textContent = words.appearanceReset;
-  reset.disabled = MODE_KEYS.every((key) => chosen[key] === DEFAULT_APPEARANCE[key]);
+  // Never disabled, whatever state things are in. It is the way out, and a way
+  // out that is sometimes unavailable is not one he can be told to rely on.
   reset.addEventListener('click', () => change({ ...DEFAULT_APPEARANCE }));
 
   const keep = document.createElement('button');
@@ -274,7 +283,7 @@ export function openAppearancePanel(
   appearance: Appearance,
   language: Language,
   handlers: PanelHandlers,
-): () => void {
+): OpenPanel {
   function onKey(event: KeyboardEvent): void {
     if (event.key === 'Escape') handlers.onCancel();
   }
@@ -290,7 +299,14 @@ export function openAppearancePanel(
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
 
-  fill(panel, appearance, language, handlers);
+  let working = appearance;
+  const change = (next: Appearance): void => {
+    working = next;
+    handlers.onPreview(next);
+    fill(panel, next, language, handlers, change);
+  };
+
+  fill(panel, working, language, handlers, change);
   container.replaceChildren(panel);
   container.hidden = false;
 
@@ -298,5 +314,5 @@ export function openAppearancePanel(
   // him nothing, but here it would throw away colours he was still choosing.
   document.addEventListener('keydown', onKey);
 
-  return close;
+  return { close, current: () => working, change };
 }

@@ -23,7 +23,7 @@ describe('how large he has made everything', () => {
       climbed.push(at);
     }
     // Exactly Chrome's own ladder over this range: no 121%, no 146%.
-    assert.deepEqual(climbed, [0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5]);
+    assert.deepEqual(climbed, [0.9, 1, 1.1, 1.25, 1.5, 1.75, 2]);
   });
 
   it('brings a size written by some other build onto the nearest real step', () => {

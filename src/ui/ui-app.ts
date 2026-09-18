@@ -5,7 +5,7 @@ import { BUILD_STAMP } from '../platform/build-info.ts';
 import type { Host } from '../platform/host.ts';
 import type { Log } from '../platform/logging.ts';
 import { type Appearance, DEFAULT_APPEARANCE, applyAppearance, stepZoom } from './appearance.ts';
-import { openAppearancePanel } from './appearance-panel.ts';
+import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
 import { readSession, writeSession } from './app-session.ts';
 import {
   type Settings,
@@ -69,7 +69,7 @@ let store: ReturnType<typeof createNoteStore>;
 
 let settings: Settings;
 let saveSettings: (settings: Settings) => void;
-let closeAppearance: (() => void) | null = null;
+let appearancePanel: OpenPanel | null = null;
 
 /**
  * Puts an appearance on screen, both halves of it.
@@ -201,9 +201,9 @@ newNote.addEventListener('click', () => {
 });
 
 function showAppearance(): void {
-  if (closeAppearance !== null) return;
+  if (appearancePanel !== null) return;
 
-  closeAppearance = openAppearancePanel(appearancePane, settings, language, {
+  appearancePanel = openAppearancePanel(appearancePane, settings, language, {
     // Shown, not kept. Nothing reaches the disk until he says so.
     onPreview: showAppearanceOf,
 
@@ -224,8 +224,8 @@ function showAppearance(): void {
 }
 
 function hideAppearance(): void {
-  closeAppearance?.();
-  closeAppearance = null;
+  appearancePanel?.close();
+  appearancePanel = null;
   appearanceButton.focus();
 }
 
@@ -242,14 +242,26 @@ appearanceButton.addEventListener('click', showAppearance);
 window.addEventListener('keydown', (event) => {
   if (!event.ctrlKey || event.altKey || event.metaKey) return;
 
+  // Stepped from whatever is on screen, which is the panel's working copy while
+  // it is open and the saved settings otherwise. Reading the wrong one leaves
+  // the panel showing a size the app is no longer at.
+  const showing = appearancePanel?.current() ?? settings;
   const zoom =
-    event.key === '+' || event.key === '=' ? stepZoom(settings.zoom, 1)
-    : event.key === '-' ? stepZoom(settings.zoom, -1)
+    event.key === '+' || event.key === '=' ? stepZoom(showing.zoom, 1)
+    : event.key === '-' ? stepZoom(showing.zoom, -1)
     : event.key === '0' ? DEFAULT_APPEARANCE.zoom
     : null;
   if (zoom === null) return;
 
   event.preventDefault();
+
+  // With the panel open this is one more thing he is trying out, undone by
+  // Otkaži like any other. With it closed there is nothing to undo it later,
+  // so it is kept there and then.
+  if (appearancePanel !== null) {
+    appearancePanel.change({ ...showing, zoom });
+    return;
+  }
   settings = { ...settings, zoom };
   showAppearanceOf(settings);
   saveSettings(settings);

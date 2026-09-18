@@ -407,18 +407,37 @@
         width: min(32rem, 100%);
         max-height: 100%;
         overflow-y: auto;
-        padding: 1.1rem 1.4rem 1.6rem;
+        /* No vertical padding of its own: the pinned header and footer carry
+           it, so nothing scrolls out from under them. */
+        padding: 0 1.4rem;
         border: 1px solid var(--line);
         border-radius: 8px;
         background: var(--page);
         box-shadow: 0 12px 44px hsl(var(--accent-h) var(--surface) var(--l-shadow) / var(--shadow-alpha));
       }
 
+      /*
+        Pinned to the top and bottom of the panel, not scrolled with it.
+
+        At 200% on a small window the choices are taller than the panel, and a
+        way out that has scrolled off the screen is not a way out. The X and
+        Vrati na početno stay where they are whatever is happening between them.
+      */
+      .panel header,
+      .panel footer {
+        position: sticky;
+        z-index: 1;
+        background: var(--page);
+      }
+
       .panel header {
+        top: 0;
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 1rem;
+        padding: 1.1rem 0 0.7rem;
+        border-bottom: 1px solid var(--line);
       }
 
       .close {
@@ -434,15 +453,23 @@
       }
 
       .panel footer {
+        bottom: 0;
         display: flex;
+        flex-wrap: wrap;
+        align-items: center;
         justify-content: flex-end;
         gap: 0.5rem;
-        margin-top: 1.6rem;
+        margin-top: 1.4rem;
+        padding: 0.8rem 0 1.1rem;
+        border-top: 1px solid var(--line);
       }
 
-      /* Pushed to the far end, so it is never what he hits going for U redu. */
+      /* Pushed to the far end, so it is never what he hits going for U redu.
+         Never allowed to wrap: at 200% it folded onto three lines and shoved
+         the buttons beside it off the panel. */
       .reset {
         margin-right: auto;
+        white-space: nowrap;
         border-color: transparent;
         background: none;
         color: var(--quiet);
@@ -452,11 +479,6 @@
         border-color: var(--line);
         background: var(--panel);
         color: var(--ink);
-      }
-
-      .reset:disabled {
-        opacity: 0.35;
-        cursor: default;
       }
 
       .panel footer button {
@@ -480,7 +502,7 @@
       }
 
       .panel h2 {
-        margin: 1.2rem 0 0.5rem;
+        margin: 1.1rem 0 0.5rem;
         font-size: 0.78em;
         font-weight: 600;
         letter-spacing: 0.06em;

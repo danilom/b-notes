@@ -68,10 +68,12 @@ export const FONTS = {
  * him in its own display settings.
  *
  * The full ladder runs 25% to 500%. Below 80% the app is smaller than it has
- * any business being for him; above 250% the left pane eats the window and a
- * title is three words wide.
+ * any business being for him. 200% is the top because 250% was tried and is
+ * absurd: the panel outgrows the window it sits in, and a title is two words
+ * wide. 200% is already generous, and Windows has its own display scaling for
+ * anyone who needs more than that.
  */
-export const ZOOM_STEPS = [0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5] as const;
+export const ZOOM_STEPS = [0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2] as const;
 
 export const MIN_ZOOM = ZOOM_STEPS[0];
 export const MAX_ZOOM = ZOOM_STEPS[ZOOM_STEPS.length - 1] ?? 1;
