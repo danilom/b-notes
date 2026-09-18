@@ -90,7 +90,11 @@ app.on('window-all-closed', () => {
  * awaiting `whenReady()` at the top level deadlocks and no window ever opens.
  */
 async function start(): Promise<void> {
+  // Dev and installed runs share one log file, so each run has to say which it
+  // is — otherwise entries from a build being worked on look identical to
+  // entries from the build he's actually using.
   log.info('Starting', {
+    mode: app.isPackaged ? 'installed' : 'development',
     version: app.getVersion(),
     build: BUILD_STAMP,
     electron: process.versions.electron,
