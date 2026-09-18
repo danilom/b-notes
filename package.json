@@ -12,8 +12,7 @@
     "ui": "node scripts/build.mjs && node scripts/serve.mjs",
     "typecheck": "tsc",
     "test": "node --test",
-    "dist": "node scripts/clean.mjs && node scripts/build.mjs && electron-builder",
-    "release": "node scripts/clean.mjs && node scripts/build.mjs && electron-builder --publish always"
+    "dist": "node scripts/clean.mjs && node scripts/build.mjs && electron-builder"
   },
   "devDependencies": {
     "@types/node": "^26.6.1",

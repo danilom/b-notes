@@ -47,12 +47,16 @@ When the tradeoff is between "powerful" and "impossible to get wrong", choose im
 1. Bump `version` in `package.json` and commit. electron-updater compares versions, so an unbumped build is invisible to it.
 2. `npm run dist` builds the installer locally into `release/` without publishing. Test it.
 3. **Tag that commit and push the tag** (`git tag -a v0.1.3 -m "Version 0.1.3" && git push origin v0.1.3`). GitHub refuses to create a non-draft release without an existing tag, and `releaseType: release` means ours are never drafts. Skip this and electron-builder tags the *default branch* instead, producing a release that points at code you didn't build.
-4. `npm run release` builds and uploads. Needs `GH_TOKEN` in the environment, a token with `public_repo` scope. That token is only for uploading — the app reads public releases anonymously and none is ever bundled into it.
-5. **Check the release actually has all three assets**: the installer, its `.blockmap`, and `latest.yml`. electron-builder runs two publishers in parallel and they interfere; it has twice uploaded an incomplete set while reporting success, dropping a different file each time. A missing `latest.yml` means no client can update at all; a missing `.blockmap` silently costs a full 98MB download instead of a differential one. If anything is absent, upload from `release/` by hand — those files are internally consistent, so don't rebuild, because a rebuild changes the installer's hash and desyncs it from what's already uploaded:
+4. Publish with `gh`, not electron-builder:
 
-   `gh release upload v0.1.3 release/*.exe release/latest.yml release/*.blockmap --clobber`
+   `gh release create v0.1.5 --title v0.1.5 --notes "" release/b-notes-setup-*.exe release/latest.yml release/*.blockmap`
 
+   Add `--clobber` via `gh release upload` instead if the release already exists.
+
+5. **Check the release has all three assets** — the installer, its `.blockmap`, and `latest.yml` — and that `latest.yml`'s `sha512` matches the local one. A missing `latest.yml` means no client can update at all; a missing `.blockmap` silently costs a full 98MB download instead of a differential one.
 6. Expect up to a minute of 404s on the asset URLs afterwards; that's CDN propagation, not a failed upload.
+
+**Don't use electron-builder's `--publish`.** It runs two publishers in parallel that race to create the release: one wins, the other dies with a 422, and the run aborts before generating `latest.yml` — leaving a release no client can update from. It failed this way on all four attempts, each time dropping a different file while reporting some success. `npm run dist` produces a complete, internally consistent set every time; uploading it with `gh` is the reliable path.
 
 ## Logging
 
