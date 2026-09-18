@@ -102,16 +102,22 @@ ipcMain.on('log:write', (_event, level: unknown, message: unknown, detail: unkno
  *
  * Off his screen rather than a fixed number of pixels, because the same count
  * is a comfortable window on one of his machines and nearly all of the screen
- * on another. Half the work area leaves the list and the writing both usable.
- * The floor stops a small screen from setting a minimum the layout can't fit
- * in; the cap stops a large one from insisting on a window bigger than he might
- * reasonably want.
+ * on another.
+ *
+ * Three quarters of the work area: near enough to full that the list and the
+ * writing both keep the room they were designed for, and a window he has
+ * dragged smaller is still plainly this app rather than a sliver. The floor
+ * stops a small screen from setting a minimum the layout cannot fit into; the
+ * cap stops a very large one from insisting on a window he could never make
+ * smaller at all.
  */
+const SMALLEST_SHARE = 0.75;
+
 function smallestWindow(): { width: number; height: number } {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
   return {
-    width: Math.round(Math.min(1200, Math.max(760, width / 2))),
-    height: Math.round(Math.min(800, Math.max(500, height / 2))),
+    width: Math.round(Math.min(1600, Math.max(760, width * SMALLEST_SHARE))),
+    height: Math.round(Math.min(1000, Math.max(500, height * SMALLEST_SHARE))),
   };
 }
 
