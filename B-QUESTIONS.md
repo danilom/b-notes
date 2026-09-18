@@ -51,6 +51,13 @@ are for refining it afterwards.
 
 - How many texts does he have now? (The 2021 Simplenote backup had ~600.)
 - How many are near-duplicates of each other? This sizes the migration problem.
+- **What shape do the near-duplicates take?** Measurable on the existing sample,
+  and it decides whether a variant is a version or a separate text. Refinement
+  drafts differ by small edits scattered throughout; ideas that diverged share an
+  opening and then part ways. If the first pattern dominates, copies are debris
+  that can collapse behind one live text. If the second is common, they're
+  separate work and must stay separate. Worth measuring before designing the
+  structure rather than deciding from intuition.
 - Where do the files actually live — Dropbox, local folders, ResophNotes' own
   storage, or all three?
 - Which format is authoritative: `.txt`/`.md`, or ResophNotes XML?
