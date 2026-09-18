@@ -1,6 +1,7 @@
 import { BrowserWindow, app, ipcMain } from 'electron';
 import path from 'node:path';
 
+import { BUILD_STAMP } from '../shared/build-info.ts';
 import { LOG_LEVELS, createFileLogger } from './log.ts';
 import { createFileNoteStore } from './note-store.ts';
 import { startUpdateChecks } from './updates.ts';
@@ -89,7 +90,12 @@ app.on('window-all-closed', () => {
  * awaiting `whenReady()` at the top level deadlocks and no window ever opens.
  */
 async function start(): Promise<void> {
-  log.info('Starting', { version: app.getVersion(), electron: process.versions.electron, notesDir });
+  log.info('Starting', {
+    version: app.getVersion(),
+    build: BUILD_STAMP,
+    electron: process.versions.electron,
+    notesDir,
+  });
   await app.whenReady();
   await createWindow();
   log.info('Window open');
