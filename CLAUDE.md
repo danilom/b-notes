@@ -4,7 +4,7 @@ You are working as a senior TypeScript developer. Write production-quality code 
 
 ## Who this is for
 
-brano-notes is a Windows desktop app for editing long-form essays. It has exactly one user: an elderly relative who has used computers for 20+ years but has no firm grasp of opening and saving files, and is shaky on copy/paste.
+brano-notes is a Windows desktop app for editing long-form essays. It's built for a single user who is a longtime computer user but not comfortable with file management, and who shouldn't have to think about where text lives or how it gets saved.
 
 Every design decision follows from this:
 
@@ -13,6 +13,9 @@ Every design decision follows from this:
 - No jargon in UI text. No modal that can be dismissed into a wrong state.
 - Errors are our problem, not his — recover silently where possible; never surface a stack trace, error code, or a question he can't answer.
 - Files live in a Dropbox folder so they're backed up and synced. He must never need to know that.
+- He uses several machines, including old ones, and tends to reach for the slowest. Assume a 4GB spinning-disk laptop: keep the renderer lean and don't pull in heavy UI or editor libraries.
+- Because several machines sync the same folder, Dropbox *will* eventually produce conflicted copies (`essay (Brano's conflicted copy 2026-09-18).md`). Detect them, never show him that filename, and resolve them without asking him to choose between two files he can't tell apart. This is the most likely way he loses work.
+- A laptop left off for months comes back running an old build. An older version must never corrupt a file written by a newer one, so keep the on-disk format boring and forward-compatible.
 
 When the tradeoff is between "powerful" and "impossible to get wrong", choose impossible to get wrong.
 
@@ -21,6 +24,15 @@ When the tradeoff is between "powerful" and "impossible to get wrong", choose im
 - Electron + TypeScript. The Electron version is pinned deliberately: the app is local-files-only with no network and no untrusted content, so there is no pressure to chase Chromium updates. Don't upgrade it without a concrete reason.
 - Storage sits behind one small async interface with two implementations: a mock backed by `localStorage`, for developing the UI in a plain browser, and the real one over IPC to the main process. The interface is async in both, so call sites never change when they're swapped.
 - Keep Electron APIs (`app.getPath`, `dialog`, …) at the edges. Core logic takes paths as parameters so it runs — and can be tested — under plain Node.
+- Target Windows 10 and later, so there's no Electron version ceiling. (Electron 23+ dropped Windows 7/8; not a constraint for us.)
+- Consider `app.disableHardwareAcceleration()` — on old Intel GPUs it tends to fix rendering glitches as well as reduce load.
+
+## Distribution
+
+- Public GitHub repo. No secrets in it, and nothing identifying: the Dropbox folder location comes from config or first-run detection, never a hardcoded path.
+- Packaged with `electron-builder` (NSIS); updates via `electron-updater` pointed at GitHub Releases. No tokens, no signing certificate.
+- Unsigned is deliberate. The initial install is done in person, so the one-time SmartScreen prompt is absorbed then; later updates are fetched by the app itself and carry no Mark-of-the-Web, so they apply silently. The tradeoff is that `verifySignature` is skipped and integrity rests on HTTPS.
+- Updates must be invisible: `autoDownload: true`, `autoInstallOnAppQuit: true`. Never prompt him to install, and never call `quitAndInstall()` while he's editing.
 
 ## TypeScript
 
