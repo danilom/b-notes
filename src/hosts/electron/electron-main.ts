@@ -98,48 +98,51 @@ ipcMain.on('log:write', (_event, level: unknown, message: unknown, detail: unkno
 });
 
 /**
- * Maximises the window, then takes its maximise button away.
+ * The smallest he is allowed to make the window.
  *
- * One shape of window, and he cannot change it: maximised is the only size
- * where the list and his writing both have room, and a window shrunk to a
- * sliver by a stray drag is, to him, work that has gone. Minimise stays, since
- * he reopens from the pinned taskbar icon and there is no tray for it to
- * vanish into the way ResophNotes had.
- *
- * The order is the part that matters, and it is not guessable. Windows works
- * out maximised geometry from the window's style at the moment it maximises,
- * and a window with no maximise box is sized to exactly the work area instead
- * of overhanging it by the border width. Its borders then stay on screen as a
- * pale strip above the taskbar, and it costs 13x14 pixels of his writing.
- * Maximising while the button still exists and removing it afterwards keeps
- * the right geometry and still greys the button out.
+ * Off his screen rather than a fixed number of pixels, because the same count
+ * is a comfortable window on one of his machines and nearly all of the screen
+ * on another. Half the work area leaves the list and the writing both usable.
+ * The floor stops a small screen from setting a minimum the layout can't fit
+ * in; the cap stops a large one from insisting on a window bigger than he might
+ * reasonably want.
  */
-function maximizeFully(window: BrowserWindow): void {
-  window.setMaximizable(true);
-  window.maximize();
-  window.setMaximizable(false);
+function smallestWindow(): { width: number; height: number } {
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  return {
+    width: Math.round(Math.min(1200, Math.max(760, width / 2))),
+    height: Math.round(Math.min(800, Math.max(500, height / 2))),
+  };
 }
 
 let mainWindow: BrowserWindow | null = null;
 
 async function createWindow(): Promise<BrowserWindow> {
+  const smallest = smallestWindow();
   const window = new BrowserWindow({
-    // Only ever the restored size, which he should never see. Kept sane in case
-    // a display change leaves Windows no work area to maximise into.
+    // The size he gets if he un-maximises, and the floor under any resize.
     width: 1100,
     height: 800,
+    minWidth: smallest.width,
+    minHeight: smallest.height,
     show: false,
     webPreferences: {
       preload: path.join(import.meta.dirname, 'preload.cjs'),
     },
   });
 
-  maximizeFully(window);
+  /*
+    Starts maximised, and that is as far as it goes.
 
-  // A disabled maximise button is not the only way out of maximised: Win+Down,
-  // Aero Snap and a double-click on the title bar all do it too. Whichever
-  // route it takes, it goes straight back.
-  window.on('unmaximize', () => maximizeFully(window));
+    Holding it there was tried and reverted. Disabling the maximise button makes
+    Windows size the window to exactly the work area rather than overhanging it
+    by the border width, so the borders stay on screen as a pale strip above the
+    taskbar; maximising before removing the button fixes that on startup but not
+    after a minimise, restore or snap, each of which re-maximises under the
+    style that is current by then. A minimum size does the thing that actually
+    mattered — he cannot shrink it to a sliver — without any of that.
+  */
+  window.maximize();
 
   mainWindow = window;
   window.on('closed', () => {
@@ -187,6 +190,7 @@ async function start(): Promise<void> {
   log.info('Window open', {
     maximized: window.isMaximized(),
     bounds: window.getBounds(),
+    minimum: window.getMinimumSize(),
     workArea: screen.getPrimaryDisplay().workArea,
     scale: screen.getPrimaryDisplay().scaleFactor,
   });
