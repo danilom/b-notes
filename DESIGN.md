@@ -5,11 +5,12 @@ ships, and what it records. General coding rules live in `CLAUDE.md`.
 
 ## Who this is for
 
-b-notes is a Windows desktop app for editing long-form essays. It has exactly one user: an elderly relative who has used computers for 20+ years but has no firm grasp of opening and saving files, and is shaky on copy/paste.
+b-notes is a Windows desktop app for editing long-form essays, built for one
+specific person. **`TARGET-USER.md` describes him, how he works, what has gone
+wrong before, and what the app therefore has to be.** Read it first — it is the
+specification, and this file only covers what follows from it technically.
 
-These constraints are the specification. Without them there'd be no reason to build this instead of using one of the many existing editors, so state them plainly and specifically — a vague constraint can't be designed against. Expect this list to grow.
-
-Every design decision follows from this:
+The consequences that shape the code:
 
 - He should never see a file dialog, a filesystem path, or the word "save".
 - His work must never be lost. Autosave is the only save.
@@ -20,6 +21,7 @@ Every design decision follows from this:
 - Because several machines sync the same folder, Dropbox *will* eventually produce conflicted copies (`essay (Brano's conflicted copy 2026-09-18).md`). Detect them, never show him that filename, and resolve them without asking him to choose between two files he can't tell apart. This is the most likely way he loses work.
 - A laptop left off for months comes back running an old build. An older version must never corrupt a file written by a newer one, so keep the on-disk format boring and forward-compatible.
 - Only ever one instance. When nothing appears to happen he will click the icon again, and two copies autosaving into the same folder race each other.
+- A window he cannot see is, to him, work that is gone. Window behaviour is a data-safety concern here, not polish.
 
 When the tradeoff is between "powerful" and "impossible to get wrong", choose impossible to get wrong.
 
