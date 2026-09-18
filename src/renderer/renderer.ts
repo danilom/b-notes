@@ -1,7 +1,9 @@
-import { APP_VERSION, BUILD_STAMP } from '../shared/build-info.ts';
+import { BUILD_STAMP } from '../shared/build-info.ts';
 import type { RendererLog } from '../shared/logging.ts';
-import type { NoteStore } from '../shared/notes.ts';
+import type { Note, NoteStore } from '../shared/notes.ts';
+import { type Language, describeWhen, strings } from '../shared/strings.ts';
 import { createMockNoteStore } from './mock-store.ts';
+import { renderList } from './note-list.ts';
 
 declare global {
   interface Window {
@@ -9,6 +11,13 @@ declare global {
     log?: RendererLog;
   }
 }
+
+/** Long enough that he isn't saved mid-word, short enough to never lose a thought. */
+const AUTOSAVE_IDLE_MS = 800;
+const LAST_OPEN_KEY = 'b-notes:last-open';
+
+const language: Language = 'sr';
+const words = strings(language);
 
 /**
  * In a browser tab there's no preload script and so no bridge to the log file.
@@ -40,31 +49,137 @@ window.addEventListener('unhandledrejection', (event) => {
   log.error('Unhandled rejection in renderer', describeError(event.reason));
 });
 
-function element(id: string): HTMLElement {
+function element<T extends Element>(id: string, kind: new () => T): T {
   const found = document.getElementById(id);
-  if (found === null) throw new Error(`Missing element: #${id}`);
+  if (!(found instanceof kind)) throw new Error(`Missing element: #${id}`);
   return found;
 }
 
-/**
- * The preload script only exists inside Electron, so its absence is what marks
- * a plain browser tab and selects the mock backend.
- */
+const listPane = element('list', HTMLDivElement);
+const editor = element('editor', HTMLTextAreaElement);
+const status = element('status', HTMLDivElement);
+const search = element('search', HTMLInputElement);
+const newNote = element('new-note', HTMLButtonElement);
+
 const preloaded = window.notes;
 const store: NoteStore = preloaded ?? createMockNoteStore();
 
-async function report(): Promise<void> {
-  element('backend').textContent = preloaded ? 'filesystem (via IPC)' : 'localStorage mock';
-  element('build').textContent = `${APP_VERSION} (${BUILD_STAMP})`;
+let notes: Note[] = [];
+let openId: string | null = null;
+let savedAt: number | null = null;
+let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
-  try {
-    const notes = await store.list();
-    element('count').textContent = String(notes.length);
-    log.info('Listed notes', { count: notes.length, backend: preloaded ? 'ipc' : 'mock' });
-  } catch (error) {
-    element('count').textContent = 'failed — see log';
-    log.error('Could not list notes', describeError(error));
-  }
+function draw(): void {
+  renderList(listPane, { notes, query: search.value, openId, language });
 }
 
-void report();
+function showStatus(): void {
+  if (openId === null && editor.value.trim().length === 0) {
+    status.textContent = words.startWriting;
+    return;
+  }
+  if (saveTimer !== undefined) {
+    status.textContent = words.saving;
+    return;
+  }
+  status.textContent =
+    savedAt === null
+      ? words.notSaved
+      : words.savedAgo(describeWhen(savedAt, language));
+}
+
+async function saveNow(): Promise<void> {
+  const text = editor.value;
+  const id = await store.save(openId, text);
+  if (id === null) return;
+
+  const wasNew = openId === null;
+  openId = id;
+  savedAt = Date.now();
+  window.localStorage.setItem(LAST_OPEN_KEY, id);
+
+  // Reload rather than patch: saving can rename the note, which moves it in the
+  // list, and a stale entry is exactly the kind of thing that reads as loss.
+  notes = await store.list();
+  draw();
+  showStatus();
+  if (wasNew) log.info('Created a text', { id });
+}
+
+function scheduleSave(): void {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    saveTimer = undefined;
+    saveNow().catch((error: unknown) => {
+      status.textContent = words.notSaved;
+      log.error('Could not save', describeError(error));
+    });
+  }, AUTOSAVE_IDLE_MS);
+  showStatus();
+}
+
+async function open(id: string): Promise<void> {
+  if (saveTimer !== undefined) {
+    clearTimeout(saveTimer);
+    saveTimer = undefined;
+    await saveNow();
+  }
+
+  const note = notes.find((candidate) => candidate.id === id);
+  if (note === undefined) return;
+
+  openId = id;
+  editor.value = note.text;
+  savedAt = note.updatedAt;
+  window.localStorage.setItem(LAST_OPEN_KEY, id);
+  editor.setSelectionRange(0, 0);
+  editor.scrollTop = 0;
+  draw();
+  showStatus();
+  log.info('Opened a text', { id });
+}
+
+listPane.addEventListener('click', (event) => {
+  const row = (event.target as Element | null)?.closest('.note');
+  const id = row instanceof HTMLElement ? row.dataset['id'] : undefined;
+  if (id !== undefined) void open(id);
+});
+
+editor.addEventListener('input', scheduleSave);
+
+search.addEventListener('input', () => {
+  draw();
+});
+
+newNote.addEventListener('click', () => {
+  openId = null;
+  savedAt = null;
+  editor.value = '';
+  window.localStorage.removeItem(LAST_OPEN_KEY);
+  draw();
+  showStatus();
+  editor.focus();
+  log.info('Started a new text');
+});
+
+async function start(): Promise<void> {
+  newNote.textContent = words.newNote;
+  search.placeholder = words.searchPlaceholder;
+  search.setAttribute('aria-label', words.searchLabel);
+
+  notes = await store.list();
+
+  // Reopen what he was last in. The search is deliberately not restored — a
+  // filtered list on startup looks exactly like texts having gone missing.
+  const last = window.localStorage.getItem(LAST_OPEN_KEY);
+  if (last !== null && notes.some((note) => note.id === last)) {
+    await open(last);
+  } else {
+    draw();
+    showStatus();
+  }
+
+  log.info('Ready', { build: BUILD_STAMP, notes: notes.length, backend: preloaded ? 'ipc' : 'mock' });
+}
+
+void start();

@@ -1,8 +1,9 @@
-export interface NoteSummary {
+export interface Note {
   /** The filename. Storage detail — he never sees it. */
   id: string;
-  /** His own first line, which is the only title there is. */
+  /** Built from the start of his text; there is no title anywhere else. */
   title: string;
+  text: string;
   updatedAt: number;
   bytes: number;
 }
@@ -15,12 +16,16 @@ export interface NoteSummary {
  * `localStorage` during UI work.
  */
 export interface NoteStore {
-  list(): Promise<NoteSummary[]>;
+  /**
+   * Every note, text included. His whole corpus is under 3MB, so holding it in
+   * memory makes searching instant and costs nothing worth measuring.
+   */
+  list(): Promise<Note[]>;
   read(id: string): Promise<string>;
   /**
    * Writes the text, creating the note when `id` is null and renaming it when
-   * his first line changed. Returns the note's id, which may differ from the one
-   * passed in, or null when there was nothing worth creating.
+   * his opening lines changed. Returns the note's id, which may differ from the
+   * one passed in, or null when there was nothing worth creating.
    */
   save(id: string | null, text: string): Promise<string | null>;
 }

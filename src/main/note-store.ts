@@ -1,7 +1,7 @@
 import { mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import type { NoteStore, NoteSummary } from '../shared/notes.ts';
+import type { Note, NoteStore } from '../shared/notes.ts';
 import { titleFrom } from '../shared/title.ts';
 
 /**
@@ -153,7 +153,7 @@ export async function sweepEmptiedNotes(dir: string): Promise<number> {
 
 export function createFileNoteStore(dir: string): NoteStore {
   return {
-    async list(): Promise<NoteSummary[]> {
+    async list(): Promise<Note[]> {
       await mkdir(dir, { recursive: true });
       const entries = await readdir(dir, { withFileTypes: true });
 
@@ -163,7 +163,7 @@ export function createFileNoteStore(dir: string): NoteStore {
             (entry) =>
               entry.isFile() && entry.name.endsWith(EXTENSION) && !isConflictedCopy(entry.name),
           )
-          .map(async (entry): Promise<NoteSummary> => {
+          .map(async (entry): Promise<Note> => {
             const file = path.join(dir, entry.name);
             const [info, text] = await Promise.all([stat(file), readFile(file, 'utf8')]);
             return {
@@ -171,6 +171,7 @@ export function createFileNoteStore(dir: string): NoteStore {
               // From the text, not the filename: the filename is sanitised and
               // may carry a disambiguating suffix he never wrote.
               title: titleFrom(text),
+              text,
               updatedAt: info.mtimeMs,
               bytes: info.size,
             };

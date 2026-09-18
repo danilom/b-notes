@@ -165,6 +165,7 @@ await rm(OUT, { recursive: true, force: true });
 await mkdir(OUT, { recursive: true });
 
 const used = new Set();
+const written = new Map();
 let stubs = 0;
 let empties = 0;
 let duplicates = 0;
@@ -195,8 +196,23 @@ for (const note of notes) {
   const file = path.join(OUT, `${name}.txt`);
   await writeFile(file, content, 'utf8');
   await utimes(file, note.modified, note.modified);
+  written.set(name, { content, modified: note.modified });
   total += Buffer.byteLength(content, 'utf8');
 }
+
+// A trimmed copy for the browser, where the UI is developed. Same titles, dates
+// and count; bodies cut short so the whole thing fits in localStorage. Editor
+// behaviour on a 145KB essay has to be judged in the real app, not here.
+const BROWSER_BODY_LIMIT = 400;
+const browser = [];
+for (const [name, note] of written) {
+  browser.push({
+    id: `${name}.txt`,
+    text: note.content.slice(0, BROWSER_BODY_LIMIT),
+    updatedAt: note.modified.getTime(),
+  });
+}
+await writeFile(path.join(path.dirname(OUT), 'corpus.json'), JSON.stringify(browser), 'utf8');
 
 const sizes = notes.map((n) => n.bytes).sort((a, b) => a - b);
 console.log(`wrote ${notes.length} files to ${OUT}`);

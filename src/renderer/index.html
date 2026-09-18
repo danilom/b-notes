@@ -1,27 +1,205 @@
 <!doctype html>
-<html lang="en">
+<html lang="sr">
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'" />
     <title>b-notes</title>
     <style>
-      body {
-        font-family: system-ui, sans-serif;
-        margin: 2rem;
-        line-height: 1.5;
+      :root {
+        --ink: #1a1a1a;
+        --quiet: #5c5c5c;
+        --faint: #9a9a9a;
+        --line: #d4d4d4;
+        --page: #ffffff;
+        --panel: #f4f3f1;
+        --chosen: #1d5fa8;
+        --chosen-soft: #dbe8f7;
+        --text-size: 18px;
       }
-      code {
-        background: #f0f0f0;
-        padding: 0.1em 0.3em;
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        display: flex;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: var(--text-size);
+        color: var(--ink);
+        background: var(--page);
+      }
+
+      /* ---- left: finding things ---- */
+
+      #side {
+        width: 22rem;
+        min-width: 16rem;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid var(--line);
+        background: var(--panel);
+      }
+
+      #top {
+        padding: 0.9rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.7rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      button {
+        font: inherit;
+        padding: 0.6rem 0.9rem;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        background: #fff;
+        color: var(--ink);
+        cursor: pointer;
+      }
+
+      button:hover {
+        border-color: var(--quiet);
+      }
+
+      #new-note {
+        font-weight: bold;
+        background: var(--chosen);
+        border-color: var(--chosen);
+        color: #fff;
+      }
+
+      #search-row {
+        display: flex;
+        gap: 0.4rem;
+        align-items: center;
+      }
+
+      #search {
+        font: inherit;
+        flex: 1;
+        min-width: 0;
+        padding: 0.55rem 0.6rem;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        background: #fff;
+        color: var(--ink);
+      }
+
+      #list {
+        flex: 1;
+        overflow-y: auto;
+        padding-bottom: 2rem;
+      }
+
+      .section {
+        padding: 1rem 0.9rem 0.3rem;
+        font-family: system-ui, sans-serif;
+        font-size: 0.75em;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--quiet);
+      }
+
+      .note {
+        padding: 0.5rem 0.9rem;
+        cursor: pointer;
+        border-left: 4px solid transparent;
+        display: flex;
+        justify-content: space-between;
+        gap: 0.6rem;
+        align-items: baseline;
+      }
+
+      .note:hover {
+        background: #eceae7;
+      }
+
+      .note[aria-current='true'] {
+        background: var(--chosen-soft);
+        border-left-color: var(--chosen);
+      }
+
+      .note-title {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .note-when {
+        font-family: system-ui, sans-serif;
+        font-size: 0.7em;
+        color: var(--faint);
+        white-space: nowrap;
+      }
+
+      /* Never removed from the list, only pushed down and dimmed. */
+      .note.aside {
+        opacity: 0.45;
+      }
+
+      .empty {
+        padding: 1rem 0.9rem;
+        color: var(--quiet);
+        font-style: italic;
+      }
+
+      /* ---- right: writing ---- */
+
+      #main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      #status {
+        padding: 0.7rem 1.4rem;
+        border-bottom: 1px solid var(--line);
+        font-family: system-ui, sans-serif;
+        font-size: 0.8em;
+        color: var(--quiet);
+        min-height: 2.6rem;
+        display: flex;
+        align-items: center;
+      }
+
+      #editor {
+        font: inherit;
+        flex: 1;
+        width: 100%;
+        padding: 1.6rem 2rem;
+        border: 0;
+        outline: 0;
+        resize: none;
+        line-height: 1.65;
+        color: var(--ink);
+        background: var(--page);
       }
     </style>
   </head>
   <body>
-    <h1>b-notes</h1>
-    <p>Scaffold only — no interface yet.</p>
-    <p>Storage backend: <code id="backend">checking…</code></p>
-    <p>Notes found: <code id="count">checking…</code></p>
-    <p>Version <code id="build">checking…</code></p>
+    <div id="side">
+      <div id="top">
+        <button id="new-note" type="button"></button>
+        <div id="search-row">
+          <input id="search" type="search" autocomplete="off" />
+        </div>
+      </div>
+      <div id="list"></div>
+    </div>
+
+    <div id="main">
+      <div id="status"></div>
+      <textarea id="editor" spellcheck="false"></textarea>
+    </div>
+
     <script src="renderer.js"></script>
   </body>
 </html>

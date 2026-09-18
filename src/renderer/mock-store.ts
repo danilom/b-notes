@@ -1,4 +1,4 @@
-import type { NoteStore, NoteSummary } from '../shared/notes.ts';
+import type { Note, NoteStore } from '../shared/notes.ts';
 import { titleFrom } from '../shared/title.ts';
 
 const KEY = 'b-notes:mock';
@@ -46,13 +46,33 @@ function freeId(notes: Map<string, MockNote>, title: string, own: string | null)
  * browser. Deliberately not a faithful simulation of Dropbox behaviour — it has
  * no conflicted copies and no sync latency.
  */
+/**
+ * Fills an empty browser with the generated test corpus, so the list can be
+ * judged against six hundred texts rather than five. Silently does nothing if
+ * the file isn't being served — that's the ordinary case outside development.
+ */
+async function seedIfEmpty(): Promise<void> {
+  if (load().size > 0) return;
+
+  const response = await fetch('corpus.json').catch(() => null);
+  if (response === null || !response.ok) return;
+
+  const seeded = new Map<string, MockNote>();
+  for (const entry of (await response.json()) as { id: string; text: string; updatedAt: number }[]) {
+    seeded.set(entry.id, { text: entry.text, updatedAt: entry.updatedAt });
+  }
+  store(seeded);
+}
+
 export function createMockNoteStore(): NoteStore {
   return {
-    async list(): Promise<NoteSummary[]> {
+    async list(): Promise<Note[]> {
+      await seedIfEmpty();
       return [...load()]
         .map(([id, note]) => ({
           id,
           title: titleFrom(note.text),
+          text: note.text,
           updatedAt: note.updatedAt,
           bytes: new TextEncoder().encode(note.text).length,
         }))

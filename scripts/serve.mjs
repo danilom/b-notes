@@ -15,6 +15,20 @@ const CONTENT_TYPES = new Map([
 const server = createServer((request, response) => {
   const requested = new URL(request.url ?? '/', 'http://localhost');
   const relative = requested.pathname === '/' ? 'index.html' : requested.pathname.slice(1);
+
+  // The generated corpus lives outside dist/, so the browser can be filled with
+  // six hundred texts while the UI is being worked on.
+  if (relative === 'corpus.json') {
+    readFile(path.resolve('testdata/corpus.json')).then(
+      (body) => {
+        response.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+        response.end(body);
+      },
+      () => response.writeHead(404).end('Not found'),
+    );
+    return;
+  }
+
   const target = path.resolve(root, relative);
 
   // Never serve outside dist/, whatever the request path claims.
