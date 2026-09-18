@@ -59,11 +59,25 @@ describe('where code is allowed to reach', () => {
     }
   });
 
-  it('lets a host wire the pieces together, which is what a host is for', async () => {
-    const entry = await importsIn(path.join(SOURCE, 'hosts', 'mockup', 'browser-entry.ts'));
+  /**
+   * A host provides somewhere to keep files and starts the interface. What a
+   * note is — how one is named, saved or put away — is the app's business, and
+   * a host that knew would be a second place for those rules to live.
+   */
+  for (const host of ['hosts/electron', 'hosts/mockup']) {
+    it(`keeps what a note is out of ${host}`, async () => {
+      assert.deepEqual(await offenders(host, /notes\//), []);
+    });
+  }
 
-    assert.ok(entry.some((specifier) => specifier.includes('ui/ui-app')));
-    assert.ok(entry.some((specifier) => specifier.includes('notes/note-store')));
+  it('lets a host start the interface, which is what a host is for', async () => {
+    for (const host of ['hosts/electron', 'hosts/mockup']) {
+      const entry = await importsIn(path.join(SOURCE, host, 'browser-entry.ts'));
+      assert.ok(
+        entry.some((specifier) => specifier.includes('ui/ui-app')),
+        host,
+      );
+    }
   });
 });
 

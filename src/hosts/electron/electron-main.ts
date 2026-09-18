@@ -2,7 +2,6 @@ import { BrowserWindow, app, ipcMain } from 'electron';
 import path from 'node:path';
 
 import { BUILD_STAMP } from '../../platform/build-info.ts';
-import { createNoteStore } from '../../notes/note-store.ts';
 import { LOG_LEVELS, createFileLogger } from './log-file.ts';
 import { createFileSystem } from './disk-file-system.ts';
 import { startUpdateChecks } from './app-updates.ts';
@@ -27,16 +26,16 @@ process.on('unhandledRejection', (reason) => log.error('Unhandled rejection', re
 // Where notes live is not settled: they belong in the Dropbox folder, which
 // needs detecting at first run. Documents keeps the scaffold runnable until then.
 const notesDir = path.join(app.getPath('documents'), 'b-notes');
-const store = createNoteStore(createFileSystem(notesDir));
+const files = createFileSystem(notesDir);
 
 function asString(value: unknown, name: string): string {
   if (typeof value !== 'string') throw new TypeError(`${name} must be a string`);
   return value;
 }
 
-/** A null id means a note he has started but that has never been written. */
-function asIdOrNull(value: unknown, name: string): string | null {
-  if (value === null || value === undefined) return null;
+/** The root folder is addressed as undefined rather than an empty string. */
+function asFolderOrNone(value: unknown, name: string): string | undefined {
+  if (value === null || value === undefined) return undefined;
   return asString(value, name);
 }
 
@@ -51,10 +50,13 @@ function handle(channel: string, handler: (args: unknown[]) => Promise<unknown>)
   });
 }
 
-handle('notes:list', () => store.list());
-handle('notes:read', (args) => store.read(asString(args[0], 'id')));
-handle('notes:save', (args) => store.save(asIdOrNull(args[0], 'id'), asString(args[1], 'text')));
-handle('notes:moveToDeleted', (args) => store.moveToDeleted(asString(args[0], 'id')));
+// The bridge offers a filesystem and nothing more. What a note is, and how one
+// is named, saved or put away, is the app's business and lives in shared code —
+// this process has no idea any of it exists.
+handle('files:list', (args) => files.list(asFolderOrNone(args[0], 'folder')));
+handle('files:read', (args) => files.read(asString(args[0], 'path')));
+handle('files:write', (args) => files.write(asString(args[0], 'path'), asString(args[1], 'text')));
+handle('files:rename', (args) => files.rename(asString(args[0], 'from'), asString(args[1], 'to')));
 
 ipcMain.on('log:write', (_event, level: unknown, message: unknown, detail: unknown) => {
   // Coerced rather than validated: a malformed log call should still leave a

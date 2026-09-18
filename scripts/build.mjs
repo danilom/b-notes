@@ -63,7 +63,7 @@ const targets = [
     // What he installs. Built from the renderer's own entry, which cannot reach
     // src/mockup — so the pretend store is not in the app at all.
     ...shared,
-    entryPoints: ['src/ui/app-entry.ts'],
+    entryPoints: ['src/hosts/electron/browser-entry.ts'],
     outfile: 'dist/renderer.js',
     platform: 'browser',
     format: 'iife',

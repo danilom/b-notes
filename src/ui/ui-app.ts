@@ -1,12 +1,13 @@
-import { BUILD_STAMP } from '../platform/build-info.ts';
-import type { RendererLog } from '../platform/log-bridge.ts';
-import { type Note, type NoteStore, isEmptied } from '../notes/note.ts';
 import { type Language, describeWhen, strings } from '../language/wording.ts';
+import { createNoteStore } from '../notes/note-store.ts';
+import { type Note, isEmptied } from '../notes/note.ts';
+import { BUILD_STAMP } from '../platform/build-info.ts';
+import type { FileSystem } from '../platform/file-system.ts';
+import type { RendererLog } from '../platform/log-bridge.ts';
 import { renderList } from './note-list.ts';
 
 declare global {
   interface Window {
-    notes?: NoteStore;
     log?: RendererLog;
   }
 }
@@ -60,11 +61,8 @@ const status = element('status', HTMLDivElement);
 const search = element('search', HTMLInputElement);
 const newNote = element('new-note', HTMLButtonElement);
 
-/**
- * The store is handed in rather than chosen here, so nothing in the interface
- * knows the mock exists. It must never reach the app he installs.
- */
-let store: NoteStore;
+/** Built here from whatever filesystem the host provides. */
+let store: ReturnType<typeof createNoteStore>;
 
 let notes: Note[] = [];
 let openId: string | null = null;
@@ -164,8 +162,15 @@ newNote.addEventListener('click', () => {
   log.info('Started a new text');
 });
 
-export async function startApp(chosen: NoteStore, backend: string): Promise<void> {
-  store = chosen;
+/**
+ * Starts the interface on whatever filesystem the host provides.
+ *
+ * A host supplies somewhere to keep files and nothing else — what a note is,
+ * and how one is named, saved or put away, is decided here and in , so
+ * every host behaves identically.
+ */
+export async function startApp(files: FileSystem, backend: string): Promise<void> {
+  store = createNoteStore(files);
   newNote.textContent = words.newNote;
   search.placeholder = words.searchPlaceholder;
   search.setAttribute('aria-label', words.searchLabel);

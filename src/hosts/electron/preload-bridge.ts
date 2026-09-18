@@ -1,10 +1,18 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-const notes = {
-  list: () => ipcRenderer.invoke('notes:list'),
-  read: (id: string) => ipcRenderer.invoke('notes:read', id),
-  save: (id: string | null, text: string) => ipcRenderer.invoke('notes:save', id, text),
-  moveToDeleted: (id: string) => ipcRenderer.invoke('notes:moveToDeleted', id),
+/**
+ * Everything the packaged app hands the interface: somewhere to keep files, and
+ * somewhere to log.
+ *
+ * Deliberately no notion of a note. What a note is belongs to the app, which
+ * runs the same code whether it's sitting on this bridge or on a pretend
+ * filesystem in a browser tab.
+ */
+const files = {
+  list: (folder?: string) => ipcRenderer.invoke('files:list', folder),
+  read: (path: string) => ipcRenderer.invoke('files:read', path),
+  write: (path: string, text: string) => ipcRenderer.invoke('files:write', path, text),
+  rename: (from: string, to: string) => ipcRenderer.invoke('files:rename', from, to),
 };
 
 const log = {
@@ -13,5 +21,5 @@ const log = {
   error: (message: string, detail?: unknown) => ipcRenderer.send('log:write', 'error', message, detail),
 };
 
-contextBridge.exposeInMainWorld('notes', notes);
+contextBridge.exposeInMainWorld('files', files);
 contextBridge.exposeInMainWorld('log', log);

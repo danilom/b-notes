@@ -64,10 +64,15 @@ platform ← notes ← ui → language
 
 `notes/` depends on the filesystem *contract* and never on an implementation.
 
-The seam is **a filesystem, not a note store**. A platform provides somewhere to
-keep text files — list, read, write, rename — and nothing else. `NoteStore` is
-built on top of that in shared code, so there is one implementation of what a
-note is, not two.
+The seam is **a filesystem, not a note store**. A host provides somewhere to keep
+text files — list, read, write, rename — and starts the interface. Nothing else.
+The note store is built on top of that by the app itself, so there is one
+implementation of what a note is rather than one per host.
+
+That extends to the Electron bridge, which speaks `files:read` and `files:write`
+rather than `notes:save`. A bridge that spoke notes would force the Electron main
+process to know how a note is named and when a save may rename one — rules that
+would then exist in a place the browser build can't reach.
 
 That distinction matters more than it looks. `moveToDeleted` was briefly a
 platform method, which put *where deleted things go and what they're called* —
