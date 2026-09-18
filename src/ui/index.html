@@ -58,6 +58,7 @@
         --l-line: 86%;
         --l-toolbar: 93%;
         --l-hover: 93.5%;
+        --l-pressed: 88%;
         --l-panel: 96.5%;
         --l-page: 100%;
         --l-chosen: 38%;
@@ -74,6 +75,7 @@
         --line: hsl(var(--accent-h) var(--surface) var(--l-line));
         --toolbar: hsl(var(--accent-h) var(--surface) var(--l-toolbar));
         --hover: hsl(var(--accent-h) var(--surface) var(--l-hover));
+        --pressed: hsl(var(--accent-h) var(--surface) var(--l-pressed));
         --panel: hsl(var(--accent-h) var(--surface) var(--l-panel));
 
         /* The one surface that stays out of it. He reads essays off this for
@@ -106,6 +108,7 @@
         --l-line: 27%;
         --l-toolbar: 20%;
         --l-hover: 23%;
+        --l-pressed: 29%;
         --l-panel: 18%;
         --l-page: 14%;
         --l-chosen: 70%;
@@ -217,8 +220,36 @@
         cursor: pointer;
       }
 
-      button:hover {
+      /*
+        Three states, because a button that only changes its border when the
+        pointer arrives, and does nothing at all when clicked, leaves him
+        wondering whether he hit it. He clicks twice when nothing appears to
+        happen — that is the behaviour the single-instance lock exists for.
+
+        Pressed both darkens and drops a pixel: colour alone is easy to miss on
+        an old washed-out laptop panel, and movement is not.
+      */
+      button:hover:not(:disabled) {
+        background: var(--hover);
         border-color: var(--quiet);
+      }
+
+      button:active:not(:disabled) {
+        background: var(--pressed);
+        border-color: var(--quiet);
+        transform: translateY(1px);
+      }
+
+      /* Only for the keyboard: `:focus-visible` stays quiet for a mouse click,
+         so he never sees a ring he did not ask for. */
+      button:focus-visible {
+        outline: 2px solid var(--chosen);
+        outline-offset: 2px;
+      }
+
+      button:active:not(:disabled) svg,
+      button:hover:not(:disabled) svg {
+        color: var(--quiet);
       }
 
       /*
@@ -253,9 +284,8 @@
         font-size: 0.92em;
       }
 
-      #appearance-button:hover {
+      #appearance-button:hover:not(:disabled) {
         border-color: var(--line);
-        background: var(--page);
         color: var(--ink);
       }
 
@@ -269,10 +299,6 @@
         height: 1.15em;
         flex: none;
         color: var(--faint);
-      }
-
-      button:hover svg {
-        color: var(--quiet);
       }
 
       #search-row {
@@ -447,9 +473,8 @@
         background: none;
       }
 
-      .close:hover {
+      .close:hover:not(:disabled) {
         border-color: var(--line);
-        background: var(--panel);
       }
 
       .panel footer {
@@ -477,7 +502,6 @@
 
       .reset:hover:not(:disabled) {
         border-color: var(--line);
-        background: var(--panel);
         color: var(--ink);
       }
 
@@ -541,11 +565,10 @@
 
       .zoom-step:disabled {
         opacity: 0.4;
-        cursor: default;
       }
 
-      .zoom-step:disabled:hover {
-        border-color: var(--line);
+      button:disabled {
+        cursor: default;
       }
 
       /* The only part of how the app looks that can be read out over a phone. */
@@ -568,10 +591,17 @@
         height: 1.4em;
       }
 
-      .choice[aria-pressed='true'] {
+      .choice[aria-pressed='true'],
+      .choice[aria-pressed='true']:hover:not(:disabled) {
         border-color: var(--chosen);
         background: var(--chosen-soft);
         box-shadow: inset 0 0 0 1px var(--chosen);
+      }
+
+      /* The one he has already picked still answers a click, even though it
+         has nothing new to say. */
+      .choice[aria-pressed='true']:active:not(:disabled) {
+        background: var(--chosen-soft);
       }
 
       .swatch {
