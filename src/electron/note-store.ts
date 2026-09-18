@@ -1,15 +1,9 @@
 import { mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import {
-  DELETED_FOLDER,
-  EXTENSION,
-  baseOf,
-  fileNameBase,
-  isConflictedCopy,
-  nextFreeName,
-} from '../shared/note-naming.ts';
-import { type Note, type NoteStore, survivedTooLittle } from '../shared/notes.ts';
+import { DELETED_FOLDER, EXTENSION, isConflictedCopy } from '../shared/note-naming.ts';
+import type { Note, NoteStore } from '../shared/notes.ts';
+import { deletedNameFor, planSave } from '../shared/save-plan.ts';
 import { titleFrom } from '../shared/title.ts';
 
 const AUTOSAVE_TEMP_SUFFIX = '.saving';
@@ -75,43 +69,32 @@ export function createFileNoteStore(dir: string): NoteStore {
     },
 
     async save(id: string | null, text: string): Promise<string | null> {
-      if (id === null && text.trim().length === 0) return null;
-
+      // Validate before anything else: ids arrive from the renderer.
+      const current = id === null ? null : notePath(dir, id);
       await mkdir(dir, { recursive: true });
-      const base = fileNameBase(titleFrom(text));
 
-      if (id === null) {
-        const name = nextFreeName(base, null, await namesIn(dir));
-        await writeAtomically(path.join(dir, name), text);
-        return name;
-      }
+      const action = await planSave(id, text, {
+        takenNames: () => namesIn(dir),
+        // Reading the old text doubles the I/O on a 145KB essay, so it only
+        // happens when the plan actually needs it.
+        previousText: async () =>
+          current === null ? '' : readFile(current, 'utf8').catch(() => ''),
+      });
 
-      const current = notePath(dir, id);
+      if (action.kind === 'none') return null;
 
-      // Same base means the filename already reflects his opening lines; leaving
-      // it alone avoids renaming the file on every keystroke.
-      if (baseOf(id) === base) {
-        await writeAtomically(current, text);
-        return id;
-      }
+      await writeAtomically(path.join(dir, action.id), text);
+      if (action.kind === 'write') return action.id;
 
-      // Only read the old text when a rename is on the table, which is rare —
-      // doing it on every save would double the I/O on a 145KB essay.
-      const previous = await readFile(current, 'utf8').catch(() => '');
-      await writeAtomically(current, text);
-      if (survivedTooLittle(previous, text)) return id;
-
-      const name = nextFreeName(base, id, await namesIn(dir));
-      await rename(current, path.join(dir, name));
-      return name;
+      await rename(path.join(dir, action.id), path.join(dir, action.to));
+      return action.to;
     },
 
     async moveToDeleted(id: string): Promise<void> {
       const source = notePath(dir, id);
       const trash = path.join(dir, DELETED_FOLDER);
       await mkdir(trash, { recursive: true });
-      const name = nextFreeName(baseOf(id), null, await namesIn(trash));
-      await rename(source, path.join(trash, name));
+      await rename(source, path.join(trash, deletedNameFor(id, await namesIn(trash))));
     },
   };
 }

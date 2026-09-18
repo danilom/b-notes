@@ -1,5 +1,6 @@
-import { DELETED_FOLDER, fileNameBase, nextFreeName } from '../shared/note-naming.ts';
+import { DELETED_FOLDER } from '../shared/note-naming.ts';
 import type { Note, NoteStore } from '../shared/notes.ts';
+import { deletedNameFor, planSave } from '../shared/save-plan.ts';
 import { titleFrom } from '../shared/title.ts';
 
 const KEY = 'b-notes:mock';
@@ -80,15 +81,19 @@ export function createMockNoteStore(): NoteStore {
     },
 
     async save(id: string | null, text: string): Promise<string | null> {
-      if (id === null && text.trim().length === 0) return null;
-
       const notes = load();
-      const wanted = nextFreeName(fileNameBase(titleFrom(text)), id, new Set(notes.keys()));
+      const action = await planSave(id, text, {
+        takenNames: async () => new Set(notes.keys()),
+        previousText: async () => (id === null ? '' : (notes.get(id)?.text ?? '')),
+      });
 
-      if (id !== null && id !== wanted) notes.delete(id);
-      notes.set(wanted, { text, updatedAt: Date.now() });
+      if (action.kind === 'none') return null;
+
+      if (action.kind === 'writeAndRename') notes.delete(action.id);
+      const saved = action.kind === 'write' ? action.id : action.to;
+      notes.set(saved, { text, updatedAt: Date.now() });
       store(notes);
-      return wanted;
+      return saved;
     },
 
     async moveToDeleted(id: string): Promise<void> {
@@ -98,7 +103,7 @@ export function createMockNoteStore(): NoteStore {
 
       const raw = window.localStorage.getItem(DELETED_KEY);
       const deleted: Record<string, MockNote> = raw === null ? {} : JSON.parse(raw);
-      deleted[id] = note;
+      deleted[deletedNameFor(id, new Set(Object.keys(deleted)))] = note;
       window.localStorage.setItem(DELETED_KEY, JSON.stringify(deleted));
 
       notes.delete(id);
