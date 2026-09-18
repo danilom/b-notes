@@ -1,0 +1,90 @@
+# Project Guidelines
+
+You are working as a senior TypeScript developer. Write production-quality code by default — not "quick example" quality. These guidelines apply to every file you touch unless explicitly told otherwise.
+
+## Who this is for
+
+brano-notes is a Windows desktop app for editing long-form essays. It has exactly one user: an elderly relative who has used computers for 20+ years but has no firm grasp of opening and saving files, and is shaky on copy/paste.
+
+Every design decision follows from this:
+
+- He should never see a file dialog, a filesystem path, or the word "save".
+- His work must never be lost. Autosave is the only save.
+- No jargon in UI text. No modal that can be dismissed into a wrong state.
+- Errors are our problem, not his — recover silently where possible; never surface a stack trace, error code, or a question he can't answer.
+- Files live in a Dropbox folder so they're backed up and synced. He must never need to know that.
+
+When the tradeoff is between "powerful" and "impossible to get wrong", choose impossible to get wrong.
+
+## Stack
+
+- Electron + TypeScript. The Electron version is pinned deliberately: the app is local-files-only with no network and no untrusted content, so there is no pressure to chase Chromium updates. Don't upgrade it without a concrete reason.
+- Storage sits behind one small async interface with two implementations: a mock backed by `localStorage`, for developing the UI in a plain browser, and the real one over IPC to the main process. The interface is async in both, so call sites never change when they're swapped.
+- Keep Electron APIs (`app.getPath`, `dialog`, …) at the edges. Core logic takes paths as parameters so it runs — and can be tested — under plain Node.
+
+## TypeScript
+
+- Use strict TypeScript. Avoid `any`; use `unknown` and narrow properly.
+- Prefer `type` for unions/intersections, `interface` for object shapes that may be extended.
+- Use `satisfies` where appropriate instead of casting.
+- Use `const` assertions and discriminated unions over loose string types.
+- Avoid non-null assertions (`!`). Handle nullability explicitly.
+- Use modern ES features: optional chaining, nullish coalescing, `Array.at()`, `Object.hasOwn()`, etc.
+- Prefer `structuredClone` over manual deep copies.
+
+## Code Structure
+
+- Keep functions short and single-purpose. If a function needs a comment explaining "what it does," it should probably be split.
+- No functions longer than ~40 lines without good reason.
+- Name things clearly. Avoid abbreviations unless they're universally understood (`i` in a loop is fine; `rstTkn` is not).
+- Colocate related logic. Don't scatter a feature across many unrelated files.
+- Prefer flat over nested — early returns over deep conditionals.
+
+## Error Handling
+
+- Always handle errors explicitly. No silent `catch` blocks.
+- Use typed error classes or discriminated result types (`{ ok: true, value } | { ok: false, error }`) for operations that can fail predictably.
+- Don't swallow exceptions. If you catch, either recover meaningfully or rethrow with context.
+- Validate external input at the boundary before it enters the system — above all, anything read off disk. Don't trust inferred types from `JSON.parse`.
+- Failing to write a file is the one error that must never be silent internally, even though the user never sees it. Log it and retry.
+
+## Comments
+
+- Comment *why*, not *what*. Code should explain itself; comments explain intent, tradeoffs, and surprises.
+- Document non-obvious decisions: "Using X instead of Y because of Z."
+- JSDoc on public API functions, especially parameters that aren't self-evident from the types.
+- Don't comment out dead code — delete it. Git remembers.
+
+## Async
+
+- Prefer `async/await` over raw promise chains.
+- Always `await` or explicitly `void` promises — never fire-and-forget silently.
+- Handle `Promise.allSettled` vs `Promise.all` deliberately (fail-fast vs. partial results).
+
+## Dependencies & Imports
+
+- Don't introduce dependencies for things easily done natively.
+- Prefer named exports over default exports.
+- Group imports: external packages, then internal modules, then relative imports.
+
+## Testing
+
+Not blanket coverage — tests are for **logic that fails silently**.
+What does: code whose wrong answer still looks like an answer. In this app that means, above all, anything that can lose his text.
+
+- Logic tests: `npm test` (esbuild → `node --test`; no test framework dependency). Covers the storage layer and pure logic. Keep these runnable without Electron.
+- End-to-end: Playwright's Electron support (`_electron.launch()`) drives the real app window and can screenshot it. Keep this suite small — the critical path is "type → it persists → reopen → the text is still there". Spectron is archived; don't use it.
+- Day-to-day UI iteration happens in a browser against the mock storage backend, not in a test suite.
+- Test names describe behaviour, not implementation: `"returns empty array when no results found"`, not `"test getItems"`.
+
+## Git
+
+- Commits should be atomic. Keep the descriptions brief.
+- Commit each finished change right away, unprompted; never let changes pile up uncommitted.
+- Do not push unless asked.
+- Do not add `Co-Authored-By: Claude …` or "Generated with Claude Code" lines to commit messages or PR descriptions.
+- Preserve a file's existing line endings; a wholesale ending change makes every line a diff.
+- Don't commit commented-out code, debug logs, or TODO comments without a tracking issue.
+- Personal or local settings (`.claude/settings.local.json`, `.env.local`) are never committed.
+
+Some of the above repeats the global `CLAUDE.md`. That duplication is deliberate — don't "tidy" it away.
