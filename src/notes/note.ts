@@ -17,6 +17,11 @@ export interface Note {
  */
 export interface NoteStore {
   /**
+   * Puts anything he has in another format into `.txt`, and reports what it
+   * couldn't move. Run once at startup, before anything is listed.
+   */
+  convertToPlainText(): Promise<{ converted: number; refused: string[] }>;
+  /**
    * Every note, text included. His whole corpus is under 3MB, so holding it in
    * memory makes searching instant and costs nothing worth measuring.
    */

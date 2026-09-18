@@ -290,69 +290,67 @@ describe('moving a note out of the way', () => {
   });
 });
 
-describe('two files wanting one id', () => {
-  /**
-   * His corpus already holds both `.txt` and `.md`, so a pair claiming the same
-   * id will turn up eventually. Losing one would be a note vanishing from his
-   * list, which is the failure this app exists to prevent.
-   */
-  async function bothExtensions() {
-    const made = await emptyStore();
-    await writeFile(path.join(made.dir, 'Esej o zimi.txt'), 'Esej o zimi\n\nIz txt.', 'utf8');
-    await writeFile(path.join(made.dir, 'Esej o zimi.md'), 'Esej o zimi\n\nIz md.', 'utf8');
-    return made;
-  }
+describe('converting to plain text', () => {
+  it('renames a .md note to .txt, so Notepad can open it', async () => {
+    const { dir, store } = await emptyStore();
+    await writeFile(path.join(dir, 'Esej o zimi.md'), 'Esej o zimi\n\nTekst.', 'utf8');
 
-  it('keeps both, rather than one replacing the other', async () => {
-    const { store } = await bothExtensions();
-
-    assert.equal((await store.list()).length, 2);
+    assert.deepEqual(await store.convertToPlainText(), { converted: 1, refused: [] });
+    assert.deepEqual(await readdir(dir), ['Esej o zimi.txt']);
   });
 
-  it('gives them different ids', async () => {
-    const { store } = await bothExtensions();
+  it('keeps the text intact', async () => {
+    const { dir, store } = await emptyStore();
+    await writeFile(path.join(dir, 'Esej o zimi.md'), 'Esej o zimi\n\nTekst.', 'utf8');
 
-    const ids = (await store.list()).map((note) => note.id);
+    await store.convertToPlainText();
 
-    assert.deepEqual([...ids].sort(), ['Esej o zimi', 'Esej o zimi (1)']);
+    assert.equal(await store.read('Esej o zimi'), 'Esej o zimi\n\nTekst.');
   });
 
-  it('lets our own format keep the plain id', async () => {
-    const { store } = await bothExtensions();
+  it('does not overwrite a .txt that already has that name', async () => {
+    const { dir, store } = await emptyStore();
+    await writeFile(path.join(dir, 'Esej o zimi.txt'), 'Esej o zimi\n\nIz txt.', 'utf8');
+    await writeFile(path.join(dir, 'Esej o zimi.md'), 'Esej o zimi\n\nIz md.', 'utf8');
 
-    const plain = (await store.list()).find((note) => note.id === 'Esej o zimi');
+    await store.convertToPlainText();
 
-    assert.ok(plain?.text.includes('Iz txt.'));
+    assert.deepEqual((await readdir(dir)).sort(), ['Esej o zimi (1).txt', 'Esej o zimi.txt']);
   });
 
-  it('assigns the same ids every time, so nothing moves between runs', async () => {
-    const { store } = await bothExtensions();
+  it('keeps both texts when it has to rename around a clash', async () => {
+    const { dir, store } = await emptyStore();
+    await writeFile(path.join(dir, 'Esej o zimi.txt'), 'Esej o zimi\n\nIz txt.', 'utf8');
+    await writeFile(path.join(dir, 'Esej o zimi.md'), 'Esej o zimi\n\nIz md.', 'utf8');
 
-    const first = (await store.list()).map((note) => note.id);
-    const second = (await store.list()).map((note) => note.id);
+    await store.convertToPlainText();
 
-    assert.deepEqual(first, second);
+    const texts = (await store.list()).map((note) => note.text).sort();
+    assert.deepEqual(texts, ['Esej o zimi\n\nIz md.', 'Esej o zimi\n\nIz txt.']);
   });
 
-  it('reaches the right file through the borrowed id', async () => {
-    const { store } = await bothExtensions();
+  it('leaves notes that are already plain text alone', async () => {
+    const { store } = await emptyStore();
+    await store.save(null, 'Esej o zimi\n\nTekst.');
 
-    assert.ok((await store.read('Esej o zimi (1)')).includes('Iz md.'));
+    assert.deepEqual(await store.convertToPlainText(), { converted: 0, refused: [] });
   });
 
-  it('leaves his files where they are rather than renaming one', async () => {
-    const { dir, store } = await bothExtensions();
-    await store.list();
+  it('is safe to run again', async () => {
+    const { dir, store } = await emptyStore();
+    await writeFile(path.join(dir, 'Esej o zimi.md'), 'Esej o zimi\n\nTekst.', 'utf8');
 
-    assert.deepEqual((await readdir(dir)).sort(), ['Esej o zimi.md', 'Esej o zimi.txt']);
+    await store.convertToPlainText();
+    await store.convertToPlainText();
+
+    assert.deepEqual(await readdir(dir), ['Esej o zimi.txt']);
   });
 
-  it('keeps a .md note as .md when he edits it', async () => {
-    const { dir, store } = await bothExtensions();
+  it('does not list a note still in another format', async () => {
+    const { dir, store } = await emptyStore();
+    await writeFile(path.join(dir, 'Esej o zimi.md'), 'Esej o zimi\n\nTekst.', 'utf8');
 
-    await store.save('Esej o zimi (1)', 'Esej o zimi\n\nIz md, izmijenjeno.');
-
-    assert.equal((await readdir(dir)).includes('Esej o zimi.md'), true);
+    assert.deepEqual(await store.list(), []);
   });
 });
 

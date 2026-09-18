@@ -167,6 +167,14 @@ export async function startApp(host: Host): Promise<void> {
   search.placeholder = words.searchPlaceholder;
   search.setAttribute('aria-label', words.searchLabel);
 
+  // Before anything is listed: a note still in another format is one he can't
+  // open without this app, which is the guarantee .txt was chosen for.
+  const converted = await store.convertToPlainText();
+  if (converted.converted > 0) log.info('Put texts into plain text', { count: converted.converted });
+  if (converted.refused.length > 0) {
+    log.warn('Could not convert some texts, so they are not in the list', converted.refused);
+  }
+
   notes = await store.list();
 
   // Emptied notes are put away at startup, never while he's working — a note

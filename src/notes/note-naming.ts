@@ -7,28 +7,26 @@
  */
 
 /**
- * We write `.txt`. Windows opens it in Notepad on a double-click while `.md` has
- * no default handler, and the whole fallback plan is that he can read his own
- * writing without this app.
+ * Notes are `.txt`. Windows opens that in Notepad on a double-click while `.md`
+ * has no default handler at all — and the whole fallback plan is that he can
+ * read his own writing without this app.
  */
-export const NEW_NOTE_EXTENSION = '.txt';
+export const EXTENSION = '.txt';
 
 /**
- * We read both, because his existing corpus already holds `.md` files.
+ * Formats his corpus already holds, which we convert on sight.
  *
- * A note keeps the extension it arrived with. Changing what kind of file
- * something is while he types would be exactly the sort of surprise this app
- * exists to avoid; converting them is migration's job, done deliberately.
+ * The Notepad argument applies to these just as much, so leaving them alone
+ * would exempt precisely the files the fallback was meant to cover.
  */
-export const NOTE_EXTENSIONS: readonly string[] = ['.txt', '.md'];
+export const CONVERTIBLE_EXTENSIONS: readonly string[] = ['.md'];
 
 export function isNoteFile(fileName: string): boolean {
-  return NOTE_EXTENSIONS.some((extension) => fileName.endsWith(extension));
+  return fileName.endsWith(EXTENSION);
 }
 
-/** The extension a note already has, so saving can keep it. */
-export function extensionOf(fileName: string): string {
-  return NOTE_EXTENSIONS.find((extension) => fileName.endsWith(extension)) ?? NEW_NOTE_EXTENSION;
+export function isConvertibleNoteFile(fileName: string): boolean {
+  return CONVERTIBLE_EXTENSIONS.some((extension) => fileName.endsWith(extension));
 }
 
 /**
@@ -44,13 +42,16 @@ export function extensionOf(fileName: string): string {
  * such as a put-away note, is built by the store rather than accepted.
  */
 export function idOf(fileName: string): string {
-  const extension = NOTE_EXTENSIONS.find((candidate) => fileName.endsWith(candidate));
+  const extension = [EXTENSION, ...CONVERTIBLE_EXTENSIONS].find((candidate) =>
+    fileName.endsWith(candidate),
+  );
   return extension === undefined ? fileName : fileName.slice(0, -extension.length);
 }
 
 export function isNoteId(candidate: string): boolean {
   if (candidate.includes('/') || candidate.includes('\\')) return false;
-  return candidate.length > 0 && candidate.trim() === candidate && !isNoteFile(candidate);
+  if (isNoteFile(candidate) || isConvertibleNoteFile(candidate)) return false;
+  return candidate.length > 0 && candidate.trim() === candidate;
 }
 
 export function requireNoteId(candidate: string): string {

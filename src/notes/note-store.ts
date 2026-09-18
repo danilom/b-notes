@@ -1,11 +1,11 @@
 import type { FileInfo, FileSystem } from '../platform/file-system.ts';
 import {
+  CONVERTIBLE_EXTENSIONS,
   DELETED_FOLDER,
-  NEW_NOTE_EXTENSION,
-  NOTE_EXTENSIONS,
-  extensionOf,
+  EXTENSION,
   idOf,
   isConflictedCopy,
+  isConvertibleNoteFile,
   isNoteFile,
   nextFreeId,
   requireNoteId,
@@ -24,31 +24,14 @@ import type { Note, NoteStore } from './note.ts';
  */
 export function createNoteStore(files: FileSystem): NoteStore {
   /**
-   * Every note's id and the file it lives in.
-   *
-   * Two files can want one id — `Esej.md` and `Esej.txt` both ask for `Esej` —
-   * and his corpus is old enough that this will eventually happen. The loser
-   * takes the next free id rather than being dropped, because a note quietly
-   * missing from the list is the failure this whole app exists to prevent.
-   *
-   * Nothing is renamed on disk for it. The assignment is deterministic — our own
-   * format keeps the plain id, then alphabetical — so the same folder always
-   * produces the same ids, and his files are left as they are.
+   * Every note's id and the file it lives in. One extension, so an id can only
+   * ever name one file.
    */
   async function noteFiles(): Promise<Map<string, FileInfo>> {
-    const candidates = (await files.list())
-      .filter((file) => isNoteFile(file.path) && !isConflictedCopy(file.path))
-      .sort(
-        (first, second) =>
-          NOTE_EXTENSIONS.indexOf(extensionOf(first.path)) -
-            NOTE_EXTENSIONS.indexOf(extensionOf(second.path)) ||
-          first.path.localeCompare(second.path),
-      );
-
     const byId = new Map<string, FileInfo>();
-    for (const file of candidates) {
-      const wanted = idOf(file.path);
-      byId.set(byId.has(wanted) ? nextFreeId(wanted, null, new Set(byId.keys())) : wanted, file);
+    for (const file of await files.list()) {
+      if (!isNoteFile(file.path) || isConflictedCopy(file.path)) continue;
+      byId.set(idOf(file.path), file);
     }
     return byId;
   }
@@ -62,6 +45,47 @@ export function createNoteStore(files: FileSystem): NoteStore {
   }
 
   return {
+    /**
+     * Renames anything he has in another format to `.txt`, and reports what it
+     * couldn't.
+     *
+     * Windows opens `.txt` in Notepad on a double-click and has no handler for
+     * `.md`, so an unconverted file is one he cannot read without this app —
+     * which is the one guarantee the format was chosen for. Converting on sight
+     * also means the folder settles on a single extension rather than tolerating
+     * two forever.
+     *
+     * The content isn't inspected, on purpose. If a file does turn out to hold
+     * real Markdown, nothing is lost by renaming it — the bytes are untouched
+     * and nothing here renders Markdown anyway.
+     *
+     * A file that won't move is reported rather than skipped silently: it would
+     * otherwise be invisible in the list, which reads to him as loss.
+     */
+    async convertToPlainText(): Promise<{ converted: number; refused: string[] }> {
+      const all = await files.list();
+      const taken = new Set(all.filter((file) => isNoteFile(file.path)).map((file) => idOf(file.path)));
+
+      let converted = 0;
+      const refused: string[] = [];
+
+      for (const file of all) {
+        if (!isConvertibleNoteFile(file.path) || isConflictedCopy(file.path)) continue;
+
+        const id = nextFreeId(idOf(file.path), null, taken);
+        try {
+          await files.rename(file.path, `${id}${EXTENSION}`);
+          taken.add(id);
+          converted += 1;
+        } catch {
+          // One file held open elsewhere shouldn't stop the rest converting.
+          refused.push(file.path);
+        }
+      }
+
+      return { converted, refused };
+    },
+
     async list(): Promise<Note[]> {
       const notes = await Promise.all(
         [...(await noteFiles())].map(async ([id, file]): Promise<Note> => {
@@ -99,15 +123,10 @@ export function createNoteStore(files: FileSystem): NoteStore {
 
       if (action.kind === 'none') return null;
 
-      // A note keeps the extension it arrived with. Changing what kind of file
-      // something is while he types is not ours to do; converting them is
-      // migration's job, done deliberately.
-      const extension = current === undefined ? NEW_NOTE_EXTENSION : extensionOf(current);
-
-      await files.write(`${action.id}${extension}`, text);
+      await files.write(`${action.id}${EXTENSION}`, text);
       if (action.kind === 'write') return action.id;
 
-      await files.rename(`${action.id}${extension}`, `${action.to}${extension}`);
+      await files.rename(`${action.id}${EXTENSION}`, `${action.to}${EXTENSION}`);
       return action.to;
     },
 
@@ -116,7 +135,7 @@ export function createNoteStore(files: FileSystem): NoteStore {
       if (file === undefined) return;
 
       const name = deletedIdFor(id, await idsIn(DELETED_FOLDER));
-      await files.rename(file.path, `${DELETED_FOLDER}/${name}${extensionOf(file.path)}`);
+      await files.rename(file.path, `${DELETED_FOLDER}/${name}${EXTENSION}`);
     },
   };
 }
