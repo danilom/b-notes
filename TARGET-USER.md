@@ -73,7 +73,7 @@ He emails his essays to people who read them — often several versions of the s
 piece as he refines it. That is the output of the whole system; everything else
 exists to get a text to a reader.
 
-**The app should not try to own sending.** He already copies and pastes into
+**Anything the app does about sending is P3.** He already copies and pastes into
 GMail and manages it fine, and that path works today. Anything we added would be
 either a `mailto:` link, which hands him off to whatever Windows thinks the
 default mail client is, or a copy to the clipboard — which is what he's already
