@@ -1,5 +1,5 @@
-import type { Note } from '../shared/notes.ts';
-import { type Language, describeWhen, strings } from '../shared/strings.ts';
+import type { Note } from '../notes/note.ts';
+import { type Language, describeWhen, strings } from '../language/wording.ts';
 
 /** How many recent texts to offer before he has to look for himself. */
 const RECENT_COUNT = 5;

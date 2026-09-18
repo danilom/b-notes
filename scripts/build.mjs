@@ -42,7 +42,7 @@ const shared = {
 const targets = [
   {
     ...shared,
-    entryPoints: ['src/electron/main.ts'],
+    entryPoints: ['src/electron/electron-main.ts'],
     outfile: 'dist/main.js',
     platform: 'node',
     format: 'esm',
@@ -53,7 +53,7 @@ const targets = [
   {
     // Preload stays CommonJS: an ESM preload would need the sandbox turned off.
     ...shared,
-    entryPoints: ['src/electron/preload.ts'],
+    entryPoints: ['src/electron/preload-bridge.ts'],
     outfile: 'dist/preload.cjs',
     platform: 'node',
     format: 'cjs',
@@ -63,7 +63,7 @@ const targets = [
     // What he installs. Built from the renderer's own entry, which cannot reach
     // src/mockup — so the pretend store is not in the app at all.
     ...shared,
-    entryPoints: ['src/renderer/entry.ts'],
+    entryPoints: ['src/ui/app-entry.ts'],
     outfile: 'dist/renderer.js',
     platform: 'browser',
     format: 'iife',
@@ -72,7 +72,7 @@ const targets = [
     // The same interface for a plain browser, with the mock behind it. Separate
     // output folder so the two can never be confused for one another.
     ...shared,
-    entryPoints: ['src/mockup/entry.ts'],
+    entryPoints: ['src/mockup/browser-entry.ts'],
     outfile: 'dist-browser/renderer.js',
     platform: 'browser',
     format: 'iife',
@@ -81,8 +81,8 @@ const targets = [
 
 await mkdir('dist', { recursive: true });
 await mkdir('dist-browser', { recursive: true });
-await cp('src/renderer/index.html', 'dist/index.html');
-await cp('src/renderer/index.html', 'dist-browser/index.html');
+await cp('src/ui/index.html', 'dist/index.html');
+await cp('src/ui/index.html', 'dist-browser/index.html');
 
 if (watch) {
   const contexts = await Promise.all(targets.map((options) => esbuild.context(options)));

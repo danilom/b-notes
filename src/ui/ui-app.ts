@@ -1,7 +1,7 @@
-import { BUILD_STAMP } from '../shared/build-info.ts';
-import type { RendererLog } from '../shared/logging.ts';
-import { type Note, type NoteStore, isEmptied } from '../shared/notes.ts';
-import { type Language, describeWhen, strings } from '../shared/strings.ts';
+import { BUILD_STAMP } from '../platform/build-info.ts';
+import type { RendererLog } from '../platform/log-bridge.ts';
+import { type Note, type NoteStore, isEmptied } from '../notes/note.ts';
+import { type Language, describeWhen, strings } from '../language/wording.ts';
 import { renderList } from './note-list.ts';
 
 declare global {

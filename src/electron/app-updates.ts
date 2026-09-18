@@ -1,7 +1,7 @@
 import { app } from 'electron';
 import electronUpdater from 'electron-updater';
 
-import type { Logger } from './log.ts';
+import type { Logger } from './log-file.ts';
 
 // electron-updater is CommonJS, so the named export isn't reliably reachable
 // through an ESM import.

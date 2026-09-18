@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { deletedNameFor, planSave } from '../src/shared/save-plan.ts';
+import { deletedNameFor, planSave } from '../src/notes/note-saving.ts';
 
 /** Records whether the plan actually needed to look anything up. */
 function context(taken: string[] = [], previous = '') {

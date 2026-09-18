@@ -44,10 +44,21 @@ When the tradeoff is between "powerful" and "impossible to get wrong", choose im
 
 | folder | runs where | holds |
 | --- | --- | --- |
-| `src/shared/` | everywhere | the rules: naming, titles, what counts as deleted, the note store, every word of UI text |
-| `src/renderer/` | everywhere | the interface itself |
+| `src/notes/` | everywhere | what a note is: the store, titles, naming, save decisions |
+| `src/platform/` | everywhere | what a platform must provide: the filesystem contract, the log bridge, build identity |
+| `src/language/` | everywhere | every word he reads, in both languages |
+| `src/ui/` | everywhere | the interface itself |
 | `src/electron/` | only the packaged app | lifecycle, the preload bridge, updates, the log file, the real filesystem |
 | `src/mockup/` | only the browser | a pretend filesystem, and the test corpus it's filled with |
+
+Which gives a dependency direction worth stating plainly:
+
+```
+platform ← notes ← ui → language
+platform ← electron, mockup
+```
+
+`notes/` depends on the filesystem *contract* and never on an implementation.
 
 The seam is **a filesystem, not a note store**. A platform provides somewhere to
 keep text files — list, read, write, rename — and nothing else. `NoteStore` is

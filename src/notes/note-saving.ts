@@ -1,6 +1,6 @@
 import { baseOf, fileNameBase, nextFreeName } from './note-naming.ts';
-import { survivedTooLittle } from './notes.ts';
-import { titleFrom } from './title.ts';
+import { survivedTooLittle } from './note.ts';
+import { titleFrom } from './note-title.ts';
 
 /**
  * What a save should do. Deciding is shared; carrying it out is each store's

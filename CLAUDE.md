@@ -23,6 +23,7 @@ stack, how it's packaged and shipped, and what to log. This file stays general.
 - Name things clearly. Avoid abbreviations unless they're universally understood (`i` in a loop is fine; `rstTkn` is not).
 - Colocate related logic. Don't scatter a feature across many unrelated files.
 - Prefer flat over nested — early returns over deep conditionals.
+- Name a file so the filename alone says what's in it. An editor tab shows the filename and never the folder, so repeat the folder's subject rather than leaning on it: `note-naming.ts`, not `naming.ts`. Two files may share a name where they're two implementations of one thing and the pairing is the point; avoid it where the files are unrelated and a tab would be ambiguous.
 
 ## Error Handling
 

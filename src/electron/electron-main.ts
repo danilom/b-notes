@@ -1,11 +1,11 @@
 import { BrowserWindow, app, ipcMain } from 'electron';
 import path from 'node:path';
 
-import { BUILD_STAMP } from '../shared/build-info.ts';
-import { createNoteStore } from '../shared/note-store.ts';
-import { LOG_LEVELS, createFileLogger } from './log.ts';
-import { createFileSystem } from './file-system.ts';
-import { startUpdateChecks } from './updates.ts';
+import { BUILD_STAMP } from '../platform/build-info.ts';
+import { createNoteStore } from '../notes/note-store.ts';
+import { LOG_LEVELS, createFileLogger } from './log-file.ts';
+import { createFileSystem } from './disk-file-system.ts';
+import { startUpdateChecks } from './app-updates.ts';
 
 // The machines this runs on have old integrated GPUs, where acceleration causes
 // more rendering glitches than it prevents.

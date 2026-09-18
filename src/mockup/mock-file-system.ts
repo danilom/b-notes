@@ -1,4 +1,4 @@
-import { type FileInfo, type FileSystem, requireSafePath } from '../shared/file-system.ts';
+import { type FileInfo, type FileSystem, requireSafePath } from '../platform/file-system.ts';
 
 const KEY = 'b-notes:mock-files';
 

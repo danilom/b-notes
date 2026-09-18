@@ -4,16 +4,16 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
-import { createFileSystem } from '../src/electron/file-system.ts';
-import { createNoteStore } from '../src/shared/note-store.ts';
+import { createFileSystem } from '../src/electron/disk-file-system.ts';
+import { createNoteStore } from '../src/notes/note-store.ts';
 import {
   DELETED_FOLDER,
   baseOf,
   fileNameBase,
   isConflictedCopy,
-} from '../src/shared/note-naming.ts';
-import { survivedTooLittle } from '../src/shared/notes.ts';
-import { titleFrom } from '../src/shared/title.ts';
+} from '../src/notes/note-naming.ts';
+import { survivedTooLittle } from '../src/notes/note.ts';
+import { titleFrom } from '../src/notes/note-title.ts';
 
 /**
  * The shared note store on top of the real filesystem — the combination the

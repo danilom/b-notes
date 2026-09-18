@@ -1,5 +1,5 @@
-import type { NoteStore } from '../shared/notes.ts';
-import { startApp } from './app.ts';
+import type { NoteStore } from '../notes/note.ts';
+import { startApp } from './ui-app.ts';
 
 declare global {
   interface Window {

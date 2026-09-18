@@ -1,8 +1,8 @@
-import type { FileSystem } from './file-system.ts';
+import type { FileSystem } from '../platform/file-system.ts';
 import { DELETED_FOLDER, EXTENSION, isConflictedCopy } from './note-naming.ts';
-import type { Note, NoteStore } from './notes.ts';
-import { deletedNameFor, planSave } from './save-plan.ts';
-import { titleFrom } from './title.ts';
+import type { Note, NoteStore } from './note.ts';
+import { deletedNameFor, planSave } from './note-saving.ts';
+import { titleFrom } from './note-title.ts';
 
 /**
  * Everything that knows what a note is, built on nothing but a place to keep
