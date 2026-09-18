@@ -33,6 +33,12 @@ function asString(value: unknown, name: string): string {
   return value;
 }
 
+/** A null id means a note he has started but that has never been written. */
+function asIdOrNull(value: unknown, name: string): string | null {
+  if (value === null || value === undefined) return null;
+  return asString(value, name);
+}
+
 function handle(channel: string, handler: (args: unknown[]) => Promise<unknown>): void {
   ipcMain.handle(channel, async (_event, ...args: unknown[]) => {
     try {
@@ -46,8 +52,7 @@ function handle(channel: string, handler: (args: unknown[]) => Promise<unknown>)
 
 handle('notes:list', () => store.list());
 handle('notes:read', (args) => store.read(asString(args[0], 'id')));
-handle('notes:write', (args) => store.write(asString(args[0], 'id'), asString(args[1], 'text')));
-handle('notes:create', (args) => store.create(asString(args[0], 'title')));
+handle('notes:save', (args) => store.save(asIdOrNull(args[0], 'id'), asString(args[1], 'text')));
 
 ipcMain.on('log:write', (_event, level: unknown, message: unknown, detail: unknown) => {
   // Coerced rather than validated: a malformed log call should still leave a
