@@ -40,11 +40,17 @@ When the tradeoff is between "powerful" and "impossible to get wrong", choose im
 - Never use top-level `await` in the main process entry. It's an ES module, and Electron waits for that module to finish evaluating before emitting `ready`, so `await app.whenReady()` at the top level deadlocks: the app starts, opens no window, and prints nothing. Electron's stdout isn't attached to the terminal on Windows, so this failure is completely silent — trace to a file when debugging startup.
 - Failing to write a file is the one error that must never be silent internally, even though the user never sees it. Log it and retry.
 
-### Keep `src/electron/` thin
+### Where code lives
 
-`src/electron/` holds the only code a browser cannot run: Electron's lifecycle,
-the preload bridge, updates, the log file, and the file operations themselves.
-Everything else belongs in `src/shared/`.
+| folder | runs where | holds |
+| --- | --- | --- |
+| `src/shared/` | everywhere | the rules: naming, titles, what counts as deleted, every word of UI text |
+| `src/renderer/` | everywhere | the interface itself |
+| `src/electron/` | only the packaged app | lifecycle, the preload bridge, updates, the log file, real file operations |
+| `src/mockup/` | only the browser | the pretend store the UI is developed against |
+
+`src/electron/` and `src/mockup/` are the two halves of the same seam and should
+both stay small. Everything they don't strictly need belongs in `src/shared/`.
 
 This is not tidiness. The UI is developed and judged in a browser against the
 mock store, so **anything implemented only in `src/electron/` does not exist

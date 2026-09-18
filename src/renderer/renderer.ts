@@ -1,8 +1,8 @@
+import { createMockNoteStore } from '../mockup/note-store.ts';
 import { BUILD_STAMP } from '../shared/build-info.ts';
 import type { RendererLog } from '../shared/logging.ts';
 import { type Note, type NoteStore, isEmptied } from '../shared/notes.ts';
 import { type Language, describeWhen, strings } from '../shared/strings.ts';
-import { createMockNoteStore } from './mock-store.ts';
 import { renderList } from './note-list.ts';
 
 declare global {

@@ -1,6 +1,10 @@
 # Human edited todo
 
-[ ] sample
+[ ] P3/rare Updates: maybe some UI is ok, so he doesn't mess with it while install is in progress
+
+## UI
+[ ] "Novi tekst" button not in the right place
+[ ] Increase size of everything by 15%. The user is elderly. 
 
 # TODO
 
