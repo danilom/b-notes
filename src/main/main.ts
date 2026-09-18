@@ -56,6 +56,8 @@ ipcMain.on('log:write', (_event, level: unknown, message: unknown, detail: unkno
   rendererLog[chosen](typeof message === 'string' ? message : String(message), detail);
 });
 
+let mainWindow: BrowserWindow | null = null;
+
 async function createWindow(): Promise<void> {
   const window = new BrowserWindow({
     width: 1100,
@@ -64,6 +66,11 @@ async function createWindow(): Promise<void> {
     webPreferences: {
       preload: path.join(import.meta.dirname, 'preload.cjs'),
     },
+  });
+
+  mainWindow = window;
+  window.on('closed', () => {
+    if (mainWindow === window) mainWindow = null;
   });
 
   // Showing only once painted avoids the white flash, which is slow and ugly on
@@ -105,7 +112,26 @@ async function start(): Promise<void> {
   startUpdateChecks(log);
 }
 
-start().catch((error: unknown) => {
-  log.error('Failed to start', error);
+/**
+ * Only ever one instance.
+ *
+ * When nothing appears to happen he clicks the icon again, and two copies
+ * editing the same folder would race each other's autosaves — the conflicted
+ * copy problem, without even needing a second machine.
+ */
+if (app.requestSingleInstanceLock()) {
+  app.on('second-instance', () => {
+    log.info('Another instance was launched; focusing the window already open');
+    if (mainWindow === null) return;
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  });
+
+  start().catch((error: unknown) => {
+    log.error('Failed to start', error);
+    app.quit();
+  });
+} else {
+  log.info('Another instance already holds the lock; quitting this one');
   app.quit();
-});
+}

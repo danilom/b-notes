@@ -35,6 +35,11 @@ export function startUpdateChecks(log: Logger): void {
   autoUpdater.autoInstallOnAppQuit = true;
   // Updates are fetched by the app itself, never through a browser download.
   autoUpdater.disableWebInstaller = true;
+  // He closed the app because he was finished with it. Reopening itself after
+  // the update installs looks like the computer doing something on its own,
+  // and it races whatever he clicks next. The new version is there when he
+  // opens it himself.
+  autoUpdater.autoRunAppAfterInstall = false;
 
   autoUpdater.on('checking-for-update', () => updates.info('Checking for update'));
   autoUpdater.on('update-available', (info) => updates.info('Update available', { version: info.version }));
