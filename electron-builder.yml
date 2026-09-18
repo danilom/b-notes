@@ -1,0 +1,31 @@
+appId: com.brano-notes.app
+productName: brano-notes
+
+directories:
+  output: release
+
+# esbuild has already bundled everything but electron-updater, which stays
+# external because it resolves parts of itself at runtime.
+files:
+  - dist/**/*
+  - package.json
+
+win:
+  target: nsis
+
+nsis:
+  # No wizard and no questions: the install is done in person, and every choice
+  # offered is a choice that can be got wrong later.
+  oneClick: true
+  perMachine: false
+  allowToChangeInstallationDirectory: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  # He launches from the desktop shortcut, so it needs a name he'd recognise.
+  shortcutName: brano-notes
+  # Updates are downloaded by the running app, never fetched through a browser.
+  disableWebInstaller: true
+
+publish:
+  provider: generic
+  url: https://updates.invalid/brano-notes/

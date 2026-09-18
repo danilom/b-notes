@@ -17,7 +17,9 @@ const targets = [
     outfile: 'dist/main.js',
     platform: 'node',
     format: 'esm',
-    external: ['electron'],
+    // electron-updater resolves parts of itself at runtime, so it ships as a
+    // real dependency rather than being bundled in.
+    external: ['electron', 'electron-updater'],
   },
   {
     // Preload stays CommonJS: an ESM preload would need the sandbox turned off.

@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { LOG_LEVELS, createFileLogger } from './log.ts';
 import { createFileNoteStore } from './note-store.ts';
+import { startUpdateChecks } from './updates.ts';
 
 // The machines this runs on have old integrated GPUs, where acceleration causes
 // more rendering glitches than it prevents.
@@ -92,6 +93,7 @@ async function start(): Promise<void> {
   await app.whenReady();
   await createWindow();
   log.info('Window open');
+  startUpdateChecks(log);
 }
 
 start().catch((error: unknown) => {

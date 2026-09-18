@@ -36,6 +36,8 @@ When the tradeoff is between "powerful" and "impossible to get wrong", choose im
 - Packaged with `electron-builder` (NSIS); updates via `electron-updater` pointed at GitHub Releases. No tokens, no signing certificate.
 - Unsigned is deliberate. The initial install is done in person, so the one-time SmartScreen prompt is absorbed then; later updates are fetched by the app itself and carry no Mark-of-the-Web, so they apply silently. The tradeoff is that `verifySignature` is skipped and integrity rests on HTTPS.
 - Updates must be invisible: `autoDownload: true`, `autoInstallOnAppQuit: true`. Never prompt him to install, and never call `quitAndInstall()` while he's editing.
+- The update host must support `Accept-Ranges`, or electron-updater can't do a differential download and falls back to fetching the whole installer — 106MB instead of roughly 1MB for a small fix. GitHub Releases supports it; check before moving to any other host.
+- Updates are silent, so a broken updater is silent too. Everything electron-updater reports is routed into the log file; that's the only place it will ever surface.
 
 ## TypeScript
 
