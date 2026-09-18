@@ -10,9 +10,11 @@ import { startUpdateChecks } from './updates.ts';
 // more rendering glitches than it prevents.
 app.disableHardwareAcceleration();
 
+const runMode = app.isPackaged ? 'installed' : 'dev';
+
 // `userData` rather than `getPath('logs')` because it resolves before the app is
 // ready, and startup is exactly when we most need somewhere to write.
-const log = createFileLogger(path.join(app.getPath('userData'), 'logs'));
+const log = createFileLogger(path.join(app.getPath('userData'), 'logs'), runMode);
 const rendererLog = log.scoped('renderer');
 
 // Nothing here reaches a terminal: Electron detaches stdout on Windows, so an
@@ -90,11 +92,8 @@ app.on('window-all-closed', () => {
  * awaiting `whenReady()` at the top level deadlocks and no window ever opens.
  */
 async function start(): Promise<void> {
-  // Dev and installed runs share one log file, so each run has to say which it
-  // is — otherwise entries from a build being worked on look identical to
-  // entries from the build he's actually using.
   log.info('Starting', {
-    mode: app.isPackaged ? 'installed' : 'development',
+    mode: runMode,
     version: app.getVersion(),
     build: BUILD_STAMP,
     electron: process.versions.electron,

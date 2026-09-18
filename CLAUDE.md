@@ -95,7 +95,7 @@ Don't log:
   which makes them too expensive to do on a spinning disk at typing speed.
 
 One file per run, named for its start time and pid
-(`brano-notes-2026-09-18-162537-31240.log`), so a dev build and the installed one
+(`brano-notes-2026-09-18-162537-31240-installed.log`), so a dev build and the installed one
 can run together without interleaving, and each run reads as its own story. The
 first line of every file says whether the run was `installed` or `development`.
 

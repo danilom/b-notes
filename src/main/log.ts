@@ -3,6 +3,9 @@ import path from 'node:path';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
+/** Whether a run came from the installed app or from a build being worked on. */
+export type RunMode = 'installed' | 'dev';
+
 export const LOG_LEVELS: readonly LogLevel[] = ['debug', 'info', 'warn', 'error'];
 
 export interface LogRetention {
@@ -34,8 +37,8 @@ export interface LogFileInfo {
 
 const FILE_PREFIX = 'brano-notes-';
 const FILE_SUFFIX = '.log';
-/** e.g. brano-notes-2026-09-18-162537-31240.log */
-const FILE_PATTERN = /^brano-notes-(\d{4}-\d{2}-\d{2})-\d{6}-\d+\.log$/;
+/** e.g. brano-notes-2026-09-18-162537-31240-installed.log */
+const FILE_PATTERN = /^brano-notes-(\d{4}-\d{2}-\d{2})-\d{6}-\d+-(?:installed|dev)\.log$/;
 const DAY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 function pad(value: number, width = 2): string {
@@ -51,14 +54,14 @@ export function dayStamp(date: Date): string {
 }
 
 /**
- * One file per run, named for when it started.
+ * One file per run, named for when it started and what kind of run it was.
  *
- * The pid keeps two instances started in the same second apart, and means a dev
- * build and the installed one can run together without writing over each other.
+ * The pid keeps two instances started in the same second apart; the mode means
+ * his logs can be told from a build being worked on without opening the file.
  */
-export function logFileName(date: Date, pid: number): string {
+export function logFileName(date: Date, pid: number, mode: RunMode): string {
   const time = `${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
-  return `${FILE_PREFIX}${dayStamp(date)}-${time}-${pid}${FILE_SUFFIX}`;
+  return `${FILE_PREFIX}${dayStamp(date)}-${time}-${pid}-${mode}${FILE_SUFFIX}`;
 }
 
 export function parseLogFileDay(fileName: string): string | null {
@@ -152,11 +155,15 @@ function readLogFiles(dir: string): LogFileInfo[] {
   return files;
 }
 
-export function createFileLogger(dir: string, retention: LogRetention = DEFAULT_RETENTION): Logger {
+export function createFileLogger(
+  dir: string,
+  mode: RunMode,
+  retention: LogRetention = DEFAULT_RETENTION,
+): Logger {
   mkdirSync(dir, { recursive: true });
 
   const started = new Date();
-  const fileName = logFileName(started, process.pid);
+  const fileName = logFileName(started, process.pid, mode);
   const file = path.join(dir, fileName);
 
   // Pruning happens once, at startup. Nothing rotates while the app is open,

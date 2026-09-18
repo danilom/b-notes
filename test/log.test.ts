@@ -14,29 +14,36 @@ const RETENTION: LogRetention = { maxAgeDays: 30, maxTotalBytes: 1000 };
 const TODAY = '2026-09-18';
 
 function file(day: string, time: string, sizeBytes: number): LogFileInfo {
-  return { name: `brano-notes-${day}-${time}-1234.log`, day, sizeBytes };
+  return { name: `brano-notes-${day}-${time}-1234-dev.log`, day, sizeBytes };
 }
 
 /** The file the current run is writing to, which pruning must never touch. */
 const ACTIVE = file(TODAY, '170000', 10);
 
 describe('logFileName', () => {
-  it('names a file after the run start time and pid', () => {
+  it('names a file after the run start time, pid and kind of run', () => {
     assert.equal(
-      logFileName(new Date(2026, 8, 18, 16, 25, 37), 31240),
-      'brano-notes-2026-09-18-162537-31240.log',
+      logFileName(new Date(2026, 8, 18, 16, 25, 37), 31240, 'installed'),
+      'brano-notes-2026-09-18-162537-31240-installed.log',
+    );
+  });
+
+  it('marks a development run', () => {
+    assert.equal(
+      logFileName(new Date(2026, 8, 18, 16, 25, 37), 31240, 'dev'),
+      'brano-notes-2026-09-18-162537-31240-dev.log',
     );
   });
 
   it('gives two runs in the same second different names', () => {
     const at = new Date(2026, 8, 18, 16, 25, 37);
 
-    assert.notEqual(logFileName(at, 100), logFileName(at, 200));
+    assert.notEqual(logFileName(at, 100, 'dev'), logFileName(at, 200, 'dev'));
   });
 
   it('sorts chronologically by name', () => {
-    const earlier = logFileName(new Date(2026, 8, 18, 9, 5, 1), 1);
-    const later = logFileName(new Date(2026, 8, 18, 16, 25, 37), 1);
+    const earlier = logFileName(new Date(2026, 8, 18, 9, 5, 1), 1, 'dev');
+    const later = logFileName(new Date(2026, 8, 18, 16, 25, 37), 1, 'dev');
 
     assert.ok(earlier < later);
   });
@@ -44,12 +51,16 @@ describe('logFileName', () => {
 
 describe('parseLogFileDay', () => {
   it('reads the day back out of a log file name', () => {
-    assert.equal(parseLogFileDay('brano-notes-2026-09-18-162537-31240.log'), '2026-09-18');
+    assert.equal(
+      parseLogFileDay('brano-notes-2026-09-18-162537-31240-installed.log'),
+      '2026-09-18',
+    );
   });
 
   it('ignores files that are not ours', () => {
     assert.equal(parseLogFileDay('notes.txt'), null);
     assert.equal(parseLogFileDay('brano-notes-2026-09-18.log'), null);
+    assert.equal(parseLogFileDay('brano-notes-2026-09-18-162537-31240.log'), null);
   });
 });
 
@@ -114,7 +125,7 @@ describe('filesToPrune', () => {
     ];
 
     assert.deepEqual(filesToPrune(files, RETENTION, TODAY, ACTIVE.name), [
-      'brano-notes-2026-09-15-120000-1234.log',
+      'brano-notes-2026-09-15-120000-1234-dev.log',
     ]);
   });
 
@@ -127,8 +138,8 @@ describe('filesToPrune', () => {
     ];
 
     assert.deepEqual(filesToPrune(files, RETENTION, TODAY, ACTIVE.name), [
-      'brano-notes-2026-09-15-120000-1234.log',
-      'brano-notes-2026-09-16-120000-1234.log',
+      'brano-notes-2026-09-15-120000-1234-dev.log',
+      'brano-notes-2026-09-16-120000-1234-dev.log',
     ]);
   });
 
