@@ -44,6 +44,35 @@ out of any mess he thinks he's in**, so restoring too much would take away that
 escape. Restore the open text; don't reopen a version panel; and clear any search
 — a filtered list on startup looks exactly like texts having gone missing.
 
+## P3 — Relative times go stale where they sit
+
+`describeWhen` builds its string once, at render. Nothing re-runs it, so a row
+reading "pre 5 minuta" still reads that an hour later, and the status bar sits on
+"Sačuvano pre 2 minuta" for as long as he reads without typing. It is a small
+lie, told in the one place whose whole job is to reassure him that his work is
+safe.
+
+Measured rather than assumed: a full list repaint is ~9ms for 586 rows, so cost
+is not the objection. Two things are:
+
+- `renderList` starts with `replaceChildren()`, and emptying a scroll container
+  clamps `scrollTop` to 0. A blind repaint on a timer would yank him to the top
+  of the list every tick. Confirmed by measurement, not inference.
+- Almost nothing ever needs repainting. A row only changes when it crosses a
+  rung, and everything below `juče` is stable for months — in his own corpus,
+  which stops in 2021, *no* row will ever change.
+
+So the shape is a ~30s tick that rewrites the `.note-when` text node on the rows
+that are actually younger than an hour, plus the status line: one or two text
+nodes touched, scroll untouched, nothing rebuilt.
+
+## P3 — "Sačuvano 2019" reads oddly
+
+`describeWhen` is shared between the list column and the status bar, which want
+different things. In the column "2019" is exactly right; in a sentence it comes
+out as *Sačuvano 2019*, which is terse to the point of sounding wrong. The status
+bar has room for a fuller phrasing and should probably have its own.
+
 ## P2/P3 — Suggest similar texts
 
 When a text has likely siblings, offer a quiet "Slični tekstovi (3)" on that
