@@ -86,7 +86,7 @@ When the tradeoff is between "powerful" and "impossible to get wrong", choose im
 Not blanket coverage — tests are for **logic that fails silently**.
 What does: code whose wrong answer still looks like an answer. In this app that means, above all, anything that can lose his text.
 
-- Logic tests: `npm test` (esbuild → `node --test`; no test framework dependency). Covers the storage layer and pure logic. Keep these runnable without Electron.
+- Logic tests: `npm test` runs `node --test` directly against the TypeScript sources — Node strips the types itself, so there's no build step and no test framework. This is why `erasableSyntaxOnly` is on in `tsconfig.json`: enums and parameter properties would break it. Covers the storage layer and pure logic; keep these runnable without Electron.
 - End-to-end: Playwright's Electron support (`_electron.launch()`) drives the real app window and can screenshot it. Keep this suite small — the critical path is "type → it persists → reopen → the text is still there". Spectron is archived; don't use it.
 - Day-to-day UI iteration happens in a browser against the mock storage backend, not in a test suite.
 - Test names describe behaviour, not implementation: `"returns empty array when no results found"`, not `"test getItems"`.
