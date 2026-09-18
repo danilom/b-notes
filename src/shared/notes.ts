@@ -39,3 +39,16 @@ export interface NoteStore {
 export function isEmptied(note: Note): boolean {
   return note.text.trim().length === 0;
 }
+
+/**
+ * Whether a save replaced the text rather than edited it.
+ *
+ * A proportion rather than a byte count, so it means the same thing for a
+ * 200-byte jot and a 145KB essay. Trimming a sentence is an edit and should
+ * still rename the file; an essay replaced by one keystroke should not, because
+ * the old filename is then the last evidence of what the note was.
+ */
+export function survivedTooLittle(previous: string, next: string): boolean {
+  if (previous.length === 0) return false;
+  return next.trim().length < previous.trim().length * 0.1;
+}

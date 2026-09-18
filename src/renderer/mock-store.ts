@@ -1,8 +1,9 @@
+import { DELETED_FOLDER, fileNameBase, nextFreeName } from '../shared/note-naming.ts';
 import type { Note, NoteStore } from '../shared/notes.ts';
 import { titleFrom } from '../shared/title.ts';
 
 const KEY = 'b-notes:mock';
-const DELETED_KEY = 'b-notes:mock-deleted';
+const DELETED_KEY = `b-notes:mock-${DELETED_FOLDER}`;
 
 interface MockNote {
   text: string;
@@ -33,14 +34,6 @@ function store(notes: Map<string, MockNote>): void {
   window.localStorage.setItem(KEY, JSON.stringify(Object.fromEntries(notes)));
 }
 
-/** Mirrors the real store's collision rule, so ids look the same in both. */
-function freeId(notes: Map<string, MockNote>, title: string, own: string | null): string {
-  const base = title.length > 0 ? title : 'Bez naslova';
-  for (let attempt = 0; ; attempt += 1) {
-    const candidate = attempt === 0 ? `${base}.txt` : `${base} (${attempt}).txt`;
-    if (candidate === own || !notes.has(candidate)) return candidate;
-  }
-}
 
 /**
  * Stand-in for the filesystem so the UI can be developed and driven in a plain
@@ -90,7 +83,7 @@ export function createMockNoteStore(): NoteStore {
       if (id === null && text.trim().length === 0) return null;
 
       const notes = load();
-      const wanted = freeId(notes, titleFrom(text), id);
+      const wanted = nextFreeName(fileNameBase(titleFrom(text)), id, new Set(notes.keys()));
 
       if (id !== null && id !== wanted) notes.delete(id);
       notes.set(wanted, { text, updatedAt: Date.now() });

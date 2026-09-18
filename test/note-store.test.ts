@@ -4,14 +4,14 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
+import { createFileNoteStore } from '../src/desktop/note-store.ts';
 import {
   DELETED_FOLDER,
   baseOf,
-  createFileNoteStore,
   fileNameBase,
   isConflictedCopy,
-  survivedTooLittle,
-} from '../src/main/note-store.ts';
+} from '../src/shared/note-naming.ts';
+import { survivedTooLittle } from '../src/shared/notes.ts';
 import { titleFrom } from '../src/shared/title.ts';
 
 async function emptyStore() {

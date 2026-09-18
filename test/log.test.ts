@@ -8,7 +8,7 @@ import {
   formatLine,
   logFileName,
   parseLogFileDay,
-} from '../src/main/log.ts';
+} from '../src/desktop/log.ts';
 
 const RETENTION: LogRetention = { maxAgeDays: 30, maxTotalBytes: 1000 };
 const TODAY = '2026-09-18';

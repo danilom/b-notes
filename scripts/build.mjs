@@ -42,7 +42,7 @@ const shared = {
 const targets = [
   {
     ...shared,
-    entryPoints: ['src/main/main.ts'],
+    entryPoints: ['src/desktop/main.ts'],
     outfile: 'dist/main.js',
     platform: 'node',
     format: 'esm',
@@ -53,7 +53,7 @@ const targets = [
   {
     // Preload stays CommonJS: an ESM preload would need the sandbox turned off.
     ...shared,
-    entryPoints: ['src/main/preload.ts'],
+    entryPoints: ['src/desktop/preload.ts'],
     outfile: 'dist/preload.cjs',
     platform: 'node',
     format: 'cjs',
