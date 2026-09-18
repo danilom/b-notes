@@ -4,7 +4,9 @@ You are working as a senior TypeScript developer. Write production-quality code 
 
 ## Who this is for
 
-brano-notes is a Windows desktop app for editing long-form essays. It's built for a single user who is a longtime computer user but not comfortable with file management, and who shouldn't have to think about where text lives or how it gets saved.
+brano-notes is a Windows desktop app for editing long-form essays. It has exactly one user: an elderly relative who has used computers for 20+ years but has no firm grasp of opening and saving files, and is shaky on copy/paste.
+
+These constraints are the specification. Without them there'd be no reason to build this instead of using one of the many existing editors, so state them plainly and specifically — a vague constraint can't be designed against. Expect this list to grow.
 
 Every design decision follows from this:
 
