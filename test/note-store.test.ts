@@ -11,6 +11,7 @@ import {
   fileNameBase,
   isConflictedCopy,
   sweepEmptiedNotes,
+  survivedTooLittle,
 } from '../src/main/note-store.ts';
 import { titleFrom } from '../src/shared/title.ts';
 
@@ -38,16 +39,32 @@ describe('isConflictedCopy', () => {
 });
 
 describe('titleFrom', () => {
-  it('takes the first line', () => {
+  it('takes the first line when it says enough on its own', () => {
     assert.equal(titleFrom('O zimi\n\nNešto dalje.'), 'O zimi');
   });
 
+  it('joins the stacked, indented lines he writes titles on', () => {
+    assert.equal(titleFrom('x1\n  y\n    whatever\n\nTekst.'), 'x1 y whatever');
+  });
+
+  it('reads past a blank line when the opening tells him nothing', () => {
+    assert.equal(titleFrom('S\n\nPišem ti podstaknut'), 'S Pišem ti podstaknut');
+  });
+
+  it('stops at a blank line once there is enough to recognise', () => {
+    assert.equal(titleFrom('Devojka\n\nDanas sam vidio.'), 'Devojka');
+  });
+
+  it('keeps reading past several blank lines while the title is useless', () => {
+    assert.equal(titleFrom('S\n\n\n\nPišem ti'), 'S Pišem ti');
+  });
+
   it('skips blank lines above his text', () => {
-    assert.equal(titleFrom('\n\n\nO zimi\nDalje.'), 'O zimi');
+    assert.equal(titleFrom('\n\n\nO zimi\nDalje.'), 'O zimi Dalje.');
   });
 
   it('strips the indentation he leaves in front of it', () => {
-    assert.equal(titleFrom('      O zimi\nDalje.'), 'O zimi');
+    assert.equal(titleFrom('      O zimi\nDalje.'), 'O zimi Dalje.');
   });
 
   it('collapses runs of spaces, which he uses freely', () => {
@@ -174,10 +191,10 @@ describe('saving', () => {
 
   it('numbers a third duplicate without reusing the second name', async () => {
     const { store } = await emptyStore();
-    await store.save(null, 'Isti\n\nJedan.');
-    await store.save(null, 'Isti\n\nDva.');
+    await store.save(null, 'Ponovljeni\n\nJedan.');
+    await store.save(null, 'Ponovljeni\n\nDva.');
 
-    assert.equal(await store.save(null, 'Isti\n\nTri.'), 'Isti (2).txt');
+    assert.equal(await store.save(null, 'Ponovljeni\n\nTri.'), 'Ponovljeni (2).txt');
   });
 
   it('emptying an existing note keeps the file, since that is how he deletes', async () => {
@@ -206,6 +223,24 @@ describe('saving', () => {
     const { store } = await emptyStore();
 
     await assert.rejects(() => store.save('../../secrets.txt', 'tekst'));
+  });
+});
+
+describe('survivedTooLittle', () => {
+  it('treats trimming a sentence as an edit', () => {
+    assert.equal(survivedTooLittle('foo bar a lot whatever', 'whatever'), false);
+  });
+
+  it('treats an essay replaced by a keystroke as a replacement', () => {
+    assert.equal(survivedTooLittle('x'.repeat(20000), 'y'), true);
+  });
+
+  it('scales to a short note rather than using a byte count', () => {
+    assert.equal(survivedTooLittle('dvadeset karaktera ovdje', 'y'), true);
+  });
+
+  it('says nothing about a note that had no text to begin with', () => {
+    assert.equal(survivedTooLittle('', 'nešto novo'), false);
   });
 });
 
@@ -292,12 +327,12 @@ describe('listing', () => {
 
   it('hides conflicted copies', async () => {
     const { dir, store } = await emptyStore();
-    await store.save(null, 'Esej\n\nTekst.');
+    await store.save(null, 'Esej o zimi\n\nTekst.');
     await writeFile(path.join(dir, "Esej (Brano's conflicted copy 2026-09-18).txt"), 'x', 'utf8');
 
     assert.deepEqual(
       (await store.list()).map((note) => note.title),
-      ['Esej'],
+      ['Esej o zimi'],
     );
   });
 

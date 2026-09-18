@@ -98,6 +98,17 @@ async function writeAtomically(target: string, text: string): Promise<void> {
   await rename(temp, target);
 }
 
+/**
+ * Whether a save replaced the text rather than edited it.
+ *
+ * A proportion rather than a byte count, so it means the same thing for a
+ * 200-byte jot and a 145KB essay.
+ */
+export function survivedTooLittle(previous: string, next: string): boolean {
+  if (previous.length === 0) return false;
+  return next.trim().length < previous.trim().length * 0.1;
+}
+
 /** The first free name for `base`, treating the note's own filename as free. */
 async function freeFileName(dir: string, base: string, own: string | null): Promise<string> {
   for (let attempt = 0; ; attempt += 1) {
@@ -194,16 +205,24 @@ export function createFileNoteStore(dir: string): NoteStore {
       }
 
       const current = notePath(dir, id);
-      await writeAtomically(current, text);
-
-      // Emptying a note is how he deletes it. Renaming it at that moment would
-      // leave nothing but "Bez naslova", and the old name is the only remaining
-      // evidence of what the note was.
-      if (text.trim().length === 0) return id;
 
       // Same base means the filename already reflects his first line; leaving it
       // alone avoids renaming the file on every keystroke.
-      if (baseOf(id) === base) return id;
+      if (baseOf(id) === base) {
+        await writeAtomically(current, text);
+        return id;
+      }
+
+      // Only read the old text when a rename is on the table, which is rare —
+      // doing it on every save would double the I/O on a 145KB essay.
+      const previous = await readFile(current, 'utf8').catch(() => '');
+      await writeAtomically(current, text);
+
+      // Trimming is ordinary and should still rename: cutting "foo bar whatever"
+      // down to "whatever" is an edit. But when almost nothing survives, the
+      // text didn't get shorter, it got replaced — and the old filename is then
+      // the last evidence of what the note was.
+      if (survivedTooLittle(previous, text)) return id;
 
       const name = await freeFileName(dir, base, id);
       await rename(current, path.join(dir, name));

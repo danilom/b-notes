@@ -5,15 +5,43 @@ export const MAX_TITLE = 50;
 const SHORTEST_WORD_BREAK = 30;
 
 /**
- * The title as he sees it: his own first line, punctuation and all.
+ * A title shorter than this tells him nothing, so it keeps reading past a blank
+ * line to find something that does. Four characters or fewer is exactly the
+ * population of useless titles his old corpus accumulated.
+ */
+const TOO_SHORT_TO_HELP = 5;
+
+/**
+ * The title as he sees it, built from the start of his text.
  *
- * Not necessarily the first line of the file — he indents, and leaves blank
- * lines above his text. There is no separate title anywhere; naming things is
- * exactly what he won't do.
+ * There is no title anywhere else — naming things is precisely what he won't
+ * do — so this is a preview whose only job is helping him recognise the note.
+ * That is why it keeps going when the opening is too short to mean anything:
+ * "S" is not a title, "S Pišem ti podstaknut" is.
+ *
+ * Consecutive lines are joined, because he writes titles stacked and indented.
+ * A blank line ends it once there's enough to recognise.
  */
 export function titleFrom(text: string): string {
-  const first = text.split(/\r?\n/).find((line) => line.trim().length > 0) ?? '';
-  const cleaned = first.replace(/\s+/g, ' ').trim();
+  const lines = text.split(/\r?\n/);
+  const parts: string[] = [];
+  let seenText = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    if (trimmed.length === 0) {
+      // A blank line ends the title, unless what we have is still useless.
+      if (seenText && parts.join(' ').length >= TOO_SHORT_TO_HELP) break;
+      continue;
+    }
+
+    seenText = true;
+    parts.push(trimmed);
+    if (parts.join(' ').length >= MAX_TITLE) break;
+  }
+
+  const cleaned = parts.join(' ').replace(/\s+/g, ' ').trim();
   if (cleaned.length <= MAX_TITLE) return cleaned;
 
   const cut = cleaned.slice(0, MAX_TITLE);
