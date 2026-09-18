@@ -44,13 +44,23 @@ When the tradeoff is between "powerful" and "impossible to get wrong", choose im
 
 | folder | runs where | holds |
 | --- | --- | --- |
-| `src/shared/` | everywhere | the rules: naming, titles, what counts as deleted, every word of UI text |
+| `src/shared/` | everywhere | the rules: naming, titles, what counts as deleted, the note store, every word of UI text |
 | `src/renderer/` | everywhere | the interface itself |
-| `src/electron/` | only the packaged app | lifecycle, the preload bridge, updates, the log file, real file operations |
-| `src/mockup/` | only the browser | the pretend store the UI is developed against |
+| `src/electron/` | only the packaged app | lifecycle, the preload bridge, updates, the log file, the real filesystem |
+| `src/mockup/` | only the browser | a pretend filesystem, and the test corpus it's filled with |
 
-`src/electron/` and `src/mockup/` are the two halves of the same seam and should
-both stay small. Everything they don't strictly need belongs in `src/shared/`.
+The seam is **a filesystem, not a note store**. A platform provides somewhere to
+keep text files — list, read, write, rename — and nothing else. `NoteStore` is
+built on top of that in shared code, so there is one implementation of what a
+note is, not two.
+
+That distinction matters more than it looks. `moveToDeleted` was briefly a
+platform method, which put *where deleted things go and what they're called* —
+policy — into code the browser couldn't exercise. As a filesystem operation it's
+a rename, and the policy lives in shared with everything else.
+
+It also means anything else we need to read off his machine goes through the same
+interface rather than growing a second way to touch the disk.
 
 There are two entry points and two builds, so the mock cannot reach what he
 installs:

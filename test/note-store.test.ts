@@ -4,7 +4,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
-import { createFileNoteStore } from '../src/electron/note-store.ts';
+import { createFileSystem } from '../src/electron/file-system.ts';
+import { createNoteStore } from '../src/shared/note-store.ts';
 import {
   DELETED_FOLDER,
   baseOf,
@@ -14,9 +15,13 @@ import {
 import { survivedTooLittle } from '../src/shared/notes.ts';
 import { titleFrom } from '../src/shared/title.ts';
 
+/**
+ * The shared note store on top of the real filesystem — the combination the
+ * installed app actually runs.
+ */
 async function emptyStore() {
   const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
-  return { dir, store: createFileNoteStore(dir) };
+  return { dir, store: createNoteStore(createFileSystem(dir)) };
 }
 
 describe('isConflictedCopy', () => {

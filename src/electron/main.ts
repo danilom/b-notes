@@ -2,8 +2,9 @@ import { BrowserWindow, app, ipcMain } from 'electron';
 import path from 'node:path';
 
 import { BUILD_STAMP } from '../shared/build-info.ts';
+import { createNoteStore } from '../shared/note-store.ts';
 import { LOG_LEVELS, createFileLogger } from './log.ts';
-import { createFileNoteStore } from './note-store.ts';
+import { createFileSystem } from './file-system.ts';
 import { startUpdateChecks } from './updates.ts';
 
 // The machines this runs on have old integrated GPUs, where acceleration causes
@@ -26,7 +27,7 @@ process.on('unhandledRejection', (reason) => log.error('Unhandled rejection', re
 // Where notes live is not settled: they belong in the Dropbox folder, which
 // needs detecting at first run. Documents keeps the scaffold runnable until then.
 const notesDir = path.join(app.getPath('documents'), 'b-notes');
-const store = createFileNoteStore(notesDir);
+const store = createNoteStore(createFileSystem(notesDir));
 
 function asString(value: unknown, name: string): string {
   if (typeof value !== 'string') throw new TypeError(`${name} must be a string`);
