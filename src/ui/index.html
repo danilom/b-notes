@@ -110,11 +110,20 @@
         gap: 0.45rem;
       }
 
-      /* Sized in em so it grows with the text, including when he zooms. */
+      /*
+        Sized in em so it grows with the text, including when he zooms, and
+        greyed so it stays a mark beside the words rather than competing with
+        them. The words are what he reads; the icon is only what he aims at.
+      */
       #new-note svg {
         width: 1.05em;
         height: 1.05em;
         flex: none;
+        color: var(--faint);
+      }
+
+      #new-note:hover svg {
+        color: var(--quiet);
       }
 
       #search-row {
