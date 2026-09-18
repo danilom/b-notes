@@ -96,7 +96,29 @@ app; it's sitting in the files we're about to read. An import that faithfully
 produces 600 flat entries, several of which are near-identical drafts of the same
 essay, has moved the problem rather than solved it.
 
-So migration is part of the versioning design, not a separate chore.
+So migration is part of the versioning design, not a separate chore. Detecting
+which texts are variants of one another is P1/P2 work. Detection can be
+automatic; **the decision to group them must not be.** Merging is the one
+operation that could destroy something irreplaceable, and it would be doing so
+on the basis of a guess about similarity. The app proposes; a person confirms —
+during migration that person is whoever sets it up, not him.
+
+## What will actually impress him first
+
+Worth being clear-eyed about this, because it should drive the build order.
+
+The writing area and autosave are, on first sight, unremarkable. They're a text
+box that saves — he has had those before, and they are exactly the things that
+have failed him. He'll come to value them once they've quietly worked for a few
+months, but they won't land on day one.
+
+**What will land is seeing everything he has ever written, gathered in one place,
+visibly safe and findable.** That is the thing he has never had, and it is the
+first impression worth optimising for.
+
+Which means migration quality is the launch feature. A polished editor over a
+badly imported mess is a worse first day than a plain editor over a collection
+that finally makes sense to him.
 
 ## What he does with the writing
 

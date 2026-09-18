@@ -4,6 +4,18 @@
 
 # TODO
 
+## P3 — Diacritic-insensitive search
+
+He writes Serbian in Latin script and often drops the diacritics, inconsistently:
+`šećer` might appear as `secer`, `šecer` or `sećer` across his own texts, and he
+may type any of those into the search box. Folding them so that any spelling
+finds any other is mechanically trivial — expand each of `šđžčć` to its bare
+counterpart on both the query and the indexed text.
+
+Worth measuring before building: we have a sample of his ~600 texts, so we can
+count how many searches would actually miss without this. It may turn out to
+matter far more, or far less, than it appears.
+
 ## Getting logs off his machine
 
 The app writes a log file (see `src/main/log.ts`), but reading it currently
