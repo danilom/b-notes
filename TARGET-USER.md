@@ -4,7 +4,8 @@ b-notes has exactly one user. Every decision in this project answers to him, and
 the constraints below are the specification — without them there'd be no reason
 to build this rather than use one of the many editors that already exist.
 
-Technical consequences of all this live in `DESIGN.md`.
+Technical consequences of all this live in `DESIGN.md`. Things we want to ask or
+observe directly are collected in `B-QUESTIONS.md`.
 
 ## Who he is
 
@@ -18,9 +19,17 @@ specifically with computers.
 That distinction matters for the UI. Simple, never childish. Don't write
 interface text that talks down to him.
 
-He writes prodigiously, in Serbian. His first language is English and his
-working knowledge of it is good, so an English UI causes him no particular
-trouble beyond the general trouble computers cause him.
+He writes prodigiously, in Serbian, in Latin script. English is his second
+language and he is proficient in it, so an English UI causes him no particular
+trouble beyond the general trouble computers cause him — but Serbian is what he
+writes in, and the UI should be too (see below).
+
+He often omits the diacritics — writing `sdzcc` where `šđžčć` belong. Possibly he
+doesn't know how to switch keyboard layouts. Correcting that is not our problem
+and not a P1 or P2 concern, but it has one consequence we can't ignore: **search
+has to match with and without diacritics, in both directions.** Typing `cesce`
+must find `češće`, and typing `češće` must find a note where he wrote `cesce`.
+With hundreds of notes, search is how he finds anything.
 
 ## How he works
 
@@ -34,11 +43,14 @@ trouble beyond the general trouble computers cause him.
 - All his machines seem prone to random catastrophes — things fail at an
   unexpected rate, as if the machines have gremlins, while still more or less
   working.
+- He likes to write down instructions for himself, though it's unclear whether he
+  ever reads them back.
 
 ## What has gone wrong before
 
 He has lost data, fully or partially, on many occasions. The causes were never
-established. Plausible candidates, none confirmed:
+established and probably never will be — as far as he's concerned things simply
+keep disappearing. Plausible candidates, none confirmed:
 
 - A glitch in whatever app he was using.
 - Saving incorrectly, or not saving.
@@ -46,10 +58,15 @@ established. Plausible candidates, none confirmed:
   or may not know about Undo.
 - Sync problems, particularly with ResophNotes/Simplenote.
 
+Both in-app loss and sync loss have to be designed against, because there's no
+way to know which did the damage.
+
 Two anecdotes that say a lot:
 
 - He used to wake up a family member to "save his file" back in his MS Word days.
-  The word *save* carries anxiety for him and shouldn't appear in this app.
+  The word *save* is not itself a problem — "your text was saved 2 minutes ago"
+  is reassuring and fine. What must never happen is the app *requiring* him to
+  save, or leaving saving as something he could fail to do.
 - He reports things having "disappeared" when a window is minimised, closed, or
   possibly just covered by another window. It isn't fully established which. To
   him, a window he can't see is work that is gone.
@@ -58,8 +75,9 @@ Two anecdotes that say a lot:
 
 - **ResophNotes** — his mainstay, and he kind of liked it. Last real update 2018;
   the recent release is only a rebuild. Effectively unsupported. Some of his data
-  losses may have been its sync.
-- **Simplenote** — possibly, alongside or before Resoph.
+  losses may have been its sync. Stores notes as plain XML.
+- **Simplenote** — possibly, alongside or before Resoph. A 2021 Simplenote backup
+  holds on the order of **600 notes**; the current figure is unknown.
 - **Notepad, GMail drafts, Obsidian** — all tried, none stuck. Not certain why in
   each case.
 - He was still clinging to Resoph as of last year; unclear whether that survived
@@ -67,22 +85,49 @@ Two anecdotes that say a lot:
 - His texts were moved to Dropbox as `.txt`/`.md`, which may have helped, but not
   fully.
 
+## He does not start from a clean slate
+
+His existing writing has to come with him — several hundred texts, in `.txt`/`.md`
+files and/or ResophNotes' XML, either migrated into the app or edited in place.
+
+This matters more than a normal import would, because **the mess already exists in
+the data**. The three-to-five-variants problem isn't something he'll create in our
+app; it's sitting in the files we're about to read. An import that faithfully
+produces 600 flat entries, several of which are near-identical drafts of the same
+essay, has moved the problem rather than solved it.
+
+So migration is part of the versioning design, not a separate chore.
+
 ## What he does with the writing
 
 He emails his essays to people who read them — often several versions of the same
-piece as he refines it. That is the output of the whole system; everything else
-exists to get a text to a reader.
+piece as he refines it. Always GMail, always in the browser.
 
 **Anything the app does about sending is P3.** He already copies and pastes into
 GMail and manages it fine, and that path works today. Anything we added would be
 either a `mailto:` link, which hands him off to whatever Windows thinks the
 default mail client is, or a copy to the clipboard — which is what he's already
-doing. Both add a new way to fail to a route that currently doesn't.
+doing. Both add a new way to fail to a route that currently doesn't. Webmail also
+rules out any handoff more direct than the clipboard.
 
 Worth considering for a different reason: a clearly labelled button that copies
 the whole text. Not to help him send it, but so he never needs Ctrl+A. Select-all
 creates a state where the entire essay is selected and one stray keystroke
 replaces it, which is one of the suspected ways he has lost work.
+
+## Language of the interface
+
+Build **both Serbian (Latin) and English, with Serbian as the priority.** He
+reads English fine, but he writes in Serbian and the interface should meet him
+there.
+
+The mechanical side of translation is cheap; getting the *wording* right is not.
+Every string has to be plain, unambiguous, and speakable over the phone, in both
+languages. Expect to spend real effort tuning the messages rather than
+translating them.
+
+Practical consequence: UI text lives in one place from the start. Retrofitting
+that after strings have been scattered through the code is the expensive version.
 
 ## What the app has to be
 
@@ -91,10 +136,12 @@ easy, non-confusing way to get old material back.
 
 - **Nothing is ever lost.** This is the entire point of the project.
 - **Autosave**, with reassurance: visible, plain confirmation of when a text was
-  last edited or saved.
+  last saved.
 - **Old versions are retrievable** without him having to have planned for it.
-- **Clear controls with text labels**, not bare icons. (Exact design to be worked
-  out; Resoph's icons were too cryptic.)
+- **Clear controls with text labels**, not bare icons. Two reasons beyond
+  legibility: he writes instructions down for himself, and labels give him
+  something to write; and over the phone, "click Find" is a sentence that works,
+  where "click the little magnifying-glass icon near the top right" is not.
 - **Labels name the outcome and the destination, not the mechanism.** "Copy the
   whole text" invites the question *copy to where* — the clipboard is invisible
   and can't be reasoned about. Where something lands somewhere he can't see, the
@@ -111,28 +158,31 @@ easy, non-confusing way to get old material back.
 
 - Ask him a question he has no way of answering.
 - Show him a filename, a path, or a file dialog.
-- Use the word "save".
+- Require him to save, or make saving something he could fail to do.
 - Leave him unsure whether his work is safe.
 - Require naming or organising to function.
 - Present two near-identical things and ask which he wants.
 
 ## Rough shape
 
-Loosely ResophNotes: a large search pane with a list of titles, and an area where
-he writes.
+Loosely ResophNotes: a search box and a list of titles down the left, a large
+writing area on the right. His current app looks like this:
 
-Resoph's problems to avoid: features like tagging that he'd never use; a
+```
++----------------------------------------------------------+
+| [search box.................]  [icons]  | Add tag...      |
++-----------------------------------------+                 |
+| [All Notes]                             |                 |
+| hello                           3:16 pm | new note        |
+| My note goes here               3:15 pm |                 |
+| new note                        3:16 pm |                 |
+|                                         |                 |
+|  (list of titles, newest first)         |  (writing area) |
+|                                         |                 |
++-----------------------------------------+-----------------+
+| + -                      Count  Last Modified             |
++----------------------------------------------------------+
+```
+
+Resoph's problems to avoid: tagging and similar features he'd never use; a
 minimalism that tips into unclear icons; and being hopelessly out of date.
-
-## Open questions
-
-- Does he write Serbian in Cyrillic, Latin, or both? If both, search may need to
-  match across scripts, since he won't remember which he used.
-- Would a Serbian/Croatian UI serve him better than English? He can handle
-  English, but his writing language is Serbian. Worth deciding before UI text
-  gets scattered through the code.
-- Roughly how many texts does he have? It shapes how the list and search work.
-- How does he actually send email — a desktop client or webmail? It determines
-  what "send this to someone" can do.
-- Which of his data losses were sync, and which were in-app? Unknowable now, but
-  worth keeping in mind that both must be designed against.

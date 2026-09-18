@@ -9,10 +9,11 @@ b-notes is a Windows desktop app for editing long-form essays, built for one
 specific person. **`TARGET-USER.md` describes him, how he works, what has gone
 wrong before, and what the app therefore has to be.** Read it first — it is the
 specification, and this file only covers what follows from it technically.
+Unresolved questions about him are in `B-QUESTIONS.md`.
 
 The consequences that shape the code:
 
-- He should never see a file dialog, a filesystem path, or the word "save".
+- He should never see a file dialog or a filesystem path. The word "save" is fine in a sentence like "saved 2 minutes ago"; what's forbidden is requiring him to save.
 - His work must never be lost. Autosave is the only save.
 - No jargon in UI text. No modal that can be dismissed into a wrong state.
 - Errors are our problem, not his — recover silently where possible; never surface a stack trace, error code, or a question he can't answer.
@@ -22,6 +23,10 @@ The consequences that shape the code:
 - A laptop left off for months comes back running an old build. An older version must never corrupt a file written by a newer one, so keep the on-disk format boring and forward-compatible.
 - Only ever one instance. When nothing appears to happen he will click the icon again, and two copies autosaving into the same folder race each other.
 - A window he cannot see is, to him, work that is gone. Window behaviour is a data-safety concern here, not polish.
+- Roughly 600 texts, possibly more. Search is the primary way he finds anything, not scrolling.
+- He writes Serbian in Latin script and frequently drops the diacritics (`sdzcc` for `šđžčć`). Search must match with or without them, in both directions, or he won't find his own writing.
+- UI text is Serbian (Latin) and English, Serbian first. Keep every string in one place from the start — retrofitting that later is the expensive version.
+- He arrives with several hundred existing texts in `.txt`/`.md` and/or ResophNotes XML, already containing near-duplicate drafts of the same essay. Migration is part of the versioning design, not a separate import chore.
 
 When the tradeoff is between "powerful" and "impossible to get wrong", choose impossible to get wrong.
 
