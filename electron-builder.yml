@@ -1,5 +1,5 @@
-appId: com.brano-notes.app
-productName: brano-notes
+appId: com.b-notes.app
+productName: b-notes
 
 directories:
   output: release
@@ -22,8 +22,8 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   # He launches from the desktop shortcut, so it needs a name he'd recognise.
-  shortcutName: brano-notes
-  # Default is "brano-notes Setup 0.1.1.exe"; spaces end up percent-encoded in
+  shortcutName: b-notes
+  # Default is "b-notes Setup 0.1.1.exe"; spaces end up percent-encoded in
   # the update URLs and awkward to type on a command line.
   artifactName: ${name}-setup-${version}.${ext}
 

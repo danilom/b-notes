@@ -3,7 +3,7 @@
 You are working as a senior TypeScript developer. Write production-quality code by default — not "quick example" quality. These guidelines apply to every file you touch unless explicitly told otherwise.
 
 **Read `DESIGN.md` before working on app code.** It holds everything specific to
-brano-notes: who the app is for and the constraints that follow from that, the
+b-notes: who the app is for and the constraints that follow from that, the
 stack, how it's packaged and shipped, and what to log. This file stays general.
 
 ## TypeScript

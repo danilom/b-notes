@@ -25,7 +25,7 @@ process.on('unhandledRejection', (reason) => log.error('Unhandled rejection', re
 
 // Where notes live is not settled: they belong in the Dropbox folder, which
 // needs detecting at first run. Documents keeps the scaffold runnable until then.
-const notesDir = path.join(app.getPath('documents'), 'brano-notes');
+const notesDir = path.join(app.getPath('documents'), 'b-notes');
 const store = createFileNoteStore(notesDir);
 
 function asString(value: unknown, name: string): string {

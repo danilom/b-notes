@@ -1,6 +1,6 @@
 @echo off
 setlocal
-set "LOGS=%APPDATA%\brano-notes\logs"
+set "LOGS=%APPDATA%\b-notes\logs"
 
 if not exist "%LOGS%" (
     echo No logs yet. Run the app at least once, then try again.

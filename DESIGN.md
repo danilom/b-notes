@@ -1,11 +1,11 @@
-# brano-notes
+# b-notes
 
 Everything specific to this app: who it's for, what it's built from, how it
 ships, and what it records. General coding rules live in `CLAUDE.md`.
 
 ## Who this is for
 
-brano-notes is a Windows desktop app for editing long-form essays. It has exactly one user: an elderly relative who has used computers for 20+ years but has no firm grasp of opening and saving files, and is shaky on copy/paste.
+b-notes is a Windows desktop app for editing long-form essays. It has exactly one user: an elderly relative who has used computers for 20+ years but has no firm grasp of opening and saving files, and is shaky on copy/paste.
 
 These constraints are the specification. Without them there'd be no reason to build this instead of using one of the many existing editors, so state them plainly and specifically — a vague constraint can't be designed against. Expect this list to grow.
 
@@ -78,7 +78,7 @@ Don't log:
   which makes them too expensive to do on a spinning disk at typing speed.
 
 One file per run, named for its start time, pid and kind of run
-(`brano-notes-2026-09-18-162537-31240-installed.log`), so a dev build and the
+(`b-notes-2026-09-18-162537-31240-installed.log`), so a dev build and the
 installed one can run together without interleaving, and each run reads as its
 own story. The first line of every file repeats whether the run was `installed`
 or `dev`.

@@ -1,6 +1,6 @@
 import type { NoteStore, NoteSummary } from '../shared/notes.ts';
 
-const KEY = 'brano-notes:mock';
+const KEY = 'b-notes:mock';
 
 interface MockNote {
   title: string;

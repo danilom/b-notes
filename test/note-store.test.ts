@@ -7,7 +7,7 @@ import { describe, it } from 'node:test';
 import { createFileNoteStore, isConflictedCopy, toFileName } from '../src/main/note-store.ts';
 
 async function emptyStore() {
-  const dir = await mkdtemp(path.join(tmpdir(), 'brano-notes-'));
+  const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
   return { dir, store: createFileNoteStore(dir) };
 }
 

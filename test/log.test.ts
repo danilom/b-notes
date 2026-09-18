@@ -14,7 +14,7 @@ const RETENTION: LogRetention = { maxAgeDays: 30, maxTotalBytes: 1000 };
 const TODAY = '2026-09-18';
 
 function file(day: string, time: string, sizeBytes: number): LogFileInfo {
-  return { name: `brano-notes-${day}-${time}-1234-dev.log`, day, sizeBytes };
+  return { name: `b-notes-${day}-${time}-1234-dev.log`, day, sizeBytes };
 }
 
 /** The file the current run is writing to, which pruning must never touch. */
@@ -24,14 +24,14 @@ describe('logFileName', () => {
   it('names a file after the run start time, pid and kind of run', () => {
     assert.equal(
       logFileName(new Date(2026, 8, 18, 16, 25, 37), 31240, 'installed'),
-      'brano-notes-2026-09-18-162537-31240-installed.log',
+      'b-notes-2026-09-18-162537-31240-installed.log',
     );
   });
 
   it('marks a development run', () => {
     assert.equal(
       logFileName(new Date(2026, 8, 18, 16, 25, 37), 31240, 'dev'),
-      'brano-notes-2026-09-18-162537-31240-dev.log',
+      'b-notes-2026-09-18-162537-31240-dev.log',
     );
   });
 
@@ -52,15 +52,15 @@ describe('logFileName', () => {
 describe('parseLogFileDay', () => {
   it('reads the day back out of a log file name', () => {
     assert.equal(
-      parseLogFileDay('brano-notes-2026-09-18-162537-31240-installed.log'),
+      parseLogFileDay('b-notes-2026-09-18-162537-31240-installed.log'),
       '2026-09-18',
     );
   });
 
   it('ignores files that are not ours', () => {
     assert.equal(parseLogFileDay('notes.txt'), null);
-    assert.equal(parseLogFileDay('brano-notes-2026-09-18.log'), null);
-    assert.equal(parseLogFileDay('brano-notes-2026-09-18-162537-31240.log'), null);
+    assert.equal(parseLogFileDay('b-notes-2026-09-18.log'), null);
+    assert.equal(parseLogFileDay('b-notes-2026-09-18-162537-31240.log'), null);
   });
 });
 
@@ -125,7 +125,7 @@ describe('filesToPrune', () => {
     ];
 
     assert.deepEqual(filesToPrune(files, RETENTION, TODAY, ACTIVE.name), [
-      'brano-notes-2026-09-15-120000-1234-dev.log',
+      'b-notes-2026-09-15-120000-1234-dev.log',
     ]);
   });
 
@@ -138,8 +138,8 @@ describe('filesToPrune', () => {
     ];
 
     assert.deepEqual(filesToPrune(files, RETENTION, TODAY, ACTIVE.name), [
-      'brano-notes-2026-09-15-120000-1234-dev.log',
-      'brano-notes-2026-09-16-120000-1234-dev.log',
+      'b-notes-2026-09-15-120000-1234-dev.log',
+      'b-notes-2026-09-16-120000-1234-dev.log',
     ]);
   });
 

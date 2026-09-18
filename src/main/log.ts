@@ -35,10 +35,10 @@ export interface LogFileInfo {
   sizeBytes: number;
 }
 
-const FILE_PREFIX = 'brano-notes-';
+const FILE_PREFIX = 'b-notes-';
 const FILE_SUFFIX = '.log';
-/** e.g. brano-notes-2026-09-18-162537-31240-installed.log */
-const FILE_PATTERN = /^brano-notes-(\d{4}-\d{2}-\d{2})-\d{6}-\d+-(?:installed|dev)\.log$/;
+/** e.g. b-notes-2026-09-18-162537-31240-installed.log */
+const FILE_PATTERN = /^b-notes-(\d{4}-\d{2}-\d{2})-\d{6}-\d+-(?:installed|dev)\.log$/;
 const DAY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 function pad(value: number, width = 2): string {
