@@ -2,15 +2,9 @@ import { type Language, describeWhen, strings } from '../language/wording.ts';
 import { createNoteStore } from '../notes/note-store.ts';
 import { type Note, isEmptied } from '../notes/note.ts';
 import { BUILD_STAMP } from '../platform/build-info.ts';
-import type { FileSystem } from '../platform/file-system.ts';
+import type { Host } from '../platform/host.ts';
 import type { Log } from '../platform/logging.ts';
 import { renderList } from './note-list.ts';
-
-declare global {
-  interface Window {
-    log?: Log;
-  }
-}
 
 /** Long enough that he isn't saved mid-word, short enough to never lose a thought. */
 const AUTOSAVE_IDLE_MS = 800;
@@ -19,15 +13,8 @@ const LAST_OPEN_KEY = 'b-notes:last-open';
 const language: Language = 'sr';
 const words = strings(language);
 
-/**
- * In a browser tab there's no preload script and so no bridge to the log file.
- * The console is the only place left, and it's enough while developing.
- */
-const log: Log = window.log ?? {
-  info: (message, detail) => console.info(message, detail),
-  warn: (message, detail) => console.warn(message, detail),
-  error: (message, detail) => console.error(message, detail),
-};
+/** Both come from the host, and nothing here reaches past it for them. */
+let log: Log;
 
 /** Errors don't survive structured cloning intact, so flatten before sending. */
 function describeError(value: unknown): unknown {
@@ -37,17 +24,19 @@ function describeError(value: unknown): unknown {
   return value;
 }
 
-window.addEventListener('error', (event) => {
-  log.error('Uncaught error in renderer', {
-    message: event.message,
-    at: `${event.filename}:${event.lineno}:${event.colno}`,
-    error: describeError(event.error),
+function reportUncaught(): void {
+  window.addEventListener('error', (event) => {
+    log.error('Uncaught error while he was working', {
+      message: event.message,
+      at: `${event.filename}:${event.lineno}:${event.colno}`,
+      error: describeError(event.error),
+    });
   });
-});
 
-window.addEventListener('unhandledrejection', (event) => {
-  log.error('Unhandled rejection in renderer', describeError(event.reason));
-});
+  window.addEventListener('unhandledrejection', (event) => {
+    log.error('Unhandled rejection while he was working', describeError(event.reason));
+  });
+}
 
 function element<T extends Element>(id: string, kind: new () => T): T {
   const found = document.getElementById(id);
@@ -163,14 +152,17 @@ newNote.addEventListener('click', () => {
 });
 
 /**
- * Starts the interface on whatever filesystem the host provides.
+ * Starts the interface on whatever host it's given.
  *
- * A host supplies somewhere to keep files and nothing else — what a note is,
- * and how one is named, saved or put away, is decided here and in `notes/`, so
- * every host behaves identically.
+ * A host supplies capabilities — somewhere to keep files, somewhere to log —
+ * and nothing more. What a note is, and how one is named, saved or put away, is
+ * decided here and in `notes/`, so every host behaves identically.
  */
-export async function startApp(files: FileSystem, backend: string): Promise<void> {
-  store = createNoteStore(files);
+export async function startApp(host: Host): Promise<void> {
+  log = host.log;
+  reportUncaught();
+
+  store = createNoteStore(host.files);
   newNote.textContent = words.newNote;
   search.placeholder = words.searchPlaceholder;
   search.setAttribute('aria-label', words.searchLabel);
@@ -197,5 +189,5 @@ export async function startApp(files: FileSystem, backend: string): Promise<void
     showStatus();
   }
 
-  log.info('Ready', { build: BUILD_STAMP, notes: notes.length, backend });
+  log.info('Ready', { build: BUILD_STAMP, notes: notes.length, host: host.name });
 }

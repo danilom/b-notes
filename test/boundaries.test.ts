@@ -70,6 +70,24 @@ describe('where code is allowed to reach', () => {
     });
   }
 
+  /**
+   * The app is handed a Host and reaches for nothing else. A capability taken
+   * off `window` instead would be one the other host never has to answer for,
+   * which is how the mock came to lack rules the real store had.
+   */
+  for (const folder of PORTABLE) {
+    it(`makes ${folder} take host capabilities from the Host, not from window`, async () => {
+      const reaching: string[] = [];
+      for (const file of await sourceFiles(folder)) {
+        const text = await readFile(file, 'utf8');
+        for (const capability of ['window.files', 'window.log']) {
+          if (text.includes(capability)) reaching.push(`${file} uses ${capability}`);
+        }
+      }
+      assert.deepEqual(reaching, []);
+    });
+  }
+
   it('lets a host start the interface, which is what a host is for', async () => {
     for (const host of ['hosts/electron', 'hosts/mockup']) {
       const entry = await importsIn(path.join(SOURCE, host, 'browser-entry.ts'));
