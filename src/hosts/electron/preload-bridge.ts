@@ -4,7 +4,7 @@ import { contextBridge, ipcRenderer } from 'electron';
  * Everything the packaged app hands the interface: somewhere to keep files, and
  * somewhere to log.
  *
- * Deliberate ly no notion of a note. What a note is belongs to the app, which
+ * Deliberately no notion of a note. What a note is belongs to the app, which
  * runs the same code whether it's sitting on this bridge or on a pretend
  * filesystem in a browser tab.
  */
