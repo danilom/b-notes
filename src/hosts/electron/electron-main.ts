@@ -5,6 +5,7 @@ import { BUILD_STAMP } from '../../platform/build-info.ts';
 import { LOG_LEVELS, createFileLogger } from './log-file.ts';
 import { createFileSystem } from './disk-file-system.ts';
 import { startUpdateChecks } from './app-updates.ts';
+import { pulledBackOnScreen } from './window-bounds.ts';
 
 // The machines this runs on have old integrated GPUs, where acceleration causes
 // more rendering glitches than it prevents.
@@ -126,6 +127,46 @@ function smallestWindow(): { width: number; height: number } {
 
 let mainWindow: BrowserWindow | null = null;
 
+/** Long enough that this happens after he has let go, not while he is dragging. */
+const SETTLED_MS = 250;
+
+/**
+ * Brings the window back if he drags it off the desk.
+ *
+ * Only after the move has finished and settled, and only when the window has
+ * genuinely gone — so it never argues with him mid-drag about where he is
+ * putting it, and does nothing at all in the ordinary case.
+ *
+ * Deliberately no window styles touched. Holding the window in place by taking
+ * the maximise button away was tried and reverted, because changing how Windows
+ * is allowed to size a window breaks in ways that only appear after a minimise
+ * or a snap. Moving a window that has already been moved cannot do that.
+ *
+ * Nothing remembers where the window was between runs, so the worst this can
+ * fail to catch is undone by closing the app and opening it again — which is
+ * his answer to everything, and the reason this is a comfort rather than a
+ * necessity.
+ */
+function keepWindowReachable(window: BrowserWindow): void {
+  let settling: ReturnType<typeof setTimeout> | undefined;
+
+  window.on('moved', () => {
+    clearTimeout(settling);
+    settling = setTimeout(() => {
+      if (window.isDestroyed() || window.isMinimized() || window.isMaximized()) return;
+
+      const bounds = window.getBounds();
+      // The display it is mostly on, so a second monitor is somewhere it may
+      // live rather than somewhere it gets dragged back from.
+      const back = pulledBackOnScreen(bounds, screen.getDisplayMatching(bounds).workArea);
+      if (back === null) return;
+
+      window.setBounds(back);
+      log.info('Brought the window back onto the screen', { from: bounds, to: back });
+    }, SETTLED_MS);
+  });
+}
+
 async function createWindow(): Promise<BrowserWindow> {
   const smallest = smallestWindow();
   const window = new BrowserWindow({
@@ -152,6 +193,8 @@ async function createWindow(): Promise<BrowserWindow> {
     mattered — he cannot shrink it to a sliver — without any of that.
   */
   window.maximize();
+
+  keepWindowReachable(window);
 
   mainWindow = window;
   window.on('closed', () => {
