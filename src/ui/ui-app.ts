@@ -164,17 +164,25 @@ function markMatches(): void {
 /**
  * Says where he is among the matches, and offers the way to the next.
  *
- * Shown for a single match as well as for many: that it appears once is worth
- * knowing, and the buttons simply have nothing to do. Hidden entirely when
- * there is no search on, so nothing floats over his writing while he writes.
+ * Shown for a single match as well as for many. Hiding it there was considered
+ * and is worse: as he types, the count falls away — 74, 12, 3, 1, none — and a
+ * panel that vanished at one would go while a match was still highlighted in
+ * front of him, which reads as the match having gone too.
+ *
+ * The buttons stay for the same reason, greyed rather than gone: they would
+ * otherwise appear and disappear as he crosses between one match and two,
+ * moving the panel twice in as many keystrokes. "Samo jednom" is what makes
+ * that greying legible — there is one, so there is nowhere to go — where
+ * "1. od 1" would only have stated an ordinal of itself.
  */
 function showFound(): void {
   foundPane.hidden = found.length === 0;
   if (found.length === 0) return;
 
-  foundAt.textContent = words.foundAt(atFound + 1, found.length);
-  foundPrevious.disabled = found.length < 2;
-  foundNext.disabled = found.length < 2;
+  const alone = found.length === 1;
+  foundAt.textContent = alone ? words.foundOnce : words.foundAt(atFound + 1, found.length);
+  foundPrevious.disabled = alone;
+  foundNext.disabled = alone;
 }
 
 /**
