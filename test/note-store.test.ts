@@ -13,6 +13,7 @@ import {
   isConflictedCopy,
 } from '../src/notes/note-naming.ts';
 import { survivedTooLittle } from '../src/notes/note.ts';
+import { toSearchable } from '../src/language/diacritics.ts';
 import { titleFrom } from '../src/notes/note-title.ts';
 
 /**
@@ -360,6 +361,23 @@ describe('converting to plain text', () => {
 });
 
 describe('listing', () => {
+  it('keeps the searchable form in step with the text it came from', async () => {
+    // It is worked out once, when a note is read, and searching trusts it
+    // afterwards. If the two ever drift, a search quietly stops finding a text
+    // that plainly contains the word — which looks like the text being gone.
+    const { store } = await emptyStore();
+    await store.save(null, 'Mačka
+
+Čičak i šećer, đevrek.');
+    await store.save(null, 'Bez kvačica
+
+Cicak i secer.');
+
+    for (const note of await store.list()) {
+      assert.equal(note.searchable, toSearchable(note.text), note.id);
+    }
+  });
+
   it('ignores the deleted folder', async () => {
     const { store } = await emptyStore();
     const id = await store.save(null, 'O zimi\n\nTekst.');
