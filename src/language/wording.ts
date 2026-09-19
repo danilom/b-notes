@@ -131,6 +131,10 @@ const TEXT = {
       const by = Math.abs(difference).toLocaleString('sr-RS');
       return `${count} (${by} ${difference > 0 ? 'više' : 'manje'} nego sada)`;
     },
+    // "Sadašnji tekst", never "tvoj tekst": every text in the app is his, so
+    // the possessive distinguishes nothing here. The contrast that matters is
+    // between a copy and the one open now, and this dialog already calls the
+    // copy a verzija — so the other one only has to be the present one.
     // Only ever on a copy that opened differently from the way the text opens
     // now, where it is the whole reason he would pick that row.
     versionWasCalled: (title: string) => `Zvao se: „${title}“`,
@@ -138,10 +142,10 @@ const TEXT = {
     // has, and what he has that it never did.
     versionAdded: (text: string) => `Dodato: „${text}“`,
     versionMissing: (text: string) => `Nedostaje: „${text}“`,
-    versionsAllSame: 'Sve sačuvane verzije su iste kao tvoj tekst.',
+    versionsAllSame: 'Sve sačuvane verzije su iste kao sadašnji tekst.',
     versionsBack: 'Nazad na verzije',
     versionRestore: 'Vrati ovaj tekst',
-    versionMarked: 'Podebljano je ono što u tvom tekstu više ne postoji.',
+    versionMarked: 'Podebljano je ono što u sadašnjem tekstu više ne postoji.',
     noteDeleted: 'Tekst je obrisan',
     emptiedHint: 'Tekst je prazan. Obriši ga ako ti više ne treba.',
   },
@@ -242,10 +246,10 @@ const TEXT = {
     versionWasCalled: (title: string) => `Was called: “${title}”`,
     versionAdded: (text: string) => `Extra: “${text}”`,
     versionMissing: (text: string) => `Missing: “${text}”`,
-    versionsAllSame: 'Every copy kept is the same as your text.',
+    versionsAllSame: 'Every copy kept is the same as the current text.',
     versionsBack: 'Back to versions',
     versionRestore: 'Bring this text back',
-    versionMarked: 'What is in bold is no longer in your text.',
+    versionMarked: 'What is in bold is no longer in the current text.',
     noteDeleted: 'Text deleted',
     emptiedHint: 'This text is empty. Delete it if you no longer need it.',
   },
