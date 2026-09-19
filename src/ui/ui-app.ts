@@ -670,6 +670,7 @@ export async function startApp(host: Host): Promise<void> {
   newNote.prepend(icon('new-text'));
   appearanceLabel.textContent = words.appearance;
   deleteNoteLabel.textContent = words.deleteNote;
+  deleteNote.prepend(icon('delete'));
   appearanceButton.prepend(icon('appearance'));
   search.placeholder = words.searchPlaceholder;
   search.setAttribute('aria-label', words.searchLabel);

@@ -332,7 +332,21 @@
         margin-left: auto;
       }
 
-      #delete-note,
+      /*
+        A button that looks like one, the way Novi tekst does. It blended into
+        the strip beside Izgled while it was the rarer pair of the two, but his
+        old archive says he deletes about ten times a year and goes looking for
+        the command when he does — and something he goes looking for should not
+        be the quietest thing on screen.
+      */
+      #delete-note {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.3rem 0.7rem;
+        font-size: 0.92em;
+      }
+
       #appearance-button {
         display: inline-flex;
         align-items: center;
@@ -344,7 +358,6 @@
         font-size: 0.92em;
       }
 
-      #delete-note:hover:not(:disabled),
       #appearance-button:hover:not(:disabled) {
         border-color: var(--line);
         color: var(--ink);

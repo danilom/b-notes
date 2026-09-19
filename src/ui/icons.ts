@@ -4,7 +4,7 @@
  * One set rather than shapes drawn by hand one at a time: they share a grid, a
  * stroke weight and a set of corners, which is the whole reason a handful of
  * small marks look deliberate instead of collected. Copied in as path data
- * rather than pulled from a package — three icons is not worth a dependency,
+ * rather than pulled from a package — a handful of icons is not worth a dependency,
  * and the app must keep working with no network and no CDN.
  *
  * Lucide, ISC licence. See THIRD-PARTY.md, and lucide.dev for the rest of the
@@ -15,7 +15,7 @@
 const VIEW_BOX = '0 0 24 24';
 const STROKE_WIDTH = '2';
 
-export type IconName = 'new-text' | 'appearance' | 'close' | 'previous' | 'next';
+export type IconName = 'new-text' | 'appearance' | 'close' | 'delete' | 'previous' | 'next';
 
 const PATHS = {
   'new-text': [
@@ -28,6 +28,13 @@ const PATHS = {
     'M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z',
   ],
   close: ['M18 6 6 18', 'm6 6 12 12'],
+  delete: [
+    'M3 6h18',
+    'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6',
+    'M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2',
+    'M10 11v6',
+    'M14 11v6',
+  ],
   // Up and down rather than left and right: his matches are ordered down the
   // page, and that is the direction he will actually travel.
   previous: ['m18 15-6-6-6 6'],
