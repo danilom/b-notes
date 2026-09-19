@@ -61,12 +61,23 @@ function rowsFor(view: ListView): Row[] {
     updatedAt: note.updatedAt,
   }));
 
-  // Empty text, so a search can never claim the draft as a match: it falls into
-  // the dimmed section on its own, the same way anything unmatched does.
-  if (view.draft !== null) {
-    rows.push({ id: null, title: words.untitled, text: '', updatedAt: view.draft.startedAt });
-  }
   return rows;
+}
+
+/**
+ * The text he has begun, which belongs to no section.
+ *
+ * It used to sit among the rest and take its chances with the search, which was
+ * wrong twice over: with a query that didn't match it — and it matches nothing,
+ * having no words in it yet — it sank into the dimmed remainder, and it did so
+ * at the very moment Nedavni was gone too, so the text he had just asked for
+ * was nowhere he would look. It isn't a text he is searching for. It is the one
+ * he is writing, so it sits above all of it and stays put.
+ */
+export function draftRowFor(view: ListView): Row | null {
+  if (view.draft === null) return null;
+  const words = strings(view.language);
+  return { id: null, title: words.untitledNew, text: '', updatedAt: view.draft.startedAt };
 }
 
 /**
@@ -126,6 +137,13 @@ export function renderList(container: HTMLElement, view: ListView): void {
     empty.textContent = words.noNotesYet;
     container.append(empty);
     return;
+  }
+
+  const draft = draftRowFor(view);
+  if (draft !== null) {
+    const element = rowElement(draft, view, false);
+    element.classList.add('draft');
+    container.append(element);
   }
 
   for (const section of sectionsFor(view)) {
