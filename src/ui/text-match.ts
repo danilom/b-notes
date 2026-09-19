@@ -1,4 +1,5 @@
 import { toSearchable } from '../language/diacritics.ts';
+import { type Language, strings } from '../language/wording.ts';
 
 /** Where in his text a search found something. */
 export interface TextMatch {
@@ -42,4 +43,32 @@ export function matchesIn(text: string, query: string): TextMatch[] {
     at = haystack.indexOf(needle, at + needle.length);
   }
   return found;
+}
+
+/** The little panel over his writing that counts what a search found. */
+export interface FoundPanel {
+  shown: boolean;
+  label: string;
+  /** Whether there is anywhere to step to. */
+  steppable: boolean;
+}
+
+/**
+ * What the panel says about a search, and whether it is there at all.
+ *
+ * A single match says so in words rather than counting to one: "1 od 1" is a
+ * sum, and what he wants to know is that there is no more looking to do. The
+ * arrows go quiet with it, because a button that does nothing when pressed is
+ * how he concludes the app has stopped working.
+ */
+export function foundPanelFor(
+  found: readonly TextMatch[],
+  at: number,
+  language: Language,
+): FoundPanel {
+  const words = strings(language);
+
+  if (found.length === 0) return { shown: false, label: '', steppable: false };
+  if (found.length === 1) return { shown: true, label: words.foundOnce, steppable: false };
+  return { shown: true, label: words.foundAt(at + 1, found.length), steppable: true };
 }

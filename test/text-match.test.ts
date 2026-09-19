@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { matchesIn } from '../src/ui/text-match.ts';
+import { foundPanelFor, matchesIn } from '../src/ui/text-match.ts';
 
 const found = (text: string, query: string) =>
   matchesIn(text, query).map(({ start, end }) => text.slice(start, end));
@@ -43,5 +43,41 @@ describe('finding the search inside his text', () => {
     const many = matchesIn('a'.repeat(50_000), 'a');
     assert.equal(many.length, 500);
     assert.deepEqual(many.at(-1), { start: 499, end: 500 });
+  });
+});
+
+describe('the panel counting what a search found', () => {
+  const some = (howMany: number) =>
+    Array.from({ length: howMany }, (_, at) => ({ start: at, end: at + 1 }));
+
+  it('is not there when the search found nothing', () => {
+    assert.equal(foundPanelFor([], 0, 'sr').shown, false);
+  });
+
+  it('says so in words when there is only one, rather than counting to it', () => {
+    // "1 od 1" is a sum. What he wants to know is that there is no more looking.
+    assert.equal(foundPanelFor(some(1), 0, 'sr').label, 'samo jednom');
+  });
+
+  it('leaves the arrows quiet when there is nowhere to step', () => {
+    // A button that does nothing when pressed is how he concludes the app has
+    // stopped working.
+    assert.equal(foundPanelFor(some(1), 0, 'sr').steppable, false);
+  });
+
+  it('counts from one, where he counts from', () => {
+    assert.equal(foundPanelFor(some(81), 0, 'sr').label, '1 od 81');
+  });
+
+  it('says where he is among them', () => {
+    assert.equal(foundPanelFor(some(81), 40, 'sr').label, '41 od 81');
+  });
+
+  it('lets him step once there is more than one', () => {
+    assert.equal(foundPanelFor(some(2), 0, 'sr').steppable, true);
+  });
+
+  it('counts the same way in English', () => {
+    assert.equal(foundPanelFor(some(9), 2, 'en').label, '3 of 9');
   });
 });

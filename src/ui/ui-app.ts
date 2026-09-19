@@ -13,7 +13,8 @@ import {
 } from './appearance.ts';
 import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
 import { openConfirmDialog } from './confirm-dialog.ts';
-import { mustWriteItOut, openDeletedDialog } from './deleted-dialog.ts';
+import { openDeletedDialog } from './deleted-dialog.ts';
+import { confirmationForDeleting, confirmationForDestroying } from './note-confirmations.ts';
 import { readSession, writeSession } from './app-session.ts';
 import {
   type Settings,
@@ -25,7 +26,7 @@ import { icon } from './icons.ts';
 import { type Draft, renderList } from './note-list.ts';
 import { deletedStripFor } from './deleted-strip.ts';
 import { type WhatIsHappening, canDelete, emptyHintShows, statusFor } from './status-line.ts';
-import { type TextMatch, matchesIn } from './text-match.ts';
+import { type TextMatch, foundPanelFor, matchesIn } from './text-match.ts';
 
 /** Long enough that he isn't saved mid-word, short enough to never lose a thought. */
 const AUTOSAVE_IDLE_MS = 800;
@@ -201,13 +202,11 @@ function markMatches(): void {
  * "1 od 1" would only have counted him against himself.
  */
 function showFound(): void {
-  foundPane.hidden = found.length === 0;
-  if (found.length === 0) return;
-
-  const alone = found.length === 1;
-  foundAt.textContent = alone ? words.foundOnce : words.foundAt(atFound + 1, found.length);
-  foundPrevious.disabled = alone;
-  foundNext.disabled = alone;
+  const panel = foundPanelFor(found, atFound, language);
+  foundPane.hidden = !panel.shown;
+  foundAt.textContent = panel.label;
+  foundPrevious.disabled = !panel.steppable;
+  foundNext.disabled = !panel.steppable;
 }
 
 /**
@@ -481,11 +480,7 @@ function askToDelete(): void {
   const close = openConfirmDialog(
     confirmPane,
     {
-      // The same word the list and the deleted dialog use for a text with
-      // nothing at the top of it, rather than a heading with a hole in it.
-      title: words.deleteTitle(note.title.length > 0 ? note.title : words.untitled),
-      body: isEmptyText(note.text) ? words.deleteEmptyBody : words.deleteBody,
-      confirm: words.deleteKeep,
+      ...confirmationForDeleting(note, language),
       onConfirm: () => {
         close();
         void deleteOpenNote(id);
@@ -567,18 +562,10 @@ function showDeleted(): void {
  * empty ones has to be clearable, or he will live with the pile.
  */
 function askToDestroy(note: DeletedNote, closeDeleted: () => void): void {
-  const hard = mustWriteItOut(note);
-
   const close = openConfirmDialog(
     confirmPane,
     {
-      title: words.destroyTitle(note.title.length > 0 ? note.title : words.untitled),
-      body: note.versions > 0 ? words.destroyBodyWithVersions : words.destroyBody,
-      confirm: words.destroy,
-      danger: true,
-      ...(hard
-        ? { phrase: { prompt: words.destroyPrompt, words: [words.destroyWord, words.destroyWordPlain] } }
-        : {}),
+      ...confirmationForDestroying(note, language),
       onConfirm: () => {
         close();
         void destroyNote(note.id, closeDeleted);

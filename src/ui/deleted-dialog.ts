@@ -13,27 +13,6 @@ export interface DeletedHandlers {
 }
 
 /**
- * Above this, destroying asks him to write the word out.
- *
- * Roughly a paragraph and a half of his writing — his own median paragraph runs
- * to about 270 characters — which is the line between a note to himself and
- * something he sat down to write. Under it the question is a plain yes or no,
- * which is what makes clearing out a pile of empty ones bearable.
- */
-const WRITE_IT_OUT_ABOVE = 500;
-
-/**
- * Whether destroying this one should make him write the word first.
- *
- * Any kept version at all counts, whatever the file's size says. A text he
- * emptied before deleting is zero bytes with everything he wrote beside it, so
- * the husk is exactly the case where the length is least worth trusting.
- */
-export function mustWriteItOut(note: DeletedNote): boolean {
-  return note.versions > 0 || note.bytes > WRITE_IT_OUT_ABOVE;
-}
-
-/**
  * The start of the text, flattened onto one line.
  *
  * Without the title, which is already on the row above it: repeating it would
