@@ -211,14 +211,6 @@ export function openDeletedDialog(
     // A plain block, not a textarea he cannot type into: there is no caret to
     // put in it, so nothing suggests it would take his typing. Selecting still
     // works, which is his way out if what he wants is one paragraph of it.
-    // Where the text came from, when it did not come from the file. Above it
-    // rather than in the header: it is about this writing, not about the
-    // dialog, and he should read it before he reads what is under it.
-    const from = document.createElement('p');
-    from.className = 'deleted-from';
-    from.textContent = words.deletedFromVersion;
-    from.hidden = !note.fromVersion;
-
     const body = document.createElement('div');
     if (note.text.trim().length === 0) {
       body.className = 'deleted-text deleted-text-empty';
@@ -256,7 +248,7 @@ export function openDeletedDialog(
     });
 
     footer.append(forever, back, toList);
-    panel.replaceChildren(header, from, body, footer);
+    panel.replaceChildren(header, body, footer);
     back.focus();
   }
 

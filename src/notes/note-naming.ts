@@ -73,10 +73,16 @@ export const DELETED_FOLDER = 'Obrisano';
  * folder he should find something he recognises, and every file in it is plain
  * text that opens in Notepad without this app existing.
  */
-export const VERSIONS_FOLDER = 'verzije';
+export const VERSIONS_FOLDER = 'Verzije';
 
 /**
  * The folder holding one note's earlier versions.
+ *
+ * One rule, applied wherever the note happens to live: versions sit in a
+ * Verzije folder beside it. A note in his writing folder keeps them at
+ * `Verzije/<id>`; one that has been put away keeps them at
+ * `Obrisano/Verzije/<id>`, so everything about a deleted text is under
+ * `Obrisano` and opening that folder shows the whole of it.
  *
  * Every path to a version is built here and nowhere else. A note's identity is
  * its filename today, which is fine while the only notes with versions are ones
@@ -89,7 +95,7 @@ export function versionsFolderFor(id: string): string {
 
 /** Where they go once the note itself has been put away. */
 export function putAwayVersionsFolderFor(id: string): string {
-  return `${VERSIONS_FOLDER}/${DELETED_FOLDER}/${id}`;
+  return `${DELETED_FOLDER}/${VERSIONS_FOLDER}/${id}`;
 }
 
 /**

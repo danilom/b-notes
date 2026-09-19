@@ -59,8 +59,8 @@ When the tradeoff is between "powerful" and "impossible to get wrong", choose im
 | --- | --- | --- |
 | his texts | writing folder (Dropbox) | backed up and synced; he never sees the path |
 | `settings.json` | writing folder | which letters and which colour are taste, and travel with him |
-| `Obrisano/` | writing folder | texts he emptied, keeping the name that is all that was left |
-| `verzije/` | writing folder | what a text said before he emptied it, and `verzije/Obrisano/` once the text itself is put away |
+| `Obrisano/` | writing folder | texts he has deleted, with what he wrote in them |
+| `Verzije/` | writing folder | what a text said before he emptied it; `Obrisano/Verzije/` once the text itself is put away |
 | `screen.json` | `userData` | how big the letters are is the screen in front of him, not taste — syncing it would have one machine keep undoing the other |
 | `session.json` | `userData` | which text he had open, on this machine |
 | `logs/` | `userData` | ours, per machine, safe to delete |

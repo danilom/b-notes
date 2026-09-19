@@ -273,7 +273,7 @@ describe('saving', () => {
 
     await store.moveToDeleted(id ?? '');
 
-    const moved = await readdir(path.join(dir, VERSIONS_FOLDER, DELETED_FOLDER, 'O zimi'));
+    const moved = await readdir(path.join(dir, DELETED_FOLDER, VERSIONS_FOLDER, 'O zimi'));
     assert.equal(moved.length, 1);
   });
 
@@ -351,7 +351,7 @@ describe('moving a note out of the way', () => {
 
     await store.moveToDeleted(id ?? '');
 
-    assert.deepEqual(await readdir(path.join(dir, DELETED_FOLDER)), ['O zimi.txt']);
+    assert.deepEqual(await readdir(path.join(dir, DELETED_FOLDER)), ['O zimi.txt', VERSIONS_FOLDER]);
   });
 
   it('keeps both when a deleted note of that name is already there', async () => {
@@ -377,7 +377,9 @@ describe('moving a note out of the way', () => {
 
     await store.moveToDeleted(id ?? '');
 
-    assert.deepEqual(await readdir(path.join(dir, VERSIONS_FOLDER)), [DELETED_FOLDER]);
+    // Nothing of it stays behind in his writing folder at all now: what was
+    // kept of it went with it, under Obrisano.
+    await assert.rejects(() => readdir(path.join(dir, VERSIONS_FOLDER)));
   });
 
   it('makes no version folder for a note that never had one', async () => {
@@ -471,6 +473,37 @@ describe('a deleted text he had emptied first', () => {
     return id ?? '';
   }
 
+  it('is filed with what he wrote in it, rather than as a husk', async () => {
+    /*
+      A zero-byte file named after an essay says nothing to anyone who opens
+      the folder, and breaks the promise plain .txt was chosen for. The last
+      kept copy is written into it on the way out, so Obrisano holds his texts
+      as he last wrote them.
+    */
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nSve sto je napisao o zimi.');
+    await store.save(id, '');
+
+    await store.moveToDeleted(id ?? '');
+
+    assert.equal(
+      await readFile(path.join(dir, DELETED_FOLDER, 'O zimi.txt'), 'utf8'),
+      'O zimi\n\nSve sto je napisao o zimi.',
+    );
+  });
+
+  it('keeps the copy it was filed from, beside it under Obrisano', async () => {
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nSve sto je napisao o zimi.');
+    await store.save(id, '');
+
+    await store.moveToDeleted(id ?? '');
+
+    const kept = await readdir(path.join(dir, DELETED_FOLDER, VERSIONS_FOLDER, 'O zimi'));
+    assert.equal(kept.length, 1);
+    assert.equal((await readdir(path.join(dir))).includes(VERSIONS_FOLDER), false);
+  });
+
   it('is listed by what he wrote, not by the husk he left', async () => {
     // Five rows reading "Bez naslova" over forty thousand characters of his
     // writing is what this exists to stop.
@@ -480,7 +513,6 @@ describe('a deleted text he had emptied first', () => {
     const [put] = await store.listDeleted();
     assert.equal(put?.title, 'O zimi');
     assert.equal(put?.text, 'O zimi\n\nSve sto je napisao o zimi.');
-    assert.equal(put?.fromVersion, true);
   });
 
   it('can be searched for by words that are only in the kept copy', async () => {
@@ -520,7 +552,6 @@ describe('a deleted text he had emptied first', () => {
 
     const [put] = await store.listDeleted();
     assert.equal(put?.text, '');
-    assert.equal(put?.fromVersion, false);
     assert.equal(put?.versions, 0);
   });
 
@@ -533,7 +564,6 @@ describe('a deleted text he had emptied first', () => {
 
     const [put] = await store.listDeleted();
     assert.equal(put?.text, 'O zimi\n\nDrugi tekst.');
-    assert.equal(put?.fromVersion, false);
   });
 });
 
@@ -548,7 +578,7 @@ describe('destroying one for good', () => {
 
     assert.deepEqual(await store.listDeleted(), []);
     assert.deepEqual(await readdir(path.join(dir, DELETED_FOLDER)), []);
-    await assert.rejects(() => readdir(path.join(dir, VERSIONS_FOLDER, DELETED_FOLDER, id ?? '')));
+    await assert.rejects(() => readdir(path.join(dir, DELETED_FOLDER, VERSIONS_FOLDER, id ?? '')));
   });
 
   it('leaves the others where they are', async () => {
@@ -693,7 +723,7 @@ describe('bringing a text back', () => {
     const back = await store.restore(id ?? '');
 
     assert.equal((await readdir(path.join(dir, VERSIONS_FOLDER, back))).length, 1);
-    await assert.rejects(() => readdir(path.join(dir, VERSIONS_FOLDER, DELETED_FOLDER, back)));
+    await assert.rejects(() => readdir(path.join(dir, DELETED_FOLDER, VERSIONS_FOLDER, back)));
   });
 
   it('refuses an id that points outside the deleted folder', async () => {
@@ -732,7 +762,7 @@ describe('what he is shown', () => {
     // and an extra row in his list reads to him as a text he does not remember.
     const { dir, store } = await emptyStore();
     await store.save(null, 'O zimi');
-    for (const folder of [VERSIONS_FOLDER, DELETED_FOLDER]) {
+    for (const folder of [DELETED_FOLDER, VERSIONS_FOLDER]) {
       await mkdir(path.join(dir, folder, 'O jeseni'), { recursive: true });
       await writeFile(path.join(dir, folder, 'O jeseni', 'staro.txt'), 'Nekad.', 'utf8');
     }
