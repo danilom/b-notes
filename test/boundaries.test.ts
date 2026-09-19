@@ -59,6 +59,39 @@ async function reachesIntoUi(
   return found;
 }
 
+const PRELOAD = path.join(SOURCE, 'hosts/electron/preload-bridge.ts');
+const MAIN = path.join(SOURCE, 'hosts/electron/electron-main.ts');
+
+/** Every channel name one side of the bridge mentions, in the given call. */
+async function channelsIn(file: string, call: RegExp): Promise<string[]> {
+  const text = await readFile(file, 'utf8');
+  // Unique: logging is three calls against one listener, which is a fact about
+  // levels rather than the two sides disagreeing.
+  return [...new Set([...text.matchAll(call)].map((match) => match[1] ?? ''))].sort();
+}
+
+/**
+ * The two processes agree on a list of strings and nothing checks it. A channel
+ * renamed on one side only still compiles, still builds, and still passes every
+ * test here — they all reach the filesystem directly. It fails in the packaged
+ * app, as a text that will not save or will not delete.
+ */
+describe('what the two processes say to each other', () => {
+  it('asks the main process for nothing it does not answer', async () => {
+    assert.deepEqual(
+      await channelsIn(PRELOAD, /ipcRenderer\.invoke\('([^']+)'/g),
+      await channelsIn(MAIN, /(?<!ipcMain\.)handle\('([^']+)'/g),
+    );
+  });
+
+  it('tells it nothing it is not listening for', async () => {
+    assert.deepEqual(
+      await channelsIn(PRELOAD, /ipcRenderer\.send\('([^']+)'/g),
+      await channelsIn(MAIN, /ipcMain\.on\('([^']+)'/g),
+    );
+  });
+});
+
 describe('where code is allowed to reach', () => {
   for (const folder of PORTABLE) {
     it(`keeps hosts out of ${folder}, which has to run in both`, async () => {
