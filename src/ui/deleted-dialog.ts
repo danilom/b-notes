@@ -172,9 +172,19 @@ export function openDeletedDialog(
   /** One text, to read but not to touch. */
   function fillText(note: Note): void {
     const header = document.createElement('header');
+    // The same shape as the list's heading, and for the same reason: the line
+    // under the title is where this dialog says what he can do from here. It
+    // names the one thing the surface can only hint at — that he cannot write
+    // in it — and what to press if that is what he wanted.
+    const heading = document.createElement('div');
+    heading.className = 'deleted-heading';
     const title = document.createElement('h1');
     title.textContent = words.deletedPreview(note.title.length > 0 ? note.title : words.untitled);
-    header.append(title, dismissButton());
+    const help = document.createElement('p');
+    help.className = 'deleted-kept';
+    help.textContent = words.deletedPreviewHelp;
+    heading.append(title, help);
+    header.append(heading, dismissButton());
 
     // A plain block, not a textarea he cannot type into: there is no caret to
     // put in it, so nothing suggests it would take his typing. Selecting still
