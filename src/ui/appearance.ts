@@ -12,7 +12,7 @@
 export type FontChoice = 'tahoma' | 'calibri' | 'corbel' | 'verdana' | 'segoe';
 export type AccentChoice = 'blue' | 'teal' | 'green' | 'gold' | 'red' | 'violet';
 export type ModeChoice = 'light' | 'dark';
-export type WritingFontChoice = 'georgia' | 'cambria' | 'verdana';
+export type WritingFontChoice = 'georgia' | 'cambria' | 'corbel';
 
 export interface Appearance {
   font: FontChoice;
@@ -142,10 +142,17 @@ export function isScale(value: unknown): value is number {
  * A far shorter list than the interface gets, and a different one: these are
  * chosen for reading paragraphs rather than for labelling buttons. Two serifs
  * because that is what he writes in, and one sans for the possibility that he
- * simply cannot get on with serifs — all three drawn for reading off a screen.
+ * simply cannot get on with serifs.
+ *
+ * The sans is Corbel and not Verdana. Verdana is superbly legible and it is a
+ * screen face, but it was drawn for short strings at small sizes — interface
+ * labels — and it is wide and evenly weighted, which makes a flat texture and
+ * a short measure over a page of prose. Corbel, Cambria and Constantia came
+ * out of Microsoft's ClearType collection as text faces for exactly this, and
+ * Corbel is the sans among them.
  *
  * `scale` matches x-heights to Georgia, so changing the face doesn't silently
- * change how big his text is. Measured, not guessed: Verdana runs 15% larger at
+ * change how big his text is. Measured, not guessed: Corbel runs 4% smaller at
  * the same pixel size.
  *
  * Shown after each face's name, set in that face.
@@ -160,7 +167,7 @@ const WRITING_SAMPLE = 'Kakav čoek gospodin bi bio da mu nema te mane, no da se
 export const WRITING_FONTS = {
   georgia: { label: 'Georgia', stack: "Georgia, 'Times New Roman', serif", scale: 1 },
   cambria: { label: 'Cambria', stack: 'Cambria, Georgia, serif', scale: 1.021 },
-  verdana: { label: 'Verdana', stack: 'Verdana, sans-serif', scale: 0.873 },
+  corbel: { label: 'Corbel', stack: "Corbel, 'Segoe UI', sans-serif", scale: 1.043 },
 } as const satisfies Record<
   WritingFontChoice,
   { label: string; stack: string; scale: number }

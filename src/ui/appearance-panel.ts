@@ -6,6 +6,7 @@ import {
   FONTS,
   MAX_WRITING,
   MIN_SCALE,
+  MAX_ZOOM,
   MODES,
   WRITING_FONTS,
   stepScale,
@@ -128,14 +129,16 @@ function optionGroup<T extends string>(
  */
 function scaleGroup(
   words: ReturnType<typeof strings>,
+  heading: string,
   factor: number,
   setTo: (next: number) => void,
+  ceiling?: number,
 ): HTMLElement {
   const group = document.createElement('section');
   group.className = 'choice-group';
 
   const title = document.createElement('h3');
-  title.textContent = words.appearanceSize;
+  title.textContent = heading;
 
   const row = document.createElement('div');
   row.className = 'choices zoom-row';
@@ -147,7 +150,7 @@ function scaleGroup(
     button.textContent = glyph;
     button.title = name;
     button.setAttribute('aria-label', name);
-    const next = stepScale(factor, direction);
+    const next = stepScale(factor, direction, ceiling);
     // Stopped rather than hidden at the ends: a button that vanishes is a
     // button he has to find again.
     button.disabled = next === factor;
@@ -244,7 +247,13 @@ function fill(
     (font) => change({ ...chosen, font }),
   );
 
-  const appSize = scaleGroup(words, chosen.zoom, (zoom) => change({ ...chosen, zoom }));
+  const appSize = scaleGroup(
+    words,
+    words.appearanceSize,
+    chosen.zoom,
+    (zoom) => change({ ...chosen, zoom }),
+    MAX_ZOOM,
+  );
 
   // A line of prose rather than the font's name: what matters in a paragraph is
   // how the whole line sits, which one word cannot show him.
@@ -264,8 +273,8 @@ function fill(
     (writingFont) => change({ ...chosen, writingFont }),
   );
 
-  const writingSize = scaleGroup(words, chosen.writingSize, (writingSize) =>
-    change({ ...chosen, writingSize }),
+  const writingSize = scaleGroup(words, words.appearanceTextSize, chosen.writingSize, (size) =>
+    change({ ...chosen, writingSize: size }),
   );
 
   const accents = optionGroup(
