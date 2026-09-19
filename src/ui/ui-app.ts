@@ -21,7 +21,7 @@ import {
 } from './app-settings.ts';
 import { icon } from './icons.ts';
 import { type Draft, renderList } from './note-list.ts';
-import { matchesIn } from './text-match.ts';
+import { type TextMatch, matchesIn } from './text-match.ts';
 
 /** Long enough that he isn't saved mid-word, short enough to never lose a thought. */
 const AUTOSAVE_IDLE_MS = 800;
@@ -55,6 +55,12 @@ function reportUncaught(): void {
   });
 }
 
+function textIn(words: string): HTMLSpanElement {
+  const span = document.createElement('span');
+  span.textContent = words;
+  return span;
+}
+
 function element<T extends Element>(id: string, kind: new () => T): T {
   const found = document.getElementById(id);
   if (!(found instanceof kind)) throw new Error(`Missing element: #${id}`);
@@ -64,6 +70,10 @@ function element<T extends Element>(id: string, kind: new () => T): T {
 const listPane = element('list', HTMLDivElement);
 const editor = element('editor', HTMLTextAreaElement);
 const editorMarks = element('editor-marks', HTMLDivElement);
+const foundPane = element('found', HTMLDivElement);
+const foundAt = element('found-at', HTMLSpanElement);
+const foundPrevious = element('found-previous', HTMLButtonElement);
+const foundNext = element('found-next', HTMLButtonElement);
 const statusText = element('status-text', HTMLSpanElement);
 const search = element('search', HTMLInputElement);
 const newNote = element('new-note', HTMLButtonElement);
@@ -104,6 +114,15 @@ function draw(): void {
 }
 
 /**
+ * Which of the matches in the open text he is standing on.
+ *
+ * Kept here rather than worked out from the scroll position, because he can
+ * scroll away and come back and should not lose his place in the search.
+ */
+let found: TextMatch[] = [];
+let atFound = 0;
+
+/**
  * Paints the matches on the layer behind his writing.
  *
  * Built out of text nodes and `mark` elements rather than a string of HTML: his
@@ -113,7 +132,10 @@ function draw(): void {
  */
 function markMatches(): void {
   const text = editor.value;
-  const found = matchesIn(text, search.value);
+  found = matchesIn(text, search.value);
+  atFound = Math.min(atFound, Math.max(0, found.length - 1));
+
+  showFound();
 
   if (found.length === 0) {
     editorMarks.replaceChildren();
@@ -122,13 +144,14 @@ function markMatches(): void {
 
   const pieces: Node[] = [];
   let at = 0;
-  for (const { start, end } of found) {
+  found.forEach(({ start, end }, index) => {
     if (start > at) pieces.push(document.createTextNode(text.slice(at, start)));
     const mark = document.createElement('mark');
+    if (index === atFound) mark.className = 'now';
     mark.textContent = text.slice(start, end);
     pieces.push(mark);
     at = end;
-  }
+  });
   // A trailing newline is not given a line of its own unless something follows
   // it, so the layer would come up a line short of the textarea at the bottom.
   pieces.push(document.createTextNode(`${text.slice(at)}
@@ -139,18 +162,48 @@ function markMatches(): void {
 }
 
 /**
- * Brings the first match into view.
+ * Says where he is among the matches, and offers the way to the next.
+ *
+ * Shown for a single match as well as for many: that it appears once is worth
+ * knowing, and the buttons simply have nothing to do. Hidden entirely when
+ * there is no search on, so nothing floats over his writing while he writes.
+ */
+function showFound(): void {
+  foundPane.hidden = found.length === 0;
+  if (found.length === 0) return;
+
+  foundAt.textContent = words.foundAt(atFound + 1, found.length);
+  foundPrevious.disabled = found.length < 2;
+  foundNext.disabled = found.length < 2;
+}
+
+/**
+ * Moves to the match before or after this one, round the ends.
+ *
+ * Wrapping rather than stopping, so neither button is ever a dead one — and
+ * because the alternative is him pressing a button that does nothing and
+ * concluding the app has stopped working.
+ */
+function stepThroughFound(direction: 1 | -1): void {
+  if (found.length === 0) return;
+  atFound = (atFound + direction + found.length) % found.length;
+  markMatches();
+  scrollToCurrentMatch();
+}
+
+/**
+ * Brings the current match into view.
  *
  * A textarea cannot say where a character has ended up on screen, so the
  * position comes from the layer behind it, which is laid out identically and is
  * made of elements that can be asked. Placed a third of the way down rather than
  * at the very top, so he can see what comes before it and know where he is.
  */
-function scrollToFirstMatch(): void {
-  const first = editorMarks.querySelector('mark');
-  if (first === null) return;
+function scrollToCurrentMatch(): void {
+  const mark = editorMarks.querySelector('mark.now');
+  if (!(mark instanceof HTMLElement)) return;
 
-  const target = first.offsetTop - editor.clientHeight / 3;
+  const target = mark.offsetTop - editor.clientHeight / 3;
   editor.scrollTop = Math.max(0, target);
   editorMarks.scrollTop = editor.scrollTop;
 }
@@ -220,8 +273,9 @@ async function open(id: string): Promise<void> {
   remember(id);
   editor.setSelectionRange(0, 0);
   editor.scrollTop = 0;
+  atFound = 0;
   markMatches();
-  scrollToFirstMatch();
+  scrollToCurrentMatch();
   draw();
   showStatus();
   log.info('Opened a text', { id });
@@ -231,6 +285,26 @@ listPane.addEventListener('click', (event) => {
   const row = (event.target as Element | null)?.closest('.note');
   const id = row instanceof HTMLElement ? row.dataset['id'] : undefined;
   if (id !== undefined) void open(id);
+});
+
+foundPrevious.addEventListener('click', () => {
+  stepThroughFound(-1);
+});
+
+foundNext.addEventListener('click', () => {
+  stepThroughFound(1);
+});
+
+/**
+ * Enter in the search box goes to the next one.
+ *
+ * The key everyone tries, and his hand is already there — so he never has to
+ * find the buttons in the margin to get through a long text.
+ */
+search.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  stepThroughFound(event.shiftKey ? -1 : 1);
 });
 
 editor.addEventListener('scroll', () => {
@@ -254,11 +328,13 @@ editor.addEventListener('input', () => {
 });
 
 search.addEventListener('input', () => {
+  // A fresh search starts at the top of the text again.
+  atFound = 0;
   draw();
   markMatches();
   // Only on a fresh search: once he is reading, moving the page under him would
   // be the app taking the text away from where he had put it.
-  scrollToFirstMatch();
+  scrollToCurrentMatch();
 });
 
 newNote.addEventListener('click', () => {
@@ -266,6 +342,8 @@ newNote.addEventListener('click', () => {
   savedAt = null;
   editor.value = '';
   editorMarks.replaceChildren();
+  found = [];
+  showFound();
 
   // The search belonged to whatever he was looking for before, and a new text
   // is not that. There is a precedent: a search isn't restored on startup
@@ -393,6 +471,8 @@ export async function startApp(host: Host): Promise<void> {
 
   store = createNoteStore(host.files, host.writingFolder);
   newNoteLabel.textContent = words.newNote;
+  foundPrevious.append(icon('previous'), textIn(words.foundPrevious));
+  foundNext.append(icon('next'), textIn(words.foundNext));
   newNote.prepend(icon('new-text'));
   appearanceLabel.textContent = words.appearance;
   appearanceButton.prepend(icon('appearance'));

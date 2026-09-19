@@ -15,7 +15,7 @@
 const VIEW_BOX = '0 0 24 24';
 const STROKE_WIDTH = '2';
 
-export type IconName = 'new-text' | 'appearance' | 'close';
+export type IconName = 'new-text' | 'appearance' | 'close' | 'previous' | 'next';
 
 const PATHS = {
   'new-text': [
@@ -28,6 +28,10 @@ const PATHS = {
     'M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z',
   ],
   close: ['M18 6 6 18', 'm6 6 12 12'],
+  // Up and down rather than left and right: his matches are ordered down the
+  // page, and that is the direction he will actually travel.
+  previous: ['m18 15-6-6-6 6'],
+  next: ['m6 9 6 6 6-6'],
 } as const satisfies Record<IconName, readonly string[]>;
 
 /** The paint spots on the palette, which are dots rather than strokes. */

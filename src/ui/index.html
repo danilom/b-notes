@@ -80,6 +80,7 @@
         --l-chosen: 38%;
         --l-chosen-soft: 91%;
         --l-found: 82%;
+        --l-found-now: 62%;
         --l-on-chosen: 99%;
         --l-thumb: 82%;
         --l-thumb-hover: 68%;
@@ -119,6 +120,7 @@
         --chosen-soft: hsl(var(--accent-h) var(--strong) var(--l-chosen-soft));
         /* Stronger than a selected row: this has to carry his own text on top. */
         --found: hsl(var(--accent-h) var(--strong) var(--l-found));
+        --found-now: hsl(var(--accent-h) var(--strong) var(--l-found-now));
         /* Whatever can be read on top of a solid accent, either way up. */
         --on-chosen: hsl(var(--grey-h) var(--muted) var(--l-on-chosen));
       }
@@ -152,6 +154,7 @@
         --l-chosen: 70%;
         --l-chosen-soft: 31%;
         --l-found: 38%;
+        --l-found-now: 52%;
         --l-on-chosen: 10%;
         --l-thumb: 34%;
         --l-thumb-hover: 48%;
@@ -892,6 +895,53 @@
         background: var(--found);
         border-radius: 2px;
       }
+
+      /* The one he is standing on, told apart from the others he could go to. */
+      #editor-marks mark.now {
+        background: var(--found-now);
+      }
+
+      /*
+        In the margin, not over the words. The measure leaves a wide gutter on
+        the right, so on any ordinary window this covers nothing at all; on a
+        narrow one it tucks into the corner over the first line, which is the
+        least of his text to sit on.
+      */
+      #found {
+        position: absolute;
+        top: 0.7rem;
+        right: calc(var(--scrollbar) + 0.4rem);
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.3rem 0.4rem;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--panel);
+        font-family: var(--ui-font);
+        font-size: calc(var(--ui-size) * 0.85);
+        color: var(--quiet);
+      }
+
+      #found[hidden] {
+        display: none;
+      }
+
+      #found-at {
+        padding: 0 0.3rem;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+
+      #found button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        font-size: inherit;
+        white-space: nowrap;
+      }
     </style>
   </head>
   <body>
@@ -920,6 +970,18 @@
       <div id="writing">
         <div id="editor-marks" aria-hidden="true"></div>
         <textarea id="editor" spellcheck="false"></textarea>
+
+        <!--
+          Where he is among the matches, and how to reach the next one. Sits in
+          the empty margin the measure leaves on the right, beside the text it
+          is counting rather than in a corner of the window, and appears only
+          while a search has found something here.
+        -->
+        <div id="found" hidden>
+          <span id="found-at"></span>
+          <button id="found-previous" type="button"></button>
+          <button id="found-next" type="button"></button>
+        </div>
       </div>
       <div id="status">
         <span id="status-text"></span>
