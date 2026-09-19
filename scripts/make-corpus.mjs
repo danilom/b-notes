@@ -40,8 +40,16 @@ const WORDS =
     .split(/\s+/)
     .filter(Boolean);
 
+/*
+  `Math.imul`, not `*`. The obvious spelling overflows: the state times the
+  multiplier is about 2.2e16, past the largest integer a double holds exactly,
+  so the low bits are lost and the sequence collapses — it repeated after 10,466
+  draws, which left the whole corpus built from one short loop and 175 distinct
+  paragraphs shared across 581 texts. `imul` does the multiplication in 32 bits
+  the way the constant expects.
+*/
 let seed = 20260919;
-const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+const rnd = () => ((seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) / 4294967296);
 const pick = (a) => a[Math.floor(rnd() * a.length)];
 
 /** He types diacritics inconsistently, so a third of generated words drop them. */
