@@ -27,6 +27,15 @@
         --writing-font: Georgia, 'Times New Roman', serif;
 
         /*
+          How wide a line of his writing may get, in characters. `ch` resolves
+          against whichever face and size he has chosen, so this tracks both by
+          itself and never binds on a narrow window. 62.5ch is about 90 letters
+          in Georgia — wider than a book, which is deliberate: a screen is not a
+          page, and at book measure the column reads as a poem.
+        */
+        --measure: 62.5ch;
+
+        /*
           Grey chrome, and the colour spent all in one place.
 
           Tinting the surfaces was tried twice and is a trap. There is no good
@@ -750,9 +759,22 @@
         font-size: var(--text-size);
         flex: 1;
         width: 100%;
-        max-width: calc(50ch + 4rem);
-        margin: 0 auto;
-        padding: 1.6rem 2rem;
+        padding-top: 1.6rem;
+        padding-bottom: 1.6rem;
+        /*
+          The margins make the measure, rather than the element being narrowed
+          and centred. Narrowing it took the scrollbar along with it, leaving
+          the bar floating beside his text instead of sitting at the edge of
+          the window where every other scrollbar he has ever used lives.
+
+          Split 40/60 rather than evenly: the window is read as a whole, and
+          with all that weight in the left pane a column centred in what's left
+          sits right of where the eye expects the middle. Leaning it back
+          toward the list also shortens the trip from choosing a text to
+          reading it.
+        */
+        padding-left: max(2rem, calc((100% - var(--measure)) * 0.4));
+        padding-right: max(2rem, calc((100% - var(--measure)) * 0.6));
         border: 0;
         outline: 0;
         resize: none;
