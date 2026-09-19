@@ -1,6 +1,7 @@
 import type { Host } from '../../platform/host.ts';
 import type { Log } from '../../platform/logging.ts';
 import { startApp } from '../../ui/ui-app.ts';
+import { addMockFileList } from './mock-file-list.ts';
 import {
   MOCK_APP_FOLDER,
   MOCK_WRITING_FOLDER,
@@ -33,19 +34,22 @@ function setZoom(factor: number): void {
  *
  * Only ever in this host, which is the only one with a pretend filesystem and
  * which the packaged app is never built from — so there is nothing here to
- * leave switched on by accident. Printed once on load for the screenshot, and
- * left on `window` so it can be asked again after something has moved.
+ * leave switched on by accident. A button on screen, because reaching a
+ * browser console is awkward from inside a pane, and `showFiles()` on the
+ * window as well for when a console is at hand.
  */
 function offerTheFileList(): void {
   if (!new URLSearchParams(window.location.search).has('test')) return;
 
-  const show = (): { path: string; bytes: number }[] => {
-    const files = everyFile();
-    console.table(files);
-    return files;
-  };
-  Object.defineProperty(window, 'showFiles', { value: show, writable: true });
-  show();
+  Object.defineProperty(window, 'showFiles', {
+    value: (): { path: string; bytes: number }[] => {
+      const files = everyFile();
+      console.table(files);
+      return files;
+    },
+    writable: true,
+  });
+  addMockFileList();
 }
 
 /**
