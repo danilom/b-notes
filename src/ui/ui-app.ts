@@ -592,7 +592,9 @@ function askToDestroy(note: DeletedNote, closeDeleted: () => void): void {
       body: note.versions > 0 ? words.destroyBodyWithVersions : words.destroyBody,
       confirm: words.destroy,
       danger: true,
-      ...(hard ? { phrase: { prompt: words.destroyPrompt, word: words.destroyWord } } : {}),
+      ...(hard
+        ? { phrase: { prompt: words.destroyPrompt, words: [words.destroyWord, words.destroyWordPlain] } }
+        : {}),
       onConfirm: () => {
         close();
         void destroyNote(note.id, closeDeleted);

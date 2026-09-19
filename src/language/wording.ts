@@ -86,11 +86,15 @@ const TEXT = {
     destroyBody: 'Ovaj tekst se uništava zauvek. Ne može se vratiti.',
     destroyBodyWithVersions:
       'Ovaj tekst se uništava zauvek, zajedno sa svim ranijim verzijama. Ne može se vratiti.',
-    // Both spellings, so he is not hunting the keyboard for a letter he may not
-    // know how to reach. Anything he types is folded before it is compared, so
-    // either one does.
-    destroyPrompt: 'Napiši „uništi“ ili „unisti“ da potvrdiš.',
+    /*
+      `{}` is where each spelling goes, marked out in the accent so he can see
+      what to copy without quotes around it. Both are offered so he is not
+      hunting the keyboard for a letter he may not know how to reach; anything
+      he types is folded before it is compared, so either one does.
+    */
+    destroyPrompt: 'Ukucaj {} ili {} da potvrdiš.',
     destroyWord: 'uništi',
+    destroyWordPlain: 'unisti',
     restored: 'Tekst je vraćen',
     noteDeleted: 'Tekst je obrisan',
     emptiedHint: 'Tekst je prazan. Obriši ga ako ti više ne treba.',
@@ -168,8 +172,9 @@ const TEXT = {
     destroyBody: 'This text is destroyed for good. It cannot be brought back.',
     destroyBodyWithVersions:
       'This text is destroyed for good, along with every earlier version of it. It cannot be brought back.',
-    destroyPrompt: 'Type “destroy” to confirm.',
+    destroyPrompt: 'Type {} to confirm.',
     destroyWord: 'destroy',
+    destroyWordPlain: 'destroy',
     restored: 'Text brought back',
     noteDeleted: 'Text deleted',
     emptiedHint: 'This text is empty. Delete it if you no longer need it.',

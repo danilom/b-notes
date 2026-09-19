@@ -22,9 +22,13 @@ export interface Confirmation {
    * For the one action that cannot be undone. Compared folded, so case, stray
    * spaces and the diacritics he may not know how to reach all come out the
    * same — the barrier exists to make him stop and mean it, not to test his
-   * typing.
+   * typing, and any of the spellings offered will do.
+   *
+   * `prompt` carries `{}` where each spelling belongs. Extra spellings past the
+   * number of slots are still accepted, just not shown: English asks for one
+   * word where Serbian shows two ways of writing the same one.
    */
-  phrase?: { prompt: string; word: string };
+  phrase?: { prompt: string; words: readonly string[] };
   /**
    * Whether the affirmative destroys something.
    *
@@ -37,6 +41,19 @@ export interface Confirmation {
   onCancel: () => void;
 }
 
+/** The sentence, with each spelling marked out where its slot was. */
+function sentence(prompt: string, words: readonly string[]): (string | HTMLElement)[] {
+  const parts = prompt.split('{}');
+  return parts.flatMap((part, at) => {
+    const word = words[at];
+    if (at === parts.length - 1 || word === undefined) return [part];
+    const marked = document.createElement('span');
+    marked.className = 'confirm-key';
+    marked.textContent = word;
+    return [part, marked];
+  });
+}
+
 /** The box he writes the word into, and the rule for when it counts. */
 function phraseFor(
   asked: NonNullable<Confirmation['phrase']>,
@@ -45,7 +62,13 @@ function phraseFor(
 ): { label: HTMLLabelElement; box: HTMLInputElement } {
   const label = document.createElement('label');
   label.className = 'confirm-prompt';
-  label.textContent = asked.prompt;
+
+  // The sentence is one thing, the box is the next. Handing the label the
+  // fragments loose would make each of them a row of its own, since the label
+  // stacks what it is given.
+  const said = document.createElement('span');
+  said.append(...sentence(asked.prompt, asked.words));
+  label.append(said);
 
   const box = document.createElement('input');
   box.type = 'text';
@@ -54,7 +77,8 @@ function phraseFor(
   box.spellcheck = false;
   label.append(box);
 
-  const written = (): boolean => toSearchable(box.value).trim() === toSearchable(asked.word);
+  const typed = (): string => toSearchable(box.value).trim();
+  const written = (): boolean => asked.words.some((word) => typed() === toSearchable(word));
   affirmative.disabled = true;
   box.addEventListener('input', () => {
     affirmative.disabled = !written();
