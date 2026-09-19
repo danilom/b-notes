@@ -247,12 +247,16 @@ function scrollToCurrentMatch(): void {
  * whose word for "delete" is a different length.
  */
 function pointHintAtDeleteButton(): void {
-  const pane = emptyHint.offsetParent;
-  if (!(pane instanceof HTMLElement)) return;
+  if (emptyHint.offsetParent === null) return;
   const button = deleteNote.getBoundingClientRect();
-  const within = pane.getBoundingClientRect();
-  const fromRight = within.right - (button.left + button.width / 2);
-  emptyHint.style.setProperty('--tail-right', `${Math.round(fromRight)}px`);
+  // Measured from the bubble's own right edge, which is where the tail's `right`
+  // is measured from too. The tail is shifted by half its width in CSS, so this
+  // is the distance to its point rather than to its corner.
+  const bubble = emptyHint.getBoundingClientRect();
+  emptyHint.style.setProperty(
+    '--tail-right',
+    `${Math.round(bubble.right - (button.left + button.width / 2))}px`,
+  );
 }
 
 window.addEventListener('resize', () => {
@@ -541,6 +545,10 @@ async function deleteOpenNote(id: string): Promise<void> {
   remember(null);
   await reload();
   markMatches();
+  // Said out loud for the same reason the restore is: the text left the editor
+  // and left the list, and an empty screen on its own does not tell him whether
+  // that was the thing he asked for.
+  notice = words.noteDeleted;
   showStatus();
   log.info('Put a text away', { id });
 }

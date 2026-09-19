@@ -107,7 +107,7 @@ export function openDeletedDialog(
   /** The list of what he put away, with whatever search brought him here. */
   function fillList(): void {
     const header = document.createElement('header');
-    const title = document.createElement('h2');
+    const title = document.createElement('h1');
     title.textContent = words.deleted;
     const kept = document.createElement('p');
     kept.className = 'deleted-kept';
@@ -151,7 +151,7 @@ export function openDeletedDialog(
   /** One text, to read but not to touch. */
   function fillText(note: Note): void {
     const header = document.createElement('header');
-    const title = document.createElement('h2');
+    const title = document.createElement('h1');
     title.textContent = note.title;
     header.append(title);
 

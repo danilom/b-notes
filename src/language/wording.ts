@@ -76,6 +76,7 @@ const TEXT = {
     showAll: 'Prikaži sve',
     restore: 'Vrati među tekstove',
     restored: 'Tekst je vraćen',
+    noteDeleted: 'Tekst je obrisan',
     emptiedHint: 'Tekst je prazan. Obriši ga ako ti više ne treba.',
   },
   en: {
@@ -141,6 +142,7 @@ const TEXT = {
     showAll: 'Show all',
     restore: 'Bring this text back',
     restored: 'Text brought back',
+    noteDeleted: 'Text deleted',
     emptiedHint: 'This text is empty. Delete it if you no longer need it.',
   },
 } satisfies Record<

@@ -529,9 +529,12 @@
         content: '';
         position: absolute;
         /* Measured, not guessed: the button moves with his zoom and with how
-           long the words are in whichever language he is reading. */
+           long the words are in whichever language he is reading. Shifted by
+           half its own width so the figure above names the point of the tail
+           rather than its right-hand corner. */
         right: var(--tail-right, 3.2rem);
         border: 9px solid transparent;
+        transform: translateX(50%);
       }
 
       #empty-hint::before {
@@ -644,8 +647,17 @@
         horizontal rules around it read as furniture left behind by mistake.
       */
       #confirm .panel header {
-        align-items: flex-start;
         border-bottom: 0;
+      }
+
+      /*
+        One line, cut if it has to be. The title carries the name of the text,
+        and a name that wraps pushes the X out of the corner it belongs in.
+      */
+      #confirm .panel h1 {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
       }
 
       #confirm .panel footer {
@@ -804,8 +816,15 @@
         border-bottom: 1px solid var(--line);
       }
 
+      /*
+        Pulled out into the panel's own side padding so it sits the same
+        distance from the top edge as from the right one. Without this the
+        panel's 1.4rem sides push it further in than the header's 0.9rem top,
+        and the corner looks like nobody measured it.
+      */
       .close {
         display: inline-flex;
+        margin-right: -0.5rem;
         padding: 0.4rem;
         border-color: transparent;
         background: none;

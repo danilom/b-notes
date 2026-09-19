@@ -50,7 +50,7 @@ export function openConfirmDialog(
   panel.setAttribute('aria-modal', 'true');
 
   const header = document.createElement('header');
-  const title = document.createElement('h2');
+  const title = document.createElement('h1');
   title.textContent = confirmation.title;
 
   // The same way out as the appearance panel's, in the same corner and doing
