@@ -62,8 +62,6 @@
         --l-faint: 40%;
         --l-line: 86%;
         --l-toolbar: 93%;
-        --l-hover: 93.5%;
-        --l-pressed: 88%;
         --l-panel: 96.5%;
         --l-page: 100%;
         --l-chosen: 38%;
@@ -84,8 +82,18 @@
         --faint: hsl(var(--grey-h) var(--muted) var(--l-faint));
         --line: hsl(var(--grey-h) var(--surface) var(--l-line));
         --toolbar: hsl(var(--grey-h) var(--surface) var(--l-toolbar));
-        --hover: hsl(var(--grey-h) var(--surface) var(--l-hover));
-        --pressed: hsl(var(--grey-h) var(--surface) var(--l-pressed));
+        /*
+          Hover and press are a wash laid over whatever is underneath, not
+          colours of their own.
+
+          A fixed lightness only works against one background. The same
+          --hover that dropped six points against the dialog's white rose half
+          a point against the toolbar, which is to say it vanished exactly
+          where a button most needed to answer him. Darkening by a proportion
+          reads the same on every surface the app has.
+        */
+        --wash: rgb(0 0 0 / 0.07);
+        --wash-firm: rgb(0 0 0 / 0.13);
         --panel: hsl(var(--grey-h) var(--surface) var(--l-panel));
 
         /* The one surface that stays out of it. He reads essays off this for
@@ -119,10 +127,12 @@
         --l-faint: 68%;
         --l-line: 27%;
         --l-toolbar: 20%;
-        --l-hover: 23%;
-        --l-pressed: 29%;
         --l-panel: 18%;
         --l-page: 14%;
+        /* Light over dark, for the same reason. */
+        --wash: rgb(255 255 255 / 0.09);
+        --wash-firm: rgb(255 255 255 / 0.17);
+
         --l-chosen: 70%;
         --l-chosen-soft: 31%;
         --l-on-chosen: 10%;
@@ -243,12 +253,12 @@
         an old washed-out laptop panel, and movement is not.
       */
       button:hover:not(:disabled) {
-        background: var(--hover);
+        background-image: linear-gradient(var(--wash), var(--wash));
         border-color: var(--quiet);
       }
 
       button:active:not(:disabled) {
-        background: var(--pressed);
+        background-image: linear-gradient(var(--wash-firm), var(--wash-firm));
         border-color: var(--quiet);
         transform: translateY(1px);
       }
@@ -364,11 +374,15 @@
       }
 
       .note:hover {
-        background: var(--hover);
+        background-image: linear-gradient(var(--wash), var(--wash));
+      }
+
+      .note:active {
+        background-image: linear-gradient(var(--wash-firm), var(--wash-firm));
       }
 
       .note[aria-current='true'] {
-        background: var(--chosen-soft);
+        background-color: var(--chosen-soft);
         border-left-color: var(--chosen);
       }
 
@@ -613,21 +627,17 @@
         anyway. Solid is what Windows has meant by "selected" for thirty years
         and cannot be mistaken for "your pointer is here".
       */
-      .choice[aria-pressed='true'],
-      .choice[aria-pressed='true']:hover:not(:disabled),
-      .choice[aria-pressed='true']:active:not(:disabled) {
+      .choice[aria-pressed='true'] {
         border-color: var(--chosen);
-        background: var(--chosen);
+        background-color: var(--chosen);
         color: var(--on-chosen);
         box-shadow: none;
       }
 
       /* Except here: the swatch is the sample, and filling the button behind it
          would paint over the very thing he is choosing. A ring instead. */
-      .colour-choice[aria-pressed='true'],
-      .colour-choice[aria-pressed='true']:hover:not(:disabled),
-      .colour-choice[aria-pressed='true']:active:not(:disabled) {
-        background: var(--page);
+      .colour-choice[aria-pressed='true'] {
+        background-color: var(--page);
         border-color: var(--chosen);
         box-shadow: inset 0 0 0 2px var(--chosen);
       }
