@@ -227,18 +227,39 @@ for (const note of notes) {
   total += Buffer.byteLength(content, 'utf8');
 }
 
-// A trimmed copy for the browser, where the UI is developed. Same titles, dates
-// and count; bodies cut short so the whole thing fits in localStorage. Editor
-// behaviour on a 145KB essay has to be judged in the real app, not here.
-const BROWSER_BODY_LIMIT = 400;
+/*
+  A trimmed copy for the browser, where the UI is developed. Same titles, dates
+  and count, but the bodies have to fit in localStorage — Chromium allows about
+  5MB, counted in UTF-16, so roughly 2.5 million characters against a corpus of
+  nearly three million.
+
+  Most are cut to a few lines, which is all the list needs. But a handful are
+  kept long, because nothing about how a page of his writing actually reads —
+  the measure, the line spacing, the scrollbar, how the text sits when it runs
+  past the window — can be judged on four hundred characters. His real corpus
+  runs to a 145KB essay; these stand in for it.
+*/
+const BROWSER_SHORT = 400;
+const BROWSER_LONG = 40_000;
+const LONG_SAMPLES = 10;
+
+const longest = new Set(
+  [...written.entries()]
+    .sort(([, a], [, b]) => b.content.length - a.content.length)
+    .slice(0, LONG_SAMPLES)
+    .map(([name]) => name),
+);
+
 const browser = [];
 for (const [name, note] of written) {
+  const limit = longest.has(name) ? BROWSER_LONG : BROWSER_SHORT;
   browser.push({
     id: `${name}.txt`,
-    text: note.content.slice(0, BROWSER_BODY_LIMIT),
+    text: note.content.slice(0, limit),
     updatedAt: note.modified.getTime(),
   });
 }
+const browserChars = browser.reduce((sum, note) => sum + note.text.length, 0);
 await writeFile(path.join(path.dirname(OUT), 'corpus.json'), JSON.stringify(browser), 'utf8');
 
 const sizes = notes.map((n) => n.bytes).sort((a, b) => a - b);
@@ -246,4 +267,9 @@ console.log(`wrote ${notes.length} files to ${OUT}`);
 console.log(`  total ${(total / 1048576).toFixed(2)} MB`);
 console.log(`  empty ${empties}, title-only ${stubs}, deduped names ${duplicates}`);
 console.log(`  pinned ${notes.filter((n) => n.pinned).length}, dated onto today ${freshened}`);
+console.log(
+  `  browser copy ${(browserChars / 1000).toFixed(0)}k chars ` +
+    `(~${((browserChars * 2) / 1048576).toFixed(1)} MB in localStorage), ` +
+    `${LONG_SAMPLES} kept long`,
+);
 console.log(`  size p50 ${sizes[Math.floor(sizes.length / 2)]}, p90 ${sizes[Math.floor(sizes.length * 0.9)]}, max ${sizes[sizes.length - 1]}`);
