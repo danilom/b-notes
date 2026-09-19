@@ -46,3 +46,33 @@ export function sampleFilesFor(
     }),
   ];
 }
+
+/** Where one sample's copies live, so a sample can clear its own before writing. */
+export function versionsFolderFor(writingFolder: string, id: string): string {
+  return `${writingFolder}/Verzije/${id}/`;
+}
+
+/**
+ * The files as they should stand once every sample has been placed.
+ *
+ * Each sample's copies are cleared first. Their ages are counted from now, so
+ * their filenames differ on every start — without this they would breed a fresh
+ * set on every reload, which is what they did until someone counted the rows.
+ */
+export function withSamplesPlaced<T extends { text: string; updatedAt: number }>(
+  existing: ReadonlyMap<string, T>,
+  samples: readonly { id: string; files: readonly SampleFile[] }[],
+  writingFolder: string,
+  asStored: (file: SampleFile) => T,
+): Map<string, T> {
+  const files = new Map(existing);
+
+  for (const { id, files: placing } of samples) {
+    const under = versionsFolderFor(writingFolder, id);
+    for (const path of [...files.keys()]) {
+      if (path.startsWith(under)) files.delete(path);
+    }
+    for (const file of placing) files.set(file.path, asStored(file));
+  }
+  return files;
+}

@@ -66,39 +66,3 @@ export function worthKeeping(previous: string, next: string, lastKept: string | 
   if (lastKept === null) return true;
   return changeBetween(lastKept, previous).added >= WORTH_KEEPING;
 }
-
-/** A run of an old copy, and whether his text as it stands still holds it. */
-export interface Piece {
-  text: string;
-  missing: boolean;
-}
-
-/**
- * An old copy broken into paragraphs, with the ones his text no longer holds
- * marked out.
- *
- * Not a diff. He is deciding whether to bring this copy back, and what decides
- * that is which parts of it he would be getting — so the question asked of each
- * paragraph is simply whether it is still there, and a paragraph he has since
- * reworded counts as gone, because as it stands it is.
- *
- * When every paragraph is missing, none is marked. That happens to a text he
- * rewrote outright, and to the one in nine of his that is a single unbroken
- * block — and marking the whole page says nothing that the page did not.
- *
- * The separators come back as pieces of their own, so the parts always rebuild
- * the text exactly.
- */
-export function paragraphsNotIn(text: string, other: string): Piece[] {
-  const parts = text.split(/(\n[ \t]*\n)/);
-  const pieces = parts.map((part, at): Piece => ({
-    text: part,
-    missing: at % 2 === 0 && part.trim().length > 0 && !other.includes(part.trim()),
-  }));
-
-  const written = pieces.filter((piece) => piece.text.trim().length > 0);
-  if (written.length > 0 && written.every((piece) => piece.missing)) {
-    return pieces.map((piece) => ({ text: piece.text, missing: false }));
-  }
-  return pieces;
-}

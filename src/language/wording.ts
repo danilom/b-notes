@@ -152,7 +152,12 @@ const TEXT = {
     versionsAllSame: 'Sve sačuvane verzije su iste kao aktivni tekst.',
     versionsBack: 'Nazad na verzije',
     versionRestore: 'Vrati ovaj tekst',
-    versionMarked: 'Podebljano je ono što u aktivnom tekstu više ne postoji.',
+    // Said once, over the whole preview, rather than spelt out on every block.
+    versionDiffNote:
+      'Zeleno je ono čega u aktivnom tekstu više nema. Crveno je ono što je u aktivnom tekstu, a u ovoj verziji ga nema.',
+    versionAddedTag: '(+) Dodato',
+    versionMissingTag: '(−) Nedostaje',
+    versionUnrelated: 'Ovo je sasvim drugi tekst — nijedan pasus se ne poklapa s aktivnim.',
     noteDeleted: 'Tekst je obrisan',
     emptiedHint: 'Tekst je prazan. Obriši ga ako ti više ne treba.',
   },
@@ -256,7 +261,11 @@ const TEXT = {
     versionsAllSame: 'Every copy kept is the same as the active text.',
     versionsBack: 'Back to versions',
     versionRestore: 'Bring this text back',
-    versionMarked: 'What is in bold is no longer in the active text.',
+    versionDiffNote:
+      'Green is what the active text no longer has. Red is what the active text has and this copy does not.',
+    versionAddedTag: '(+) Extra',
+    versionMissingTag: '(−) Missing',
+    versionUnrelated: 'This is a different text altogether — not one paragraph matches the active one.',
     noteDeleted: 'Text deleted',
     emptiedHint: 'This text is empty. Delete it if you no longer need it.',
   },

@@ -1,7 +1,8 @@
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 import type { NoteVersion } from '../notes/note.ts';
-import { paragraphsNotIn } from '../notes/text-change.ts';
+import { type DiffRun, diffParagraphs, runsOf } from '../notes/paragraph-diff.ts';
 import { icon } from './icons.ts';
+import { beginningAndEnd } from './text-snippet.ts';
 import { describeVersion } from './version-row.ts';
 
 export interface VersionsHandlers {
@@ -53,6 +54,48 @@ function rowFor(
 
   row.addEventListener('click', () => show(version));
   return row;
+}
+
+/** How much of a paragraph he can read elsewhere is worth repeating here. */
+const REMINDER = 150;
+
+/**
+ * One run of paragraphs, tagged once.
+ *
+ * What the copy holds is shown in full: it is the only place he can read it.
+ * What the active text holds is shortened to its two ends, because he can read
+ * that by closing this dialog, and printing it whole would bury what he came
+ * for under what he already has.
+ */
+function blockFor(run: DiffRun, words: ReturnType<typeof strings>): HTMLElement {
+  if (run.kind === 'same') {
+    const plain = document.createElement('div');
+    plain.className = 'review-same';
+    plain.append(...run.paragraphs.map(paragraphOf));
+    return plain;
+  }
+
+  const added = run.kind === 'added';
+  const block = document.createElement('div');
+  block.className = `review-run review-run-${added ? 'added' : 'missing'}`;
+
+  const tag = document.createElement('span');
+  tag.className = 'review-tag';
+  tag.textContent = added ? words.versionAddedTag : words.versionMissingTag;
+
+  block.append(
+    tag,
+    ...run.paragraphs.map((paragraph) =>
+      paragraphOf(added ? paragraph : beginningAndEnd(paragraph, REMINDER)),
+    ),
+  );
+  return block;
+}
+
+function paragraphOf(text: string): HTMLParagraphElement {
+  const paragraph = document.createElement('p');
+  paragraph.textContent = text;
+  return paragraph;
 }
 
 /**
@@ -149,27 +192,19 @@ export function openVersionsDialog(
     done.focus();
   }
 
-  /** One copy, with what his text no longer holds marked out inside it. */
+  /** One copy, with both ways it differs from the active text marked in place. */
   function fillText(version: NoteVersion): void {
-    const pieces = paragraphsNotIn(version.text, current);
-    const anyMissing = pieces.some((piece) => piece.missing);
+    const { pieces, unrelated } = diffParagraphs(version.text, current);
+    const runs = runsOf(pieces);
 
     const body = document.createElement('div');
     body.className = 'review-text';
-    body.append(
-      ...pieces.map((piece) => {
-        if (!piece.missing) return piece.text;
-        const gone = document.createElement('strong');
-        gone.className = 'review-gone';
-        gone.textContent = piece.text;
-        return gone;
-      }),
-    );
+    body.append(...runs.map((run) => blockFor(run, words)));
 
     const aside = document.createElement('p');
     aside.className = 'review-note-aside';
-    aside.textContent = words.versionMarked;
-    aside.hidden = !anyMissing;
+    aside.textContent = unrelated ? words.versionUnrelated : words.versionDiffNote;
+    aside.hidden = !unrelated && runs.every((run) => run.kind === 'same');
 
     const column = document.createElement('div');
     column.className = 'review-body';

@@ -1,6 +1,7 @@
 import type { FileInfo, FileSystem } from '../../platform/file-system.ts';
-import { longDiffSample } from './mock-long-diff-sample.ts';
-import { versionsSample } from './mock-versions-sample.ts';
+import { LONG_SAMPLE_ID, longDiffSample } from './mock-long-diff-sample.ts';
+import { withSamplesPlaced } from './mock-sample-files.ts';
+import { SAMPLE_ID, versionsSample } from './mock-versions-sample.ts';
 
 const KEY = 'b-notes:mock-files';
 
@@ -130,13 +131,17 @@ export function everyFile(): { path: string; bytes: number }[] {
  */
 export function placeSamples(): void {
   const now = Date.now();
-  const files = load();
-  for (const sample of [versionsSample, longDiffSample]) {
-    for (const file of sample(now, MOCK_WRITING_FOLDER)) {
-      files.set(file.path, { text: file.text, updatedAt: file.updatedAt });
-    }
-  }
-  store(files);
+  store(
+    withSamplesPlaced(
+      load(),
+      [
+        { id: SAMPLE_ID, files: versionsSample(now, MOCK_WRITING_FOLDER) },
+        { id: LONG_SAMPLE_ID, files: longDiffSample(now, MOCK_WRITING_FOLDER) },
+      ],
+      MOCK_WRITING_FOLDER,
+      (file) => ({ text: file.text, updatedAt: file.updatedAt }),
+    ),
+  );
 }
 
 /**

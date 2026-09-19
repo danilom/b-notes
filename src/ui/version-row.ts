@@ -1,7 +1,7 @@
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 import type { NoteVersion } from '../notes/note.ts';
 import { titleFrom } from '../notes/note-title.ts';
-import { paragraphsNotIn } from '../notes/text-change.ts';
+import { diffParagraphs } from '../notes/paragraph-diff.ts';
 import { countWords } from '../notes/word-count.ts';
 import { onOneLine } from './text-snippet.ts';
 
@@ -9,20 +9,23 @@ import { onOneLine } from './text-snippet.ts';
 const SNIPPET = 120;
 
 /**
- * The first paragraph `text` has that `other` does not.
+ * The first paragraph of one kind in the same comparison the preview draws.
  *
- * Read off `paragraphsNotIn` rather than worked out beside it, so a row and the
- * preview it opens can never disagree about what is missing — including the
- * case where everything is, which both have to treat as nothing being marked.
+ * The one comparison, not a second one that agrees with it most of the time: a
+ * row promising something the preview then fails to mark is the kind of fault
+ * nobody finds until he does.
  *
- * Never `alreadySaid`, which is whichever title is on screen already: a row
- * that says the same thing on two lines reads as a fault.
+ * Never `alreadySaid`, whichever title is on screen already — a row that says
+ * the same thing on two lines reads as broken.
  */
-function firstOnlyIn(text: string, other: string, alreadySaid: string): string | null {
-  const only = paragraphsNotIn(text, other).find(
-    (piece) => piece.missing && piece.text.trim() !== alreadySaid,
-  );
-  return only?.text.trim() ?? null;
+function firstOfKind(
+  diff: ReturnType<typeof diffParagraphs>,
+  kind: 'added' | 'missing',
+  alreadySaid: string,
+): string | null {
+  if (diff.unrelated) return null;
+  const only = diff.pieces.find((piece) => piece.kind === kind && piece.text !== alreadySaid);
+  return only?.text ?? null;
 }
 
 /**
@@ -56,9 +59,10 @@ export function describeVersion(
   const length = countWords(version.text);
 
   // Each direction skips the title that is already on screen for it: the copy's
-  // own on the line above, and his text's in the heading over the whole dialog.
-  const extra = firstOnlyIn(version.text, current, was);
-  const gone = firstOnlyIn(current, version.text, currentTitle);
+  // own on the line above, and the active text's in the heading over the dialog.
+  const diff = diffParagraphs(version.text, current);
+  const extra = firstOfKind(diff, 'added', was);
+  const gone = firstOfKind(diff, 'missing', currentTitle);
 
   return {
     size: words.versionSize(length, length - countWords(current)),

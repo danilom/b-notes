@@ -4,7 +4,6 @@ import { describe, it } from 'node:test';
 import {
   WORTH_KEEPING,
   changeBetween,
-  paragraphsNotIn,
   worthKeeping,
 } from '../src/notes/text-change.ts';
 
@@ -116,62 +115,5 @@ describe('not keeping six copies of one cutting session', () => {
     const afterALittle = `Pocetak ${long(3000)} ${long(20, 'b')} kraj`;
 
     assert.equal(worthKeeping(afterALittle, 'Pocetak  kraj', ESSAY), false);
-  });
-});
-
-
-describe('what an old copy has that his text no longer does', () => {
-  const rebuilt = (pieces: { text: string }[]) => pieces.map((piece) => piece.text).join('');
-  const marked = (pieces: { text: string; missing: boolean }[]) =>
-    pieces.filter((piece) => piece.missing).map((piece) => piece.text);
-
-  it('marks the paragraph he has since cut', () => {
-    const old = 'Naslov\n\nPrvi pasus.\n\nDrugi pasus.';
-    const now = 'Naslov\n\nPrvi pasus.';
-
-    assert.deepEqual(marked(paragraphsNotIn(old, now)), ['Drugi pasus.']);
-  });
-
-  it('marks nothing when his text still holds all of it', () => {
-    const old = 'Naslov\n\nPrvi pasus.';
-    const now = 'Naslov\n\nPrvi pasus.\n\nI jos jedan.';
-
-    assert.deepEqual(marked(paragraphsNotIn(old, now)), []);
-  });
-
-  it('counts a paragraph he has reworded as gone, because as it stands it is', () => {
-    const old = 'Naslov\n\nBilo je hladno.';
-    const now = 'Naslov\n\nBilo je vrlo hladno.';
-
-    assert.deepEqual(marked(paragraphsNotIn(old, now)), ['Bilo je hladno.']);
-  });
-
-  it('marks nothing at all when every paragraph is gone', () => {
-    // A text he rewrote outright. Marking the whole page says nothing the page
-    // did not already say.
-    const old = 'Naslov\n\nPrvi.\n\nDrugi.';
-
-    assert.deepEqual(marked(paragraphsNotIn(old, 'Sasvim drugi tekst.')), []);
-  });
-
-  it('marks nothing for the one text in nine that is a single block', () => {
-    const old = 'Jedan dugacak pasus bez ijednog praznog reda u njemu.';
-
-    assert.deepEqual(marked(paragraphsNotIn(old, 'Nesto sasvim drugo.')), []);
-  });
-
-  it('rebuilds the copy exactly, whatever it marked', () => {
-    // The pieces are what gets drawn, so losing a blank line between them would
-    // show him a text he never wrote.
-    const old = 'Naslov\n\nPrvi pasus.\n\n\n\nDrugi pasus.\n';
-
-    assert.equal(rebuilt(paragraphsNotIn(old, 'Naslov')), old);
-    assert.equal(rebuilt(paragraphsNotIn(old, old)), old);
-  });
-
-  it('leaves blank runs alone rather than calling them missing', () => {
-    const old = 'Naslov\n\nPrvi.';
-
-    assert.deepEqual(marked(paragraphsNotIn(old, '')).filter((t) => t.trim().length === 0), []);
   });
 });
