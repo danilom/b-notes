@@ -516,20 +516,18 @@
         border-top: 1px solid var(--line);
       }
 
-      /* Pushed to the far end, so it is never what he hits going for U redu.
-         Never allowed to wrap: at 200% it folded onto three lines and shoved
-         the buttons beside it off the panel. */
+      /*
+        A real button, not a ghost.
+
+        It was drawn faintly to keep it out of the way, and went too far: a
+        borderless grey label among two bordered buttons reads as disabled, and
+        the one control whose whole job is rescuing him from a mess he can't
+        undo must not look like the one control that isn't working. Distance
+        keeps it clear of U redu; it doesn't need to be dim as well.
+      */
       .reset {
         margin-right: auto;
         white-space: nowrap;
-        border-color: transparent;
-        background: none;
-        color: var(--quiet);
-      }
-
-      .reset:hover:not(:disabled) {
-        border-color: var(--line);
-        color: var(--ink);
       }
 
       .panel footer button {
@@ -537,9 +535,7 @@
         padding: 0.5rem 1rem;
       }
 
-      .panel footer .reset {
-        min-width: 0;
-      }
+
 
       /* The one the eye should land on, and the one Enter already triggers. */
       .keep {
