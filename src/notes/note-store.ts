@@ -17,7 +17,7 @@ import {
 import { deletedIdFor, planSave } from './note-saving.ts';
 import { toSearchable } from '../language/diacritics.ts';
 import { titleFrom } from './note-title.ts';
-import { type DeletedNote, type Note, type NoteStore, isEmptyText } from './note.ts';
+import { type DeletedNote, type Note, type NoteStore, type NoteVersion, isEmptyText } from './note.ts';
 
 const nameOf = (path: string): string => path.split('/').at(-1) ?? path;
 
@@ -333,6 +333,27 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
       }
       await files.removeEmptyFolder(at(folder));
       await files.removeEmptyFolder(at(DELETED_FOLDER, VERSIONS_FOLDER));
+    },
+
+    async countVersions(id: string): Promise<number> {
+      return (await files.list(at(versionsFolderFor(requireNoteId(id)))).catch(() => [])).length;
+    },
+
+    async listVersions(id: string): Promise<NoteVersion[]> {
+      const kept = await files.list(at(versionsFolderFor(requireNoteId(id)))).catch(() => []);
+      const versions = await Promise.all(
+        kept.map(async (file): Promise<NoteVersion> => ({
+          id: idOf(nameOf(file.path)),
+          // When it was written, which is when it was taken. A rename leaves a
+          // file's time alone, so this survives the text being put away and
+          // brought back.
+          takenAt: file.updatedAt,
+          text: asWritten(await files.read(file.path).catch(() => '')),
+        })),
+      );
+      // Newest first, by name rather than by time: two taken inside one second
+      // share a time, and only their names say which came second.
+      return versions.sort((first, second) => (first.id < second.id ? 1 : first.id > second.id ? -1 : 0));
     },
 
     async restore(id: string): Promise<string> {

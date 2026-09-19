@@ -14,6 +14,7 @@ import {
 import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
 import { openConfirmDialog } from './confirm-dialog.ts';
 import { openDeletedDialog } from './deleted-dialog.ts';
+import { openVersionsDialog } from './versions-dialog.ts';
 import { confirmationForDeleting, confirmationForDestroying } from './note-confirmations.ts';
 import { readSession, writeSession } from './app-session.ts';
 import {
@@ -95,6 +96,9 @@ const deletedSee = element('deleted-see', HTMLButtonElement);
 const deletedBlockLabel = element('deleted-block-label', HTMLSpanElement);
 const confirmPane = element('confirm', HTMLDivElement);
 const deletedPane = element('deleted', HTMLDivElement);
+const versionsPane = element('versions', HTMLDivElement);
+const seeVersions = element('see-versions', HTMLButtonElement);
+const seeVersionsLabel = element('see-versions-label', HTMLSpanElement);
 
 /** Built here from whatever filesystem the host provides. */
 let store: ReturnType<typeof createNoteStore>;
@@ -114,6 +118,14 @@ let showAppearanceOf: (appearance: Appearance) => void;
 let notes: Note[] = [];
 /** Everything he has put away. Held like `notes`, and for the same reason. */
 let deleted: DeletedNote[] = [];
+
+/**
+ * How many copies are kept of the text he has open.
+ *
+ * Counted rather than read: it decides only whether the way to them is there at
+ * all, and for most of his texts the answer is none.
+ */
+let keptOfOpen = 0;
 let openId: string | null = null;
 
 /**
@@ -273,6 +285,7 @@ function showStatus(): void {
   const now = whatIsHappening();
 
   deleteNote.disabled = !canDelete(now);
+  seeVersions.hidden = keptOfOpen === 0;
   emptyHint.textContent = words.emptiedHint;
   emptyHint.hidden = !emptyHintShows(now);
   if (!emptyHint.hidden) pointHintAtDeleteButton();
@@ -305,6 +318,9 @@ async function saveNow(): Promise<void> {
   notes = await store.list();
   draw();
   showStatus();
+  // A save may have kept a copy before it landed, which is when the way to them
+  // first appears.
+  void countKeptOfOpen();
   if (wasNew) log.info('Created a text', { id });
 }
 
@@ -340,8 +356,10 @@ async function open(id: string): Promise<void> {
   atFound = 0;
   markMatches();
   scrollToCurrentMatch();
+  keptOfOpen = 0;
   draw();
   showStatus();
+  void countKeptOfOpen();
   log.info('Opened a text', { id });
 }
 
@@ -535,6 +553,63 @@ async function deleteOpenNote(id: string): Promise<void> {
   log.info('Put a text away', { id });
 }
 
+/** Asks the store how many copies the open text has, and shows the way to them. */
+async function countKeptOfOpen(): Promise<void> {
+  const asking = openId;
+  const kept = asking === null ? 0 : await store.countVersions(asking).catch(() => 0);
+  // He may have moved on while the disk was answering.
+  if (asking !== openId) return;
+  keptOfOpen = kept;
+  seeVersions.hidden = keptOfOpen === 0;
+}
+
+function showVersions(): void {
+  if (!versionsPane.hidden || openId === null) return;
+  const id = openId;
+
+  void (async () => {
+    const versions = await store.listVersions(id);
+    if (versions.length === 0) return;
+
+    const close = openVersionsDialog(
+      versionsPane,
+      notes.find((note) => note.id === id)?.title ?? words.untitled,
+      versions,
+      editor.value,
+      language,
+      {
+        onClose: () => {
+          close();
+          seeVersions.focus();
+        },
+        onRestore: (version) => {
+          close();
+          bringBackVersion(version.text);
+        },
+      },
+    );
+  })();
+}
+
+/**
+ * Puts an old copy back in front of him.
+ *
+ * Through the editor rather than straight to disk, so the ordinary save carries
+ * it out — which means the text it is writing over is itself kept first, and
+ * undoing this is the same as undoing anything else he has typed.
+ */
+function bringBackVersion(text: string): void {
+  editor.value = text;
+  editor.setSelectionRange(0, 0);
+  editor.scrollTop = 0;
+  atFound = 0;
+  markMatches();
+  notice = words.restored;
+  scheduleSave();
+  editor.focus();
+  log.info('Brought an earlier version back', { id: openId });
+}
+
 function showDeleted(): void {
   if (!deletedPane.hidden) return;
 
@@ -661,6 +736,7 @@ deleteNote.addEventListener('click', askToDelete);
 // On the strip, not the button: a press on the button bubbles up to here, so
 // there is one way in rather than two that have to agree.
 deletedBlock.addEventListener('click', showDeleted);
+seeVersions.addEventListener('click', showVersions);
 
 /**
  * The shortcut every browser has taught him, pointed at our own setting.
@@ -750,6 +826,7 @@ export async function startApp(host: Host): Promise<void> {
   appearanceLabel.textContent = words.appearance;
   deleteNoteLabel.textContent = words.deleteNote;
   deletedSee.textContent = words.deletedSee;
+  seeVersionsLabel.textContent = words.versions;
   // The same bin as on the button he pressed to put a text here. One mark for
   // one idea is the only thing tying the action to the place it sends things.
   deletedBlock.prepend(icon('delete'));

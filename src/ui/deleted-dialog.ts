@@ -32,10 +32,10 @@ function rowFor(
 ): HTMLElement {
   const row = document.createElement('button');
   row.type = 'button';
-  row.className = 'deleted-row';
+  row.className = 'review-row';
 
   const title = document.createElement('span');
-  title.className = 'deleted-title';
+  title.className = 'review-title';
   // Same word the list uses for a text with nothing at the top of it. A text he
   // emptied and then deleted has no title and no snippet, and a blank row would
   // read as the app having lost track of something.
@@ -44,11 +44,11 @@ function rowFor(
   // When he put it away, which is what a file in Obrisano has for a time: it
   // is written on the way in, so the moment it landed is the moment it says.
   const when = document.createElement('span');
-  when.className = 'deleted-when';
+  when.className = 'review-when';
   when.textContent = words.deletedWhen(describeWhen(note.updatedAt, language));
 
   const snippet = document.createElement('span');
-  snippet.className = 'deleted-snippet';
+  snippet.className = 'review-snippet';
   snippet.textContent = snippetOf(note);
 
   row.append(title, when, snippet);
@@ -94,7 +94,7 @@ export function openDeletedDialog(
   };
 
   const panel = document.createElement('div');
-  panel.className = 'panel deleted-panel';
+  panel.className = 'panel review-panel';
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
 
@@ -127,21 +127,21 @@ export function openDeletedDialog(
     const header = document.createElement('header');
     // The title and its sentence stack; the X sits beside the pair of them.
     const heading = document.createElement('div');
-    heading.className = 'deleted-heading';
+    heading.className = 'review-heading';
     const title = document.createElement('h1');
     title.textContent = words.deleted;
     const kept = document.createElement('p');
-    kept.className = 'deleted-kept';
+    kept.className = 'review-note';
     kept.textContent = words.deletedKept;
     heading.append(title, kept);
     header.append(heading, dismissButton());
 
     const list = document.createElement('div');
-    list.className = 'deleted-list';
+    list.className = 'review-list';
 
     if (filter.length > 0) {
       const line = document.createElement('div');
-      line.className = 'deleted-filter';
+      line.className = 'review-filter';
       const count = document.createElement('span');
       count.textContent = words.deletedMatching(shown().length, filter);
       const all = document.createElement('button');
@@ -178,11 +178,11 @@ export function openDeletedDialog(
     // names the one thing the surface can only hint at — that he cannot write
     // in it — and what to press if that is what he wanted.
     const heading = document.createElement('div');
-    heading.className = 'deleted-heading';
+    heading.className = 'review-heading';
     const title = document.createElement('h1');
     title.textContent = words.deletedPreview(note.title.length > 0 ? note.title : words.untitled);
     const help = document.createElement('p');
-    help.className = 'deleted-kept';
+    help.className = 'review-note';
     help.textContent = words.deletedPreviewHelp;
     heading.append(title, help);
     header.append(heading, dismissButton());
@@ -193,16 +193,16 @@ export function openDeletedDialog(
     // What else is kept of it. Above the text, because it is about the writing
     // rather than about the dialog, and silent when there is nothing to say.
     const alsoKept = document.createElement('p');
-    alsoKept.className = 'deleted-versions';
+    alsoKept.className = 'review-note-aside';
     alsoKept.textContent = words.deletedVersions(note.versions);
     alsoKept.hidden = note.versions === 0;
 
     const body = document.createElement('div');
     if (note.text.trim().length === 0) {
-      body.className = 'deleted-text deleted-text-empty';
+      body.className = 'review-text review-text-empty';
       body.textContent = words.deletedEmpty;
     } else {
-      body.className = 'deleted-text';
+      body.className = 'review-text';
       body.textContent = note.text;
     }
 
@@ -237,7 +237,7 @@ export function openDeletedDialog(
     // One box at his measure holding both, so the line above the text starts
     // where the text starts.
     const column = document.createElement('div');
-    column.className = 'deleted-body';
+    column.className = 'review-body';
     column.append(alsoKept, body);
 
     panel.replaceChildren(header, column, footer);

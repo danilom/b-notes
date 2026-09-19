@@ -572,6 +572,55 @@ describe('keeping a copy before writing over his work', () => {
   });
 });
 
+describe('the copies kept of one text', () => {
+  const ESSAY = `O zimi\n\n${'rec '.repeat(800)}`;
+
+  it('counts none for a text he has only ever written in', async () => {
+    const { store } = await emptyStore();
+    const id = await store.save(null, ESSAY);
+
+    assert.equal(await store.countVersions(id ?? ''), 0);
+    assert.deepEqual(await store.listVersions(id ?? ''), []);
+  });
+
+  it('hands back what was there, not what is there now', async () => {
+    const { store } = await emptyStore();
+    const id = await store.save(null, ESSAY);
+    await store.save(id, 'O zimi\n\nSve je otišlo.');
+
+    const [kept] = await store.listVersions(id ?? '');
+    assert.equal(kept?.text, ESSAY);
+  });
+
+  it('counts without reading them', async () => {
+    const { store } = await emptyStore();
+    const id = await store.save(null, ESSAY);
+    await store.save(id, 'O zimi\n\nKratko.');
+
+    assert.equal(await store.countVersions(id ?? ''), 1);
+  });
+
+  it('puts the newest first, even when two share a second', async () => {
+    // Their times are equal to the nearest millisecond the app can see, so only
+    // their names say which came second.
+    const { dir, store } = await emptyStore();
+    const id = (await store.save(null, ESSAY)) ?? '';
+    const folder = path.join(dir, VERSIONS_FOLDER, id);
+    await mkdir(folder, { recursive: true });
+    await writeFile(path.join(folder, '2026-01-01 10-00-00.txt'), 'prva', 'utf8');
+    await writeFile(path.join(folder, '2026-01-01 10-00-00 (1).txt'), 'druga', 'utf8');
+
+    assert.deepEqual((await store.listVersions(id)).map((kept) => kept.text), ['druga', 'prva']);
+  });
+
+  it('refuses a name that points outside his writing folder', async () => {
+    const { store } = await emptyStore();
+
+    await assert.rejects(() => store.listVersions('../../secrets'));
+    await assert.rejects(() => store.countVersions('../../secrets'));
+  });
+});
+
 describe('when a deleted text says it went', () => {
   const LONG_AGO = new Date(2019, 0, 1);
 

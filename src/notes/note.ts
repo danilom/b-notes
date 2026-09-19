@@ -36,6 +36,20 @@ export interface DeletedNote extends Note {
   versions: number;
 }
 
+/**
+ * A copy of a text as it was before a save wrote over it.
+ *
+ * Nothing distinguishes one from another by its opening, since they are all the
+ * same text — so what a list of them shows is when it was taken and how much of
+ * the writing was there at the time.
+ */
+export interface NoteVersion {
+  /** The moment it was taken, which is also what the file is called. */
+  id: string;
+  takenAt: number;
+  text: string;
+}
+
 export interface NoteStore {
   /**
    * Puts anything he has in another format into `.txt`, and reports what it
@@ -66,6 +80,10 @@ export interface NoteStore {
    * the one asked for when he has since written something with the same title.
    */
   restore(id: string): Promise<string>;
+  /** How many copies are kept of a note. Counted without reading any of them. */
+  countVersions(id: string): Promise<number>;
+  /** Every copy kept of a note, newest first. */
+  listVersions(id: string): Promise<NoteVersion[]>;
   /**
    * Destroys one he had already put away, along with every version of it kept
    * when it went. The only thing in the app that loses his writing on purpose,

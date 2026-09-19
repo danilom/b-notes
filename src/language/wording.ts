@@ -114,6 +114,19 @@ const TEXT = {
     notDeleted: 'Tekst nije obrisan',
     notRestored: 'Tekst nije vraćen',
     notDestroyed: 'Tekst nije uništen',
+
+    versions: 'Ranije verzije',
+    versionsTitle: (title: string) => `Ranije verzije: ${title}`,
+    versionsNote: 'Ovako je tekst izgledao ranije. Izaberi kad, pa ga vrati ako hoćeš.',
+    versionTitle: (when: string) => `Ovako je izgledao ${when}`,
+    // Length rather than the opening: every copy of one text starts the same
+    // way, so what tells them apart is when it was taken and how much of the
+    // writing was there.
+    versionLength: (n: number) =>
+      `${n.toLocaleString('sr-RS')} ${plural(n, 'slovo', 'slova', 'slova')}`,
+    versionsBack: 'Nazad na verzije',
+    versionRestore: 'Vrati ovaj tekst',
+    versionMissing: 'Podebljano je ono što u tvom tekstu više ne postoji.',
     noteDeleted: 'Tekst je obrisan',
     emptiedHint: 'Tekst je prazan. Obriši ga ako ti više ne treba.',
   },
@@ -200,6 +213,15 @@ const TEXT = {
     notDeleted: 'Text not deleted',
     notRestored: 'Text not brought back',
     notDestroyed: 'Text not destroyed',
+
+    versions: 'Earlier versions',
+    versionsTitle: (title: string) => `Earlier versions: ${title}`,
+    versionsNote: 'This is how the text looked before. Pick when, then bring it back if you want.',
+    versionTitle: (when: string) => `How it looked ${when}`,
+    versionLength: (n: number) => `${n.toLocaleString('en-GB')} character${n === 1 ? '' : 's'}`,
+    versionsBack: 'Back to versions',
+    versionRestore: 'Bring this text back',
+    versionMissing: 'What is in bold is no longer in your text.',
     noteDeleted: 'Text deleted',
     emptiedHint: 'This text is empty. Delete it if you no longer need it.',
   },
