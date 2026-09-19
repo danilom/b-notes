@@ -57,6 +57,24 @@ const share = (part, whole) => (whole === 0 ? '0%' : `${Math.round((part / whole
 
 // ---------------------------------------------------------------- the texts
 
+/**
+ * How a text ends its lines, before anything normalises them away.
+ *
+ * Worth counting on its own. His files came off Windows, and a textarea can
+ * only ever hand back a bare newline — so the app rewrites every line of a file
+ * the first time he touches one, which every measure below would otherwise read
+ * as him having replaced the lot.
+ */
+function lineEndingOf(text) {
+  const windows = (text.match(/\r\n/g) ?? []).length;
+  const bare = (text.match(/(?<!\r)\n/g) ?? []).length;
+  if (windows > 0 && bare > 0) return 'both, mixed together';
+  if (windows > 0) return 'windows (CR LF)';
+  return bare > 0 ? 'bare newline (LF)' : 'no line endings at all';
+}
+
+const normalise = (text) => text.replace(/\r\n/g, '\n');
+
 /** Everything about one text except what it says. */
 function shapeOf(text) {
   const paragraphs = text.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
@@ -113,7 +131,8 @@ async function loadNotesJson(file) {
   const raw = JSON.parse(await readFile(file, 'utf8'));
   return (raw.activeNotes ?? raw)
     .map((note) => ({
-      text: String(note.content ?? ''),
+      ending: lineEndingOf(String(note.content ?? '')),
+      text: normalise(String(note.content ?? '')),
       created: note.creationDate ? new Date(note.creationDate) : null,
       modified: note.lastModified ? new Date(note.lastModified) : null,
       pinned: Boolean(note.pinned),
@@ -127,7 +146,8 @@ async function loadFolder(dir) {
     if (!name.toLowerCase().endsWith('.txt')) continue;
     const full = path.join(dir, name);
     if (!(await stat(full)).isFile()) continue;
-    out.push({ name, text: await readFile(full, 'utf8') });
+    const raw = await readFile(full, 'utf8');
+    out.push({ name, ending: lineEndingOf(raw), text: normalise(raw) });
   }
   return out;
 }
@@ -142,6 +162,14 @@ function reportStructure(texts) {
   histogram('length', shapes.map((s) => s.chars), [200, 500, 1000, 2000, 5000, 15000, 50000], ' chars');
   histogram('paragraphs per text', shapes.map((s) => s.paragraphs), [1, 2, 3, 5, 8, 15, 30]);
   histogram('paragraph length', shapes.flatMap((s) => s.paragraphWords), [10, 25, 50, 100, 200, 400], ' words');
+
+  const endings = new Map();
+  for (const text of texts) endings.set(text.ending, (endings.get(text.ending) ?? 0) + 1);
+  console.log('\nhow his lines end');
+  for (const [style, count] of endings) {
+    console.log(`  ${String(style).padEnd(26)} ${String(count).padStart(5)}  ${share(count, texts.length)}`);
+  }
+  console.log('  (a textarea gives back bare newlines, so anything else is rewritten on his first edit)');
 
   // The one that decides whether paragraph-level highlighting is worth building.
   const single = shapes.filter((s) => s.paragraphs <= 1).length;
@@ -223,7 +251,24 @@ function reportVariants(texts) {
     const ordered = group.map((i) => fingerprints[i].text).sort((a, b) => a.length - b.length);
     for (let i = 1; i < ordered.length; i += 1) pairs.push({ before: ordered[i - 1], after: ordered[i] });
   }
-  if (pairs.length > 0) reportRevisions('BETWEEN ONE DRAFT AND THE NEXT', pairs);
+  if (pairs.length === 0) return;
+  reportRevisions('BETWEEN ONE DRAFT AND THE NEXT', pairs);
+
+  /*
+    The measure above only notices a change where it sits: it sets aside the
+    common opening and the common ending, so anything that survived but moved
+    counts as gone. Between drafts written months apart that is usually what has
+    happened, which is why those shares run so close to the whole text. This
+    asks the other question — how much of the earlier draft is still there
+    *somewhere* — and the gap between the two is what he moved rather than cut.
+  */
+  const survival = pairs.map(({ before, after }) => {
+    const older = before.split(/\n\s*\n/).map((p) => p.trim()).filter((p) => p.length > 40);
+    if (older.length === 0) return 100;
+    const newer = new Set(after.split(/\n\s*\n/).map((p) => p.trim()));
+    return Math.round((older.filter((p) => newer.has(p)).length / older.length) * 100);
+  });
+  histogram('how much of the earlier draft survives anywhere in the later one', survival, [0, 10, 30, 60, 90, 99], '%');
 }
 
 function reportConflicts(files) {
@@ -268,13 +313,30 @@ if (notes.length > 0) reportLongevity(notes);
 if (files.length > 0) reportConflicts(files);
 
 if (notes.length > 0 && files.length > 0) {
-  const byKey = new Map();
-  for (const note of notes) byKey.set(key(note.text), note.text);
-  const pairs = [];
-  for (const file of files) {
-    const match = byKey.get(key(file.text));
-    if (match !== undefined) pairs.push({ before: match, after: file.text });
+  // Two texts that open with the same words cannot be told apart by their
+  // opening words, and he has a good many that do. Pairing those would measure
+  // a collision and report it as an edit, so they are counted and left out.
+  const inNotes = new Map();
+  for (const note of notes) {
+    const k = key(note.text);
+    inNotes.set(k, inNotes.has(k) ? null : note.text);
   }
+  const timesInFolder = new Map();
+  for (const file of files) {
+    const k = key(file.text);
+    timesInFolder.set(k, (timesInFolder.get(k) ?? 0) + 1);
+  }
+
+  const pairs = [];
+  let ambiguous = 0;
+  for (const file of files) {
+    const k = key(file.text);
+    const match = inNotes.get(k);
+    if (match === undefined) continue;
+    if (match === null || (timesInFolder.get(k) ?? 0) > 1) ambiguous += 1;
+    else pairs.push({ before: match, after: file.text });
+  }
+  console.log(`\n\ntexts sharing an opening with another, so not compared: ${ambiguous}`);
   reportRevisions('THE SAME TEXT IN BOTH COPIES', pairs);
 }
 
