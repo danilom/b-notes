@@ -177,21 +177,31 @@ export function renderList(container: HTMLElement, view: ListView): void {
   for (const section of sectionsFor(view)) {
     if (section.rows.length === 0 && section.aside === true) continue;
 
+    // Each section is its own block, and not merely a heading followed by loose
+    // rows. A sticky heading holds at the top of whatever contains it, so as
+    // siblings of every row they all pinned themselves to the top of the list at
+    // once and drew over each other. Inside a block of its own, a heading holds
+    // only while its own texts are on screen and the next one pushes it off.
+    const block = document.createElement('div');
+    block.className = 'section-block';
+
     const heading = document.createElement('div');
     heading.className = 'section';
     heading.textContent = `${section.heading} · ${words.noteCount(section.rows.length)}`;
-    container.append(heading);
+    block.append(heading);
 
     if (section.rows.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'empty';
       empty.textContent = words.nothingFound;
-      container.append(empty);
+      block.append(empty);
+      container.append(block);
       continue;
     }
 
     for (const row of section.rows) {
-      container.append(rowElement(row, view, section.aside === true));
+      block.append(rowElement(row, view, section.aside === true));
     }
+    container.append(block);
   }
 }

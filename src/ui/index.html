@@ -364,8 +364,24 @@
         padding-bottom: 2rem;
       }
 
+      /*
+        Each heading holds at the top of the list while its own texts scroll
+        under it, and is pushed off by the next one.
+
+        Five hundred and eighty rows is a long way down, and by the middle of
+        them the heading that said which part of the list this is has been gone
+        for a while. He would be looking at a wall of titles with nothing saying
+        whether he is among the recent ones, the found ones, or the rest.
+
+        Opaque, because rows pass beneath it — `--panel` is the pane's own
+        colour, so it reads as the list holding still rather than as a bar.
+      */
       .section {
+        position: sticky;
+        top: 0;
+        z-index: 1;
         padding: 1rem 0.9rem 0.3rem;
+        background: var(--panel);
         font-size: 0.75em;
         letter-spacing: 0.06em;
         text-transform: uppercase;
