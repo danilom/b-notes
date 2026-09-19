@@ -529,15 +529,28 @@ function askToDelete(): void {
 }
 
 async function deleteOpenNote(id: string): Promise<void> {
-  // Anything still on its way to disk lands first. Putting away a file while a
-  // save is in flight would write the text back where it no longer lives.
-  if (saveTimer !== undefined) {
-    clearTimeout(saveTimer);
-    saveTimer = undefined;
-    await saveNow();
+  try {
+    // Anything still on its way to disk lands first. Putting away a file while
+    // a save is in flight would write the text back where it no longer lives.
+    if (saveTimer !== undefined) {
+      clearTimeout(saveTimer);
+      saveTimer = undefined;
+      await saveNow();
+    }
+    await store.moveToDeleted(id);
+  } catch (error: unknown) {
+    /*
+      Dropbox holds a file open while it uploads it, and Windows refuses to move
+      one that is held. Nothing has happened, so his text is still in front of
+      him — but he pressed a button and watched nothing occur, which is when he
+      presses it again. The line that reports saving reports this too.
+    */
+    notice = words.notDeleted;
+    showStatus();
+    log.error('Could not put a text away', describeError(error));
+    return;
   }
 
-  await store.moveToDeleted(id);
   openId = null;
   editor.value = '';
   savedAt = null;
@@ -608,8 +621,18 @@ function askToDestroy(note: DeletedNote, closeDeleted: () => void): void {
 }
 
 async function destroyNote(id: string, closeDeleted: () => void): Promise<void> {
-  await store.destroy(id);
-  await reload();
+  try {
+    await store.destroy(id);
+    await reload();
+  } catch (error: unknown) {
+    // Out of the dialog first, or the line saying so would be behind it. What
+    // he was destroying is still in the list, which is the safe way to fail.
+    closeDeleted();
+    notice = words.notDestroyed;
+    showStatus();
+    log.error('Could not destroy a text', describeError(error));
+    return;
+  }
   log.warn('Destroyed a text for good', { id });
 
   // Back among the rest of them, since he is probably clearing several — unless
@@ -620,8 +643,18 @@ async function destroyNote(id: string, closeDeleted: () => void): Promise<void> 
 }
 
 async function restoreNote(id: string): Promise<void> {
-  const back = await store.restore(id);
-  await reload();
+  let back: string;
+  try {
+    back = await store.restore(id);
+    await reload();
+  } catch (error: unknown) {
+    // The dialog has already closed, so the line is his to read.
+    notice = words.notRestored;
+    showStatus();
+    log.error('Could not bring a text back', describeError(error));
+    return;
+  }
+
   // Straight into it, and said out loud. He asked for this text; leaving him
   // looking at the list to find it again would be answering a question with a
   // question.
