@@ -924,6 +924,18 @@
         border: 1px solid var(--line);
         border-radius: 6px;
         background: var(--panel);
+        /*
+          A ring of the page around it, and a soft shadow under it.
+
+          The ring is the page's own colour, so against the margin it cannot be
+          seen at all — it only does anything where the panel has to sit over
+          his writing, and there it clears a little space so the box doesn't
+          collide with his words. The shadow lifts it off the page, which is
+          what says this belongs to the app rather than to the text.
+        */
+        box-shadow:
+          0 0 0 5px var(--page),
+          0 3px 10px hsl(var(--grey-h) var(--surface) var(--l-shadow) / 0.18);
         font-family: var(--ui-font);
         font-size: calc(var(--ui-size) * 0.85);
         color: var(--quiet);
