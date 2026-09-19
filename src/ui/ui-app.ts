@@ -74,6 +74,7 @@ const foundPane = element('found', HTMLDivElement);
 const foundAt = element('found-at', HTMLSpanElement);
 const foundPrevious = element('found-previous', HTMLButtonElement);
 const foundNext = element('found-next', HTMLButtonElement);
+const foundClose = element('found-close', HTMLButtonElement);
 const statusText = element('status-text', HTMLSpanElement);
 const search = element('search', HTMLInputElement);
 const newNote = element('new-note', HTMLButtonElement);
@@ -335,7 +336,13 @@ editor.addEventListener('input', () => {
   scheduleSave();
 });
 
-search.addEventListener('input', () => {
+/**
+ * Everything that has to follow a change to what he is looking for.
+ *
+ * Shared by the search box and by the way out beside his text, so the two can't
+ * come to mean different things.
+ */
+function searchChanged(): void {
   // A fresh search starts at the top of the text again.
   atFound = 0;
   draw();
@@ -350,6 +357,16 @@ search.addEventListener('input', () => {
   // Only on a fresh search: once he is reading, moving the page under him would
   // be the app taking the text away from where he had put it.
   scrollToCurrentMatch();
+}
+
+search.addEventListener('input', searchChanged);
+
+foundClose.addEventListener('click', () => {
+  // The whole search, not merely these marks. Stopping the highlighting while
+  // the list stayed filtered would leave two thirds of his texts missing with
+  // nothing on screen left to explain why.
+  search.value = '';
+  searchChanged();
 });
 
 newNote.addEventListener('click', () => {
@@ -488,6 +505,9 @@ export async function startApp(host: Host): Promise<void> {
   newNoteLabel.textContent = words.newNote;
   foundPrevious.append(icon('previous'), textIn(words.foundPrevious));
   foundNext.append(icon('next'), textIn(words.foundNext));
+  foundClose.append(icon('close'));
+  foundClose.title = words.clearSearch;
+  foundClose.setAttribute('aria-label', words.clearSearch);
   newNote.prepend(icon('new-text'));
   appearanceLabel.textContent = words.appearance;
   appearanceButton.prepend(icon('appearance'));

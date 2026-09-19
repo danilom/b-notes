@@ -947,6 +947,26 @@
         font-size: inherit;
         white-space: nowrap;
       }
+
+      /*
+        The way out, on the thing he is looking at.
+        
+        Without it his only route back to the whole list is the search box in
+        the other pane, and nothing connects the two for him. Clearing the
+        search from here is deliberately action at a distance: it is the one
+        moment the app shows him that the box over there and the marks in his
+        text are the same thing.
+      */
+      #found-close {
+        margin-left: 0.15rem;
+        padding: 0.25rem;
+        border-color: transparent;
+        background: none;
+      }
+
+      #found-close:hover:not(:disabled) {
+        border-color: var(--line);
+      }
     </style>
   </head>
   <body>
@@ -986,6 +1006,7 @@
           <span id="found-at"></span>
           <button id="found-previous" type="button"></button>
           <button id="found-next" type="button"></button>
+          <button id="found-close" type="button"></button>
         </div>
       </div>
       <div id="status">
