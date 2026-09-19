@@ -51,4 +51,13 @@ export interface FileSystem {
    * at the same safe place, which is the caller keeping it instead.
    */
   removeEmptyFile(path: string): Promise<boolean>;
+  /**
+   * Removes a file, whatever is in it.
+   *
+   * The one capability in the app that can destroy his writing, and it exists
+   * for the one command that is supposed to. Unlike the two above it, this
+   * throws when it fails: those are tidying, where failing quietly costs
+   * nothing, and this is the operation itself.
+   */
+  removeFile(path: string): Promise<void>;
 }

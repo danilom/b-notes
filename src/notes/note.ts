@@ -24,6 +24,17 @@ export interface Note {
  * sites are identical whether they're talking to the filesystem over IPC or to
  * `localStorage` during UI work.
  */
+/**
+ * A note he has put away, and how much of it there is to lose.
+ *
+ * `versions` is the part the row cannot show him: a text he emptied before
+ * deleting is zero bytes on disk with everything he wrote kept beside it, so
+ * the size of the file says nothing about what destroying it would cost.
+ */
+export interface DeletedNote extends Note {
+  versions: number;
+}
+
 export interface NoteStore {
   /**
    * Puts anything he has in another format into `.txt`, and reports what it
@@ -48,12 +59,18 @@ export interface NoteStore {
    * Everything he has put away, newest first. Text included, same as `list`:
    * the dialog shows him what a deleted text said before he decides.
    */
-  listDeleted(): Promise<Note[]>;
+  listDeleted(): Promise<DeletedNote[]>;
   /**
    * Brings one back, and returns the id it came back under — which differs from
    * the one asked for when he has since written something with the same title.
    */
   restore(id: string): Promise<string>;
+  /**
+   * Destroys one he had already put away, along with every version of it kept
+   * when it went. The only thing in the app that loses his writing on purpose,
+   * and it reaches nothing that is still in his list.
+   */
+  destroy(id: string): Promise<void>;
 }
 
 /**

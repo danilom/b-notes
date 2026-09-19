@@ -81,6 +81,16 @@ const TEXT = {
     showAll: 'Prikaži sve',
     restore: 'Vrati među tekstove',
     deletedBack: 'Nazad na obrisane',
+    destroy: 'Uništi zauvek',
+    destroyTitle: (title: string) => `Uništi zauvek: ${title}`,
+    destroyBody: 'Ovaj tekst se uništava zauvek. Ne može se vratiti.',
+    destroyBodyWithVersions:
+      'Ovaj tekst se uništava zauvek, zajedno sa svim ranijim verzijama. Ne može se vratiti.',
+    // Both spellings, so he is not hunting the keyboard for a letter he may not
+    // know how to reach. Anything he types is folded before it is compared, so
+    // either one does.
+    destroyPrompt: 'Napiši „uništi“ ili „unisti“ da potvrdiš.',
+    destroyWord: 'uništi',
     restored: 'Tekst je vraćen',
     noteDeleted: 'Tekst je obrisan',
     emptiedHint: 'Tekst je prazan. Obriši ga ako ti više ne treba.',
@@ -153,6 +163,13 @@ const TEXT = {
     showAll: 'Show all',
     restore: 'Bring this text back',
     deletedBack: 'Back to deleted texts',
+    destroy: 'Destroy forever',
+    destroyTitle: (title: string) => `Destroy forever: ${title}`,
+    destroyBody: 'This text is destroyed for good. It cannot be brought back.',
+    destroyBodyWithVersions:
+      'This text is destroyed for good, along with every earlier version of it. It cannot be brought back.',
+    destroyPrompt: 'Type “destroy” to confirm.',
+    destroyWord: 'destroy',
     restored: 'Text brought back',
     noteDeleted: 'Text deleted',
     emptiedHint: 'This text is empty. Delete it if you no longer need it.',

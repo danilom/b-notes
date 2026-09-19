@@ -1,3 +1,4 @@
+import { toSearchable } from '../language/diacritics.ts';
 import { type Language, strings } from '../language/wording.ts';
 import { icon } from './icons.ts';
 
@@ -15,8 +16,56 @@ export interface Confirmation {
   body: string;
   /** The affirmative, named for what it does. Never "U redu". */
   confirm: string;
+  /**
+   * A word he has to write out before the affirmative will do anything.
+   *
+   * For the one action that cannot be undone. Compared folded, so case, stray
+   * spaces and the diacritics he may not know how to reach all come out the
+   * same — the barrier exists to make him stop and mean it, not to test his
+   * typing.
+   */
+  phrase?: { prompt: string; word: string };
+  /**
+   * Whether the affirmative destroys something.
+   *
+   * Two effects, both about his hands rather than his eyes: the button is
+   * marked as the dangerous one, and it is not what holds the focus, so the
+   * reflex of hitting Enter at a dialog cancels rather than confirms.
+   */
+  danger?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+}
+
+/** The box he writes the word into, and the rule for when it counts. */
+function phraseFor(
+  asked: NonNullable<Confirmation['phrase']>,
+  affirmative: HTMLButtonElement,
+  onConfirm: () => void,
+): { label: HTMLLabelElement; box: HTMLInputElement } {
+  const label = document.createElement('label');
+  label.className = 'confirm-prompt';
+  label.textContent = asked.prompt;
+
+  const box = document.createElement('input');
+  box.type = 'text';
+  box.className = 'confirm-word';
+  box.autocomplete = 'off';
+  box.spellcheck = false;
+  label.append(box);
+
+  const written = (): boolean => toSearchable(box.value).trim() === toSearchable(asked.word);
+  affirmative.disabled = true;
+  box.addEventListener('input', () => {
+    affirmative.disabled = !written();
+  });
+  // Enter only once the word is there, which is the point at which pressing it
+  // has stopped being a reflex.
+  box.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && written()) onConfirm();
+  });
+
+  return { label, box };
 }
 
 /**
@@ -72,24 +121,32 @@ export function openConfirmDialog(
   const footer = document.createElement('footer');
   const yes = document.createElement('button');
   yes.type = 'button';
-  yes.className = 'keep';
+  yes.className = confirmation.danger === true ? 'danger' : 'keep';
   yes.textContent = confirmation.confirm;
   yes.addEventListener('click', confirmation.onConfirm);
 
   const no = document.createElement('button');
   no.type = 'button';
+  no.className = confirmation.danger === true ? 'keep' : '';
   no.textContent = words.cancel;
   no.addEventListener('click', confirmation.onCancel);
-
   footer.append(yes, no);
-  panel.append(header, body, footer);
+
+  const asked =
+    confirmation.phrase === undefined
+      ? null
+      : phraseFor(confirmation.phrase, yes, confirmation.onConfirm);
+
+  panel.append(header, body, ...(asked === null ? [] : [asked.label]), footer);
   container.replaceChildren(panel);
   container.hidden = false;
 
   // No click-outside-to-close, same as the appearance panel: a stray click
   // should never be an answer to a question he was still reading.
   document.addEventListener('keydown', onKey);
-  yes.focus();
+  if (asked !== null) asked.box.focus();
+  else if (confirmation.danger === true) no.focus();
+  else yes.focus();
 
   return close;
 }

@@ -109,6 +109,16 @@
         --wash: rgb(0 0 0 / 0.055);
         --wash-firm: rgb(0 0 0 / 0.12);
 
+        /*
+          The one colour in the app that does not come from his accent, because
+          it does not mean "this is the app's colour" — it means stop. He can
+          choose a red accent (hue 12, saturation 52); this sits at a purer hue
+          and a higher saturation, and it is worn as an outline where the accent
+          is worn as a fill, so nothing in the interface can be mistaken for it.
+        */
+        --danger: hsl(2 72% 42%);
+        --danger-wash: hsl(2 72% 42% / 0.09);
+
         /* What floats above his text casts a shadow onto it. Dark here, and
            light in the dark mode below — the room it is lit from changes. */
         --halo: rgb(0 0 0 / 0.2);
@@ -153,6 +163,11 @@
         /* Light over dark, for the same reason. */
         --wash: rgb(255 255 255 / 0.07);
         --wash-firm: rgb(255 255 255 / 0.16);
+
+        /* Lifted off the dark page rather than darkened into it, so it still
+           reads as a warning instead of as a hole. */
+        --danger: hsl(4 70% 65%);
+        --danger-wash: hsl(4 70% 65% / 0.14);
 
         --halo: rgb(255 255 255 / 0.11);
         --halo-near: rgb(255 255 255 / 0.09);
@@ -667,6 +682,9 @@
       }
 
       #confirm {
+        /* Above the deleted dialog, which it is asked from and which it covers
+           rather than replaces — he should still see the list he came out of. */
+        z-index: 11;
         padding: 1.5rem;
       }
 
@@ -933,9 +951,61 @@
         undo must not look like the one control that isn't working. Distance
         keeps it clear of U redu; it doesn't need to be dim as well.
       */
-      .reset {
+      .reset,
+      .destroy {
         margin-right: auto;
         white-space: nowrap;
+      }
+
+      /*
+        Outlined, never filled: a filled red button would be the loudest thing
+        in the app, and this is the one button that should not draw the eye.
+        Bordered rather than bare, because a borderless label among bordered
+        buttons was already found to read as disabled.
+      */
+      .danger {
+        border-color: var(--danger);
+        background: none;
+        color: var(--danger);
+      }
+
+      .danger:hover:not(:disabled) {
+        background-image: linear-gradient(var(--danger-wash), var(--danger-wash));
+      }
+
+      .danger:active:not(:disabled) {
+        background-image: linear-gradient(var(--danger-wash), var(--danger-wash)),
+          linear-gradient(var(--wash), var(--wash));
+      }
+
+      /* Until he has written the word out. Never hidden: a button that is not
+         there cannot be understood, and one that is there but will not move
+         says plainly that something is still being asked of him. */
+      .danger:disabled {
+        opacity: 0.45;
+      }
+
+      .confirm-prompt {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        padding-bottom: 1.2rem;
+        color: var(--quiet);
+      }
+
+      .confirm-word {
+        width: 11rem;
+        padding: 0.45rem 0.6rem;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        background: var(--page);
+        color: var(--ink);
+        font: inherit;
+      }
+
+      .confirm-word:focus {
+        outline: 2px solid var(--chosen);
+        outline-offset: 1px;
       }
 
       .panel footer button {

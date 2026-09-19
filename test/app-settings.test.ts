@@ -38,6 +38,9 @@ function slowFiles() {
     removeEmptyFile: async () => {
       throw new Error('not used');
     },
+    removeFile: async () => {
+      throw new Error('not used');
+    },
   };
 
   return {
@@ -175,6 +178,9 @@ describe('saving how he likes the app set up', () => {
         throw new Error('not used');
       },
       removeEmptyFile: async () => {
+        throw new Error('not used');
+      },
+      removeFile: async () => {
         throw new Error('not used');
       },
     };

@@ -81,6 +81,14 @@ export function createMockFileSystem(): FileSystem {
       return true;
     },
 
+    async removeFile(at: string): Promise<void> {
+      const files = load();
+      // Throws for a file that isn't there, as unlink does, so the two hosts
+      // fail the same way rather than one of them quietly doing nothing.
+      if (!files.delete(at)) throw new Error(`No such file: ${at}`);
+      store(files);
+    },
+
     async removeEmptyFolder(): Promise<void> {
       // Nothing to do: a folder here is a slash in a key, so an empty one has
       // already stopped existing.

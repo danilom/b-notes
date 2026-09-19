@@ -1,6 +1,6 @@
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 import { createNoteStore } from '../notes/note-store.ts';
-import { type Note, isEmptyText } from '../notes/note.ts';
+import { type DeletedNote, type Note, isEmptyText } from '../notes/note.ts';
 import { BUILD_STAMP } from '../platform/build-info.ts';
 import type { Host } from '../platform/host.ts';
 import type { Log } from '../platform/logging.ts';
@@ -13,7 +13,7 @@ import {
 } from './appearance.ts';
 import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
 import { openConfirmDialog } from './confirm-dialog.ts';
-import { openDeletedDialog } from './deleted-dialog.ts';
+import { mustWriteItOut, openDeletedDialog } from './deleted-dialog.ts';
 import { readSession, writeSession } from './app-session.ts';
 import {
   type Settings,
@@ -111,7 +111,7 @@ let showAppearanceOf: (appearance: Appearance) => void;
 
 let notes: Note[] = [];
 /** Everything he has put away. Held like `notes`, and for the same reason. */
-let deleted: Note[] = [];
+let deleted: DeletedNote[] = [];
 let openId: string | null = null;
 
 /**
@@ -569,7 +569,53 @@ function showDeleted(): void {
       close();
       void restoreNote(id);
     },
+    onDestroy: (note: DeletedNote) => {
+      askToDestroy(note, close);
+    },
   });
+}
+
+/**
+ * Asks before destroying, and asks harder the more there is to lose.
+ *
+ * The barrier is a word written out rather than a second button, because a
+ * second button is still one press and the point is that this one should not be
+ * reachable by pressing. Under the threshold it is a plain question: a pile of
+ * empty ones has to be clearable, or he will live with the pile.
+ */
+function askToDestroy(note: DeletedNote, closeDeleted: () => void): void {
+  const hard = mustWriteItOut(note);
+
+  const close = openConfirmDialog(
+    confirmPane,
+    {
+      title: words.destroyTitle(note.title.length > 0 ? note.title : words.untitled),
+      body: note.versions > 0 ? words.destroyBodyWithVersions : words.destroyBody,
+      confirm: words.destroy,
+      danger: true,
+      ...(hard ? { phrase: { prompt: words.destroyPrompt, word: words.destroyWord } } : {}),
+      onConfirm: () => {
+        close();
+        void destroyNote(note.id, closeDeleted);
+      },
+      onCancel: () => {
+        close();
+      },
+    },
+    language,
+  );
+}
+
+async function destroyNote(id: string, closeDeleted: () => void): Promise<void> {
+  await store.destroy(id);
+  await reload();
+  log.warn('Destroyed a text for good', { id });
+
+  // Back among the rest of them, since he is probably clearing several — unless
+  // that was the last one, in which case there is nothing left to come back to.
+  closeDeleted();
+  if (deleted.length > 0) showDeleted();
+  else deletedSee.focus();
 }
 
 async function restoreNote(id: string): Promise<void> {

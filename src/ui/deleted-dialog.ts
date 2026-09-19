@@ -1,5 +1,5 @@
 import { type Language, describeWhen, strings } from '../language/wording.ts';
-import type { Note } from '../notes/note.ts';
+import type { DeletedNote } from '../notes/note.ts';
 import { icon } from './icons.ts';
 import { matches } from './note-list.ts';
 
@@ -8,7 +8,29 @@ const SNIPPET = 140;
 
 export interface DeletedHandlers {
   onRestore: (id: string) => void;
+  onDestroy: (note: DeletedNote) => void;
   onClose: () => void;
+}
+
+/**
+ * Above this, destroying asks him to write the word out.
+ *
+ * Roughly a paragraph and a half of his writing — his own median paragraph runs
+ * to about 270 characters — which is the line between a note to himself and
+ * something he sat down to write. Under it the question is a plain yes or no,
+ * which is what makes clearing out a pile of empty ones bearable.
+ */
+const WRITE_IT_OUT_ABOVE = 500;
+
+/**
+ * Whether destroying this one should make him write the word first.
+ *
+ * Any kept version at all counts, whatever the file's size says. A text he
+ * emptied before deleting is zero bytes with everything he wrote beside it, so
+ * the husk is exactly the case where the length is least worth trusting.
+ */
+export function mustWriteItOut(note: DeletedNote): boolean {
+  return note.versions > 0 || note.bytes > WRITE_IT_OUT_ABOVE;
 }
 
 /**
@@ -17,17 +39,17 @@ export interface DeletedHandlers {
  * Without the title, which is already on the row above it: repeating it would
  * spend the one line that exists to tell three similar texts apart.
  */
-export function snippetOf(note: Note): string {
+export function snippetOf(note: DeletedNote): string {
   const flat = note.text.replace(/\s+/g, ' ').trim();
   const rest = flat.startsWith(note.title) ? flat.slice(note.title.length).trim() : flat;
   return rest.length > SNIPPET ? `${rest.slice(0, SNIPPET)}…` : rest;
 }
 
 function rowFor(
-  note: Note,
+  note: DeletedNote,
   language: Language,
   words: ReturnType<typeof strings>,
-  show: (note: Note) => void,
+  show: (note: DeletedNote) => void,
 ): HTMLElement {
   const row = document.createElement('button');
   row.type = 'button';
@@ -65,14 +87,14 @@ function rowFor(
  */
 export function openDeletedDialog(
   container: HTMLElement,
-  deleted: readonly Note[],
+  deleted: readonly DeletedNote[],
   query: string,
   language: Language,
   handlers: DeletedHandlers,
 ): () => void {
   const words = strings(language);
   let filter = query.trim();
-  let showing: Note | null = null;
+  let showing: DeletedNote | null = null;
 
   function onKey(event: KeyboardEvent): void {
     if (event.key !== 'Escape') return;
@@ -113,10 +135,10 @@ export function openDeletedDialog(
     return dismiss;
   }
 
-  const shown = (): readonly Note[] =>
+  const shown = (): readonly DeletedNote[] =>
     filter.length === 0 ? deleted : deleted.filter((note) => matches(note, filter));
 
-  function show(note: Note): void {
+  function show(note: DeletedNote): void {
     showing = note;
     fill();
   }
@@ -170,7 +192,7 @@ export function openDeletedDialog(
   }
 
   /** One text, to read but not to touch. */
-  function fillText(note: Note): void {
+  function fillText(note: DeletedNote): void {
     const header = document.createElement('header');
     // The same shape as the list's heading, and for the same reason: the line
     // under the title is where this dialog says what he can do from here. It
@@ -208,6 +230,15 @@ export function openDeletedDialog(
     // Named for where it goes, not as a cancel. Otkaži here would promise to
     // undo his coming in at all, and what it does is step back one level — the
     // behaviour is right, so it is the word that has to say so.
+    // Off on its own at the far end, the way the appearance panel keeps Vrati
+    // na početno away from U redu: it must never be what he hits while aiming
+    // for one of the two he actually came here to press.
+    const forever = document.createElement('button');
+    forever.type = 'button';
+    forever.className = 'danger destroy';
+    forever.textContent = words.destroy;
+    forever.addEventListener('click', () => handlers.onDestroy(note));
+
     const toList = document.createElement('button');
     toList.type = 'button';
     toList.textContent = words.deletedBack;
@@ -216,7 +247,7 @@ export function openDeletedDialog(
       fill();
     });
 
-    footer.append(back, toList);
+    footer.append(forever, back, toList);
     panel.replaceChildren(header, body, footer);
     back.focus();
   }

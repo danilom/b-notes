@@ -462,6 +462,63 @@ describe('converting to plain text', () => {
   });
 });
 
+describe('destroying one for good', () => {
+  it('takes the text and every copy of it that was kept', async () => {
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nSve sto je napisao.');
+    await store.save(id, '');
+    await store.moveToDeleted(id ?? '');
+
+    await store.destroy(id ?? '');
+
+    assert.deepEqual(await store.listDeleted(), []);
+    assert.deepEqual(await readdir(path.join(dir, DELETED_FOLDER)), []);
+    await assert.rejects(() => readdir(path.join(dir, VERSIONS_FOLDER, DELETED_FOLDER, id ?? '')));
+  });
+
+  it('leaves the others where they are', async () => {
+    const { store } = await emptyStore();
+    const first = await store.save(null, 'O zimi\n\nPrvi.');
+    const second = await store.save(null, 'O jeseni\n\nDrugi.');
+    await store.moveToDeleted(first ?? '');
+    await store.moveToDeleted(second ?? '');
+
+    await store.destroy(first ?? '');
+
+    assert.deepEqual((await store.listDeleted()).map((note) => note.title), ['O jeseni']);
+  });
+
+  it('cannot reach a text that is still in his list', async () => {
+    // It only ever acts on what he has already put away, so a text he is
+    // working on is out of its reach whatever it is handed.
+    const { store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nTekst.');
+
+    await assert.rejects(() => store.destroy(id ?? ''));
+
+    assert.equal(await store.read(id ?? ''), 'O zimi\n\nTekst.');
+  });
+
+  it('refuses an id that points outside the deleted folder', async () => {
+    const { store } = await emptyStore();
+
+    await assert.rejects(() => store.destroy('../../secrets'));
+  });
+
+  it('counts the copies it would destroy, so the app can ask accordingly', async () => {
+    const { store } = await emptyStore();
+    const kept = await store.save(null, 'O zimi\n\nTekst.');
+    await store.save(kept, '');
+    const plain = await store.save(null, 'O jeseni\n\nDrugi.');
+    await store.moveToDeleted(kept ?? '');
+    await store.moveToDeleted(plain ?? '');
+
+    const counted = new Map((await store.listDeleted()).map((note) => [note.id, note.versions]));
+    assert.equal(counted.get('O zimi'), 1);
+    assert.equal(counted.get('O jeseni'), 0);
+  });
+});
+
 describe('putting away a text with nothing in it', () => {
   it('removes one that never held anything, rather than filing it', async () => {
     // A row in Obrisani tekstovi that opens onto nothing is a door to an empty

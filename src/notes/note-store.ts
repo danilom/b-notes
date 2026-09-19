@@ -17,7 +17,7 @@ import {
 import { deletedIdFor, planSave } from './note-saving.ts';
 import { toSearchable } from '../language/diacritics.ts';
 import { titleFrom } from './note-title.ts';
-import { type Note, type NoteStore, isEmptyText } from './note.ts';
+import { type DeletedNote, type Note, type NoteStore, isEmptyText } from './note.ts';
 
 const nameOf = (path: string): string => path.split('/').at(-1) ?? path;
 
@@ -168,9 +168,14 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
       return notes.sort(newestFirst);
     },
 
-    async listDeleted(): Promise<Note[]> {
+    async listDeleted(): Promise<DeletedNote[]> {
       const notes = await Promise.all(
-        [...(await noteFiles(at(DELETED_FOLDER)))].map(([id, file]) => noteFrom(id, file)),
+        [...(await noteFiles(at(DELETED_FOLDER)))].map(async ([id, file]): Promise<DeletedNote> => {
+          // Counted, not read: how many there are decides how hard it should be
+          // to destroy this, and that question does not need their contents.
+          const kept = await files.list(at(putAwayVersionsFolderFor(id))).catch(() => []);
+          return { ...(await noteFrom(id, file)), versions: kept.length };
+        }),
       );
       // By when he last worked on them, not when he put them away — nothing
       // records that, and a rename leaves a file's time alone. It is the order
@@ -240,6 +245,26 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
       // it was, the next note he happens to give the same title would inherit
       // a dead note's versions.
       await moveVersions(versionsFolderFor(id), putAwayVersionsFolderFor(name));
+    },
+
+    async destroy(id: string): Promise<void> {
+      const file = (await noteFiles(at(DELETED_FOLDER))).get(requireNoteId(id));
+      if (file === undefined) throw new Error(`No such deleted note: ${id}`);
+
+      // The note first, then what was kept of it. Should this stop halfway, a
+      // version left behind is invisible and harmless — nothing can inherit it,
+      // since versions for a live note are kept somewhere else entirely — while
+      // a note left behind with its versions destroyed would be a row he can
+      // still see, emptied of the writing it was standing for.
+      await files.removeFile(file.path);
+
+      const folder = putAwayVersionsFolderFor(id);
+      for (const version of await files.list(at(folder)).catch(() => [])) {
+        await files.removeFile(version.path);
+      }
+      await files.removeEmptyFolder(at(folder));
+      await files.removeEmptyFolder(at(VERSIONS_FOLDER, DELETED_FOLDER));
+      await files.removeEmptyFolder(at(VERSIONS_FOLDER));
     },
 
     async restore(id: string): Promise<string> {

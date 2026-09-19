@@ -70,6 +70,10 @@ export function createFileSystem(): FileSystem {
       }
     },
 
+    async removeFile(at: string): Promise<void> {
+      await unlink(at);
+    },
+
     async removeEmptyFolder(folder: string): Promise<void> {
       try {
         // Plain rmdir, never recursive: it refuses a folder that still holds
