@@ -1,5 +1,6 @@
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 import type { Note } from '../notes/note.ts';
+import { icon } from './icons.ts';
 import { matches } from './note-list.ts';
 
 /** Enough of the text to tell two similar openings apart, and no more. */
@@ -96,6 +97,22 @@ export function openDeletedDialog(
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
 
+  /**
+   * The X, in the same corner and doing the same thing as the other two
+   * dialogs': leave, whichever level he is on. Escape still steps back one at a
+   * time, which is the finer-grained answer for a hand already on the keyboard.
+   */
+  function dismissButton(): HTMLButtonElement {
+    const dismiss = document.createElement('button');
+    dismiss.type = 'button';
+    dismiss.className = 'close';
+    dismiss.title = words.close;
+    dismiss.setAttribute('aria-label', words.close);
+    dismiss.append(icon('close'));
+    dismiss.addEventListener('click', handlers.onClose);
+    return dismiss;
+  }
+
   const shown = (): readonly Note[] =>
     filter.length === 0 ? deleted : deleted.filter((note) => matches(note, filter));
 
@@ -107,12 +124,16 @@ export function openDeletedDialog(
   /** The list of what he put away, with whatever search brought him here. */
   function fillList(): void {
     const header = document.createElement('header');
+    // The title and its sentence stack; the X sits beside the pair of them.
+    const heading = document.createElement('div');
+    heading.className = 'deleted-heading';
     const title = document.createElement('h1');
     title.textContent = words.deleted;
     const kept = document.createElement('p');
     kept.className = 'deleted-kept';
     kept.textContent = words.deletedKept;
-    header.append(title, kept);
+    heading.append(title, kept);
+    header.append(heading, dismissButton());
 
     const list = document.createElement('div');
     list.className = 'deleted-list';
@@ -153,7 +174,7 @@ export function openDeletedDialog(
     const header = document.createElement('header');
     const title = document.createElement('h1');
     title.textContent = note.title;
-    header.append(title);
+    header.append(title, dismissButton());
 
     // A plain block, not a textarea he cannot type into: there is no caret to
     // put in it, so nothing suggests it would take his typing. Selecting still

@@ -686,12 +686,17 @@
         overflow: hidden;
       }
 
-      /* Stacked, unlike the appearance panel's header: this one is a title and
-         a sentence about it, not two things side by side. */
+      /* The X stays level with the top of the title, whether the heading beside
+         it is one line or two. */
       .panel.deleted-panel header {
-        flex-direction: column;
         align-items: flex-start;
-        gap: 0;
+      }
+
+      /* The title and the sentence under it stack, and share the row with the X. */
+      .deleted-heading {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
       }
 
       .deleted-kept {
