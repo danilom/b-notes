@@ -2,6 +2,7 @@ import { type Language, describeWhen, strings } from '../language/wording.ts';
 import type { NoteVersion } from '../notes/note.ts';
 import { paragraphsNotIn } from '../notes/text-change.ts';
 import { icon } from './icons.ts';
+import { describeVersion } from './version-row.ts';
 
 export interface VersionsHandlers {
   /** Put this text in front of him. The save that follows keeps what was there. */
@@ -9,26 +10,44 @@ export interface VersionsHandlers {
   onClose: () => void;
 }
 
-/** One copy, told apart from the others by when it was taken and how long it is. */
+/** A line that spans the row, under the two the row opens with. */
+function under(text: string): HTMLElement {
+  const line = document.createElement('span');
+  line.className = 'review-snippet';
+  line.textContent = text;
+  return line;
+}
+
+/**
+ * One copy, laid out the way the list of his texts is: what it is on the left,
+ * when it was on the right. The same two columns in the same two places, since
+ * the one he reads every day is the one he has learned.
+ */
 function rowFor(
   version: NoteVersion,
+  current: string,
+  title: string,
   language: Language,
-  words: ReturnType<typeof strings>,
   show: (version: NoteVersion) => void,
 ): HTMLElement {
+  const said = describeVersion(version, current, title, language);
+
   const row = document.createElement('button');
   row.type = 'button';
   row.className = 'review-row';
 
+  const size = document.createElement('span');
+  size.className = 'review-title';
+  size.textContent = said.size;
+
   const when = document.createElement('span');
-  when.className = 'review-title';
-  when.textContent = describeWhen(version.takenAt, language);
+  when.className = 'review-when';
+  when.textContent = said.when;
 
-  const howMuch = document.createElement('span');
-  howMuch.className = 'review-when';
-  howMuch.textContent = words.versionLength(version.text.length);
+  row.append(size, when);
+  if (said.wasCalled !== null) row.append(under(said.wasCalled));
+  if (said.missing !== null) row.append(under(said.missing));
 
-  row.append(when, howMuch);
   row.addEventListener('click', () => show(version));
   return row;
 }
@@ -40,9 +59,9 @@ function rowFor(
  * the same thing being done: reading something he cannot edit and deciding
  * whether to have it back. One shape learned once.
  *
- * What differs is the list. Every copy of one text opens the same way, so a
- * snippet would tell him nothing — when it was taken and how much was there is
- * what tells them apart.
+ * What differs is the list. Every copy of one text opens the same way, so the
+ * opening is no use for telling them apart — what each one still holds that his
+ * text has since lost is, and that is the question he came in with.
  */
 export function openVersionsDialog(
   container: HTMLElement,
@@ -111,7 +130,9 @@ export function openVersionsDialog(
   function fillList(): void {
     const list = document.createElement('div');
     list.className = 'review-list';
-    for (const version of versions) list.append(rowFor(version, language, words, show));
+    for (const version of versions) {
+      list.append(rowFor(version, current, title, language, show));
+    }
 
     const footer = document.createElement('footer');
     const done = document.createElement('button');
