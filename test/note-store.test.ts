@@ -366,6 +366,29 @@ describe('moving a note out of the way', () => {
     ]);
   });
 
+  it('takes the version folder with it, so nothing empty is left wearing its name', async () => {
+    // A folder named after one of his texts with nothing inside it reads as a
+    // text that went missing, which is the one impression this app cannot give.
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nTekst.');
+    await store.save(id, '');
+
+    await store.moveToDeleted(id ?? '');
+
+    assert.deepEqual(await readdir(path.join(dir, VERSIONS_FOLDER)), [DELETED_FOLDER]);
+  });
+
+  it('makes no version folder for a note that never had one', async () => {
+    // Asking what is in a folder creates it, so the question has to tidy up
+    // after itself as well as the answer.
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nTekst.');
+
+    await store.moveToDeleted(id ?? '');
+
+    assert.equal((await readdir(dir)).includes(VERSIONS_FOLDER), false);
+  });
+
   it('refuses an id that points outside the notes folder', async () => {
     const { store } = await emptyStore();
 

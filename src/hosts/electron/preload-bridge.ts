@@ -13,6 +13,7 @@ const files = {
   read: (path: string) => ipcRenderer.invoke('files:read', path),
   write: (path: string, text: string) => ipcRenderer.invoke('files:write', path, text),
   rename: (from: string, to: string) => ipcRenderer.invoke('files:rename', from, to),
+  removeEmptyFolder: (folder: string) => ipcRenderer.invoke('files:removeEmptyFolder', folder),
 };
 
 /** Only the main process knows where Windows keeps his Documents folder. */

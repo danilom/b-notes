@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, rmdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { FileInfo, FileSystem } from '../../platform/file-system.ts';
@@ -49,6 +49,18 @@ export function createFileSystem(): FileSystem {
     async rename(from: string, to: string): Promise<void> {
       await mkdir(path.dirname(to), { recursive: true });
       await rename(from, to);
+    },
+
+    async removeEmptyFolder(folder: string): Promise<void> {
+      try {
+        // Plain rmdir, never recursive: it refuses a folder that still holds
+        // something, which is the guarantee rather than an inconvenience.
+        await rmdir(folder);
+      } catch {
+        // Already gone, not empty, or held open by Dropbox mid-sync. All three
+        // mean the same thing here — leave it, and carry on with the work this
+        // was only cleaning up behind.
+      }
     },
   };
 }

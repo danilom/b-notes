@@ -72,6 +72,11 @@ export function createMockFileSystem(): FileSystem {
       store(files);
     },
 
+    async removeEmptyFolder(): Promise<void> {
+      // Nothing to do: a folder here is a slash in a key, so an empty one has
+      // already stopped existing.
+    },
+
     async rename(from: string, to: string): Promise<void> {
       const files = load();
       const file = files.get(from);

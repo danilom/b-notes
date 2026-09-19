@@ -28,4 +28,13 @@ export interface FileSystem {
   write(path: string, text: string): Promise<void>;
   /** Creates the destination folder if it doesn't exist yet. */
   rename(from: string, to: string): Promise<void>;
+  /**
+   * Tidies away a folder we made and no longer need.
+   *
+   * Cannot destroy anything he wrote, by construction: a folder with a file in
+   * it is left alone rather than emptied. Nor can it fail whatever it is
+   * tidying up after — a folder that won't go is an untidy folder and nothing
+   * worse, so this never throws.
+   */
+  removeEmptyFolder(folder: string): Promise<void>;
 }

@@ -9,6 +9,7 @@ import {
   nextFreeId,
   putAwayVersionsFolderFor,
   requireNoteId,
+  VERSIONS_FOLDER,
   versionName,
   versionsFolderFor,
 } from './note-naming.ts';
@@ -77,12 +78,14 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
   }
 
   /**
-   * Moves a note's versions, one file at a time.
+   * Moves a note's versions, one file at a time, and takes the folder with them.
    *
    * File by file because moving a folder is not something the filesystem here
-   * promises to do. The empty folder it leaves behind is untidy and harmless;
-   * removing it needs a way to delete a folder, which nothing else has wanted
-   * yet.
+   * promises to do. The folder it would otherwise leave behind is empty but not
+   * harmless: a folder named after one of his texts, sitting there with nothing
+   * in it, says something of his went missing. The same goes for a note that
+   * never had a version — asking what is in a folder creates it on disk, so
+   * this tidies up after the question as well as the answer.
    */
   async function moveVersions(id: string, putAwayAs: string): Promise<void> {
     const from = versionsFolderFor(id);
@@ -90,6 +93,11 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
     for (const file of await files.list(at(from)).catch(() => [])) {
       await files.rename(file.path, at(to, nameOf(file.path)));
     }
+    await files.removeEmptyFolder(at(from));
+    // And the folder above it, which the same question created. It stays as
+    // soon as any note has a version to keep, so this only ever clears away a
+    // "verzije" that never held anything.
+    await files.removeEmptyFolder(at(VERSIONS_FOLDER));
   }
 
   async function idsPutAway(): Promise<Set<string>> {

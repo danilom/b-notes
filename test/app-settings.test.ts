@@ -32,6 +32,9 @@ function slowFiles() {
     rename: async () => {
       throw new Error('not used');
     },
+    removeEmptyFolder: async () => {
+      throw new Error('not used');
+    },
   };
 
   return {
@@ -163,6 +166,9 @@ describe('saving how he likes the app set up', () => {
         throw new Error('disk is full');
       },
       rename: async () => {
+        throw new Error('not used');
+      },
+      removeEmptyFolder: async () => {
         throw new Error('not used');
       },
     };
