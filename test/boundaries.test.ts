@@ -118,10 +118,21 @@ describe('where code is allowed to reach', () => {
    * A host provides somewhere to keep files and starts the interface. What a
    * note is — how one is named, saved or put away — is the app's business, and
    * a host that knew would be a second place for those rules to live.
+   *
+   * One exception, named rather than smuggled past: the versions sample is test
+   * data, not host behaviour. It fabricates files the app would otherwise have
+   * written, so it has to name them the way the app names them — and importing
+   * that rule is the opposite of the second place this test exists to prevent.
    */
+  const FIXTURE = 'mock-versions-sample.ts';
+
   for (const host of ['hosts/electron', 'hosts/mockup']) {
     it(`keeps what a note is out of ${host}`, async () => {
-      assert.deepEqual(await offenders(host, /notes\//), []);
+      const reaching = (await offenders(host, /notes\//)).filter(
+        (offence) => !offence.includes(FIXTURE),
+      );
+
+      assert.deepEqual(reaching, []);
     });
   }
 

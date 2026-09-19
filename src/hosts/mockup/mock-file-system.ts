@@ -1,4 +1,5 @@
 import type { FileInfo, FileSystem } from '../../platform/file-system.ts';
+import { versionsSample } from './mock-versions-sample.ts';
 
 const KEY = 'b-notes:mock-files';
 
@@ -116,6 +117,21 @@ export function everyFile(): { path: string; bytes: number }[] {
   return [...load()]
     .map(([path, file]) => ({ path, bytes: new TextEncoder().encode(file.text).length }))
     .sort((first, second) => first.path.localeCompare(second.path));
+}
+
+/**
+ * Puts the versions sample where the app will find it, every start.
+ *
+ * Over whatever is there rather than only when it is missing: the rows it
+ * exists to show are only worth looking at while it still says what it was
+ * written to say.
+ */
+export function placeVersionsSample(): void {
+  const files = load();
+  for (const file of versionsSample(Date.now(), MOCK_WRITING_FOLDER)) {
+    files.set(file.path, { text: file.text, updatedAt: file.updatedAt });
+  }
+  store(files);
 }
 
 /**
