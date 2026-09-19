@@ -41,16 +41,52 @@ export interface Confirmation {
   onCancel: () => void;
 }
 
-/** The sentence, with each spelling marked out where its slot was. */
-function sentence(prompt: string, words: readonly string[]): (string | HTMLElement)[] {
+/** A run of the prompt, and whether it is one of the spellings he must copy. */
+export interface Said {
+  text: string;
+  marked: boolean;
+}
+
+/**
+ * The sentence, broken at each `{}` so the spellings can be marked out.
+ *
+ * Spellings past the number of slots are left unsaid rather than crowded in at
+ * the end: English asks for one word where Serbian shows two ways of writing
+ * the same one, and both sentences have to come out reading properly.
+ */
+export function sentenceParts(prompt: string, words: readonly string[]): Said[] {
   const parts = prompt.split('{}');
-  return parts.flatMap((part, at) => {
+  return parts.flatMap((part, at): Said[] => {
     const word = words[at];
-    if (at === parts.length - 1 || word === undefined) return [part];
+    if (at === parts.length - 1 || word === undefined) return [{ text: part, marked: false }];
+    return [
+      { text: part, marked: false },
+      { text: word, marked: true },
+    ];
+  });
+}
+
+/**
+ * Whether what he has typed counts as the word he was asked for.
+ *
+ * Folded on both sides, so case, stray spaces and the diacritics he may not
+ * know how to reach all come out the same. The barrier is there to make him
+ * stop and mean it, not to test his typing — but only the word will do, and
+ * nothing that merely contains it.
+ */
+export function answersThePhrase(typed: string, words: readonly string[]): boolean {
+  const written = toSearchable(typed).trim();
+  return words.some((word) => written === toSearchable(word).trim());
+}
+
+/** Those parts, as things a dialog can show. */
+function sentence(prompt: string, words: readonly string[]): (string | HTMLElement)[] {
+  return sentenceParts(prompt, words).map((said) => {
+    if (!said.marked) return said.text;
     const marked = document.createElement('span');
     marked.className = 'confirm-key';
-    marked.textContent = word;
-    return [part, marked];
+    marked.textContent = said.text;
+    return marked;
   });
 }
 
@@ -77,8 +113,7 @@ function phraseFor(
   box.spellcheck = false;
   label.append(box);
 
-  const typed = (): string => toSearchable(box.value).trim();
-  const written = (): boolean => asked.words.some((word) => typed() === toSearchable(word));
+  const written = (): boolean => answersThePhrase(box.value, asked.words);
   affirmative.disabled = true;
   box.addEventListener('input', () => {
     affirmative.disabled = !written();

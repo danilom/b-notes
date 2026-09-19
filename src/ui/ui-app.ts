@@ -22,7 +22,9 @@ import {
   readSettings,
 } from './app-settings.ts';
 import { icon } from './icons.ts';
-import { type Draft, matches, renderList } from './note-list.ts';
+import { type Draft, renderList } from './note-list.ts';
+import { deletedStripFor } from './deleted-strip.ts';
+import { type WhatIsHappening, canDelete, emptyHintShows, statusFor } from './status-line.ts';
 import { type TextMatch, matchesIn } from './text-match.ts';
 
 /** Long enough that he isn't saved mid-word, short enough to never lose a thought. */
@@ -263,60 +265,29 @@ window.addEventListener('resize', () => {
   if (!emptyHint.hidden) pointHintAtDeleteButton();
 });
 
-function showStatus(): void {
-  deleteNote.disabled = openId === null;
-
-  /*
-    Only once the empty state has settled. Selecting everything and typing over
-    it leaves the text empty for a fraction of a second, and a bubble blinking
-    in the corner of an ordinary edit is exactly the unexplained movement this
-    app works to avoid. Waiting for the save to land means it appears when the
-    text really is empty and he has stopped.
-  */
-  emptyHint.textContent = words.emptiedHint;
-  emptyHint.hidden = openId === null || saveTimer !== undefined || !isEmptyText(editor.value);
-  if (!emptyHint.hidden) pointHintAtDeleteButton();
-
-  if (notice !== null) {
-    statusText.textContent = notice;
-    notice = null;
-    return;
-  }
-  // Nothing open and nothing typed: there is no state to report yet, and the
-  // line is for reporting, not for telling him to get on with it.
-  if (openId === null && editor.value.trim().length === 0) {
-    statusText.textContent = '';
-    return;
-  }
-  if (saveTimer !== undefined) {
-    statusText.textContent = words.saving;
-    return;
-  }
-  statusText.textContent =
-    savedAt === null
-      ? words.notSaved
-      : words.savedAgo(describeWhen(savedAt, language));
+/** Everything the strip along the bottom is decided from. */
+function whatIsHappening(): WhatIsHappening {
+  return { openId, text: editor.value, savedAt, saving: saveTimer !== undefined, notice };
 }
 
-/**
- * The way back to what he has put away.
- *
- * Says how many while he is just looking, and how many match while he is
- * searching — because the moment a search comes back with nothing is exactly
- * when he needs to be told the text might be in here.
- */
-function drawDeletedBlock(): void {
-  const query = search.value.trim();
-  const found = query.length === 0 ? deleted : deleted.filter((note) => matches(note, query));
+function showStatus(): void {
+  const now = whatIsHappening();
 
-  deletedBlock.hidden = found.length === 0;
-  // Named and counted in one line, the way the headings above it are: the
-  // strip is a different sort of thing from a section heading, but it answers
-  // the same question and should answer it in the same words.
-  deletedBlockLabel.textContent =
-    query.length === 0
-      ? `${words.deleted} · ${words.noteCount(deleted.length)}`
-      : words.deletedMatching(found.length, query);
+  deleteNote.disabled = !canDelete(now);
+  emptyHint.textContent = words.emptiedHint;
+  emptyHint.hidden = !emptyHintShows(now);
+  if (!emptyHint.hidden) pointHintAtDeleteButton();
+
+  statusText.textContent = statusFor(now, language);
+  // Shown is said: a thing that has just happened stops being news once he has
+  // been told it.
+  notice = null;
+}
+
+function drawDeletedBlock(): void {
+  const strip = deletedStripFor(deleted, search.value, language);
+  deletedBlock.hidden = !strip.shown;
+  deletedBlockLabel.textContent = strip.label;
 }
 
 async function saveNow(): Promise<void> {
