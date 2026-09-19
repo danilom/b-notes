@@ -12,13 +12,18 @@
 export type FontChoice = 'tahoma' | 'calibri' | 'corbel' | 'verdana' | 'segoe';
 export type AccentChoice = 'blue' | 'teal' | 'green' | 'gold' | 'red' | 'violet';
 export type ModeChoice = 'light' | 'dark';
+export type WritingFontChoice = 'georgia' | 'cambria' | 'verdana';
 
 export interface Appearance {
   font: FontChoice;
-  /** How much larger than life, the way a browser means it. 1 is unscaled. */
+  /** How much larger than life the app is, the way a browser means it. */
   zoom: number;
   accent: AccentChoice;
   mode: ModeChoice;
+  /** His writing, which is the point of the whole thing. */
+  writingFont: WritingFontChoice;
+  /** On top of the zoom, so his prose can grow without the list growing with it. */
+  writingSize: number;
 }
 
 /**
@@ -31,6 +36,8 @@ export const DEFAULT_APPEARANCE: Appearance = {
   zoom: 1,
   accent: 'blue',
   mode: 'light',
+  writingFont: 'georgia',
+  writingSize: 1,
 };
 
 export const MODES = ['light', 'dark'] as const satisfies readonly ModeChoice[];
@@ -57,7 +64,8 @@ export const FONTS = {
 } as const satisfies Record<FontChoice, FontFace>;
 
 /**
- * The sizes he can step through, and they are not ours.
+ * The sizes he can step through, for the app as a whole and for his writing
+ * alone, and they are not ours.
  *
  * This is Chromium's own preset ladder — the values Ctrl+ and Ctrl- move
  * between in Chrome, taken from `kPresetBrowserZoomFactors` — cut down to the
@@ -73,16 +81,16 @@ export const FONTS = {
  * wide. 200% is already generous, and Windows has its own display scaling for
  * anyone who needs more than that.
  */
-export const ZOOM_STEPS = [0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2] as const;
+export const SCALE_STEPS = [0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2] as const;
 
-export const MIN_ZOOM = ZOOM_STEPS[0];
-export const MAX_ZOOM = ZOOM_STEPS[ZOOM_STEPS.length - 1] ?? 1;
+export const MIN_SCALE = SCALE_STEPS[0];
+export const MAX_SCALE = SCALE_STEPS[SCALE_STEPS.length - 1] ?? 1;
 
 function nearestStep(factor: number): number {
   let nearest = 0;
-  for (let i = 1; i < ZOOM_STEPS.length; i += 1) {
-    const step = ZOOM_STEPS[i] ?? 1;
-    if (Math.abs(step - factor) < Math.abs((ZOOM_STEPS[nearest] ?? 1) - factor)) nearest = i;
+  for (let i = 1; i < SCALE_STEPS.length; i += 1) {
+    const step = SCALE_STEPS[i] ?? 1;
+    if (Math.abs(step - factor) < Math.abs((SCALE_STEPS[nearest] ?? 1) - factor)) nearest = i;
   }
   return nearest;
 }
@@ -94,20 +102,47 @@ function nearestStep(factor: number): number {
  * differently — or edited by hand — lands on a real step instead of sitting
  * between two of them, where pressing + would jump somewhere unexpected.
  */
-export function clampZoom(factor: number): number {
+export function clampScale(factor: number): number {
   if (!Number.isFinite(factor)) return DEFAULT_APPEARANCE.zoom;
-  return ZOOM_STEPS[nearestStep(factor)] ?? DEFAULT_APPEARANCE.zoom;
+  return SCALE_STEPS[nearestStep(factor)] ?? DEFAULT_APPEARANCE.zoom;
 }
 
 /** The next rung up or down, stopping at either end. */
-export function stepZoom(factor: number, direction: 1 | -1): number {
+export function stepScale(factor: number, direction: 1 | -1): number {
   const next = nearestStep(factor) + direction;
-  if (next < 0 || next >= ZOOM_STEPS.length) return clampZoom(factor);
-  return ZOOM_STEPS[next] ?? DEFAULT_APPEARANCE.zoom;
+  if (next < 0 || next >= SCALE_STEPS.length) return clampScale(factor);
+  return SCALE_STEPS[next] ?? DEFAULT_APPEARANCE.zoom;
 }
 
-export function isZoom(value: unknown): value is number {
+export function isScale(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
+}
+
+/**
+ * The three faces his own writing can be set in.
+ *
+ * A far shorter list than the interface gets, and a different one: these are
+ * chosen for reading paragraphs rather than for labelling buttons. Two serifs
+ * because that is what he writes in, and one sans for the possibility that he
+ * simply cannot get on with serifs — all three drawn for reading off a screen.
+ *
+ * `scale` matches x-heights to Georgia, so changing the face doesn't silently
+ * change how big his text is. Measured, not guessed: Verdana runs 15% larger at
+ * the same pixel size.
+ */
+const WRITING_SAMPLE = 'Sjećam se tog ljeta.';
+
+export const WRITING_FONTS = {
+  georgia: { stack: "Georgia, 'Times New Roman', serif", scale: 1, sample: WRITING_SAMPLE },
+  cambria: { stack: 'Cambria, Georgia, serif', scale: 1.021, sample: WRITING_SAMPLE },
+  verdana: { stack: 'Verdana, sans-serif', scale: 0.873, sample: WRITING_SAMPLE },
+} as const satisfies Record<
+  WritingFontChoice,
+  { stack: string; scale: number; sample: string }
+>;
+
+export function isWritingFontChoice(value: unknown): value is WritingFontChoice {
+  return typeof value === 'string' && Object.hasOwn(WRITING_FONTS, value);
 }
 
 /**
@@ -156,9 +191,15 @@ export function applyAppearance(root: HTMLElement, appearance: Appearance): void
 
   // Zoom is not among these: it scales the whole window and is the host's to
   // apply, so that Ctrl+ and our own buttons move one and the same thing.
+  const writing = WRITING_FONTS[appearance.writingFont];
+
   root.style.setProperty('--ui-font', font.stack);
   root.style.setProperty('--ui-size', `${(BASE_UI_PX * font.scale).toFixed(2)}px`);
-  root.style.setProperty('--text-size', `${BASE_TEXT_PX}px`);
+  root.style.setProperty('--writing-font', writing.stack);
+  root.style.setProperty(
+    '--text-size',
+    `${(BASE_TEXT_PX * writing.scale * appearance.writingSize).toFixed(2)}px`,
+  );
   root.style.setProperty('--accent-h', String(accent.hue));
   root.style.setProperty('--accent-s', `${accent.saturation}%`);
 

@@ -3,20 +3,25 @@ import type { FileSystem } from '../platform/file-system.ts';
 import {
   type Appearance,
   DEFAULT_APPEARANCE,
-  clampZoom,
+  clampScale,
   isAccentChoice,
   isFontChoice,
   isModeChoice,
-  isZoom,
+  isScale,
+  isWritingFontChoice,
 } from './appearance.ts';
 
 /**
  * How he likes the app set up, split by whether the answer travels with him.
  *
- * Which letters and which colour are taste: having chosen them once he should
- * find them already chosen on every machine. How big they are is not taste, it
- * is the screen in front of him — the old laptop and the desktop want different
- * answers, and syncing one would keep undoing the other.
+ * Which letters and which colour are taste, and taste travels: having chosen
+ * them once he should find them already chosen on every machine.
+ *
+ * The zoom is taste too — he is no less particular about how big the app is —
+ * but the *number* is not portable even when the preference is. The same wish
+ * to read comfortably comes out as one figure on the old laptop and another on
+ * the desktop, so syncing it would have each machine undoing the other in his
+ * name. It stays where the screen it answers to is.
  */
 const SHARED_FILE = 'settings.json';
 const LOCAL_FILE = 'screen.json';
@@ -26,6 +31,13 @@ export interface SharedSettings {
   language: Language;
   font: Appearance['font'];
   accent: Appearance['accent'];
+  /**
+   * How his own writing is set. Taste rather than screen, so it follows him:
+   * having found the letters he likes to write in, he should find them already
+   * chosen on every machine. The zoom below is the one that answers the screen.
+   */
+  writingFont: Appearance['writingFont'];
+  writingSize: Appearance['writingSize'];
 }
 
 /**
@@ -89,9 +101,15 @@ export function settingsFrom(
     language: language === 'en' || language === 'sr' ? language : DEFAULT_SETTINGS.language,
     font: isFontChoice(shared['font']) ? shared['font'] : DEFAULT_SETTINGS.font,
     accent: isAccentChoice(shared['accent']) ? shared['accent'] : DEFAULT_SETTINGS.accent,
+    writingFont: isWritingFontChoice(shared['writingFont'])
+      ? shared['writingFont']
+      : DEFAULT_SETTINGS.writingFont,
+    writingSize: isScale(shared['writingSize'])
+      ? clampScale(shared['writingSize'])
+      : DEFAULT_SETTINGS.writingSize,
     // Clamped rather than rejected: a file naming a zoom we no longer allow
     // still means he wanted it big, so bring it to the nearest size we do.
-    zoom: isZoom(local['zoom']) ? clampZoom(local['zoom']) : DEFAULT_SETTINGS.zoom,
+    zoom: isScale(local['zoom']) ? clampScale(local['zoom']) : DEFAULT_SETTINGS.zoom,
     mode: isModeChoice(local['mode']) ? local['mode'] : DEFAULT_SETTINGS.mode,
   };
 }
@@ -120,7 +138,7 @@ async function writeSettings(
   folders: SettingsFolders,
   settings: Settings,
 ): Promise<void> {
-  const { language, font, accent, zoom, mode } = settings;
+  const { language, font, accent, writingFont, writingSize, zoom, mode } = settings;
   const sharedPath = `${folders.writingFolder}/${SHARED_FILE}`;
   const localPath = `${folders.appFolder}/${LOCAL_FILE}`;
 
@@ -132,7 +150,10 @@ async function writeSettings(
   // Both every time rather than only what changed: two tiny writes he makes a
   // handful of times, against a bookkeeping mistake that would lose a choice.
   await Promise.all([
-    files.write(sharedPath, `${JSON.stringify({ ...shared, language, font, accent }, null, 2)}\n`),
+    files.write(
+      sharedPath,
+      `${JSON.stringify({ ...shared, language, font, accent, writingFont, writingSize }, null, 2)}\n`,
+    ),
     files.write(localPath, `${JSON.stringify({ ...local, zoom, mode }, null, 2)}\n`),
   ]);
 }

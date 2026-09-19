@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type { FileSystem } from '../src/platform/file-system.ts';
-import { MAX_ZOOM, MIN_ZOOM } from '../src/ui/appearance.ts';
+import { MAX_SCALE, MIN_SCALE } from '../src/ui/appearance.ts';
 import {
   DEFAULT_SETTINGS,
   type Settings,
@@ -76,8 +76,8 @@ describe('reading how he likes the app set up', () => {
   });
 
   it('brings a zoom from outside the allowed range to the nearest one allowed', () => {
-    assert.equal(settingsFrom({}, { zoom: 12 }).zoom, MAX_ZOOM);
-    assert.equal(settingsFrom({}, { zoom: 0.01 }).zoom, MIN_ZOOM);
+    assert.equal(settingsFrom({}, { zoom: 12 }).zoom, MAX_SCALE);
+    assert.equal(settingsFrom({}, { zoom: 0.01 }).zoom, MIN_SCALE);
   });
 
   it('falls back when the stored zoom is not a number at all', () => {
@@ -88,6 +88,18 @@ describe('reading how he likes the app set up', () => {
   it('never takes dark from the shared file, which would reach across his machines', () => {
     const settings = settingsFrom({ mode: 'dark' }, {});
     assert.equal(settings.mode, 'light');
+  });
+
+  it('takes how his writing is set from the folder that travels with it', () => {
+    const settings = settingsFrom({ writingFont: 'cambria', writingSize: 1.25 }, {});
+    assert.equal(settings.writingFont, 'cambria');
+    assert.equal(settings.writingSize, 1.25);
+  });
+
+  it('ignores how his writing is set when it is only on this machine', () => {
+    const settings = settingsFrom({}, { writingFont: 'cambria', writingSize: 1.25 });
+    assert.equal(settings.writingFont, DEFAULT_SETTINGS.writingFont);
+    assert.equal(settings.writingSize, DEFAULT_SETTINGS.writingSize);
   });
 });
 
@@ -114,6 +126,8 @@ describe('saving how he likes the app set up', () => {
       font: 'corbel',
       zoom: 1.25,
       mode: 'light',
+      writingFont: 'georgia',
+      writingSize: 1,
     });
   });
 

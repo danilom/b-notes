@@ -1,25 +1,25 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { MAX_ZOOM, MIN_ZOOM, ZOOM_STEPS, clampZoom, stepZoom } from '../src/ui/appearance.ts';
+import { MAX_SCALE, MIN_SCALE, SCALE_STEPS, clampScale, stepScale } from '../src/ui/appearance.ts';
 
 describe('how large he has made everything', () => {
   it('stops at the ends rather than running away', () => {
-    assert.equal(stepZoom(MAX_ZOOM, 1), MAX_ZOOM);
-    assert.equal(stepZoom(MIN_ZOOM, -1), MIN_ZOOM);
+    assert.equal(stepScale(MAX_SCALE, 1), MAX_SCALE);
+    assert.equal(stepScale(MIN_SCALE, -1), MIN_SCALE);
   });
 
   it('lands back exactly where it started after a step up and down', () => {
-    for (const from of ZOOM_STEPS.slice(1, -1)) {
-      assert.equal(stepZoom(stepZoom(from, 1), -1), from, `from ${from}`);
+    for (const from of SCALE_STEPS.slice(1, -1)) {
+      assert.equal(stepScale(stepScale(from, 1), -1), from, `from ${from}`);
     }
   });
 
   it('steps through the sizes a browser shows, not ones of our own invention', () => {
     const climbed: number[] = [];
-    let at: number = MIN_ZOOM;
-    while (at !== MAX_ZOOM) {
-      at = stepZoom(at, 1);
+    let at: number = MIN_SCALE;
+    while (at !== MAX_SCALE) {
+      at = stepScale(at, 1);
       climbed.push(at);
     }
     // Exactly Chrome's own ladder over this range: no 121%, no 146%.
@@ -27,19 +27,19 @@ describe('how large he has made everything', () => {
   });
 
   it('brings a size written by some other build onto the nearest real step', () => {
-    assert.equal(clampZoom(1.21), 1.25);
-    assert.equal(clampZoom(1.46), 1.5);
-    assert.equal(clampZoom(0.01), MIN_ZOOM);
-    assert.equal(clampZoom(99), MAX_ZOOM);
+    assert.equal(clampScale(1.21), 1.25);
+    assert.equal(clampScale(1.46), 1.5);
+    assert.equal(clampScale(0.01), MIN_SCALE);
+    assert.equal(clampScale(99), MAX_SCALE);
   });
 
   it('steps off an in-between size onto the ladder rather than past it', () => {
-    assert.equal(stepZoom(1.21, 1), 1.5);
-    assert.equal(stepZoom(1.21, -1), 1.1);
+    assert.equal(stepScale(1.21, 1), 1.5);
+    assert.equal(stepScale(1.21, -1), 1.1);
   });
 
   it('refuses a stored value that is not a usable number', () => {
-    assert.equal(clampZoom(Number.NaN), 1);
-    assert.equal(clampZoom(Number.POSITIVE_INFINITY), 1);
+    assert.equal(clampScale(Number.NaN), 1);
+    assert.equal(clampScale(Number.POSITIVE_INFINITY), 1);
   });
 });

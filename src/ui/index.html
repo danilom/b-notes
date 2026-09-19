@@ -552,8 +552,22 @@
         font-size: 1.12em;
       }
 
+      /* The two halves: his writing, and the app around it. */
       .panel h2 {
-        margin: 1.1rem 0 0.5rem;
+        margin: 1.3rem 0 0;
+        padding-bottom: 0.35rem;
+        border-bottom: 1px solid var(--line);
+        font-size: 0.95em;
+        font-weight: 600;
+        color: var(--ink);
+      }
+
+      .panel-half:first-of-type h2 {
+        margin-top: 1rem;
+      }
+
+      .panel h3 {
+        margin: 0.9rem 0 0.5rem;
         font-size: 0.78em;
         font-weight: 600;
         letter-spacing: 0.06em;
@@ -565,6 +579,10 @@
         display: flex;
         flex-wrap: wrap;
         gap: 0.45rem;
+      }
+
+      .choices:has(.writing-choice) {
+        flex-direction: column;
       }
 
       /* Deliberately large targets: his hands are not steady on a trackpad. */
@@ -579,6 +597,13 @@
 
       .zoom-row {
         align-items: center;
+      }
+
+      /* Stacked and full width: a line of prose has to be seen as a line. */
+      .writing-choice {
+        width: 100%;
+        justify-content: flex-start;
+        text-align: left;
       }
 
       /* Big square targets. These are the two buttons in the panel he is most
@@ -654,11 +679,24 @@
         padding: 0.45rem 1rem;
       }
 
+      /*
+        The measure: how wide a line of his writing is allowed to get.
+
+        Past about ninety characters the eye starts missing the next line on
+        the way back, and on his screen the editor was running to a hundred and
+        twenty. In `ch` rather than pixels because it is then relative to the
+        face and the size he has chosen — 50ch lands every font we offer
+        between 64 and 72 characters, and on a narrow window it simply never
+        binds. That is why this is a fixed rule and not another thing for him
+        to set: there is one right answer and it follows him about by itself.
+      */
       #editor {
         font-family: var(--writing-font);
         font-size: var(--text-size);
         flex: 1;
         width: 100%;
+        max-width: calc(50ch + 4rem);
+        margin: 0 auto;
         padding: 1.6rem 2rem;
         border: 0;
         outline: 0;

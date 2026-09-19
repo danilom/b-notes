@@ -4,10 +4,11 @@ import {
   type Appearance,
   DEFAULT_APPEARANCE,
   FONTS,
-  MAX_ZOOM,
-  MIN_ZOOM,
+  MAX_SCALE,
+  MIN_SCALE,
   MODES,
-  stepZoom,
+  WRITING_FONTS,
+  stepScale,
 } from './appearance.ts';
 import { icon } from './icons.ts';
 
@@ -70,7 +71,7 @@ function optionGroup<T extends string>(
   const group = document.createElement('section');
   group.className = 'choice-group';
 
-  const title = document.createElement('h2');
+  const title = document.createElement('h3');
   title.textContent = heading;
   group.append(title);
 
@@ -124,15 +125,15 @@ function optionGroup<T extends string>(
  * looks that can be said out loud, which is what makes "what does it say?" a
  * question with an answer.
  */
-function zoomGroup(
+function scaleGroup(
   words: ReturnType<typeof strings>,
-  chosen: Appearance,
-  change: (next: Appearance) => void,
+  factor: number,
+  setTo: (next: number) => void,
 ): HTMLElement {
   const group = document.createElement('section');
   group.className = 'choice-group';
 
-  const title = document.createElement('h2');
+  const title = document.createElement('h3');
   title.textContent = words.appearanceSize;
 
   const row = document.createElement('div');
@@ -145,17 +146,17 @@ function zoomGroup(
     button.textContent = glyph;
     button.title = name;
     button.setAttribute('aria-label', name);
-    const next = stepZoom(chosen.zoom, direction);
+    const next = stepScale(factor, direction);
     // Stopped rather than hidden at the ends: a button that vanishes is a
     // button he has to find again.
-    button.disabled = next === chosen.zoom;
-    button.addEventListener('click', () => change({ ...chosen, zoom: next }));
+    button.disabled = next === factor;
+    button.addEventListener('click', () => setTo(next));
     return button;
   };
 
   const reading = document.createElement('span');
   reading.className = 'zoom-reading';
-  reading.textContent = `${Math.round(chosen.zoom * 100)}%`;
+  reading.textContent = `${Math.round(factor * 100)}%`;
   reading.setAttribute('aria-live', 'polite');
 
   row.append(
@@ -165,6 +166,24 @@ function zoomGroup(
   );
   group.append(title, row);
   return group;
+}
+
+/**
+ * One half of the panel, named for what it changes.
+ *
+ * Both halves hold something called Veličina, and without this they would sit
+ * in one flat list two inches apart with no way to tell which was which. Split
+ * by what each affects, the same word is unambiguous in both places: one is the
+ * size of his writing, the other the size of the app around it.
+ */
+function half(heading: string, groups: readonly HTMLElement[]): HTMLElement {
+  const section = document.createElement('section');
+  section.className = 'panel-half';
+
+  const title = document.createElement('h2');
+  title.textContent = heading;
+  section.append(title, ...groups);
+  return section;
 }
 
 /**
@@ -216,7 +235,29 @@ function fill(
     (font) => change({ ...chosen, font }),
   );
 
-  const sizes = zoomGroup(words, chosen, change);
+  const appSize = scaleGroup(words, chosen.zoom, (zoom) => change({ ...chosen, zoom }));
+
+  // A line of prose rather than the font's name: what matters in a paragraph is
+  // how the whole line sits, which one word cannot show him.
+  const writingFonts = optionGroup(
+    words.appearanceFont,
+    choicesIn(WRITING_FONTS).map((value) => ({
+      value,
+      name: WRITING_FONTS[value].sample,
+      label: WRITING_FONTS[value].sample,
+      className: 'writing-choice',
+      style: {
+        fontFamily: WRITING_FONTS[value].stack,
+        fontSize: `${(16 * WRITING_FONTS[value].scale).toFixed(1)}px`,
+      },
+    })),
+    chosen.writingFont,
+    (writingFont) => change({ ...chosen, writingFont }),
+  );
+
+  const writingSize = scaleGroup(words, chosen.writingSize, (writingSize) =>
+    change({ ...chosen, writingSize }),
+  );
 
   const accents = optionGroup(
     words.appearanceColour,
@@ -266,7 +307,12 @@ function fill(
   cancel.addEventListener('click', handlers.onCancel);
   footer.append(reset, keep, cancel);
 
-  panel.replaceChildren(header, fonts, sizes, accents, modes, footer);
+  panel.replaceChildren(
+    header,
+    half(words.appearanceWriting, [writingFonts, writingSize]),
+    half(words.appearanceApp, [fonts, appSize, accents, modes]),
+    footer,
+  );
   keep.focus();
 }
 
