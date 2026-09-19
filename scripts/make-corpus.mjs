@@ -165,25 +165,39 @@ const MINUTE = 60000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
+/** Long texts put at the very top, so Nedavni always has something that scrolls. */
+const LONG_ON_TOP = 3;
+
 /**
- * Drags the most recently touched texts forward onto today.
+ * Drags a handful of texts forward onto today.
  *
  * His archive stops in 2021, so every text in it is old enough to show as a
  * bare year and the rest of the time ladder — minutes, hours, juče, a date —
- * never appears while the UI is being developed. These are the texts he'd
- * plausibly have had open if he were using the app now, so moving them is the
- * least invented way to cover the whole ladder.
+ * never appears while the UI is being developed.
+ *
+ * The longest ones go first, which is not what recency would do but is what
+ * development needs: whatever is in Nedavni is what gets opened without
+ * thinking, and if those are all four-line jots then the editor never scrolls,
+ * the measure is never tested past one screen, and nothing that only shows up
+ * in a long text — the scrollbar, walking between matches — is ever seen. The
+ * rest of the slots go to the genuinely most recent.
  *
  * Offsets are relative, so generating the corpus just after midnight folds the
  * intra-day ones into "juče". It corrects itself on the next run.
  */
 function freshenNewest(notes, now = Date.now()) {
   const offsets = [2 * MINUTE, 40 * MINUTE, 3 * HOUR, 27 * HOUR, 3 * DAY, 11 * DAY, 70 * DAY, 250 * DAY];
-  const newest = [...notes].sort((a, b) => b.modified - a.modified).slice(0, offsets.length);
-  newest.forEach((note, index) => {
+
+  const chosen = [...notes].sort((a, b) => b.bytes - a.bytes).slice(0, LONG_ON_TOP);
+  for (const note of [...notes].sort((a, b) => b.modified - a.modified)) {
+    if (chosen.length >= offsets.length) break;
+    if (!chosen.includes(note)) chosen.push(note);
+  }
+
+  chosen.forEach((note, index) => {
     note.modified = new Date(now - offsets[index]);
   });
-  return newest.length;
+  return chosen;
 }
 
 const notes = await loadSources();
@@ -249,6 +263,7 @@ const longest = new Set(
     .slice(0, LONG_SAMPLES)
     .map(([name]) => name),
 );
+if (longest.size < LONG_SAMPLES) throw new Error('fewer long samples than asked for');
 
 const browser = [];
 for (const [name, note] of written) {
@@ -266,7 +281,10 @@ const sizes = notes.map((n) => n.bytes).sort((a, b) => a - b);
 console.log(`wrote ${notes.length} files to ${OUT}`);
 console.log(`  total ${(total / 1048576).toFixed(2)} MB`);
 console.log(`  empty ${empties}, title-only ${stubs}, deduped names ${duplicates}`);
-console.log(`  pinned ${notes.filter((n) => n.pinned).length}, dated onto today ${freshened}`);
+console.log(
+  `  pinned ${notes.filter((n) => n.pinned).length}, dated onto today ${freshened.length}` +
+    ` (top of Nedavni: ${freshened.slice(0, LONG_ON_TOP).map((n) => `${(n.bytes / 1024).toFixed(0)}KB`).join(', ')})`,
+);
 console.log(
   `  browser copy ${(browserChars / 1000).toFixed(0)}k chars ` +
     `(~${((browserChars * 2) / 1048576).toFixed(1)} MB in localStorage), ` +
