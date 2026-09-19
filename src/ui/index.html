@@ -27,19 +27,22 @@
         --writing-font: Georgia, 'Times New Roman', serif;
 
         /*
-          Monochrome in the literal sense: one hue, and everything on screen is
-          a shade of it. Not greys with a rumour of colour in them — at the
-          lightness a surface needs, a saturation low enough to be "tasteful"
-          is simply invisible, and the eye then reads the near-neutral as warm
-          whatever hue it was nominally given.
+          Grey chrome, and the colour spent all in one place.
 
-          Three saturations do all the work. Every colour below is one of them
-          at some lightness, which is what keeps six themes from needing six
-          hand-picked palettes.
+          Tinting the surfaces was tried twice and is a trap. There is no good
+          amount: enough to read as the hue is too loud for something he stares
+          at all day, and less than that is worse — a near-neutral beside a
+          saturated accent doesn't look neutral, it looks warm, so the green
+          theme comes out faintly orange and the eye keeps asking why. The
+          middle ground is the whole problem, so there isn't one any more.
+
+          The accent is not weaker for this. It is stronger: with nothing else
+          coloured, the text he has open and the choices he has made are the
+          only colour on screen, which is exactly what they should be.
         */
         --strong: var(--accent-s);
-        --surface: calc(var(--accent-s) * 0.22);
-        --muted: calc(var(--accent-s) * 0.1);
+        --surface: 6%;
+        --muted: 4%;
 
         /*
           Lightness is the only thing light and dark disagree about, so it is
@@ -70,24 +73,28 @@
         --shadow-alpha: 0.3;
         --swatch-edge: rgb(0 0 0 / 0.15);
 
-        --ink: hsl(var(--accent-h) var(--muted) var(--l-ink));
-        --quiet: hsl(var(--accent-h) var(--muted) var(--l-quiet));
-        --faint: hsl(var(--accent-h) var(--muted) var(--l-faint));
-        --line: hsl(var(--accent-h) var(--surface) var(--l-line));
-        --toolbar: hsl(var(--accent-h) var(--surface) var(--l-toolbar));
-        --hover: hsl(var(--accent-h) var(--surface) var(--l-hover));
-        --pressed: hsl(var(--accent-h) var(--surface) var(--l-pressed));
-        --panel: hsl(var(--accent-h) var(--surface) var(--l-panel));
+        /* Not the accent's hue: the chrome is the same grey whichever colour
+           he picks, so nothing can be the wrong shade of it. */
+        --grey-h: 220;
+
+        --ink: hsl(var(--grey-h) var(--muted) var(--l-ink));
+        --quiet: hsl(var(--grey-h) var(--muted) var(--l-quiet));
+        --faint: hsl(var(--grey-h) var(--muted) var(--l-faint));
+        --line: hsl(var(--grey-h) var(--surface) var(--l-line));
+        --toolbar: hsl(var(--grey-h) var(--surface) var(--l-toolbar));
+        --hover: hsl(var(--grey-h) var(--surface) var(--l-hover));
+        --pressed: hsl(var(--grey-h) var(--surface) var(--l-pressed));
+        --panel: hsl(var(--grey-h) var(--surface) var(--l-panel));
 
         /* The one surface that stays out of it. He reads essays off this for
            hours, and a tinted page is tiring in a way a tinted frame is not. */
-        --page: hsl(var(--accent-h) var(--muted) var(--l-page));
+        --page: hsl(var(--grey-h) var(--muted) var(--l-page));
 
         /* Full strength, and only where something must be pointed at. */
         --chosen: hsl(var(--accent-h) var(--strong) var(--l-chosen));
         --chosen-soft: hsl(var(--accent-h) var(--strong) var(--l-chosen-soft));
         /* Whatever can be read on top of a solid accent, either way up. */
-        --on-chosen: hsl(var(--accent-h) var(--muted) var(--l-on-chosen));
+        --on-chosen: hsl(var(--grey-h) var(--muted) var(--l-on-chosen));
       }
 
       /*
@@ -102,8 +109,8 @@
       :root[data-mode='dark'] {
         color-scheme: dark;
 
-        --surface: calc(var(--accent-s) * 0.35);
-        --muted: calc(var(--accent-s) * 0.22);
+        --surface: 8%;
+        --muted: 6%;
 
         --l-ink: 88%;
         --l-quiet: 64%;
@@ -205,12 +212,12 @@
            edge instead of being welded to it. */
         border: 3px solid transparent;
         border-radius: 7px;
-        background: hsl(var(--accent-h) var(--surface) var(--l-thumb));
+        background: hsl(var(--grey-h) var(--surface) var(--l-thumb));
         background-clip: padding-box;
       }
 
       ::-webkit-scrollbar-thumb:hover {
-        background: hsl(var(--accent-h) var(--surface) var(--l-thumb-hover));
+        background: hsl(var(--grey-h) var(--surface) var(--l-thumb-hover));
         background-clip: padding-box;
       }
 
@@ -416,7 +423,7 @@
         align-items: center;
         justify-content: center;
         padding: 1.5rem;
-        background: hsl(var(--accent-h) var(--surface) var(--l-shadow) / 0.42);
+        background: hsl(var(--grey-h) var(--surface) var(--l-shadow) / 0.42);
       }
 
       #appearance[hidden] {
@@ -443,7 +450,7 @@
         border: 1px solid var(--line);
         border-radius: 8px;
         background: var(--page);
-        box-shadow: 0 12px 44px hsl(var(--accent-h) var(--surface) var(--l-shadow) / var(--shadow-alpha));
+        box-shadow: 0 12px 44px hsl(var(--grey-h) var(--surface) var(--l-shadow) / var(--shadow-alpha));
       }
 
       /*
