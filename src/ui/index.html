@@ -80,7 +80,6 @@
         --l-chosen: 38%;
         --l-chosen-soft: 91%;
         --l-found: 82%;
-        --l-found-now: 62%;
         --l-on-chosen: 99%;
         --l-thumb: 82%;
         --l-thumb-hover: 68%;
@@ -120,7 +119,6 @@
         --chosen-soft: hsl(var(--accent-h) var(--strong) var(--l-chosen-soft));
         /* Stronger than a selected row: this has to carry his own text on top. */
         --found: hsl(var(--accent-h) var(--strong) var(--l-found));
-        --found-now: hsl(var(--accent-h) var(--strong) var(--l-found-now));
         /* Whatever can be read on top of a solid accent, either way up. */
         --on-chosen: hsl(var(--grey-h) var(--muted) var(--l-on-chosen));
       }
@@ -154,7 +152,6 @@
         --l-chosen: 70%;
         --l-chosen-soft: 31%;
         --l-found: 38%;
-        --l-found-now: 52%;
         --l-on-chosen: 10%;
         --l-thumb: 34%;
         --l-thumb-hover: 48%;
@@ -896,9 +893,17 @@
         border-radius: 2px;
       }
 
-      /* The one he is standing on, told apart from the others he could go to. */
+      /*
+        The one he is standing on: the same highlight as the rest, framed.
+
+        A frame rather than a second colour, so the marks all read as one kind
+        of thing and the frame says which of them is current. Drawn as a shadow
+        because a shadow takes no space — a border would widen the mark, the
+        line would wrap a word earlier here than in the textarea above, and
+        every mark below it would slide off the words it belongs to.
+      */
       #editor-marks mark.now {
-        background: var(--found-now);
+        box-shadow: 0 0 0 2px var(--chosen);
       }
 
       /*
