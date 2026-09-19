@@ -1,4 +1,4 @@
-import { versionName } from '../../notes/note-naming.ts';
+import { DAY, HOUR, MINUTE, type SampleFile, sampleFilesFor } from './mock-sample-files.ts';
 
 /**
  * A text with a copy of every shape the versions list can show.
@@ -28,10 +28,6 @@ const text = (...paragraphs: string[]): string => paragraphs.join('\n\n');
 
 /** What the text says now, which every copy below is read against. */
 export const SAMPLE_TEXT = text(TITLE, A, B, C);
-
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
 
 /**
  * One copy and the row it is there to produce.
@@ -83,35 +79,12 @@ const VERSIONS: SampleVersion[] = [
   },
 ];
 
-export interface SampleFile {
-  path: string;
-  text: string;
-  updatedAt: number;
-}
-
-/**
- * Every file the sample is made of, ready to be written over whatever is there.
- *
- * @param now What to hang the copies' ages off, so they stay recent however
- * long the browser has had them.
- * @param writingFolder Where the host keeps his texts.
- */
+/** Every file the sample is made of, ready to be written over whatever is there. */
 export function versionsSample(now: number, writingFolder: string): SampleFile[] {
-  const note: SampleFile = {
-    path: `${writingFolder}/${SAMPLE_ID}.txt`,
-    text: SAMPLE_TEXT,
-    updatedAt: now - 8 * MINUTE,
-  };
-
-  return [
-    note,
-    ...VERSIONS.map(({ ago, text: kept }): SampleFile => {
-      const takenAt = now - ago;
-      return {
-        path: `${writingFolder}/Verzije/${SAMPLE_ID}/${versionName(new Date(takenAt))}.txt`,
-        text: kept,
-        updatedAt: takenAt,
-      };
-    }),
-  ];
+  return sampleFilesFor(
+    writingFolder,
+    SAMPLE_ID,
+    { text: SAMPLE_TEXT, ago: 8 * MINUTE, copies: VERSIONS },
+    now,
+  );
 }

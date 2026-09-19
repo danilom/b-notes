@@ -119,12 +119,14 @@ describe('where code is allowed to reach', () => {
    * note is — how one is named, saved or put away — is the app's business, and
    * a host that knew would be a second place for those rules to live.
    *
-   * One exception, named rather than smuggled past: the versions sample is test
-   * data, not host behaviour. It fabricates files the app would otherwise have
-   * written, so it has to name them the way the app names them — and importing
-   * that rule is the opposite of the second place this test exists to prevent.
+   * One exception, named rather than smuggled past. The samples are test data,
+   * not host behaviour: they fabricate files the app would otherwise have
+   * written, so they have to be named the way the app names them — and
+   * importing that rule is the opposite of the second home for it that this
+   * test exists to prevent. It is one file, and the samples themselves are
+   * content that knows no paths, so this cannot spread quietly.
    */
-  const FIXTURE = 'mock-versions-sample.ts';
+  const FIXTURE = 'mock-sample-files.ts';
 
   for (const host of ['hosts/electron', 'hosts/mockup']) {
     it(`keeps what a note is out of ${host}`, async () => {

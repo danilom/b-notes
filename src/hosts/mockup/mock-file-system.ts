@@ -1,4 +1,5 @@
 import type { FileInfo, FileSystem } from '../../platform/file-system.ts';
+import { longDiffSample } from './mock-long-diff-sample.ts';
 import { versionsSample } from './mock-versions-sample.ts';
 
 const KEY = 'b-notes:mock-files';
@@ -120,16 +121,20 @@ export function everyFile(): { path: string; bytes: number }[] {
 }
 
 /**
- * Puts the versions sample where the app will find it, every start.
+ * Puts the samples where the app will find them, every start.
  *
- * Over whatever is there rather than only when it is missing: the rows it
- * exists to show are only worth looking at while it still says what it was
- * written to say.
+ * Over whatever is there rather than only when they are missing: what they
+ * exist to show is only worth looking at while they still say what they were
+ * written to say. Editing one in the browser therefore does not survive a
+ * reload.
  */
-export function placeVersionsSample(): void {
+export function placeSamples(): void {
+  const now = Date.now();
   const files = load();
-  for (const file of versionsSample(Date.now(), MOCK_WRITING_FOLDER)) {
-    files.set(file.path, { text: file.text, updatedAt: file.updatedAt });
+  for (const sample of [versionsSample, longDiffSample]) {
+    for (const file of sample(now, MOCK_WRITING_FOLDER)) {
+      files.set(file.path, { text: file.text, updatedAt: file.updatedAt });
+    }
   }
   store(files);
 }
