@@ -131,10 +131,17 @@ const TEXT = {
       const by = Math.abs(difference).toLocaleString('sr-RS');
       return `${count} (${by} ${difference > 0 ? 'više' : 'manje'} nego sada)`;
     },
-    // "Sadašnji tekst", never "tvoj tekst": every text in the app is his, so
-    // the possessive distinguishes nothing here. The contrast that matters is
-    // between a copy and the one open now, and this dialog already calls the
-    // copy a verzija — so the other one only has to be the present one.
+    // "Aktivni tekst", never "tvoj tekst" and never "sadašnji tekst".
+    //
+    // Active in the sense that it is the one he can write in: a version is
+    // read-only, which the dialog already says without words — no caret,
+    // nothing to type into. The word names that difference rather than merely
+    // pointing at whichever text is on screen.
+    //
+    // "Tvoj" distinguishes nothing, since every text in the app is his.
+    // "Sadašnji" names a moment rather than a role, so it stops working the
+    // moment one is replaced: "prethodni aktivni tekst" reads, "prethodni
+    // sadašnji tekst" does not.
     // Only ever on a copy that opened differently from the way the text opens
     // now, where it is the whole reason he would pick that row.
     versionWasCalled: (title: string) => `Zvao se: „${title}“`,
@@ -142,10 +149,10 @@ const TEXT = {
     // has, and what he has that it never did.
     versionAdded: (text: string) => `Dodato: „${text}“`,
     versionMissing: (text: string) => `Nedostaje: „${text}“`,
-    versionsAllSame: 'Sve sačuvane verzije su iste kao sadašnji tekst.',
+    versionsAllSame: 'Sve sačuvane verzije su iste kao aktivni tekst.',
     versionsBack: 'Nazad na verzije',
     versionRestore: 'Vrati ovaj tekst',
-    versionMarked: 'Podebljano je ono što u sadašnjem tekstu više ne postoji.',
+    versionMarked: 'Podebljano je ono što u aktivnom tekstu više ne postoji.',
     noteDeleted: 'Tekst je obrisan',
     emptiedHint: 'Tekst je prazan. Obriši ga ako ti više ne treba.',
   },
@@ -246,10 +253,10 @@ const TEXT = {
     versionWasCalled: (title: string) => `Was called: “${title}”`,
     versionAdded: (text: string) => `Extra: “${text}”`,
     versionMissing: (text: string) => `Missing: “${text}”`,
-    versionsAllSame: 'Every copy kept is the same as the current text.',
+    versionsAllSame: 'Every copy kept is the same as the active text.',
     versionsBack: 'Back to versions',
     versionRestore: 'Bring this text back',
-    versionMarked: 'What is in bold is no longer in the current text.',
+    versionMarked: 'What is in bold is no longer in the active text.',
     noteDeleted: 'Text deleted',
     emptiedHint: 'This text is empty. Delete it if you no longer need it.',
   },
