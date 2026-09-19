@@ -249,10 +249,11 @@
         only 11px of it is painted, and he is aiming with an unsteady hand on a
         trackpad. Thin scrollbars are a young person's affordance.
 
-        Pale on purpose, and darker was tried and turned down. It sits at about
-        1.5:1 against the page, which is under what a control is usually asked
-        to hold — but it is furniture beside his writing rather than something
-        he reads, and the arrows below carry the job of being findable.
+        Wider, but no darker: the thumb sits at about 1.5:1 against the page,
+        under what a control is usually asked to hold. Darkening it to clear
+        3:1 was tried and turned down, and so were arrows at the ends of the
+        track. Width is the part of this he can use; the rest was noise beside
+        his writing.
       */
       ::-webkit-scrollbar {
         width: var(--scrollbar);
@@ -463,69 +464,10 @@
         color: var(--ink);
       }
 
-      /* Only here so the arrows have something to be positioned against. */
-      #list-area {
-        position: relative;
-        flex: 1;
-        min-height: 0;
-        display: flex;
-      }
-
       #list {
         flex: 1;
         overflow-y: auto;
         padding-bottom: 2rem;
-      }
-
-      /*
-        Over the ends of the bar rather than beside it: the very top and bottom
-        of a track are the least useful part of it, since a press there moves
-        him almost nowhere anyway.
-
-        Square, the width of the bar, and quiet until he reaches for them — the
-        same three states every other button in the app has, which is the whole
-        reason for drawing them rather than leaving them to Chromium.
-      */
-      .scroll-arrow {
-        position: absolute;
-        right: 0;
-        z-index: 3;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: var(--scrollbar);
-        height: var(--scrollbar);
-        padding: 0;
-        border: 0;
-        border-radius: 0;
-        background: none;
-        color: var(--quiet);
-      }
-
-      .scroll-arrow[hidden] {
-        display: none;
-      }
-
-      .scroll-arrow svg {
-        width: 12px;
-        height: 12px;
-      }
-
-      .scroll-arrow:hover {
-        background: var(--wash);
-        color: var(--ink);
-      }
-
-      .scroll-arrow:active {
-        background: var(--wash-firm);
-      }
-
-      .scroll-arrow-up {
-        top: 0;
-      }
-
-      .scroll-arrow-down {
-        bottom: 0;
       }
 
       /*
@@ -1581,9 +1523,7 @@
         <div id="search-row">
           <input id="search" type="search" autocomplete="off" />
         </div>
-        <div id="list-area">
-          <div id="list"></div>
-        </div>
+        <div id="list"></div>
       </div>
       <div id="deleted-block" hidden>
         <span id="deleted-block-label"></span>

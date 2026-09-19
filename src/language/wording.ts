@@ -115,8 +115,6 @@ const TEXT = {
     notRestored: 'Tekst nije vraćen',
     notDestroyed: 'Tekst nije uništen',
 
-    scrollUp: 'Nagore',
-    scrollDown: 'Nadole',
     versions: 'Ranije verzije',
     versionsTitle: (title: string) => `Ranije verzije: ${title}`,
     versionsNote: 'Ovako je tekst izgledao ranije. Izaberi kad, pa ga vrati ako hoćeš.',
@@ -216,8 +214,6 @@ const TEXT = {
     notRestored: 'Text not brought back',
     notDestroyed: 'Text not destroyed',
 
-    scrollUp: 'Up',
-    scrollDown: 'Down',
     versions: 'Earlier versions',
     versionsTitle: (title: string) => `Earlier versions: ${title}`,
     versionsNote: 'This is how the text looked before. Pick when, then bring it back if you want.',
