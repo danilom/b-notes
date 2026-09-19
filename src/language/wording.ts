@@ -79,14 +79,18 @@ const TEXT = {
     // Lower case, like the times in his list beside it: juce, pre 5 minuta.
     deletedWhen: (when: string) => `obrisano ${when}`,
     /*
-      What is kept beside it, not a claim about what he is looking at: the file
+      What is kept beside it, not a claim about what he is reading: the file
       matches the newest version only when he emptied the text before deleting
-      it, and not when he emptied it, wrote something else and deleted that.
-      "Ima" takes the same form for all three counts, which keeps the sentence
-      to one inflection instead of two.
+      it, and not when he emptied it, wrote something else and deleted that. So
+      no "jos" — with a text he emptied, the copy kept of it is word for word
+      what is on the screen, and calling it one more would be a small lie.
+
+      The verb is counted too, not only the thing: one version exists, two
+      versions exist, five of them exists again.
     */
     deletedVersions: (n: number) =>
-      `Ima i ${n} ${plural(n, 'raniju verziju', 'ranije verzije', 'ranijih verzija')} ovog teksta.`,
+      `${plural(n, 'Postoji', 'Postoje', 'Postoji')} ${n} ` +
+      `${plural(n, 'ranija verzija', 'ranije verzije', 'ranijih verzija')} ovog teksta.`,
     deletedMatching: (n: number, query: string) =>
       `${n} ${plural(n, 'obrisan tekst sadrži', 'obrisana teksta sadrže', 'obrisanih tekstova sadrži')} „${query}“`,
     showAll: 'Prikaži sve',
@@ -175,7 +179,7 @@ const TEXT = {
     deletedEmpty: 'There is nothing in this text.',
     deletedWhen: (when: string) => `deleted ${when}`,
     deletedVersions: (n: number) =>
-      `There ${n === 1 ? 'is' : 'are'} also ${n} earlier version${n === 1 ? '' : 's'} of this text.`,
+      `There ${n === 1 ? 'is' : 'are'} ${n} earlier version${n === 1 ? '' : 's'} of this text.`,
     deletedMatching: (n: number, query: string) =>
       `${n} deleted text${n === 1 ? '' : 's'} contain${n === 1 ? 's' : ''} “${query}”`,
     showAll: 'Show all',

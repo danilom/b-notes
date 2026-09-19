@@ -255,7 +255,13 @@ export function openDeletedDialog(
     });
 
     footer.append(forever, back, toList);
-    panel.replaceChildren(header, alsoKept, body, footer);
+    // One box at his measure holding both, so the line above the text starts
+    // where the text starts.
+    const column = document.createElement('div');
+    column.className = 'deleted-body';
+    column.append(alsoKept, body);
+
+    panel.replaceChildren(header, column, footer);
     back.focus();
   }
 
