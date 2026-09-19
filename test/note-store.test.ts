@@ -462,6 +462,81 @@ describe('converting to plain text', () => {
   });
 });
 
+describe('a deleted text he had emptied first', () => {
+  /** Writes it, empties it so a copy is kept, and puts it away. */
+  async function emptiedAndDeleted(store: ReturnType<typeof createNoteStore>): Promise<string> {
+    const id = await store.save(null, 'O zimi\n\nSve sto je napisao o zimi.');
+    await store.save(id, '');
+    await store.moveToDeleted(id ?? '');
+    return id ?? '';
+  }
+
+  it('is listed by what he wrote, not by the husk he left', async () => {
+    // Five rows reading "Bez naslova" over forty thousand characters of his
+    // writing is what this exists to stop.
+    const { store } = await emptyStore();
+    await emptiedAndDeleted(store);
+
+    const [put] = await store.listDeleted();
+    assert.equal(put?.title, 'O zimi');
+    assert.equal(put?.text, 'O zimi\n\nSve sto je napisao o zimi.');
+    assert.equal(put?.fromVersion, true);
+  });
+
+  it('can be searched for by words that are only in the kept copy', async () => {
+    const { store } = await emptyStore();
+    await emptiedAndDeleted(store);
+
+    const [put] = await store.listDeleted();
+    assert.ok(put?.searchable.includes('napisao'), 'the kept copy is what gets searched');
+  });
+
+  it('comes back as the writing, not as the empty page', async () => {
+    const { store } = await emptyStore();
+    const id = await emptiedAndDeleted(store);
+
+    const back = await store.restore(id);
+
+    assert.equal(await store.read(back), 'O zimi\n\nSve sto je napisao o zimi.');
+  });
+
+  it('keeps the copy it came from, rather than spending it', async () => {
+    const { dir, store } = await emptyStore();
+    const id = await emptiedAndDeleted(store);
+
+    const back = await store.restore(id);
+
+    assert.equal((await readdir(path.join(dir, VERSIONS_FOLDER, back))).length, 1);
+  });
+
+  it('reads as empty when there is nothing kept of it either', async () => {
+    // Put straight into the folder, because nothing in the app can produce one
+    // of these any more — an empty text with no copy is removed rather than
+    // filed. They arrive only from what was already there when the app found
+    // his writing.
+    const { dir, store } = await emptyStore();
+    await mkdir(path.join(dir, DELETED_FOLDER), { recursive: true });
+    await writeFile(path.join(dir, DELETED_FOLDER, 'Bez naslova.txt'), '', 'utf8');
+
+    const [put] = await store.listDeleted();
+    assert.equal(put?.text, '');
+    assert.equal(put?.fromVersion, false);
+    assert.equal(put?.versions, 0);
+  });
+
+  it('shows the file when there is one, whatever was kept beside it', async () => {
+    const { store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nPrvi tekst.');
+    await store.save(id, '');
+    const again = await store.save(id, 'O zimi\n\nDrugi tekst.');
+    await store.moveToDeleted(again ?? '');
+
+    const [put] = await store.listDeleted();
+    assert.equal(put?.text, 'O zimi\n\nDrugi tekst.');
+    assert.equal(put?.fromVersion, false);
+  });
+});
+
 describe('destroying one for good', () => {
   it('takes the text and every copy of it that was kept', async () => {
     const { dir, store } = await emptyStore();

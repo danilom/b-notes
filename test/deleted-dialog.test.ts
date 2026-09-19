@@ -11,6 +11,7 @@ const noteOf = (text: string, title: string, versions = 0) => ({
   updatedAt: 0,
   bytes: text.length,
   versions,
+  fromVersion: false,
 });
 
 describe('the line under a deleted text', () => {

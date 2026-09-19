@@ -82,6 +82,36 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
   const newestFirst = (first: Note, second: Note): number => second.updatedAt - first.updatedAt;
 
   /**
+   * What he would get back if he brought this deleted note home.
+   *
+   * The file when there is anything in it. When there isn't, the newest kept
+   * version — the state the text was in just before he emptied it — because
+   * that is what he means by the text, and the husk is an accident of how he
+   * deleted it. Versions are named for the moment they were taken, so the last
+   * one by name is the last one there was.
+   */
+  async function whatComesBack(
+    id: string,
+    file: FileInfo,
+  ): Promise<{ note: Note; versions: number; fromVersion: boolean }> {
+    const note = await noteFrom(id, file);
+    const kept = (await files.list(at(putAwayVersionsFolderFor(id))).catch(() => [])).sort(
+      (first, second) => nameOf(first.path).localeCompare(nameOf(second.path)),
+    );
+    const newest = kept.at(-1);
+
+    if (!isEmptyText(note.text) || newest === undefined) {
+      return { note, versions: kept.length, fromVersion: false };
+    }
+
+    // A version that cannot be read leaves the husk showing. Losing the writing
+    // from the row is bad; losing the row is worse.
+    const recovered = await noteFrom(id, { ...newest, updatedAt: file.updatedAt }).catch(() => null);
+    if (recovered === null) return { note, versions: kept.length, fromVersion: false };
+    return { note: recovered, versions: kept.length, fromVersion: true };
+  }
+
+  /**
    * Keeps one earlier version of a note.
    *
    * Named for the moment it was taken, and never overwriting one already there
@@ -171,10 +201,8 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
     async listDeleted(): Promise<DeletedNote[]> {
       const notes = await Promise.all(
         [...(await noteFiles(at(DELETED_FOLDER)))].map(async ([id, file]): Promise<DeletedNote> => {
-          // Counted, not read: how many there are decides how hard it should be
-          // to destroy this, and that question does not need their contents.
-          const kept = await files.list(at(putAwayVersionsFolderFor(id))).catch(() => []);
-          return { ...(await noteFrom(id, file)), versions: kept.length };
+          const { note, versions, fromVersion } = await whatComesBack(id, file);
+          return { ...note, versions, fromVersion };
         }),
       );
       // By when he last worked on them, not when he put them away — nothing
@@ -271,11 +299,21 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
       const file = (await noteFiles(at(DELETED_FOLDER))).get(requireNoteId(id));
       if (file === undefined) throw new Error(`No such deleted note: ${id}`);
 
+      // Read before the move, while it is still where it was put away.
+      const coming = await whatComesBack(requireNoteId(id), file);
+
       // He may have written something new under the same opening words while
       // this one was away. It comes back as "Naslov (1)" rather than refusing,
       // because a text he asked for and did not get is the worse surprise.
       const back = nextFreeId(baseOf(id), null, new Set((await noteFiles()).keys()));
       await files.rename(file.path, at(`${back}${EXTENSION}`));
+
+      // What he gets is what the dialog showed him: for a text he emptied
+      // before deleting, the writing rather than the husk it left. The version
+      // it came from travels back too and is not spent — throwing away the only
+      // copy at the moment of recovery is the opposite of the point.
+      if (coming.fromVersion) await files.write(at(`${back}${EXTENSION}`), coming.note.text);
+
       await moveVersions(putAwayVersionsFolderFor(id), versionsFolderFor(back));
       return back;
     },

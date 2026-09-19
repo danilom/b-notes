@@ -25,14 +25,22 @@ export interface Note {
  * `localStorage` during UI work.
  */
 /**
- * A note he has put away, and how much of it there is to lose.
+ * A note he has put away, and what bringing it back would give him.
  *
- * `versions` is the part the row cannot show him: a text he emptied before
- * deleting is zero bytes on disk with everything he wrote kept beside it, so
- * the size of the file says nothing about what destroying it would cost.
+ * `text` here is not what is in the file — it is what he would get back. For a
+ * text he emptied before deleting, the file is a husk and everything he wrote
+ * is in the newest kept version, so that is what this carries, along with the
+ * title and the searchable form built from it. Anything else would mean five
+ * rows reading "Bez naslova" over forty thousand characters of his writing,
+ * and a search that cannot find any of them.
+ *
+ * `versions` is what decides how hard it should be to destroy: the size of the
+ * file says nothing about that when the file is a husk.
  */
 export interface DeletedNote extends Note {
   versions: number;
+  /** Whether `text` came from a kept version rather than from the file. */
+  fromVersion: boolean;
 }
 
 export interface NoteStore {
