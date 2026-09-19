@@ -264,7 +264,7 @@ window.addEventListener('resize', () => {
 });
 
 function showStatus(): void {
-  deleteNote.hidden = openId === null;
+  deleteNote.disabled = openId === null;
 
   /*
     Only once the empty state has settled. Selecting everything and typing over
@@ -513,7 +513,7 @@ function askToDelete(): void {
       // The same word the list and the deleted dialog use for a text with
       // nothing at the top of it, rather than a heading with a hole in it.
       title: words.deleteTitle(note.title.length > 0 ? note.title : words.untitled),
-      body: words.deleteBody,
+      body: isEmptyText(note.text) ? words.deleteEmptyBody : words.deleteBody,
       confirm: words.deleteKeep,
       onConfirm: () => {
         close();
@@ -550,6 +550,9 @@ async function deleteOpenNote(id: string): Promise<void> {
   // that was the thing he asked for.
   notice = words.noteDeleted;
   showStatus();
+  // Where he is most likely to be going next, and somewhere for the keyboard to
+  // land: the button he pressed has just gone inert under his finger.
+  search.focus();
   log.info('Put a text away', { id });
 }
 
