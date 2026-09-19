@@ -462,6 +462,78 @@ describe('converting to plain text', () => {
   });
 });
 
+describe('bringing a text back', () => {
+  it('lists what he has put away, newest first', async () => {
+    const { store } = await emptyStore();
+    const first = await store.save(null, 'O zimi\n\nPrvi.');
+    const second = await store.save(null, 'O jeseni\n\nDrugi.');
+    await store.moveToDeleted(first ?? '');
+    await store.moveToDeleted(second ?? '');
+
+    assert.deepEqual((await store.listDeleted()).map((note) => note.title), ['O jeseni', 'O zimi']);
+  });
+
+  it('shows him what a deleted text said, so he can tell which one it is', async () => {
+    const { store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nSve sto je napisao.');
+    await store.moveToDeleted(id ?? '');
+
+    const [put] = await store.listDeleted();
+    assert.equal(put?.text, 'O zimi\n\nSve sto je napisao.');
+  });
+
+  it('keeps them out of the list of his writing', async () => {
+    const { store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nTekst.');
+    await store.moveToDeleted(id ?? '');
+
+    assert.deepEqual(await store.list(), []);
+  });
+
+  it('puts one back where he can find it', async () => {
+    const { store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nTekst.');
+    await store.moveToDeleted(id ?? '');
+
+    const back = await store.restore(id ?? '');
+
+    assert.equal(back, 'O zimi');
+    assert.equal(await store.read(back), 'O zimi\n\nTekst.');
+    assert.deepEqual(await store.listDeleted(), []);
+  });
+
+  it('does not overwrite a text he has written since, under the same name', async () => {
+    const { store } = await emptyStore();
+    const first = await store.save(null, 'O zimi\n\nStari tekst.');
+    await store.moveToDeleted(first ?? '');
+    await store.save(null, 'O zimi\n\nNovi tekst.');
+
+    const back = await store.restore(first ?? '');
+
+    assert.equal(back, 'O zimi (1)');
+    assert.equal(await store.read('O zimi'), 'O zimi\n\nNovi tekst.');
+    assert.equal(await store.read(back), 'O zimi\n\nStari tekst.');
+  });
+
+  it('brings its earlier versions back with it', async () => {
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nTekst.');
+    await store.save(id, '');
+    await store.moveToDeleted(id ?? '');
+
+    const back = await store.restore(id ?? '');
+
+    assert.equal((await readdir(path.join(dir, VERSIONS_FOLDER, back))).length, 1);
+    await assert.rejects(() => readdir(path.join(dir, VERSIONS_FOLDER, DELETED_FOLDER, back)));
+  });
+
+  it('refuses an id that points outside the deleted folder', async () => {
+    const { store } = await emptyStore();
+
+    await assert.rejects(() => store.restore('../../secrets'));
+  });
+});
+
 describe('how long a path the naming can make', () => {
   /*
     Windows refuses a path over 260 characters, and the half of it we do not

@@ -44,11 +44,26 @@ export interface NoteStore {
   save(id: string | null, text: string): Promise<string | null>;
   /** Puts a note out of the way without destroying it. */
   moveToDeleted(id: string): Promise<void>;
+  /**
+   * Everything he has put away, newest first. Text included, same as `list`:
+   * the dialog shows him what a deleted text said before he decides.
+   */
+  listDeleted(): Promise<Note[]>;
+  /**
+   * Brings one back, and returns the id it came back under — which differs from
+   * the one asked for when he has since written something with the same title.
+   */
+  restore(id: string): Promise<string>;
 }
 
 /**
- * Clearing the text is how he deletes — he never found Resoph's delete command,
- * and his corpus carries dozens of emptied files still sitting in the list.
+ * Whether there is nothing left in a note.
+ *
+ * Not the same as him deleting it, though it used to be read that way here. His
+ * old archive turned out to hold 95 texts he had deliberately put in the trash,
+ * against 8 emptied ones still sitting in the list — so he knows how to delete
+ * and does, and emptying is more often him clearing a page than throwing it
+ * away.
  */
 export function isEmptied(note: Note): boolean {
   return isEmptyText(note.text);

@@ -1,5 +1,6 @@
 import type { FileInfo, FileSystem } from '../platform/file-system.ts';
 import {
+  baseOf,
   DELETED_FOLDER,
   EXTENSION,
   idOf,
@@ -53,15 +54,32 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
    * Every note's id and the file it lives in. One extension, so an id can only
    * ever name one file.
    */
-  async function noteFiles(): Promise<Map<string, FileInfo>> {
+  async function noteFiles(from: string = folder): Promise<Map<string, FileInfo>> {
     const byId = new Map<string, FileInfo>();
-    for (const file of await files.list(folder)) {
+    for (const file of await files.list(from)) {
       const name = nameOf(file.path);
       if (!isNoteFile(name) || isConflictedCopy(name)) continue;
       byId.set(idOf(name), file);
     }
     return byId;
   }
+
+  /** Everything about a note that the app works with, read off one file. */
+  async function noteFrom(id: string, file: FileInfo): Promise<Note> {
+    const text = asWritten(await files.read(file.path));
+    return {
+      id,
+      // From the text, not the name: the name is sanitised and may carry a
+      // disambiguating suffix he never wrote.
+      title: titleFrom(text),
+      text,
+      searchable: toSearchable(text),
+      updatedAt: file.updatedAt,
+      bytes: file.bytes,
+    };
+  }
+
+  const newestFirst = (first: Note, second: Note): number => second.updatedAt - first.updatedAt;
 
   /**
    * Keeps one earlier version of a note.
@@ -83,20 +101,15 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
    * File by file because moving a folder is not something the filesystem here
    * promises to do. The folder it would otherwise leave behind is empty but not
    * harmless: a folder named after one of his texts, sitting there with nothing
-   * in it, says something of his went missing. The same goes for a note that
-   * never had a version — asking what is in a folder creates it on disk, so
-   * this tidies up after the question as well as the answer.
+   * in it, says something of his went missing.
    */
-  async function moveVersions(id: string, putAwayAs: string): Promise<void> {
-    const from = versionsFolderFor(id);
-    const to = putAwayVersionsFolderFor(putAwayAs);
+  async function moveVersions(from: string, to: string): Promise<void> {
     for (const file of await files.list(at(from)).catch(() => [])) {
       await files.rename(file.path, at(to, nameOf(file.path)));
     }
     await files.removeEmptyFolder(at(from));
-    // And the folder above it, which the same question created. It stays as
-    // soon as any note has a version to keep, so this only ever clears away a
-    // "verzije" that never held anything.
+    // And the folder above it, so a "verzije" that never held anything does not
+    // sit beside his writing. It stays as soon as any note has a version kept.
     await files.removeEmptyFolder(at(VERSIONS_FOLDER));
   }
 
@@ -151,23 +164,17 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
     },
 
     async list(): Promise<Note[]> {
-      const notes = await Promise.all(
-        [...(await noteFiles())].map(async ([id, file]): Promise<Note> => {
-          const text = asWritten(await files.read(file.path));
-          return {
-            id,
-            // From the text, not the name: the name is sanitised and may carry a
-            // disambiguating suffix he never wrote.
-            title: titleFrom(text),
-            text,
-            searchable: toSearchable(text),
-            updatedAt: file.updatedAt,
-            bytes: file.bytes,
-          };
-        }),
-      );
+      const notes = await Promise.all([...(await noteFiles())].map(([id, file]) => noteFrom(id, file)));
+      return notes.sort(newestFirst);
+    },
 
-      return notes.sort((first, second) => second.updatedAt - first.updatedAt);
+    async listDeleted(): Promise<Note[]> {
+      const notes = await Promise.all(
+        [...(await noteFiles(at(DELETED_FOLDER)))].map(([id, file]) => noteFrom(id, file)),
+      );
+      // Newest first here means most recently put away, which is the order he
+      // will want them in: what he just lost is what he is looking for.
+      return notes.sort(newestFirst);
     },
 
     async read(id: string): Promise<string> {
@@ -213,7 +220,20 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
       // Its history follows it, under the name it was put away as. Left where
       // it was, the next note he happens to give the same title would inherit
       // a dead note's versions.
-      await moveVersions(id, name);
+      await moveVersions(versionsFolderFor(id), putAwayVersionsFolderFor(name));
+    },
+
+    async restore(id: string): Promise<string> {
+      const file = (await noteFiles(at(DELETED_FOLDER))).get(requireNoteId(id));
+      if (file === undefined) throw new Error(`No such deleted note: ${id}`);
+
+      // He may have written something new under the same opening words while
+      // this one was away. It comes back as "Naslov (1)" rather than refusing,
+      // because a text he asked for and did not get is the worse surprise.
+      const back = nextFreeId(baseOf(id), null, new Set((await noteFiles()).keys()));
+      await files.rename(file.path, at(`${back}${EXTENSION}`));
+      await moveVersions(putAwayVersionsFolderFor(id), versionsFolderFor(back));
+      return back;
     },
   };
 }

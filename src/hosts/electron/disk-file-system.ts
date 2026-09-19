@@ -14,8 +14,13 @@ const WRITING_SUFFIX = '.saving';
 export function createFileSystem(): FileSystem {
   return {
     async list(folder: string): Promise<FileInfo[]> {
-      await mkdir(folder, { recursive: true });
-      const entries = await readdir(folder, { withFileTypes: true });
+      // A missing folder is an empty one. His writing folder comes into being
+      // on the first save, which mkdirs on the way, so nothing needs it made
+      // early — and the app asks about folders it would rather not create.
+      const entries = await readdir(folder, { withFileTypes: true }).catch((error: unknown) => {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+        throw error;
+      });
 
       return Promise.all(
         entries

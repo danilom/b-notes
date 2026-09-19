@@ -21,7 +21,11 @@ export interface FileInfo {
 }
 
 export interface FileSystem {
-  /** Files directly inside `folder`. Subfolders aren't listed. */
+  /**
+   * Files directly inside `folder`. Subfolders aren't listed, and a folder that
+   * isn't there is empty rather than an error — asking what is somewhere must
+   * not bring it into being, or every question leaves a folder behind.
+   */
   list(folder: string): Promise<FileInfo[]>;
   read(path: string): Promise<string>;
   /** Must not be able to leave a half-written file behind. */
