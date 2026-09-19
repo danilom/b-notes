@@ -1,4 +1,5 @@
 import type { Note } from '../notes/note.ts';
+import { toSearchable } from '../language/diacritics.ts';
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 
 /** How many recent texts to offer before he has to look for himself. */
@@ -31,7 +32,8 @@ export interface Draft {
 export interface Row {
   id: string | null;
   title: string;
-  text: string;
+  /** Folded, so `macka` finds `mačka` and `mačka` finds `macka`. */
+  searchable: string;
   updatedAt: number;
 }
 
@@ -43,20 +45,23 @@ export interface Section {
 }
 
 /**
- * Matching ignores case. It deliberately does not yet ignore diacritics, which
- * he uses inconsistently — that's a known gap, tracked in TODO.md.
+ * Matching ignores case and diacritics alike.
+ *
+ * Both sides are already folded — his text when it was loaded, the query here —
+ * so this is a plain comparison of plain strings, which is why searching got
+ * quicker rather than slower when diacritics stopped mattering.
  */
-export function matches(row: { text: string }, query: string): boolean {
-  const needle = query.trim().toLowerCase();
+export function matches(row: { searchable: string }, query: string): boolean {
+  const needle = toSearchable(query.trim());
   if (needle.length === 0) return true;
-  return row.text.toLowerCase().includes(needle);
+  return row.searchable.includes(needle);
 }
 
 function toRow(note: Note, words: ReturnType<typeof strings>): Row {
   return {
     id: note.id,
     title: note.title.length > 0 ? note.title : words.untitled,
-    text: note.text,
+    searchable: note.searchable,
     updatedAt: note.updatedAt,
   };
 }
@@ -97,7 +102,7 @@ function rowsFor(view: ListView): Row[] {
 export function openRowFor(view: ListView): Row | null {
   const words = strings(view.language);
   if (view.draft !== null) {
-    return { id: null, title: words.untitledNew, text: '', updatedAt: view.draft.startedAt };
+    return { id: null, title: words.untitledNew, searchable: '', updatedAt: view.draft.startedAt };
   }
 
   const buried = buriedOpenId(view);

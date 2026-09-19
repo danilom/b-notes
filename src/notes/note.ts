@@ -4,6 +4,15 @@ export interface Note {
   /** Built from the start of his text; there is no title anywhere else. */
   title: string;
   text: string;
+  /**
+   * The same text, lower case and without diacritics, ready to be searched.
+   *
+   * Kept rather than worked out when he types, because he drops diacritics
+   * inconsistently and a search has to fold both sides to find his own writing.
+   * Folding six hundred texts costs a tenth of a second once; folding them on
+   * every letter he types costs that on every letter.
+   */
+  searchable: string;
   updatedAt: number;
   bytes: number;
 }

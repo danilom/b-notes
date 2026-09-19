@@ -10,6 +10,7 @@ import {
   requireNoteId,
 } from './note-naming.ts';
 import { deletedIdFor, planSave } from './note-saving.ts';
+import { toSearchable } from '../language/diacritics.ts';
 import { titleFrom } from './note-title.ts';
 import type { Note, NoteStore } from './note.ts';
 
@@ -100,6 +101,7 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
             // disambiguating suffix he never wrote.
             title: titleFrom(text),
             text,
+            searchable: toSearchable(text),
             updatedAt: file.updatedAt,
             bytes: file.bytes,
           };

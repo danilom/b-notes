@@ -1,3 +1,5 @@
+import { toSearchable } from '../language/diacritics.ts';
+
 /** Where in his text a search found something. */
 export interface TextMatch {
   readonly start: number;
@@ -17,17 +19,20 @@ const MOST_MARKS = 500;
 /**
  * Every place the query appears in the text, ignoring case.
  *
- * Matched the same way the list matches, so what is marked in his writing and
- * what was found in the list can never disagree. Diacritics are not folded
- * here either; when they are, both will fold together.
+ * Matched the same way the list matches — same case folding, same diacritics —
+ * so what is marked in his writing and what was found in the list can never
+ * disagree. The folding is one character for one, so these offsets are offsets
+ * into the text he can see.
  *
  * @returns matches in the order they appear, never overlapping.
  */
 export function matchesIn(text: string, query: string): TextMatch[] {
-  const needle = query.trim().toLowerCase();
+  const needle = toSearchable(query.trim());
   if (needle.length === 0) return [];
 
-  const haystack = text.toLowerCase();
+  // Folded here rather than taken from the note: what he is looking at may have
+  // words in it he hasn't finished typing, let alone saved.
+  const haystack = toSearchable(text);
   const found: TextMatch[] = [];
   let at = haystack.indexOf(needle);
 

@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { toSearchable } from '../src/language/diacritics.ts';
 import type { Note } from '../src/notes/note.ts';
 import { type ListView, openRowFor, sectionsFor } from '../src/ui/note-list.ts';
 
 function note(title: string, text: string, updatedAt: number): Note {
-  return { id: title, title, text, updatedAt, bytes: text.length };
+  return { id: title, title, text, searchable: toSearchable(text), updatedAt, bytes: text.length };
 }
 
 const NOTES = [
@@ -71,6 +72,26 @@ describe('the list of texts', () => {
     const sections = sectionsFor(searching);
     assert.deepEqual(titlesIn(sections, 'Pronađeni'), []);
     assert.deepEqual(titlesIn(sections, 'Svi tekstovi'), ['Amsterdam', 'Ponta', 'Zima']);
+  });
+
+  it('finds his writing whether or not either side has the accents', () => {
+    const accented = [
+      note('Mačka', 'Mačka je na krovu', 5000),
+      note('Macka', 'Macka je na krovu', 4000),
+    ];
+    for (const query of ['macka', 'mačka', 'MAČKA']) {
+      const sections = sectionsFor({ ...view(), notes: accented, query });
+      assert.deepEqual(titlesIn(sections, 'Pronađeni'), ['Mačka', 'Macka'], `for ${query}`);
+    }
+  });
+
+  it('finds every spelling of a word he writes four different ways', () => {
+    const spellings = ['čičak', 'cičak', 'čicak', 'cicak'];
+    const notes = spellings.map((word, i) => note(word, `Ovdje je ${word} u tekstu`, 9000 - i));
+    for (const query of spellings) {
+      const sections = sectionsFor({ ...view(), notes, query });
+      assert.equal(titlesIn(sections, 'Pronađeni')?.length, 4, `for ${query}`);
+    }
   });
 
   it('keeps every text somewhere when nothing matches at all', () => {
