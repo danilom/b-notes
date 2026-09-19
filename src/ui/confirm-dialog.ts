@@ -82,6 +82,9 @@ function phraseFor(
   affirmative.disabled = true;
   box.addEventListener('input', () => {
     affirmative.disabled = !written();
+    // The word turns the colour it was printed in above, so he can see he has
+    // it right without looking away at the button to check.
+    box.classList.toggle('written', written());
   });
   // Enter only once the word is there, which is the point at which pressing it
   // has stopped being a reflex.

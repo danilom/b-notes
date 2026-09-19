@@ -211,6 +211,13 @@ export function openDeletedDialog(
     // A plain block, not a textarea he cannot type into: there is no caret to
     // put in it, so nothing suggests it would take his typing. Selecting still
     // works, which is his way out if what he wants is one paragraph of it.
+    // What else is kept of it. Above the text, because it is about the writing
+    // rather than about the dialog, and silent when there is nothing to say.
+    const alsoKept = document.createElement('p');
+    alsoKept.className = 'deleted-versions';
+    alsoKept.textContent = words.deletedVersions(note.versions);
+    alsoKept.hidden = note.versions === 0;
+
     const body = document.createElement('div');
     if (note.text.trim().length === 0) {
       body.className = 'deleted-text deleted-text-empty';
@@ -248,7 +255,7 @@ export function openDeletedDialog(
     });
 
     footer.append(forever, back, toList);
-    panel.replaceChildren(header, body, footer);
+    panel.replaceChildren(header, alsoKept, body, footer);
     back.focus();
   }
 

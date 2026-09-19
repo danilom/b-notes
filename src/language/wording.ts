@@ -78,6 +78,15 @@ const TEXT = {
     deletedEmpty: 'U ovom tekstu nema ništa.',
     // Lower case, like the times in his list beside it: juce, pre 5 minuta.
     deletedWhen: (when: string) => `obrisano ${when}`,
+    /*
+      What is kept beside it, not a claim about what he is looking at: the file
+      matches the newest version only when he emptied the text before deleting
+      it, and not when he emptied it, wrote something else and deleted that.
+      "Ima" takes the same form for all three counts, which keeps the sentence
+      to one inflection instead of two.
+    */
+    deletedVersions: (n: number) =>
+      `Ima i ${n} ${plural(n, 'raniju verziju', 'ranije verzije', 'ranijih verzija')} ovog teksta.`,
     deletedMatching: (n: number, query: string) =>
       `${n} ${plural(n, 'obrisan tekst sadrži', 'obrisana teksta sadrže', 'obrisanih tekstova sadrži')} „${query}“`,
     showAll: 'Prikaži sve',
@@ -165,6 +174,8 @@ const TEXT = {
     deletedPreviewHelp: 'You can only read here. Bring the text back if you want to change it.',
     deletedEmpty: 'There is nothing in this text.',
     deletedWhen: (when: string) => `deleted ${when}`,
+    deletedVersions: (n: number) =>
+      `There ${n === 1 ? 'is' : 'are'} also ${n} earlier version${n === 1 ? '' : 's'} of this text.`,
     deletedMatching: (n: number, query: string) =>
       `${n} deleted text${n === 1 ? '' : 's'} contain${n === 1 ? 's' : ''} “${query}”`,
     showAll: 'Show all',
