@@ -124,17 +124,24 @@ const TEXT = {
     // what he has now tells him whether opening it would get anything back.
     versionSize: (words: number, difference: number) => {
       const count = `${words.toLocaleString('sr-RS')} ${plural(words, 'reč', 'reči', 'reči')}`;
-      if (difference === 0) return `${count} (isto kao sada)`;
+      // The same count says nothing about whether it is the same writing, and
+      // the two lines under it are about to say what changed. A number that
+      // only means "no answer here" is worse than no number.
+      if (difference === 0) return count;
       const by = Math.abs(difference).toLocaleString('sr-RS');
       return `${count} (${by} ${difference > 0 ? 'više' : 'manje'} nego sada)`;
     },
     // Only ever on a copy that opened differently from the way the text opens
     // now, where it is the whole reason he would pick that row.
     versionWasCalled: (title: string) => `Zvao se: „${title}“`,
-    versionNowMissing: (text: string) => `Nedostaje: „${text}“`,
+    // Both read as the copy against his text: what it holds on top of what he
+    // has, and what he has that it never did.
+    versionAdded: (text: string) => `Dodato: „${text}“`,
+    versionMissing: (text: string) => `Nedostaje: „${text}“`,
+    versionsAllSame: 'Sve sačuvane verzije su iste kao tvoj tekst.',
     versionsBack: 'Nazad na verzije',
     versionRestore: 'Vrati ovaj tekst',
-    versionMissing: 'Podebljano je ono što u tvom tekstu više ne postoji.',
+    versionMarked: 'Podebljano je ono što u tvom tekstu više ne postoji.',
     noteDeleted: 'Tekst je obrisan',
     emptiedHint: 'Tekst je prazan. Obriši ga ako ti više ne treba.',
   },
@@ -228,15 +235,17 @@ const TEXT = {
     versionTitle: (when: string) => `How it looked ${when}`,
     versionSize: (words: number, difference: number) => {
       const count = `${words.toLocaleString('en-GB')} word${words === 1 ? '' : 's'}`;
-      if (difference === 0) return `${count} (same as now)`;
+      if (difference === 0) return count;
       const by = Math.abs(difference).toLocaleString('en-GB');
       return `${count} (${by} ${difference > 0 ? 'more' : 'fewer'} than now)`;
     },
     versionWasCalled: (title: string) => `Was called: “${title}”`,
-    versionNowMissing: (text: string) => `Missing: “${text}”`,
+    versionAdded: (text: string) => `Extra: “${text}”`,
+    versionMissing: (text: string) => `Missing: “${text}”`,
+    versionsAllSame: 'Every copy kept is the same as your text.',
     versionsBack: 'Back to versions',
     versionRestore: 'Bring this text back',
-    versionMissing: 'What is in bold is no longer in your text.',
+    versionMarked: 'What is in bold is no longer in your text.',
     noteDeleted: 'Text deleted',
     emptiedHint: 'This text is empty. Delete it if you no longer need it.',
   },

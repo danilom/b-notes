@@ -15,6 +15,7 @@ import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
 import { openConfirmDialog } from './confirm-dialog.ts';
 import { openDeletedDialog } from './deleted-dialog.ts';
 import { openVersionsDialog } from './versions-dialog.ts';
+import { versionsWorthShowing } from './version-row.ts';
 import { confirmationForDeleting, confirmationForDestroying } from './note-confirmations.ts';
 import { readSession, writeSession } from './app-session.ts';
 import {
@@ -568,8 +569,16 @@ function showVersions(): void {
   const id = openId;
 
   void (async () => {
-    const versions = await store.listVersions(id);
-    if (versions.length === 0) return;
+    // A copy that matches his text exactly is not worth offering, and the
+    // count on the button cannot know that without reading every file, so the
+    // button can be there with nothing behind it. Saying so is better than a
+    // press that does nothing.
+    const versions = versionsWorthShowing(await store.listVersions(id), editor.value);
+    if (versions.length === 0) {
+      notice = words.versionsAllSame;
+      showStatus();
+      return;
+    }
 
     const close = openVersionsDialog(
       versionsPane,

@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import { countWords } from '../src/notes/word-count.ts';
 import { onOneLine } from '../src/ui/text-snippet.ts';
-import { describeVersion } from '../src/ui/version-row.ts';
+import { describeVersion, versionsWorthShowing } from '../src/ui/version-row.ts';
 
 const versionOf = (text: string, takenAt = 0) => ({ id: String(takenAt), takenAt, text });
 
@@ -63,22 +63,35 @@ describe('what a row in the versions list says', () => {
     assert.equal(row.size, '2 reči (2 manje nego sada)');
   });
 
-  it('says so when nothing would come back', () => {
-    const row = describeVersion(versionOf(current), current, 'O zimi', 'sr');
+  it('gives the count alone when it matches, since the same count is not the same writing', () => {
+    const row = describeVersion(versionOf('O zimi\n\nDrugi pasus.'), current, 'O zimi', 'sr');
 
-    assert.equal(row.size, '4 reči (isto kao sada)');
+    assert.equal(row.size, '4 reči');
   });
 
-  it('shows the paragraph he lost', () => {
+  it('shows the paragraph the copy holds that his text lost', () => {
     const row = describeVersion(versionOf('O zimi\n\nPrvi pasus.\n\nDrugi pasus.'), current, 'O zimi', 'sr');
 
-    assert.equal(row.missing, 'Nedostaje: „Prvi pasus.“');
+    assert.equal(row.added, 'Dodato: „Prvi pasus.“');
   });
 
-  it('shows no missing line when his text still holds all of it', () => {
+  it('offers nothing back when his text already holds all of it', () => {
     const row = describeVersion(versionOf('O zimi'), current, 'O zimi', 'sr');
 
-    assert.equal(row.missing, null);
+    assert.equal(row.added, null);
+    assert.equal(row.missing, 'Nedostaje: „Drugi pasus.“');
+  });
+
+  it('shows both directions at once, since a copy can differ in both', () => {
+    const row = describeVersion(
+      versionOf('O zimi\n\nStari pasus.'),
+      'O zimi\n\nNovi pasus.',
+      'O zimi',
+      'sr',
+    );
+
+    assert.equal(row.added, 'Dodato: „Stari pasus.“');
+    assert.equal(row.missing, 'Nedostaje: „Novi pasus.“');
   });
 
   it('stays quiet about the title while it is the one on every other row', () => {
@@ -93,15 +106,16 @@ describe('what a row in the versions list says', () => {
     assert.equal(row.wasCalled, 'Zvao se: „Pismo bratu“');
   });
 
-  it('shows nothing missing when he rewrote the whole thing, as the preview marks nothing', () => {
+  it('shows neither direction when he rewrote the whole thing, as the preview marks nothing', () => {
     // The guard the row borrows from the preview: marking every paragraph says
     // no more than marking none, so both have to agree that nothing is marked.
     const row = describeVersion(versionOf('Prvi.\n\nDrugi.'), 'Sasvim drugi tekst.', 'Sasvim', 'sr');
 
+    assert.equal(row.added, null);
     assert.equal(row.missing, null);
   });
 
-  it('does not repeat the old title as the missing paragraph', () => {
+  it('does not repeat the old title as the paragraph it would bring back', () => {
     // A changed title is its own paragraph, and so the first one gone from his
     // text — but the line above the row has already said it.
     const row = describeVersion(
@@ -112,12 +126,31 @@ describe('what a row in the versions list says', () => {
     );
 
     assert.equal(row.wasCalled, 'Zvao se: „Pismo bratu“');
-    assert.equal(row.missing, 'Nedostaje: „Prvi pasus.“');
+    assert.equal(row.added, 'Dodato: „Prvi pasus.“');
   });
 
   it('counts words in English too, with the English comparison', () => {
     const row = describeVersion(versionOf('On winter\n\nFirst one.'), 'On winter', 'On winter', 'en');
 
     assert.equal(row.size, '4 words (2 more than now)');
+  });
+});
+
+describe('which copies are worth offering him', () => {
+  const current = 'O zimi\n\nDrugi pasus.';
+
+  it('drops one that matches his text, which is what a copy he just restored is', () => {
+    const kept = [versionOf(current, 1), versionOf('O zimi\n\nStari pasus.', 2)];
+
+    assert.deepEqual(
+      versionsWorthShowing(kept, current).map((version) => version.id),
+      ['2'],
+    );
+  });
+
+  it('keeps one of the same length that says something else', () => {
+    const kept = [versionOf('O zimi\n\nDrugi tekst.', 1)];
+
+    assert.equal(versionsWorthShowing(kept, current).length, 1);
   });
 });

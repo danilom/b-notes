@@ -45,8 +45,11 @@ function rowFor(
   when.textContent = said.when;
 
   row.append(size, when);
-  if (said.wasCalled !== null) row.append(under(said.wasCalled));
-  if (said.missing !== null) row.append(under(said.missing));
+  // In the order he cares about them: what it was called, then what it would
+  // give him back, then what bringing it back would cost.
+  for (const line of [said.wasCalled, said.added, said.missing]) {
+    if (line !== null) row.append(under(line));
+  }
 
   row.addEventListener('click', () => show(version));
   return row;
@@ -165,7 +168,7 @@ export function openVersionsDialog(
 
     const aside = document.createElement('p');
     aside.className = 'review-note-aside';
-    aside.textContent = words.versionMissing;
+    aside.textContent = words.versionMarked;
     aside.hidden = !anyMissing;
 
     const column = document.createElement('div');
