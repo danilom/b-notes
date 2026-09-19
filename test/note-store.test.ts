@@ -64,11 +64,16 @@ describe('titleFrom', () => {
   });
 
   it('skips blank lines above his text', () => {
-    assert.equal(titleFrom('\n\n\nO zimi\nDalje.'), 'O zimi Dalje.');
+    assert.equal(titleFrom('\n\n\nO zimi\nDalje.'), 'O zimi');
+  });
+
+  it('stops at the end of the line he wrote, not only at a blank one', () => {
+    // One press of Enter, which is what he will actually do while writing here.
+    assert.equal(titleFrom('devojka\ntekst počinje ovde...'), 'devojka');
   });
 
   it('strips the indentation he leaves in front of it', () => {
-    assert.equal(titleFrom('      O zimi\nDalje.'), 'O zimi Dalje.');
+    assert.equal(titleFrom('      O zimi\nDalje.'), 'O zimi');
   });
 
   it('collapses runs of spaces, which he uses freely', () => {
