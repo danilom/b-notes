@@ -2,6 +2,7 @@ import { type Language, describeWhen, strings } from '../language/wording.ts';
 import type { DeletedNote } from '../notes/note.ts';
 import { icon } from './icons.ts';
 import { matches } from './note-list.ts';
+import { onOneLine } from './text-snippet.ts';
 
 /** Enough of the text to tell two similar openings apart, and no more. */
 const SNIPPET = 140;
@@ -21,7 +22,7 @@ export interface DeletedHandlers {
 export function snippetOf(note: DeletedNote): string {
   const flat = note.text.replace(/\s+/g, ' ').trim();
   const rest = flat.startsWith(note.title) ? flat.slice(note.title.length).trim() : flat;
-  return rest.length > SNIPPET ? `${rest.slice(0, SNIPPET)}…` : rest;
+  return onOneLine(rest, SNIPPET);
 }
 
 function rowFor(
