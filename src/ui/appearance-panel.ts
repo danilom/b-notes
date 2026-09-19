@@ -9,6 +9,7 @@ import {
   MODES,
   WRITING_FONTS,
   stepScale,
+  writingSampleFor,
 } from './appearance.ts';
 import { icon } from './icons.ts';
 
@@ -168,6 +169,14 @@ function scaleGroup(
   return group;
 }
 
+/** Groups narrow enough to sit side by side, so the panel stays short. */
+function row(groups: readonly HTMLElement[]): HTMLElement {
+  const line = document.createElement('div');
+  line.className = 'group-row';
+  line.append(...groups);
+  return line;
+}
+
 /**
  * One half of the panel, named for what it changes.
  *
@@ -243,8 +252,8 @@ function fill(
     words.appearanceFont,
     choicesIn(WRITING_FONTS).map((value) => ({
       value,
-      name: WRITING_FONTS[value].sample,
-      label: WRITING_FONTS[value].sample,
+      name: writingSampleFor(value),
+      label: writingSampleFor(value),
       className: 'writing-choice',
       style: {
         fontFamily: WRITING_FONTS[value].stack,
@@ -307,10 +316,13 @@ function fill(
   cancel.addEventListener('click', handlers.onCancel);
   footer.append(reset, keep, cancel);
 
+  // The app first, then his writing: the zoom multiplies the writing size, so
+  // the outer control has to be settled before the one nested inside it means
+  // anything. Setting his text first and then the zoom would change it twice.
   panel.replaceChildren(
     header,
+    half(words.appearanceApp, [fonts, row([appSize, accents]), modes]),
     half(words.appearanceWriting, [writingFonts, writingSize]),
-    half(words.appearanceApp, [fonts, appSize, accents, modes]),
     footer,
   );
   keep.focus();

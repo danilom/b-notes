@@ -585,18 +585,31 @@
         flex-direction: column;
       }
 
-      /* Deliberately large targets: his hands are not steady on a trackpad. */
+      /*
+        One height for everything in here, the same as U redu at the foot. They
+        were a third taller, which cost the panel more room than his hands ever
+        gained — and this is a dialog he visits once, not a control he hunts for
+        daily while writing.
+      */
       .choice {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
-        min-height: 2.7rem;
         padding: 0.5rem 0.85rem;
       }
 
       .zoom-row {
         align-items: center;
+        flex-wrap: nowrap;
+      }
+
+      /* Two groups on one line while they fit, stacked when they don't. */
+      .group-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0 1.6rem;
+        align-items: flex-start;
       }
 
       /* Stacked and full width: a line of prose has to be seen as a line. */
@@ -604,15 +617,17 @@
         width: 100%;
         justify-content: flex-start;
         text-align: left;
+        line-height: 1.3;
       }
 
-      /* Big square targets. These are the two buttons in the panel he is most
-         likely to press more than once, and the only ones he presses to feel
-         his way rather than to pick something. */
+      /* Square, and the same square as a colour swatch beside it. */
       .zoom-step {
-        min-width: 2.9rem;
-        font-size: 1.25em;
-        line-height: 1;
+        min-width: 2.6rem;
+        padding: 0.5rem;
+        font-size: 1.1em;
+        /* Matching the line box of every other choice, so a larger glyph
+           doesn't make the button shorter than the swatch beside it. */
+        line-height: 1.2;
       }
 
       .zoom-step:disabled {
@@ -623,9 +638,10 @@
         cursor: default;
       }
 
-      /* The only part of how the app looks that can be read out over a phone. */
+      /* The only part of how the app looks that can be read out over a phone.
+         Tabular figures so it doesn't jog sideways between 90% and 100%. */
       .zoom-reading {
-        min-width: 4rem;
+        min-width: 2.9rem;
         text-align: center;
         font-variant-numeric: tabular-nums;
         color: var(--quiet);
@@ -635,7 +651,7 @@
          eighty years, and six words would only crowd six obvious dots. */
       .colour-choice {
         padding: 0.5rem;
-        min-width: 2.7rem;
+        min-width: 2.6rem;
       }
 
       .colour-choice .swatch {

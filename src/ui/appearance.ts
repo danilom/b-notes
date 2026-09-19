@@ -130,16 +130,28 @@ export function isScale(value: unknown): value is number {
  * change how big his text is. Measured, not guessed: Verdana runs 15% larger at
  * the same pixel size.
  */
-const WRITING_SAMPLE = 'Sjećam se tog ljeta.';
+/**
+ * Shown after each face's name, set in that face.
+ *
+ * A line of ordinary speech rather than a specimen phrase: what he is judging
+ * is how a sentence of his sits on the page, and a pangram would tell him about
+ * letters he will never notice. It carries č and ć, which is what he needs to
+ * see, and it is a line he will recognise.
+ */
+const WRITING_SAMPLE = 'Kakav čoek gospodin bi bio da mu nema te mane';
 
 export const WRITING_FONTS = {
-  georgia: { stack: "Georgia, 'Times New Roman', serif", scale: 1, sample: WRITING_SAMPLE },
-  cambria: { stack: 'Cambria, Georgia, serif', scale: 1.021, sample: WRITING_SAMPLE },
-  verdana: { stack: 'Verdana, sans-serif', scale: 0.873, sample: WRITING_SAMPLE },
+  georgia: { label: 'Georgia', stack: "Georgia, 'Times New Roman', serif", scale: 1 },
+  cambria: { label: 'Cambria', stack: 'Cambria, Georgia, serif', scale: 1.021 },
+  verdana: { label: 'Verdana', stack: 'Verdana, sans-serif', scale: 0.873 },
 } as const satisfies Record<
   WritingFontChoice,
-  { stack: string; scale: number; sample: string }
+  { label: string; stack: string; scale: number }
 >;
+
+export function writingSampleFor(choice: WritingFontChoice): string {
+  return `${WRITING_FONTS[choice].label} — ${WRITING_SAMPLE}`;
+}
 
 export function isWritingFontChoice(value: unknown): value is WritingFontChoice {
   return typeof value === 'string' && Object.hasOwn(WRITING_FONTS, value);
