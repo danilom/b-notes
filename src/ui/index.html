@@ -491,6 +491,59 @@
         min-width: 0;
       }
 
+      /*
+        Said out loud rather than in the status line, because the one time he
+        needs to read it is the one time the page is blank — there is nothing
+        for it to talk over, and nothing else on screen to compete with.
+
+        It points at the button it is talking about. A sentence about a button
+        he then has to go and find is half an answer.
+      */
+      #empty-hint {
+        position: absolute;
+        right: 1rem;
+        bottom: 0.7rem;
+        z-index: 2;
+        max-width: 22rem;
+        padding: 0.7rem 0.9rem;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        color: var(--ink);
+        font-size: 0.95em;
+        line-height: 1.45;
+        box-shadow: 0 6px 20px hsl(var(--grey-h) var(--surface) var(--l-shadow) / var(--shadow-alpha));
+      }
+
+      #empty-hint[hidden] {
+        display: none;
+      }
+
+      /*
+        The tail, drawn twice: the outer triangle is the border's colour and the
+        inner one sits a pixel above it in the bubble's own, so the point has an
+        outline like the rest of it rather than a bitten-off edge.
+      */
+      #empty-hint::before,
+      #empty-hint::after {
+        content: '';
+        position: absolute;
+        /* Measured, not guessed: the button moves with his zoom and with how
+           long the words are in whichever language he is reading. */
+        right: var(--tail-right, 3.2rem);
+        border: 9px solid transparent;
+      }
+
+      #empty-hint::before {
+        bottom: -18px;
+        border-top-color: var(--line);
+      }
+
+      #empty-hint::after {
+        bottom: -17px;
+        border-top-color: var(--panel);
+      }
+
       #status {
         display: flex;
         align-items: center;
@@ -1238,6 +1291,7 @@
           is counting rather than in a corner of the window, and appears only
           while a search has found something here.
         -->
+        <div id="empty-hint" hidden></div>
         <div id="found" hidden>
           <span id="found-at"></span>
           <button id="found-previous" type="button"></button>

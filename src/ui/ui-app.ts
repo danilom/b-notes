@@ -85,6 +85,7 @@ const appearanceButton = element('appearance-button', HTMLButtonElement);
 const appearanceLabel = element('appearance-label', HTMLSpanElement);
 const appearancePane = element('appearance', HTMLDivElement);
 const deleteNote = element('delete-note', HTMLButtonElement);
+const emptyHint = element('empty-hint', HTMLDivElement);
 const deleteNoteLabel = element('delete-note-label', HTMLSpanElement);
 const deletedBlock = element('deleted-block', HTMLButtonElement);
 const deletedBlockLabel = element('deleted-block-label', HTMLSpanElement);
@@ -238,8 +239,39 @@ function scrollToCurrentMatch(): void {
   editorMarks.scrollTop = editor.scrollTop;
 }
 
+/**
+ * Aims the bubble's tail at the middle of the button it is talking about.
+ *
+ * Measured rather than written into the stylesheet: the button sits at a
+ * different place at every zoom, and at a different place again in a language
+ * whose word for "delete" is a different length.
+ */
+function pointHintAtDeleteButton(): void {
+  const pane = emptyHint.offsetParent;
+  if (!(pane instanceof HTMLElement)) return;
+  const button = deleteNote.getBoundingClientRect();
+  const within = pane.getBoundingClientRect();
+  const fromRight = within.right - (button.left + button.width / 2);
+  emptyHint.style.setProperty('--tail-right', `${Math.round(fromRight)}px`);
+}
+
+window.addEventListener('resize', () => {
+  if (!emptyHint.hidden) pointHintAtDeleteButton();
+});
+
 function showStatus(): void {
   deleteNote.hidden = openId === null;
+
+  /*
+    Only once the empty state has settled. Selecting everything and typing over
+    it leaves the text empty for a fraction of a second, and a bubble blinking
+    in the corner of an ordinary edit is exactly the unexplained movement this
+    app works to avoid. Waiting for the save to land means it appears when the
+    text really is empty and he has stopped.
+  */
+  emptyHint.textContent = words.emptiedHint;
+  emptyHint.hidden = openId === null || saveTimer !== undefined || !isEmptyText(editor.value);
+  if (!emptyHint.hidden) pointHintAtDeleteButton();
 
   if (notice !== null) {
     statusText.textContent = notice;
@@ -254,13 +286,6 @@ function showStatus(): void {
   }
   if (saveTimer !== undefined) {
     statusText.textContent = words.saving;
-    return;
-  }
-  // When there is nothing left in it, when it was last saved is not what he
-  // needs to know. Emptying used to be how he got rid of a text; now there is
-  // a button for that, two inches to the right of these words.
-  if (openId !== null && isEmptyText(editor.value)) {
-    statusText.textContent = words.emptiedHint;
     return;
   }
   statusText.textContent =
