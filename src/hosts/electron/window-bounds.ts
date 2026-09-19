@@ -1,8 +1,8 @@
 /**
- * Keeping the window somewhere he can reach it.
+ * Keeping the window on the desk.
  *
  * Plain rectangles and no Electron, so the arithmetic can be checked without a
- * screen: the part that can be wrong here is the sums, not the wiring.
+ * screen: what can be wrong here is the sums, not the wiring.
  */
 export interface Rect {
   x: number;
@@ -12,41 +12,46 @@ export interface Rect {
 }
 
 /**
- * How much of the window has to stay on the desk before it counts as lost.
+ * How far over an edge the window may hang.
  *
- * Generous on purpose. This is not here to keep the window tidy — dragging it
- * half off the side is his business — it is here for the case where he has
- * dragged it so far that there is nothing left to take hold of.
+ * Not zero, on purpose. Windows gives a maximised or snapped window bounds a
+ * few pixels wider than the work area — the border overhangs it — and a rule
+ * with no give in it would fight that every time he snapped the window to a
+ * side. A few tens of pixels is invisible to him and leaves all of that alone.
  */
-const MUST_REMAIN = { width: 220, height: 90 };
+const SLACK = 32;
 
-const overlap = (from: number, to: number, within: number, size: number): number =>
-  Math.min(to, within + size) - Math.max(from, within);
+/** The whole desk: every screen he has, as one rectangle. */
+export function deskAround(areas: readonly Rect[]): Rect {
+  const first = areas[0];
+  if (first === undefined) return { x: 0, y: 0, width: 0, height: 0 };
+
+  const left = Math.min(...areas.map((area) => area.x));
+  const top = Math.min(...areas.map((area) => area.y));
+  const right = Math.max(...areas.map((area) => area.x + area.width));
+  const bottom = Math.max(...areas.map((area) => area.y + area.height));
+  return { x: left, y: top, width: right - left, height: bottom - top };
+}
 
 /** Slides a value back into a range, and to its start when it cannot fit. */
-const into = (value: number, from: number, span: number, size: number): number =>
-  Math.max(from, Math.min(value, from + span - size));
+const into = (value: number, from: number, to: number): number =>
+  Math.max(from, Math.min(value, Math.max(from, to)));
 
 /**
- * Where the window should be, if where it is has put it out of his reach.
+ * Where the window is allowed to be, if where it is going is off the desk.
  *
- * Null when it is fine, which is almost always — so the caller does nothing at
- * all in the ordinary case and there is no argument with him about where he
- * likes his window.
+ * Null when it is fine, which is almost always — so nothing argues with him
+ * about where he likes his window, and moving between two screens is a move
+ * across the desk rather than a move off one of them.
  *
- * When it is not fine it comes all the way back rather than just far enough to
- * grab: he is not trying to keep it mostly off the screen, and a window he can
- * see the whole of is the one he was expecting.
+ * It stops at the edge rather than being brought home from beyond it: he
+ * should find the window will not go there, not watch it jump back from where
+ * he put it.
  */
-export function pulledBackOnScreen(window: Rect, workArea: Rect): Rect | null {
-  const across = overlap(window.x, window.x + window.width, workArea.x, workArea.width);
-  const down = overlap(window.y, window.y + window.height, workArea.y, workArea.height);
-  if (across >= MUST_REMAIN.width && down >= MUST_REMAIN.height) return null;
+export function keptOnTheDesk(window: Rect, desk: Rect): Rect | null {
+  const x = into(window.x, desk.x - SLACK, desk.x + desk.width + SLACK - window.width);
+  const y = into(window.y, desk.y - SLACK, desk.y + desk.height + SLACK - window.height);
+  if (x === window.x && y === window.y) return null;
 
-  return {
-    x: into(window.x, workArea.x, workArea.width, window.width),
-    y: into(window.y, workArea.y, workArea.height, window.height),
-    width: window.width,
-    height: window.height,
-  };
+  return { x, y, width: window.width, height: window.height };
 }

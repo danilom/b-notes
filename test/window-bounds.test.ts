@@ -1,77 +1,108 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { type Rect, pulledBackOnScreen } from '../src/hosts/electron/window-bounds.ts';
+import { type Rect, deskAround, keptOnTheDesk } from '../src/hosts/electron/window-bounds.ts';
 
-/** A plain 1920x1080 screen with a taskbar along the bottom. */
-const DESK: Rect = { x: 0, y: 0, width: 1920, height: 1040 };
+/** One 1920x1080 screen with a taskbar along the bottom. */
+const ONE: Rect = { x: 0, y: 0, width: 1920, height: 1040 };
 const WINDOW = { width: 1100, height: 800 };
 const at = (x: number, y: number): Rect => ({ x, y, ...WINDOW });
 
-describe('keeping the window where he can reach it', () => {
-  it('leaves it alone in the middle of the screen', () => {
-    assert.equal(pulledBackOnScreen(at(300, 120), DESK), null);
+describe('the desk his screens make', () => {
+  it('is the screen itself, when he has one', () => {
+    assert.deepEqual(deskAround([ONE]), ONE);
   });
 
-  it('leaves it alone hanging off the side, which is his business', () => {
-    // Half off the right is a window he put there, not a window he has lost.
-    assert.equal(pulledBackOnScreen(at(1400, 120), DESK), null);
+  it('reaches across a second screen to the right', () => {
+    const right: Rect = { x: 1920, y: 0, width: 1280, height: 1000 };
+
+    assert.deepEqual(deskAround([ONE, right]), { x: 0, y: 0, width: 3200, height: 1040 });
   });
 
-  it('leaves it alone filling the screen exactly', () => {
-    assert.equal(pulledBackOnScreen(DESK, DESK), null);
+  it('reaches across a second screen to the left, which starts below zero', () => {
+    const left: Rect = { x: -1280, y: 0, width: 1280, height: 1000 };
+
+    assert.deepEqual(deskAround([ONE, left]), { x: -1280, y: 0, width: 3200, height: 1040 });
   });
 
-  it('brings it back when nearly all of it has gone off the right', () => {
-    assert.deepEqual(pulledBackOnScreen(at(1860, 120), DESK), { x: 820, y: 120, ...WINDOW });
+  it('reaches over a screen above, and one at a different height', () => {
+    const above: Rect = { x: 200, y: -900, width: 1600, height: 900 };
+
+    assert.deepEqual(deskAround([ONE, above]), { x: 0, y: -900, width: 1920, height: 1940 });
   });
 
-  it('brings it back when it has gone off the left', () => {
-    assert.deepEqual(pulledBackOnScreen(at(-1050, 120), DESK), { x: 0, y: 120, ...WINDOW });
+  it('is nothing at all when there are no screens, rather than a crash', () => {
+    assert.deepEqual(deskAround([]), { x: 0, y: 0, width: 0, height: 0 });
+  });
+});
+
+describe('stopping the window at the edge of the desk', () => {
+  it('lets him put it anywhere on the screen', () => {
+    assert.equal(keptOnTheDesk(at(300, 120), ONE), null);
   });
 
-  it('brings it back when it has gone under the taskbar', () => {
-    assert.deepEqual(pulledBackOnScreen(at(300, 1000), DESK), { x: 300, y: 240, ...WINDOW });
+  it('lets it hang over an edge by a little, so snapping is left alone', () => {
+    // A maximised or snapped window overhangs the work area by its border. A
+    // rule with no give in it would fight that every time.
+    assert.equal(keptOnTheDesk(at(-8, -8), ONE), null);
+    assert.equal(keptOnTheDesk(at(ONE.width - WINDOW.width + 8, 120), ONE), null);
   });
 
-  it('brings it back when it has gone off the top', () => {
-    assert.deepEqual(pulledBackOnScreen(at(300, -760), DESK), { x: 300, y: 0, ...WINDOW });
+  it('stops it going off the right', () => {
+    const kept = keptOnTheDesk(at(1500, 120), ONE);
+
+    assert.equal(kept?.x, 1920 + 32 - 1100);
+    assert.equal(kept?.y, 120);
   });
 
-  it('brings it back when it has gone off a corner', () => {
-    assert.deepEqual(pulledBackOnScreen(at(-1080, -790), DESK), { x: 0, y: 0, ...WINDOW });
+  it('stops it going off the left', () => {
+    assert.equal(keptOnTheDesk(at(-400, 120), ONE)?.x, -32);
+  });
+
+  it('stops it going under the taskbar', () => {
+    assert.equal(keptOnTheDesk(at(300, 900), ONE)?.y, 1040 + 32 - 800);
+  });
+
+  it('stops it going off the top', () => {
+    assert.equal(keptOnTheDesk(at(300, -200), ONE)?.y, -32);
   });
 
   it('never changes how big it is', () => {
-    const back = pulledBackOnScreen(at(4000, 4000), DESK);
+    const kept = keptOnTheDesk(at(9000, 9000), ONE);
 
-    assert.equal(back?.width, WINDOW.width);
-    assert.equal(back?.height, WINDOW.height);
+    assert.equal(kept?.width, WINDOW.width);
+    assert.equal(kept?.height, WINDOW.height);
   });
 
-  it('settles at once, rather than needing bringing back again', () => {
-    // It is called again after it moves the window, so a correction that still
-    // failed the test would move it for ever.
-    const back = pulledBackOnScreen(at(4000, 4000), DESK);
+  it('settles at once, rather than being corrected again', () => {
+    // It runs again after it moves the window, so a correction that still
+    // failed would move it for ever.
+    const kept = keptOnTheDesk(at(9000, 9000), ONE);
 
-    assert.equal(pulledBackOnScreen(back ?? at(0, 0), DESK), null);
+    assert.equal(keptOnTheDesk(kept ?? at(0, 0), ONE), null);
   });
 
-  it('works on a screen that does not start at zero, as a second one does not', () => {
-    // A monitor to the left of the main one has negative coordinates, and a
-    // window living happily on it must not be dragged back to the other screen.
-    const left: Rect = { x: -1920, y: 0, width: 1920, height: 1040 };
+  it('lets him carry it from one screen to the next', () => {
+    // Halfway between two monitors the window is over the edge of both. Held to
+    // whichever was nearest, it could never make the journey.
+    const desk = deskAround([ONE, { x: 1920, y: 0, width: 1280, height: 1000 }]);
 
-    assert.equal(pulledBackOnScreen(at(-1500, 100), left), null);
-    // Back by its right edge, not flung to the far corner: the smallest move
-    // that puts the whole of it on that screen.
-    assert.deepEqual(pulledBackOnScreen(at(-60, 100), left), { x: -1100, y: 100, ...WINDOW });
+    // Straddling the join, then settled on the far screen. Both fit on the
+    // desk, so neither is refused.
+    assert.equal(keptOnTheDesk(at(1600, 120), desk), null);
+    assert.equal(keptOnTheDesk(at(2000, 120), desk), null);
   });
 
-  it('puts a window too big for the screen at the corner rather than nowhere', () => {
+  it('still stops it at the far edge of the second screen', () => {
+    const desk = deskAround([ONE, { x: 1920, y: 0, width: 1280, height: 1000 }]);
+
+    assert.equal(keptOnTheDesk(at(3500, 120), desk)?.x, 3200 + 32 - 1100);
+  });
+
+  it('puts a window wider than the desk at the near edge rather than nowhere', () => {
     const small: Rect = { x: 0, y: 0, width: 800, height: 600 };
     const huge = { x: 3000, y: 3000, width: 1400, height: 900 };
 
-    assert.deepEqual(pulledBackOnScreen(huge, small), { x: 0, y: 0, width: 1400, height: 900 });
+    assert.deepEqual(keptOnTheDesk(huge, small), { x: -32, y: -32, width: 1400, height: 900 });
   });
 });

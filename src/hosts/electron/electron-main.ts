@@ -5,7 +5,7 @@ import { BUILD_STAMP } from '../../platform/build-info.ts';
 import { LOG_LEVELS, createFileLogger } from './log-file.ts';
 import { createFileSystem } from './disk-file-system.ts';
 import { startUpdateChecks } from './app-updates.ts';
-import { pulledBackOnScreen } from './window-bounds.ts';
+import { type Rect, deskAround, keptOnTheDesk } from './window-bounds.ts';
 
 // The machines this runs on have old integrated GPUs, where acceleration causes
 // more rendering glitches than it prevents.
@@ -127,43 +127,53 @@ function smallestWindow(): { width: number; height: number } {
 
 let mainWindow: BrowserWindow | null = null;
 
-/** Long enough that this happens after he has let go, not while he is dragging. */
-const SETTLED_MS = 250;
-
 /**
- * Brings the window back if he drags it off the desk.
+ * Stops the window being dragged off the desk.
  *
- * Only after the move has finished and settled, and only when the window has
- * genuinely gone — so it never argues with him mid-drag about where he is
- * putting it, and does nothing at all in the ordinary case.
+ * Windows says before it moves a window, and lets us say no — so the window
+ * stops at the edge while his hand carries on, rather than being fetched back
+ * from somewhere he had already put it.
+ *
+ * The desk is every screen he has taken together, not the nearest one: a window
+ * on its way from one monitor to another is over the edge of both for a moment,
+ * and clamping it to whichever was closest would refuse the journey.
  *
  * Deliberately no window styles touched. Holding the window in place by taking
  * the maximise button away was tried and reverted, because changing how Windows
- * is allowed to size a window breaks in ways that only appear after a minimise
- * or a snap. Moving a window that has already been moved cannot do that.
- *
- * Nothing remembers where the window was between runs, so the worst this can
- * fail to catch is undone by closing the app and opening it again — which is
- * his answer to everything, and the reason this is a comfort rather than a
- * necessity.
+ * is allowed to size a window breaks after a minimise or a snap — and does it
+ * quietly, days later. Refusing a move cannot do that: if this is wrong, it is
+ * wrong in the hand, immediately, while he drags.
  */
-function keepWindowReachable(window: BrowserWindow): void {
-  let settling: ReturnType<typeof setTimeout> | undefined;
+function keepWindowOnTheDesk(window: BrowserWindow): void {
+  let correcting = false;
 
+  const fit = (bounds: Rect): void => {
+    // A maximised window legitimately overhangs the work area by its border,
+    // and a snapped one is the operating system's business, not ours.
+    if (correcting || window.isDestroyed() || window.isMaximized()) return;
+
+    const desk = deskAround(screen.getAllDisplays().map((display) => display.workArea));
+    const kept = keptOnTheDesk(bounds, desk);
+    if (kept === null) return;
+
+    correcting = true;
+    window.setBounds(kept);
+    correcting = false;
+  };
+
+  window.on('will-move', (event, newBounds) => {
+    const desk = deskAround(screen.getAllDisplays().map((display) => display.workArea));
+    if (keptOnTheDesk(newBounds, desk) === null) return;
+    // Refused, and put where it is allowed to be instead, so it slides along
+    // the edge rather than stopping dead under his hand.
+    event.preventDefault();
+    fit(newBounds);
+  });
+
+  // Whatever the first one missed: a move it does not fire for, or a screen
+  // unplugged while the window was on it.
   window.on('moved', () => {
-    clearTimeout(settling);
-    settling = setTimeout(() => {
-      if (window.isDestroyed() || window.isMinimized() || window.isMaximized()) return;
-
-      const bounds = window.getBounds();
-      // The display it is mostly on, so a second monitor is somewhere it may
-      // live rather than somewhere it gets dragged back from.
-      const back = pulledBackOnScreen(bounds, screen.getDisplayMatching(bounds).workArea);
-      if (back === null) return;
-
-      window.setBounds(back);
-      log.info('Brought the window back onto the screen', { from: bounds, to: back });
-    }, SETTLED_MS);
+    fit(window.getBounds());
   });
 }
 
@@ -194,7 +204,7 @@ async function createWindow(): Promise<BrowserWindow> {
   */
   window.maximize();
 
-  keepWindowReachable(window);
+  keepWindowOnTheDesk(window);
 
   mainWindow = window;
   window.on('closed', () => {
