@@ -72,6 +72,15 @@ export function createMockFileSystem(): FileSystem {
       store(files);
     },
 
+    async removeEmptyFile(at: string): Promise<boolean> {
+      const files = load();
+      const file = files.get(at);
+      if (file === undefined || file.text.trim().length > 0) return false;
+      files.delete(at);
+      store(files);
+      return true;
+    },
+
     async removeEmptyFolder(): Promise<void> {
       // Nothing to do: a folder here is a slash in a key, so an empty one has
       // already stopped existing.

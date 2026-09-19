@@ -462,6 +462,43 @@ describe('converting to plain text', () => {
   });
 });
 
+describe('putting away a text with nothing in it', () => {
+  it('removes one that never held anything, rather than filing it', async () => {
+    // A row in Obrisani tekstovi that opens onto nothing is a door to an empty
+    // room, in the one place he goes to find something he has lost.
+    const { dir, store } = await emptyStore();
+    await writeFile(path.join(dir, 'Bez naslova.txt'), '', 'utf8');
+
+    await store.moveToDeleted('Bez naslova');
+
+    assert.deepEqual(await store.list(), []);
+    assert.deepEqual(await store.listDeleted(), []);
+    assert.equal((await readdir(dir)).includes('Bez naslova.txt'), false);
+  });
+
+  it('keeps one he emptied, because the copy of it is the text', async () => {
+    // Zero bytes on disk, but what used to be in it is still kept — so this is
+    // the case where an empty file is the last marker of writing that survives.
+    const { store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nSve sto je napisao.');
+    await store.save(id, '');
+
+    await store.moveToDeleted(id ?? '');
+
+    assert.deepEqual((await store.listDeleted()).length, 1);
+  });
+
+  it('keeps one whose text is only whitespace but which has a version', async () => {
+    const { store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nTekst.');
+    await store.save(id, '   \n\n  ');
+
+    await store.moveToDeleted(id ?? '');
+
+    assert.deepEqual((await store.listDeleted()).length, 1);
+  });
+});
+
 describe('bringing a text back', () => {
   it('lists what he has put away, newest first', async () => {
     const { store } = await emptyStore();

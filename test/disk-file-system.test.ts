@@ -12,6 +12,50 @@ async function emptyFolder(): Promise<string> {
 
 const forwardSlashed = (at: string): string => at.replaceAll('\\', '/');
 
+describe('removing a file with nothing in it', () => {
+  const files = createFileSystem();
+
+  it('removes one that is empty', async () => {
+    const root = await emptyFolder();
+    await writeFile(path.join(root, 'prazan.txt'), '', 'utf8');
+
+    assert.equal(await files.removeEmptyFile(forwardSlashed(path.join(root, 'prazan.txt'))), true);
+    assert.deepEqual(await readdir(root), []);
+  });
+
+  it('removes one holding only spaces and newlines, which is not writing', async () => {
+    const root = await emptyFolder();
+    await writeFile(path.join(root, 'prazan.txt'), '   \n\n  \t ', 'utf8');
+
+    assert.equal(await files.removeEmptyFile(forwardSlashed(path.join(root, 'prazan.txt'))), true);
+    assert.deepEqual(await readdir(root), []);
+  });
+
+  it('leaves one with his writing in it, whatever it was asked to do', async () => {
+    // The guarantee. This is the only thing in the app that can destroy a file,
+    // so what it refuses matters more than what it does.
+    const root = await emptyFolder();
+    await writeFile(path.join(root, 'tekst.txt'), 'Nekad davno.', 'utf8');
+
+    assert.equal(await files.removeEmptyFile(forwardSlashed(path.join(root, 'tekst.txt'))), false);
+    assert.deepEqual(await readdir(root), ['tekst.txt']);
+  });
+
+  it('leaves one holding a single character', async () => {
+    const root = await emptyFolder();
+    await writeFile(path.join(root, 'tekst.txt'), 'a', 'utf8');
+
+    assert.equal(await files.removeEmptyFile(forwardSlashed(path.join(root, 'tekst.txt'))), false);
+    assert.deepEqual(await readdir(root), ['tekst.txt']);
+  });
+
+  it('says no for a file that is not there, rather than throwing', async () => {
+    const root = await emptyFolder();
+
+    assert.equal(await files.removeEmptyFile(forwardSlashed(path.join(root, 'nema.txt'))), false);
+  });
+});
+
 describe('tidying away a folder', () => {
   const files = createFileSystem();
 

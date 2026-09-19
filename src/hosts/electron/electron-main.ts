@@ -90,6 +90,7 @@ handle('files:read', (args) => files.read(asString(args[0], 'path')));
 handle('files:write', (args) => files.write(asString(args[0], 'path'), asString(args[1], 'text')));
 handle('files:rename', (args) => files.rename(asString(args[0], 'from'), asString(args[1], 'to')));
 handle('files:removeEmptyFolder', (args) => files.removeEmptyFolder(asString(args[0], 'folder')));
+handle('files:removeEmptyFile', (args) => files.removeEmptyFile(asString(args[0], 'path')));
 
 ipcMain.on('log:write', (_event, level: unknown, message: unknown, detail: unknown) => {
   // Coerced rather than validated: a malformed log call should still leave a

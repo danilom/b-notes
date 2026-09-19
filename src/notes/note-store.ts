@@ -17,7 +17,7 @@ import {
 import { deletedIdFor, planSave } from './note-saving.ts';
 import { toSearchable } from '../language/diacritics.ts';
 import { titleFrom } from './note-title.ts';
-import type { Note, NoteStore } from './note.ts';
+import { type Note, type NoteStore, isEmptyText } from './note.ts';
 
 const nameOf = (path: string): string => path.split('/').at(-1) ?? path;
 
@@ -215,6 +215,23 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
     async moveToDeleted(id: string): Promise<void> {
       const file = (await noteFiles()).get(requireNoteId(id));
       if (file === undefined) return;
+
+      /*
+        A text with nothing in it and no earlier version is not a text. Keeping
+        it would fill the one place he goes to find something he lost with rows
+        that open onto nothing.
+
+        Both halves of that matter. Emptying a text keeps a copy of what was in
+        it, so a file of zero length can be the last marker of writing that does
+        still exist — which is why this asks about the versions and not only
+        about the length. And if the removal does not happen, for any reason at
+        all, it falls through to being kept, which costs a row and loses
+        nothing.
+      */
+      if (isEmptyText(asWritten(await files.read(file.path).catch(() => ' ')))) {
+        const versions = await files.list(at(versionsFolderFor(id))).catch(() => []);
+        if (versions.length === 0 && (await files.removeEmptyFile(file.path))) return;
+      }
 
       const name = deletedIdFor(id, await idsPutAway());
       await files.rename(file.path, at(DELETED_FOLDER, `${name}${EXTENSION}`));

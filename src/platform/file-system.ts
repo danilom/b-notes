@@ -41,4 +41,14 @@ export interface FileSystem {
    * worse, so this never throws.
    */
   removeEmptyFolder(folder: string): Promise<void>;
+  /**
+   * Removes a file, if there is nothing written in it, and says whether it did.
+   *
+   * The only thing in the app that can destroy a file, and by construction it
+   * cannot destroy any of his writing: anything but whitespace and the file is
+   * left alone. It reports rather than throws so that every way of failing —
+   * the file has something in it, the disk refuses, it is open elsewhere — ends
+   * at the same safe place, which is the caller keeping it instead.
+   */
+  removeEmptyFile(path: string): Promise<boolean>;
 }

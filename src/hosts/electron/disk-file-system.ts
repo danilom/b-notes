@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, rename, rmdir, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, rmdir, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { FileInfo, FileSystem } from '../../platform/file-system.ts';
@@ -54,6 +54,20 @@ export function createFileSystem(): FileSystem {
     async rename(from: string, to: string): Promise<void> {
       await mkdir(path.dirname(to), { recursive: true });
       await rename(from, to);
+    },
+
+    async removeEmptyFile(at: string): Promise<boolean> {
+      try {
+        // Read before removing, every time. The check and the unlink are what
+        // make this safe, so they are not something a caller can skip.
+        const text = await readFile(at, 'utf8');
+        if (text.trim().length > 0) return false;
+        await unlink(at);
+        return true;
+      } catch {
+        // Gone already, held open, or unreadable. The caller keeps it instead.
+        return false;
+      }
     },
 
     async removeEmptyFolder(folder: string): Promise<void> {
