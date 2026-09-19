@@ -15,6 +15,7 @@ import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
 import { openConfirmDialog } from './confirm-dialog.ts';
 import { openDeletedDialog } from './deleted-dialog.ts';
 import { openVersionsDialog } from './versions-dialog.ts';
+import { type ScrollArrows, addScrollArrows } from './scroll-arrows.ts';
 import { confirmationForDeleting, confirmationForDestroying } from './note-confirmations.ts';
 import { readSession, writeSession } from './app-session.ts';
 import {
@@ -74,8 +75,10 @@ function element<T extends Element>(id: string, kind: new () => T): T {
 }
 
 const listPane = element('list', HTMLDivElement);
+const listArea = element('list-area', HTMLDivElement);
 const editor = element('editor', HTMLTextAreaElement);
 const editorMarks = element('editor-marks', HTMLDivElement);
+const writingPane = element('writing', HTMLDivElement);
 const foundPane = element('found', HTMLDivElement);
 const foundAt = element('found-at', HTMLSpanElement);
 const foundPrevious = element('found-previous', HTMLButtonElement);
@@ -115,6 +118,10 @@ let appearancePanel: OpenPanel | null = null;
  */
 let showAppearanceOf: (appearance: Appearance) => void;
 
+/** The arrows over the ends of the two bars he actually scrolls. */
+let listArrows: ScrollArrows | null = null;
+let writingArrows: ScrollArrows | null = null;
+
 let notes: Note[] = [];
 /** Everything he has put away. Held like `notes`, and for the same reason. */
 let deleted: DeletedNote[] = [];
@@ -149,6 +156,9 @@ let saveTimer: ReturnType<typeof setTimeout> | undefined;
 function draw(): void {
   renderList(listPane, { notes, query: search.value, openId, draft, language });
   drawDeletedBlock();
+  // The list just changed length, so whether there is anywhere to scroll may
+  // have changed with it.
+  listArrows?.update();
 }
 
 /**
@@ -169,6 +179,9 @@ let atFound = 0;
  * bracket in an essay to become part of the page.
  */
 function markMatches(): void {
+  // Redrawn whenever his text changes, which is exactly when whether the
+  // editor has anywhere to scroll may have changed with it.
+  writingArrows?.update();
   const text = editor.value;
   found = matchesIn(text, search.value);
   atFound = Math.min(atFound, Math.max(0, found.length - 1));
@@ -827,6 +840,12 @@ export async function startApp(host: Host): Promise<void> {
   deleteNoteLabel.textContent = words.deleteNote;
   deletedSee.textContent = words.deletedSee;
   seeVersionsLabel.textContent = words.versions;
+
+  listArrows = addScrollArrows(listPane, listArea, { up: words.scrollUp, down: words.scrollDown });
+  writingArrows = addScrollArrows(editor, writingPane, {
+    up: words.scrollUp,
+    down: words.scrollDown,
+  });
   // The same bin as on the button he pressed to put a text here. One mark for
   // one idea is the only thing tying the action to the place it sends things.
   deletedBlock.prepend(icon('delete'));

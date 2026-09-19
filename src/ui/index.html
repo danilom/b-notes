@@ -81,8 +81,8 @@
         --l-chosen-soft: 91%;
         --l-found: 82%;
         --l-on-chosen: 99%;
-        --l-thumb: 56%;
-        --l-thumb-hover: 40%;
+        --l-thumb: 82%;
+        --l-thumb-hover: 68%;
         --l-shadow: 12%;
         --shadow-alpha: 0.3;
         --swatch-edge: rgb(0 0 0 / 0.15);
@@ -176,8 +176,8 @@
         --l-chosen-soft: 31%;
         --l-found: 38%;
         --l-on-chosen: 10%;
-        --l-thumb: 52%;
-        --l-thumb-hover: 66%;
+        --l-thumb: 34%;
+        --l-thumb-hover: 48%;
         --l-shadow: 2%;
         --shadow-alpha: 0.6;
         --swatch-edge: rgb(255 255 255 / 0.25);
@@ -249,12 +249,10 @@
         only 11px of it is painted, and he is aiming with an unsteady hand on a
         trackpad. Thin scrollbars are a young person's affordance.
 
-        Dark enough to see, too, which took measuring rather than looking. The
-        thumb used to sit at 1.43:1 against the sidebar it spends most of its
-        life on — below the 3:1 a control is meant to hold, and on the wrong
-        side of it for eyes that are seventy years old. Both modes now clear 3:1
-        against the page and against the panel, and the hover goes further in
-        whichever direction its mode has room for.
+        Pale on purpose, and darker was tried and turned down. It sits at about
+        1.5:1 against the page, which is under what a control is usually asked
+        to hold — but it is furniture beside his writing rather than something
+        he reads, and the arrows below carry the job of being findable.
       */
       ::-webkit-scrollbar {
         width: var(--scrollbar);
@@ -465,10 +463,69 @@
         color: var(--ink);
       }
 
+      /* Only here so the arrows have something to be positioned against. */
+      #list-area {
+        position: relative;
+        flex: 1;
+        min-height: 0;
+        display: flex;
+      }
+
       #list {
         flex: 1;
         overflow-y: auto;
         padding-bottom: 2rem;
+      }
+
+      /*
+        Over the ends of the bar rather than beside it: the very top and bottom
+        of a track are the least useful part of it, since a press there moves
+        him almost nowhere anyway.
+
+        Square, the width of the bar, and quiet until he reaches for them — the
+        same three states every other button in the app has, which is the whole
+        reason for drawing them rather than leaving them to Chromium.
+      */
+      .scroll-arrow {
+        position: absolute;
+        right: 0;
+        z-index: 3;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: var(--scrollbar);
+        height: var(--scrollbar);
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: none;
+        color: var(--quiet);
+      }
+
+      .scroll-arrow[hidden] {
+        display: none;
+      }
+
+      .scroll-arrow svg {
+        width: 12px;
+        height: 12px;
+      }
+
+      .scroll-arrow:hover {
+        background: var(--wash);
+        color: var(--ink);
+      }
+
+      .scroll-arrow:active {
+        background: var(--wash-firm);
+      }
+
+      .scroll-arrow-up {
+        top: 0;
+      }
+
+      .scroll-arrow-down {
+        bottom: 0;
       }
 
       /*
@@ -1524,7 +1581,9 @@
         <div id="search-row">
           <input id="search" type="search" autocomplete="off" />
         </div>
-        <div id="list"></div>
+        <div id="list-area">
+          <div id="list"></div>
+        </div>
       </div>
       <div id="deleted-block" hidden>
         <span id="deleted-block-label"></span>
