@@ -14,10 +14,12 @@ import {
   baseOf,
   fileNameBase,
   isConflictedCopy,
+  putAwayVersionsFolderFor,
+  versionName,
 } from '../src/notes/note-naming.ts';
 import { survivedTooLittle } from '../src/notes/note.ts';
 import { toSearchable } from '../src/language/diacritics.ts';
-import { titleFrom } from '../src/notes/note-title.ts';
+import { MAX_TITLE, titleFrom } from '../src/notes/note-title.ts';
 
 /**
  * The shared note store on top of the real filesystem — the combination the
@@ -457,6 +459,29 @@ describe('converting to plain text', () => {
     await writeFile(path.join(dir, 'Esej o zimi.md'), 'Esej o zimi\n\nTekst.', 'utf8');
 
     assert.deepEqual(await store.list(), []);
+  });
+});
+
+describe('how long a path the naming can make', () => {
+  /*
+    Windows refuses a path over 260 characters, and the half of it we do not
+    control is his writing folder — it could be Dropbox inside a long Windows
+    user name. So what the app adds underneath that folder is budgeted rather
+    than left to chance: a version file is the deepest thing it builds, and if
+    titles or the folder scheme ever grow, this says so here rather than on his
+    machine, where it would show as a text that would not save.
+  */
+  const WINDOWS_MAX_PATH = 260;
+  const ROOM_FOR_HIS_FOLDER = 150;
+
+  it('leaves most of the limit for wherever he keeps his writing', () => {
+    const longestId = `${'x'.repeat(MAX_TITLE)} (99)`;
+    const deepest = `${putAwayVersionsFolderFor(longestId)}/${versionName(new Date())} (99)${EXTENSION}`;
+
+    assert.ok(
+      deepest.length <= WINDOWS_MAX_PATH - ROOM_FOR_HIS_FOLDER,
+      `the deepest name the app builds is ${deepest.length} chars, leaving ${WINDOWS_MAX_PATH - deepest.length} for his folder`,
+    );
   });
 });
 
