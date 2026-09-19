@@ -50,12 +50,7 @@ function rowFor(
   snippet.className = 'deleted-snippet';
   snippet.textContent = snippetOf(note);
 
-  const opens = document.createElement('span');
-  opens.className = 'deleted-opens';
-  opens.setAttribute('aria-hidden', 'true');
-  opens.textContent = '›';
-
-  row.append(title, when, snippet, opens);
+  row.append(title, when, snippet);
   row.addEventListener('click', () => show(note));
   return row;
 }

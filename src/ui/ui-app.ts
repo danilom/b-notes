@@ -558,6 +558,8 @@ async function deleteOpenNote(id: string): Promise<void> {
 }
 
 function showDeleted(): void {
+  if (!deletedPane.hidden) return;
+
   const close = openDeletedDialog(deletedPane, deleted, search.value, language, {
     onClose: () => {
       close();
@@ -618,7 +620,9 @@ function hideAppearance(): void {
 
 appearanceButton.addEventListener('click', showAppearance);
 deleteNote.addEventListener('click', askToDelete);
-deletedSee.addEventListener('click', showDeleted);
+// On the strip, not the button: a press on the button bubbles up to here, so
+// there is one way in rather than two that have to agree.
+deletedBlock.addEventListener('click', showDeleted);
 
 /**
  * The shortcut every browser has taught him, pointed at our own setting.
