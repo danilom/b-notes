@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readFile, readdir, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import { setTimeout as after } from 'node:timers/promises';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
@@ -489,6 +490,11 @@ describe('when a deleted text says it went', () => {
     const { dir, store } = await emptyStore();
     const recent = await store.save(null, 'Noviji\n\nSkoro napisan.');
     await store.moveToDeleted(recent ?? '');
+
+    // Far enough apart that the two have different times. Without this they can
+    // both land in the same millisecond, and then the order is whichever way the
+    // sort happens to fall — a test that passes by luck.
+    await after(20);
 
     const old = await store.save(null, 'Stari\n\nPisan davno.');
     await utimes(path.join(dir, 'Stari.txt'), LONG_AGO, LONG_AGO);
