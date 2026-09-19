@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
@@ -461,6 +461,54 @@ describe('converting to plain text', () => {
     await writeFile(path.join(dir, 'Esej o zimi.md'), 'Esej o zimi\n\nTekst.', 'utf8');
 
     assert.deepEqual(await store.list(), []);
+  });
+});
+
+describe('when a deleted text says it went', () => {
+  const LONG_AGO = new Date(2019, 0, 1);
+
+  it('says when he put it away, not when he last wrote in it', async () => {
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'Stari\n\nPisan davno.');
+    await utimes(path.join(dir, 'Stari.txt'), LONG_AGO, LONG_AGO);
+    const putAwayAt = Date.now();
+
+    await store.moveToDeleted(id ?? '');
+
+    const [put] = await store.listDeleted();
+    assert.ok(
+      (put?.updatedAt ?? 0) >= putAwayAt - 1000,
+      `said ${new Date(put?.updatedAt ?? 0).toISOString()}, which is not when it was put away`,
+    );
+  });
+
+  it('lists what he threw away last first, however old the writing is', async () => {
+    // What he just deleted is what he is most likely hunting for. Sorted by the
+    // writing's own age, a text from 2019 deleted this morning would sit at the
+    // bottom of the one screen that exists to find it.
+    const { dir, store } = await emptyStore();
+    const recent = await store.save(null, 'Noviji\n\nSkoro napisan.');
+    await store.moveToDeleted(recent ?? '');
+
+    const old = await store.save(null, 'Stari\n\nPisan davno.');
+    await utimes(path.join(dir, 'Stari.txt'), LONG_AGO, LONG_AGO);
+    await store.moveToDeleted(old ?? '');
+
+    assert.deepEqual((await store.listDeleted()).map((note) => note.title), ['Stari', 'Noviji']);
+  });
+
+  it('comes back as recently touched, since he has just asked for it', async () => {
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'Stari\n\nPisan davno.');
+    await utimes(path.join(dir, 'Stari.txt'), LONG_AGO, LONG_AGO);
+    await store.moveToDeleted(id ?? '');
+    const restoredAt = Date.now();
+
+    const back = await store.restore(id ?? '');
+
+    const found = (await store.list()).find((note) => note.id === back);
+    assert.ok((found?.updatedAt ?? 0) >= restoredAt - 1000, 'a restored text is not stale');
+    assert.equal(found?.text, 'Stari\n\nPisan davno.');
   });
 });
 

@@ -76,6 +76,8 @@ const TEXT = {
     deletedPreview: (title: string) => `Pregled: ${title}`,
     deletedPreviewHelp: 'Ovde možeš samo da čitaš. Vrati tekst ako hoćeš da ga menjaš.',
     deletedEmpty: 'U ovom tekstu nema ništa.',
+    // Lower case, like the times in his list beside it: juce, pre 5 minuta.
+    deletedWhen: (when: string) => `obrisano ${when}`,
     deletedMatching: (n: number, query: string) =>
       `${n} ${plural(n, 'obrisan tekst sadrži', 'obrisana teksta sadrže', 'obrisanih tekstova sadrži')} „${query}“`,
     showAll: 'Prikaži sve',
@@ -162,6 +164,7 @@ const TEXT = {
     deletedPreview: (title: string) => `Preview: ${title}`,
     deletedPreviewHelp: 'You can only read here. Bring the text back if you want to change it.',
     deletedEmpty: 'There is nothing in this text.',
+    deletedWhen: (when: string) => `deleted ${when}`,
     deletedMatching: (n: number, query: string) =>
       `${n} deleted text${n === 1 ? '' : 's'} contain${n === 1 ? 's' : ''} “${query}”`,
     showAll: 'Show all',

@@ -62,11 +62,11 @@ function rowFor(
   // read as the app having lost track of something.
   title.textContent = note.title.length > 0 ? note.title : words.untitled;
 
-  // The same time this text would have shown in the list, meaning the same
-  // thing: when he last worked on it. Nothing records when he deleted it.
+  // When he put it away, which is what a file in Obrisano has for a time: it
+  // is written on the way in, so the moment it landed is the moment it says.
   const when = document.createElement('span');
   when.className = 'deleted-when';
-  when.textContent = describeWhen(note.updatedAt, language);
+  when.textContent = words.deletedWhen(describeWhen(note.updatedAt, language));
 
   const snippet = document.createElement('span');
   snippet.className = 'deleted-snippet';

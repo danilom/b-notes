@@ -240,42 +240,51 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
       const file = (await noteFiles()).get(requireNoteId(id));
       if (file === undefined) return;
 
-      // Nothing in it and nothing kept of it is not a text, and filing it would
-      // fill the one place he goes to find something lost with rows that open
-      // onto nothing. If the removal does not happen, for any reason, it falls
-      // through to being kept, which costs a row and loses nothing.
-      if (isEmptyText(asWritten(await files.read(file.path).catch(() => ' ')))) {
+      // Null when it cannot be read at all, which is the one case where nothing
+      // below should touch what is in it.
+      const text = await files
+        .read(file.path)
+        .then(asWritten)
+        .catch(() => null);
+
+      /*
+        A text with nothing in it and no earlier version is not a text. Filing
+        it would fill the one place he goes to find something he lost with rows
+        that open onto nothing.
+
+        Both halves matter. Emptying keeps a copy of what was there, so a file
+        of zero length can be the last marker of writing that still exists —
+        which is why this asks about the versions and not only the length. And
+        if the removal does not happen, for any reason, it falls through to
+        being kept, which costs a row and loses nothing.
+      */
+      if (text !== null && isEmptyText(text)) {
         const versions = await files.list(at(versionsFolderFor(id))).catch(() => []);
         if (versions.length === 0 && (await files.removeEmptyFile(file.path))) return;
       }
 
-      /*
-        A text with nothing in it and no earlier version is not a text. Keeping
-        it would fill the one place he goes to find something he lost with rows
-        that open onto nothing.
-
-        Both halves of that matter. Emptying a text keeps a copy of what was in
-        it, so a file of zero length can be the last marker of writing that does
-        still exist — which is why this asks about the versions and not only
-        about the length. And if the removal does not happen, for any reason at
-        all, it falls through to being kept, which costs a row and loses
-        nothing.
-      */
-      /*
-        What he kept, if what he is deleting is a husk.
-
-        Emptying a text keeps a copy and leaves the file at nothing, so deleting
-        one he had emptied would otherwise file a zero-byte file named after an
-        essay. The copy is written into it instead, which makes the deleted
-        folder mean what he would expect it to: the texts, as he last wrote
-        them. It also keeps the promise the plain .txt format was chosen for —
-        every file in there opens in Notepad and says something.
-      */
-      const kept = await lastKeptCopy(id, await files.read(file.path).catch(() => ' '));
+      const kept = text === null ? null : await lastKeptCopy(id, text);
 
       const name = deletedIdFor(id, await idsPutAway());
-      await files.rename(file.path, at(DELETED_FOLDER, `${name}${EXTENSION}`));
-      if (kept !== null) await files.write(at(DELETED_FOLDER, `${name}${EXTENSION}`), kept);
+      const putAway = at(DELETED_FOLDER, `${name}${EXTENSION}`);
+      await files.rename(file.path, putAway);
+
+      /*
+        Written, not only moved, and for two reasons at once.
+
+        What he emptied comes back into the file, so Obrisano holds his texts as
+        he last wrote them rather than a zero-byte file named after an essay —
+        which keeps the promise plain .txt was chosen for, that every file in
+        there opens in Notepad and says something.
+
+        And writing it sets the file's time to now, which is what the panel
+        shows and sorts by. A text he wrote in 2019 and deleted this morning
+        belongs at the top of that list, not buried among the other 2019s: what
+        he just threw away is what he is most likely looking for. The cost is
+        that the date he last wrote in it is not kept, which is a real loss and
+        a deliberate one.
+      */
+      if (text !== null) await files.write(putAway, kept ?? text);
 
       // Its history follows it, under the name it was put away as. Left where
       // it was, the next note he happens to give the same title would inherit
@@ -311,6 +320,14 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
       // because a text he asked for and did not get is the worse surprise.
       const back = nextFreeId(baseOf(id), null, new Set((await noteFiles()).keys()));
       await files.rename(file.path, at(`${back}${EXTENSION}`));
+
+      // Touched on the way back, for the same reason it was touched on the way
+      // out. Its old time is the moment he deleted it, which would be a strange
+      // thing for a text in his list to claim — and the date he wrote it was
+      // spent then. Now is the honest answer: he has just asked for it back,
+      // and that is when it last changed.
+      const text = await files.read(at(`${back}${EXTENSION}`)).catch(() => null);
+      if (text !== null) await files.write(at(`${back}${EXTENSION}`), text);
 
       // The copies come with it and are not spent: throwing away the only other
       // copy at the moment of recovery is the opposite of the point.
