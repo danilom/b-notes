@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import { deletedIdFor, planSave } from '../src/notes/note-saving.ts';
 
 /** Records whether the plan needed to read the old text, which is the costly part. */
-function context(taken: string[] = [], previous = '') {
+function context(taken: string[] = [], previous = '', kept: string | null = null) {
   const asked = { ids: 0, text: 0 };
   return {
     asked,
@@ -16,6 +16,7 @@ function context(taken: string[] = [], previous = '') {
       asked.text += 1;
       return previous;
     },
+    lastKept: async () => kept,
   };
 }
 
@@ -54,12 +55,15 @@ describe('planSave', () => {
     });
   });
 
-  it('does not read the old text on that ordinary save', async () => {
-    const world = context();
+  it('reads the old text once, however many questions want it', async () => {
+    // It used to skip the read on an ordinary save. It cannot now — how much of
+    // the old text is about to go is the question — so what matters instead is
+    // that a save never goes to disk for it twice.
+    const world = context([], 'O zimi\n\nPrvi tekst.');
 
     await planSave('O zimi', 'O zimi\n\nDrugi tekst.', world);
 
-    assert.equal(world.asked.text, 0);
+    assert.equal(world.asked.text, 1);
   });
 
   it('renames when he rewrites his opening lines', async () => {
@@ -80,12 +84,15 @@ describe('planSave', () => {
     assert.equal(action.kind, 'writeAndRename');
   });
 
-  it('keeps the id when an essay is replaced by a keystroke', async () => {
-    const world = context([], 'x'.repeat(20000));
+  it('keeps the id when an essay is replaced by a keystroke, and keeps the essay', async () => {
+    // The failure the whole thing exists for: select all, then type.
+    const essay = 'x'.repeat(20000);
+    const world = context([], essay);
 
     assert.deepEqual(await planSave('Dugačak esej', 'y', world), {
       kind: 'write',
       id: 'Dugačak esej',
+      snapshot: essay,
     });
   });
 

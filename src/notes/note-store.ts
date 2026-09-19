@@ -88,15 +88,31 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
    * cases the file is already what it should be. Versions are named for the
    * moment they were taken, so the last by name is the last there was.
    */
-  async function lastKeptCopy(id: string, text: string): Promise<string | null> {
-    if (!isEmptyText(asWritten(text))) return null;
-
-    const kept = (await files.list(at(versionsFolderFor(id))).catch(() => [])).sort(
-      (first, second) => nameOf(first.path).localeCompare(nameOf(second.path)),
+  /**
+   * The newest copy kept of a note, or null when none was ever kept.
+   *
+   * Versions are named for the moment they were taken, so the last by name is
+   * the last there was.
+   */
+  async function newestCopy(id: string): Promise<string | null> {
+    // By id, not by filename, and plainly rather than by locale. Two copies in
+    // one second are named "...15" and "...15 (1)", and with the extension on
+    // the end the space in " (1)" sorts before the dot in ".txt" — so the newer
+    // of the two came out first and the older one was read as the newest.
+    const kept = [...(await files.list(at(versionsFolderFor(id))).catch(() => []))].sort(
+      (first, second) => {
+        const [a, b] = [idOf(nameOf(first.path)), idOf(nameOf(second.path))];
+        return a < b ? -1 : a > b ? 1 : 0;
+      },
     );
     const newest = kept.at(-1);
     if (newest === undefined) return null;
     return asWritten(await files.read(newest.path).catch(() => '')) || null;
+  }
+
+  /** The same, but only when the note itself has nothing left in it. */
+  async function lastKeptCopy(id: string, text: string): Promise<string | null> {
+    return isEmptyText(asWritten(text)) ? newestCopy(id) : null;
   }
 
   /**
@@ -213,10 +229,18 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
       const existing = await noteFiles();
       const current = id === null ? undefined : existing.get(requireNoteId(id))?.path;
 
+      // Read at most once, however many of the questions below want it: on a
+      // 145KB essay this is the expensive part of a save.
+      let asItWas: string | null = null;
+      const previousText = async (): Promise<string> => {
+        asItWas ??= current === undefined ? '' : asWritten(await files.read(current).catch(() => ''));
+        return asItWas;
+      };
+
       const action = await planSave(id, text, {
         takenIds: async () => new Set(existing.keys()),
-        previousText: async () =>
-          current === undefined ? '' : asWritten(await files.read(current).catch(() => '')),
+        previousText,
+        lastKept: async () => (id === null ? null : newestCopy(id)),
       });
 
       if (action.kind === 'none') return null;

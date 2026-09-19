@@ -1,5 +1,6 @@
 import { baseOf, fileNameBase, nextFreeId } from './note-naming.ts';
 import { isEmptyText, survivedTooLittle } from './note.ts';
+import { worthKeeping } from './text-change.ts';
 import { titleFrom } from './note-title.ts';
 
 /**
@@ -18,10 +19,21 @@ export type SaveAction =
 export interface SaveContext {
   takenIds: () => Promise<ReadonlySet<string>>;
   /**
-   * The text as it was. Read only when a rename is on the table, because on a
-   * 145KB essay it is the expensive part of a save.
+   * The text as it was.
+   *
+   * Read on every save of an existing note now, because how much of it is about
+   * to go is the question this asks. On a 145KB essay that is the expensive
+   * part of a save, so the store hands back the same read rather than going to
+   * disk twice.
    */
   previousText: () => Promise<string>;
+  /**
+   * The newest copy already kept of this note, or null if there is none.
+   *
+   * Only ever asked for when enough is going to matter, so the ordinary save
+   * never pays for it.
+   */
+  lastKept: () => Promise<string | null>;
 }
 
 export async function planSave(
@@ -47,22 +59,37 @@ export async function planSave(
     called "Bez naslova" and emptying it would otherwise look like no change at
     all to the name, and return before ever reading what it said.
   */
+  const previous = await context.previousText();
+
   if (isEmptyText(text)) {
-    const previous = await context.previousText();
     if (isEmptyText(previous)) return { kind: 'write', id };
     return { kind: 'write', id, snapshot: previous };
   }
 
+  /*
+    Autosaving is only dangerous when text goes away. If what he has now still
+    contains what he had, nothing can be lost and it writes freely; if a large
+    part of it has gone, a copy is kept before the write lands.
+
+    Never blocking the edit: he genuinely does cut for brevity, and the point is
+    only to make that recoverable. Note that each save is measured against the
+    last saved text, so backspacing a paragraph away over half a minute is a
+    run of small changes and keeps nothing. What this catches is the chunk that
+    disappears between one save and the next.
+  */
+  const keep = worthKeeping(previous, text, await context.lastKept()) ? previous : undefined;
+  const kept = keep === undefined ? {} : { snapshot: keep };
+
   // The id already reflects his opening lines, so leave it be. This is most
-  // saves, and it's why the old text hasn't been read.
-  if (baseOf(id) === base) return { kind: 'write', id };
+  // saves.
+  if (baseOf(id) === base) return { kind: 'write', id, ...kept };
 
   // Trimming is ordinary and should still rename. But when almost nothing
   // survived, the text wasn't shortened, it was replaced — and the old name is
   // then the last evidence of what the note was.
-  if (survivedTooLittle(await context.previousText(), text)) return { kind: 'write', id };
+  if (survivedTooLittle(previous, text)) return { kind: 'write', id, ...kept };
 
-  return { kind: 'writeAndRename', id, to: nextFreeId(base, id, await context.takenIds()) };
+  return { kind: 'writeAndRename', id, to: nextFreeId(base, id, await context.takenIds()), ...kept };
 }
 
 /**

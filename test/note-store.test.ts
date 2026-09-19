@@ -465,6 +465,113 @@ describe('converting to plain text', () => {
   });
 });
 
+describe('keeping a copy before writing over his work', () => {
+  const ESSAY = `O zimi\n\n${'rec '.repeat(800)}`;
+  const versionsOf = async (dir: string, id: string): Promise<string[]> =>
+    readdir(path.join(dir, VERSIONS_FOLDER, id)).catch(() => []);
+
+  it('keeps nothing while he is writing', async () => {
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nPocetak.');
+
+    await store.save(id, ESSAY);
+
+    assert.deepEqual(await versionsOf(dir, id ?? ''), []);
+  });
+
+  it('keeps nothing when he trims a sentence', async () => {
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, ESSAY);
+
+    await store.save(id, ESSAY.replace('rec rec rec ', ''));
+
+    assert.deepEqual(await versionsOf(dir, id ?? ''), []);
+  });
+
+  it('keeps the essay when a keystroke replaces it', async () => {
+    // Select all, then type. The failure this exists for.
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, ESSAY);
+
+    await store.save(id, 'y');
+
+    const kept = await versionsOf(dir, id ?? '');
+    assert.equal(kept.length, 1);
+    assert.equal(
+      await readFile(path.join(dir, VERSIONS_FOLDER, id ?? '', kept[0] ?? ''), 'utf8'),
+      ESSAY,
+    );
+  });
+
+  it('keeps one copy through a long cutting session, not six', async () => {
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, ESSAY);
+
+    let now = ESSAY;
+    for (const keep of [600, 400, 200, 50]) {
+      now = `O zimi\n\n${'rec '.repeat(keep)}`;
+      await store.save(id, now);
+    }
+
+    const kept = await versionsOf(dir, id ?? '');
+    assert.equal(kept.length, 1);
+    assert.equal(
+      await readFile(path.join(dir, VERSIONS_FOLDER, id ?? '', kept[0] ?? ''), 'utf8'),
+      ESSAY,
+    );
+  });
+
+  it('measures against the newest copy when two were kept in one second', async () => {
+    /*
+      Two copies taken inside a second are named "...00" and "...00 (1)", and
+      with the extension on the end the space in " (1)" sorts before the dot in
+      ".txt". Read as filenames, the newer of the two comes first and the older
+      one is taken for the newest — so a cut would be measured against a copy
+      from long before, and keep one it did not need to.
+
+      Written by hand rather than by racing the clock, so this cannot pass by
+      landing either side of a second.
+    */
+    const { dir, store } = await emptyStore();
+    const id = (await store.save(null, ESSAY)) ?? '';
+    const folder = path.join(dir, VERSIONS_FOLDER, id);
+    await mkdir(folder, { recursive: true });
+    await writeFile(path.join(folder, '2026-01-01 10-00-00.txt'), 'O zimi\n\n', 'utf8');
+    await writeFile(path.join(folder, '2026-01-01 10-00-00 (1).txt'), ESSAY, 'utf8');
+
+    // Nothing new has been written since the newest copy, so cutting keeps none.
+    await store.save(id, `O zimi\n\n${'rec '.repeat(100)}`);
+
+    assert.deepEqual((await versionsOf(dir, id)).length, 2);
+  });
+
+  it('keeps another once he has written something new to lose', async () => {
+    /*
+      The case a five minute window would have missed: he cuts, writes a fresh
+      paragraph, then loses that. The copy from the first cut cannot hold it.
+    */
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, ESSAY);
+    await store.save(id, `O zimi\n\n${'rec '.repeat(200)}`);
+
+    const withNewWriting = `O zimi\n\n${'rec '.repeat(200)}${'novo '.repeat(80)}`;
+    await store.save(id, withNewWriting);
+    await store.save(id, 'O zimi\n\n');
+
+    const kept = await versionsOf(dir, id ?? '');
+    assert.equal(kept.length, 2);
+
+    const holding = await Promise.all(
+      kept.map((name) => readFile(path.join(dir, VERSIONS_FOLDER, id ?? '', name), 'utf8')),
+    );
+    assert.equal(
+      holding.filter((copy) => copy.includes('novo')).length,
+      1,
+      'the new writing survives in one of the copies kept',
+    );
+  });
+});
+
 describe('when a deleted text says it went', () => {
   const LONG_AGO = new Date(2019, 0, 1);
 
