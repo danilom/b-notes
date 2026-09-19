@@ -90,7 +90,6 @@ const deleteNoteLabel = element('delete-note-label', HTMLSpanElement);
 const deletedBlock = element('deleted-block', HTMLDivElement);
 const deletedSee = element('deleted-see', HTMLButtonElement);
 const deletedBlockLabel = element('deleted-block-label', HTMLSpanElement);
-const deletedBlockCount = element('deleted-block-count', HTMLSpanElement);
 const confirmPane = element('confirm', HTMLDivElement);
 const deletedPane = element('deleted', HTMLDivElement);
 
@@ -311,13 +310,13 @@ function drawDeletedBlock(): void {
   const found = query.length === 0 ? deleted : deleted.filter((note) => matches(note, query));
 
   deletedBlock.hidden = found.length === 0;
-  if (query.length === 0) {
-    deletedBlockLabel.textContent = words.deleted;
-    deletedBlockCount.textContent = String(deleted.length);
-    return;
-  }
-  deletedBlockLabel.textContent = words.deletedMatching(found.length, query);
-  deletedBlockCount.textContent = '';
+  // Named and counted in one line, the way the headings above it are: the
+  // strip is a different sort of thing from a section heading, but it answers
+  // the same question and should answer it in the same words.
+  deletedBlockLabel.textContent =
+    query.length === 0
+      ? `${words.deleted} · ${words.noteCount(deleted.length)}`
+      : words.deletedMatching(found.length, query);
 }
 
 async function saveNow(): Promise<void> {
