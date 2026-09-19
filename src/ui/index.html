@@ -320,11 +320,23 @@
         the things the app says about itself, not with the one action he takes
         all day. Quiet until he reaches for it.
       */
+      #status-actions {
+        display: flex;
+        align-items: center;
+        /*
+          A gap far wider than the strip's own. Obriši tekst is pressed a few
+          times a year and Izgled rarely, but a miss between them costs him a
+          dialog he did not ask for — so they are not neighbours.
+        */
+        gap: 2.2rem;
+        margin-left: auto;
+      }
+
+      #delete-note,
       #appearance-button {
         display: inline-flex;
         align-items: center;
         gap: 0.4rem;
-        margin-left: auto;
         padding: 0.3rem 0.6rem;
         border-color: transparent;
         background: none;
@@ -332,6 +344,7 @@
         font-size: 0.92em;
       }
 
+      #delete-note:hover:not(:disabled),
       #appearance-button:hover:not(:disabled) {
         border-color: var(--line);
         color: var(--ink);
@@ -491,6 +504,177 @@
 
       #appearance[hidden] {
         display: none;
+      }
+
+      /* ---- what he has put away ---- */
+
+      /*
+        Pinned under the list rather than scrolled with it: it is the answer to
+        "where did my text go", and an answer six hundred rows down is no
+        answer. Gone entirely while there is nothing in it, so the app does not
+        keep a tally of his deletions in front of him.
+      */
+      #deleted-block {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+        padding: 0.7rem 1rem;
+        border: 0;
+        border-top: 1px solid var(--line);
+        border-radius: 0;
+        background: none;
+        color: var(--quiet);
+        font-size: 0.92em;
+        text-align: left;
+      }
+
+      #deleted-block[hidden] {
+        display: none;
+      }
+
+      #deleted-block:hover {
+        background: var(--wash);
+        color: var(--ink);
+      }
+
+      #deleted-block:active {
+        background: var(--wash-firm);
+      }
+
+      #deleted-block-count {
+        margin-left: auto;
+        font-variant-numeric: tabular-nums;
+      }
+
+      #confirm,
+      #deleted {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: hsl(var(--grey-h) var(--surface) var(--l-shadow) / 0.42);
+      }
+
+      #confirm {
+        padding: 1.5rem;
+      }
+
+      /* Almost the whole window: the list needs the width for a snippet, and a
+         text needs the height to be read rather than peeked at. */
+      #deleted {
+        padding: 0.9rem;
+      }
+
+      #confirm[hidden],
+      #deleted[hidden] {
+        display: none;
+      }
+
+      .confirm-body {
+        margin: 0;
+        padding: 0.4rem 0 1.2rem;
+        line-height: 1.5;
+      }
+
+      .panel.deleted-panel {
+        width: min(62rem, 100%);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        /* The panel's own scrolling is off: the list and the text each scroll
+           inside it, so the header and footer never leave. */
+        overflow: hidden;
+      }
+
+      /* Stacked, unlike the appearance panel's header: this one is a title and
+         a sentence about it, not two things side by side. */
+      .panel.deleted-panel header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
+      }
+
+      .deleted-kept {
+        margin: 0.2rem 0 0;
+        color: var(--quiet);
+        font-size: 0.92em;
+        font-weight: normal;
+      }
+
+      .deleted-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.6rem 0 1rem;
+      }
+
+      .deleted-filter {
+        display: flex;
+        align-items: baseline;
+        gap: 0.8rem;
+        padding: 0.3rem 0.2rem 0.9rem;
+        color: var(--quiet);
+      }
+
+      .deleted-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.15rem 1rem;
+        width: 100%;
+        padding: 0.7rem 0.6rem;
+        border: 0;
+        border-radius: 6px;
+        background: none;
+        text-align: left;
+      }
+
+      .deleted-row:hover {
+        background: var(--wash);
+      }
+
+      .deleted-row:active {
+        background: var(--wash-firm);
+      }
+
+      .deleted-title {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      .deleted-when {
+        color: var(--quiet);
+        font-size: 0.92em;
+      }
+
+      .deleted-snippet {
+        grid-column: 1 / -1;
+        color: var(--quiet);
+        /* One line, cut with an ellipsis: it is here to tell two openings
+           apart, not to be read. */
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+
+      /*
+        His text, in his own face and at his own measure, so it reads as the
+        thing he wrote rather than as something the app is quoting back. Wide
+        panel, narrow column — the width is for the list, not for his lines.
+      */
+      .deleted-text {
+        flex: 1;
+        overflow-y: auto;
+        width: 100%;
+        max-width: var(--measure);
+        margin: 0 auto;
+        padding: 1.2rem 0;
+        color: var(--ink);
+        font-family: var(--writing-font);
+        font-size: var(--text-size);
+        line-height: var(--writing-leading);
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
       }
 
       /*
@@ -1010,6 +1194,10 @@
         </div>
         <div id="list"></div>
       </div>
+      <button id="deleted-block" type="button" hidden>
+        <span id="deleted-block-label"></span>
+        <span id="deleted-block-count"></span>
+      </button>
     </div>
 
     <div id="main">
@@ -1032,13 +1220,20 @@
       </div>
       <div id="status">
         <span id="status-text"></span>
-        <button id="appearance-button" type="button">
-          <span id="appearance-label"></span>
-        </button>
+        <div id="status-actions">
+          <button id="delete-note" type="button" hidden>
+            <span id="delete-note-label"></span>
+          </button>
+          <button id="appearance-button" type="button">
+            <span id="appearance-label"></span>
+          </button>
+        </div>
       </div>
     </div>
 
     <div id="appearance" hidden></div>
+    <div id="confirm" hidden></div>
+    <div id="deleted" hidden></div>
 
     <script src="renderer.js"></script>
   </body>

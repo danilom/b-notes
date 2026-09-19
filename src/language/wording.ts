@@ -61,6 +61,21 @@ const TEXT = {
     dayAndMonth: (date: Date) => `${date.getDate()}. ${MONTHS_SR[date.getMonth()]}`,
     year: (date: Date) => String(date.getFullYear()),
     noteCount: (n: number) => `${n} ${plural(n, 'tekst', 'teksta', 'tekstova')}`,
+
+    deleteNote: 'Obriši tekst',
+    deleteBody: 'Ovaj tekst se sklanja među obrisane. Možeš ga vratiti kad god hoćeš.',
+    deleteKeep: 'Obriši',
+    cancel: 'Otkaži',
+    close: 'Zatvori',
+
+    deleted: 'Obrisani tekstovi',
+    deletedKept: 'Ovi tekstovi se čuvaju. Možeš vratiti bilo koji.',
+    deletedMatching: (n: number, query: string) =>
+      `${n} ${plural(n, 'obrisan tekst sadrži', 'obrisana teksta sadrže', 'obrisanih tekstova sadrži')} „${query}“`,
+    showAll: 'Prikaži sve',
+    restore: 'Vrati među tekstove',
+    restored: 'Tekst je vraćen',
+    emptiedHint: 'Tekst je prazan. Obriši ga ako ti više ne treba.',
   },
   en: {
     newNote: 'New text',
@@ -110,6 +125,21 @@ const TEXT = {
     dayAndMonth: (date: Date) => date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }),
     year: (date: Date) => String(date.getFullYear()),
     noteCount: (n: number) => `${n} text${n === 1 ? '' : 's'}`,
+
+    deleteNote: 'Delete text',
+    deleteBody: 'This text is moved to the deleted ones. You can bring it back whenever you want.',
+    deleteKeep: 'Delete',
+    cancel: 'Cancel',
+    close: 'Close',
+
+    deleted: 'Deleted texts',
+    deletedKept: 'These texts are kept. You can bring any of them back.',
+    deletedMatching: (n: number, query: string) =>
+      `${n} deleted text${n === 1 ? '' : 's'} contain${n === 1 ? 's' : ''} “${query}”`,
+    showAll: 'Show all',
+    restore: 'Bring this text back',
+    restored: 'Text brought back',
+    emptiedHint: 'This text is empty. Delete it if you no longer need it.',
   },
 } satisfies Record<
   Language,

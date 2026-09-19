@@ -1,6 +1,6 @@
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 import { createNoteStore } from '../notes/note-store.ts';
-import { type Note, isEmptied } from '../notes/note.ts';
+import { type Note, isEmptyText } from '../notes/note.ts';
 import { BUILD_STAMP } from '../platform/build-info.ts';
 import type { Host } from '../platform/host.ts';
 import type { Log } from '../platform/logging.ts';
@@ -12,6 +12,8 @@ import {
   stepScale,
 } from './appearance.ts';
 import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
+import { openConfirmDialog } from './confirm-dialog.ts';
+import { openDeletedDialog } from './deleted-dialog.ts';
 import { readSession, writeSession } from './app-session.ts';
 import {
   type Settings,
@@ -20,7 +22,7 @@ import {
   readSettings,
 } from './app-settings.ts';
 import { icon } from './icons.ts';
-import { type Draft, renderList } from './note-list.ts';
+import { type Draft, matches, renderList } from './note-list.ts';
 import { type TextMatch, matchesIn } from './text-match.ts';
 
 /** Long enough that he isn't saved mid-word, short enough to never lose a thought. */
@@ -82,6 +84,13 @@ const newNoteLabel = element('new-note-label', HTMLSpanElement);
 const appearanceButton = element('appearance-button', HTMLButtonElement);
 const appearanceLabel = element('appearance-label', HTMLSpanElement);
 const appearancePane = element('appearance', HTMLDivElement);
+const deleteNote = element('delete-note', HTMLButtonElement);
+const deleteNoteLabel = element('delete-note-label', HTMLSpanElement);
+const deletedBlock = element('deleted-block', HTMLButtonElement);
+const deletedBlockLabel = element('deleted-block-label', HTMLSpanElement);
+const deletedBlockCount = element('deleted-block-count', HTMLSpanElement);
+const confirmPane = element('confirm', HTMLDivElement);
+const deletedPane = element('deleted', HTMLDivElement);
 
 /** Built here from whatever filesystem the host provides. */
 let store: ReturnType<typeof createNoteStore>;
@@ -99,7 +108,18 @@ let appearancePanel: OpenPanel | null = null;
 let showAppearanceOf: (appearance: Appearance) => void;
 
 let notes: Note[] = [];
+/** Everything he has put away. Held like `notes`, and for the same reason. */
+let deleted: Note[] = [];
 let openId: string | null = null;
+
+/**
+ * Something to tell him once, which outranks the saved state for one painting.
+ *
+ * Only ever set just before the status line is redrawn, and cleared by being
+ * shown: it reports a thing that just happened, and a thing that happened a
+ * minute ago is no longer news.
+ */
+let notice: string | null = null;
 
 /**
  * The text he has started but which isn't on disk yet. It exists only so the
@@ -112,6 +132,7 @@ let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
 function draw(): void {
   renderList(listPane, { notes, query: search.value, openId, draft, language });
+  drawDeletedBlock();
 }
 
 /**
@@ -218,6 +239,13 @@ function scrollToCurrentMatch(): void {
 }
 
 function showStatus(): void {
+  deleteNote.hidden = openId === null;
+
+  if (notice !== null) {
+    statusText.textContent = notice;
+    notice = null;
+    return;
+  }
   // Nothing open and nothing typed: there is no state to report yet, and the
   // line is for reporting, not for telling him to get on with it.
   if (openId === null && editor.value.trim().length === 0) {
@@ -228,10 +256,38 @@ function showStatus(): void {
     statusText.textContent = words.saving;
     return;
   }
+  // When there is nothing left in it, when it was last saved is not what he
+  // needs to know. Emptying used to be how he got rid of a text; now there is
+  // a button for that, two inches to the right of these words.
+  if (openId !== null && isEmptyText(editor.value)) {
+    statusText.textContent = words.emptiedHint;
+    return;
+  }
   statusText.textContent =
     savedAt === null
       ? words.notSaved
       : words.savedAgo(describeWhen(savedAt, language));
+}
+
+/**
+ * The way back to what he has put away.
+ *
+ * Says how many while he is just looking, and how many match while he is
+ * searching — because the moment a search comes back with nothing is exactly
+ * when he needs to be told the text might be in here.
+ */
+function drawDeletedBlock(): void {
+  const query = search.value.trim();
+  const found = query.length === 0 ? deleted : deleted.filter((note) => matches(note, query));
+
+  deletedBlock.hidden = found.length === 0;
+  if (query.length === 0) {
+    deletedBlockLabel.textContent = words.deleted;
+    deletedBlockCount.textContent = String(deleted.length);
+    return;
+  }
+  deletedBlockLabel.textContent = words.deletedMatching(found.length, query);
+  deletedBlockCount.textContent = '';
 }
 
 async function saveNow(): Promise<void> {
@@ -409,6 +465,89 @@ newNote.addEventListener('click', () => {
   log.info('Started a new text');
 });
 
+/**
+ * Asks before putting a text away, and says what putting it away means.
+ *
+ * The question is not "are you sure" — he has no way to be surer than he was
+ * when he pressed the button. It is a statement of what is about to happen and
+ * of the fact that it can be undone, which is the part he cannot know.
+ */
+function askToDelete(): void {
+  const id = openId;
+  if (id === null) return;
+  const note = notes.find((candidate) => candidate.id === id);
+  if (note === undefined) return;
+
+  const close = openConfirmDialog(
+    confirmPane,
+    {
+      title: note.title,
+      body: words.deleteBody,
+      confirm: words.deleteKeep,
+      onConfirm: () => {
+        close();
+        void deleteOpenNote(id);
+      },
+      onCancel: () => {
+        close();
+        deleteNote.focus();
+      },
+    },
+    language,
+  );
+}
+
+async function deleteOpenNote(id: string): Promise<void> {
+  // Anything still on its way to disk lands first. Putting away a file while a
+  // save is in flight would write the text back where it no longer lives.
+  if (saveTimer !== undefined) {
+    clearTimeout(saveTimer);
+    saveTimer = undefined;
+    await saveNow();
+  }
+
+  await store.moveToDeleted(id);
+  openId = null;
+  editor.value = '';
+  savedAt = null;
+  draft = null;
+  remember(null);
+  await reload();
+  markMatches();
+  showStatus();
+  log.info('Put a text away', { id });
+}
+
+function showDeleted(): void {
+  const close = openDeletedDialog(deletedPane, deleted, search.value, language, {
+    onClose: () => {
+      close();
+      deletedBlock.focus();
+    },
+    onRestore: (id: string) => {
+      close();
+      void restoreNote(id);
+    },
+  });
+}
+
+async function restoreNote(id: string): Promise<void> {
+  const back = await store.restore(id);
+  await reload();
+  // Straight into it, and said out loud. He asked for this text; leaving him
+  // looking at the list to find it again would be answering a question with a
+  // question.
+  notice = words.restored;
+  await open(back);
+  log.info('Brought a text back', { id, back });
+}
+
+/** Both lists, after anything that can move a text between them. */
+async function reload(): Promise<void> {
+  [notes, deleted] = await Promise.all([store.list(), store.listDeleted()]);
+  draw();
+}
+
 function showAppearance(): void {
   if (appearancePanel !== null) return;
 
@@ -439,6 +578,8 @@ function hideAppearance(): void {
 }
 
 appearanceButton.addEventListener('click', showAppearance);
+deleteNote.addEventListener('click', askToDelete);
+deletedBlock.addEventListener('click', showDeleted);
 
 /**
  * The shortcut every browser has taught him, pointed at our own setting.
@@ -526,6 +667,7 @@ export async function startApp(host: Host): Promise<void> {
   foundClose.setAttribute('aria-label', words.clearSearch);
   newNote.prepend(icon('new-text'));
   appearanceLabel.textContent = words.appearance;
+  deleteNoteLabel.textContent = words.deleteNote;
   appearanceButton.prepend(icon('appearance'));
   search.placeholder = words.searchPlaceholder;
   search.setAttribute('aria-label', words.searchLabel);
@@ -538,17 +680,12 @@ export async function startApp(host: Host): Promise<void> {
     log.warn('Could not convert some texts, so they are not in the list', converted.refused);
   }
 
-  notes = await store.list();
-
-  // Emptied notes are put away at startup, never while he's working — a note
-  // vanishing moments after he cleared it is the unexplained movement that
-  // unsettles him. An empty row tells him nothing either way.
-  const emptied = notes.filter(isEmptied);
-  if (emptied.length > 0) {
-    for (const note of emptied) await store.moveToDeleted(note.id);
-    notes = await store.list();
-    log.info('Put emptied texts away', { count: emptied.length });
-  }
+  // Emptied texts used to be swept away here, on the reading that clearing one
+  // was how he deleted. His old archive says otherwise — 95 texts deliberately
+  // put in the trash against 8 emptied ones left sitting in the list — so an
+  // empty text now stays where he left it, and the status line points him at
+  // the button for getting rid of it.
+  [notes, deleted] = await Promise.all([store.list(), store.listDeleted()]);
 
   // Reopen what he was last in. The search is deliberately not restored — a
   // filtered list on startup looks exactly like texts having gone missing.
@@ -564,6 +701,7 @@ export async function startApp(host: Host): Promise<void> {
   log.info('Ready', {
     build: BUILD_STAMP,
     notes: notes.length,
+    deleted: deleted.length,
     host: host.name,
     viewport: { width: window.innerWidth, height: window.innerHeight },
     body: { width: Math.round(body.width), height: Math.round(body.height) },

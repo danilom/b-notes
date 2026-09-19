@@ -172,8 +172,10 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
       const notes = await Promise.all(
         [...(await noteFiles(at(DELETED_FOLDER)))].map(([id, file]) => noteFrom(id, file)),
       );
-      // Newest first here means most recently put away, which is the order he
-      // will want them in: what he just lost is what he is looking for.
+      // By when he last worked on them, not when he put them away — nothing
+      // records that, and a rename leaves a file's time alone. It is the order
+      // the rest of the app uses, and it puts what he was lately working on at
+      // the top, which is where he will look first.
       return notes.sort(newestFirst);
     },
 
