@@ -195,6 +195,12 @@ newNote.addEventListener('click', () => {
   openId = null;
   savedAt = null;
   editor.value = '';
+
+  // The search belonged to whatever he was looking for before, and a new text
+  // is not that. There is a precedent: a search isn't restored on startup
+  // either, because a filtered list looks exactly like texts having gone
+  // missing. Clearing it also errs in the safe direction — texts reappear.
+  search.value = '';
   // Listed straight away, empty and untitled. Waiting for the first autosave
   // would leave him a second of having clicked and nothing having happened,
   // which is the second in which he clicks again.

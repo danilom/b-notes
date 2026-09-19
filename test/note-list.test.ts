@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type { Note } from '../src/notes/note.ts';
-import { type ListView, draftRowFor, sectionsFor } from '../src/ui/note-list.ts';
+import { type ListView, openRowFor, sectionsFor } from '../src/ui/note-list.ts';
 
 function note(title: string, text: string, updatedAt: number): Note {
   return { id: title, title, text, updatedAt, bytes: text.length };
@@ -35,15 +35,31 @@ describe('the list of texts', () => {
   });
 
   it('gives a started text no id, so there is nothing to open', () => {
-    assert.equal(draftRowFor(view({ draft: { startedAt: 9000 } }))?.id, null);
+    assert.equal(openRowFor(view({ draft: { startedAt: 9000 } }))?.id, null);
   });
 
   it('names a started text for what it is until his own first line takes over', () => {
-    assert.equal(draftRowFor(view({ draft: { startedAt: 9000 } }))?.title, 'Novi tekst — bez naslova');
+    assert.equal(openRowFor(view({ draft: { startedAt: 9000 } }))?.title, 'Novi tekst — bez naslova');
   });
 
   it('has no such row before he has started one', () => {
-    assert.equal(draftRowFor(view()), null);
+    assert.equal(openRowFor(view()), null);
+  });
+
+  it('pins the text he is editing when the search would dim it', () => {
+    // He searched for a word, opened what he found, and then deleted the word.
+    const searching = view({ query: 'kamen', openId: 'Zima' });
+    assert.equal(openRowFor(searching)?.title, 'Zima');
+    // And it is not also left sitting in the dimmed remainder below.
+    assert.deepEqual(titlesIn(sectionsFor(searching), 'Svi tekstovi'), ['Amsterdam']);
+  });
+
+  it('leaves the text he is editing alone when it matches the search', () => {
+    assert.equal(openRowFor(view({ query: 'kamen', openId: 'Ponta' })), null);
+  });
+
+  it('pins nothing while there is no search to hide anything', () => {
+    assert.equal(openRowFor(view({ openId: 'Zima' })), null);
   });
 
   it('still shows a started text when the search matches nothing', () => {
@@ -51,7 +67,7 @@ describe('the list of texts', () => {
     // the dimmed remainder just as Nedavni disappeared, leaving the text he had
     // asked for nowhere he would look.
     const searching = view({ query: 'nepostojeće', draft: { startedAt: 9000 } });
-    assert.notEqual(draftRowFor(searching), null);
+    assert.notEqual(openRowFor(searching), null);
     const sections = sectionsFor(searching);
     assert.deepEqual(titlesIn(sections, 'Pronađeni'), []);
     assert.deepEqual(titlesIn(sections, 'Svi tekstovi'), ['Amsterdam', 'Ponta', 'Zima']);

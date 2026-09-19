@@ -52,32 +52,58 @@ export function matches(row: { text: string }, query: string): boolean {
   return row.text.toLowerCase().includes(needle);
 }
 
-function rowsFor(view: ListView): Row[] {
-  const words = strings(view.language);
-  const rows: Row[] = view.notes.map((note) => ({
+function toRow(note: Note, words: ReturnType<typeof strings>): Row {
+  return {
     id: note.id,
     title: note.title.length > 0 ? note.title : words.untitled,
     text: note.text,
     updatedAt: note.updatedAt,
-  }));
-
-  return rows;
+  };
 }
 
 /**
- * The text he has begun, which belongs to no section.
+ * The text he has open, when the search would otherwise leave it dimmed.
  *
- * It used to sit among the rest and take its chances with the search, which was
- * wrong twice over: with a query that didn't match it — and it matches nothing,
- * having no words in it yet — it sank into the dimmed remainder, and it did so
- * at the very moment Nedavni was gone too, so the text he had just asked for
- * was nowhere he would look. It isn't a text he is searching for. It is the one
- * he is writing, so it sits above all of it and stays put.
+ * Null unless something is actually hiding it: with no query nothing is, and a
+ * text that matches is already at the top of what was found.
  */
-export function draftRowFor(view: ListView): Row | null {
-  if (view.draft === null) return null;
+function buriedOpenId(view: ListView): string | null {
+  if (view.openId === null || view.query.trim().length === 0) return null;
+  const open = view.notes.find((note) => note.id === view.openId);
+  if (open === undefined) return null;
+  return matches(open, view.query) ? null : view.openId;
+}
+
+function rowsFor(view: ListView): Row[] {
   const words = strings(view.language);
-  return { id: null, title: words.untitledNew, text: '', updatedAt: view.draft.startedAt };
+  const buried = buriedOpenId(view);
+  // Shown above instead, so it isn't in two places at once.
+  return view.notes.filter((note) => note.id !== buried).map((note) => toRow(note, words));
+}
+
+/**
+ * The text he is in, pinned above every section and never dimmed.
+ *
+ * Two things end up here, for one reason. A text he has begun has no words in
+ * it, so it can match no search and would sink into the dimmed remainder — at
+ * the very moment Nedavni is gone too, leaving the text he just asked for
+ * nowhere he would look. And a saved text he is editing can stop matching under
+ * him: search for a word, open what you found, delete the word, and the list
+ * quietly greys out the thing you are typing in.
+ *
+ * Neither is a text he is searching for. Both are the text he is in, and the
+ * list is never allowed to hide that from him.
+ */
+export function openRowFor(view: ListView): Row | null {
+  const words = strings(view.language);
+  if (view.draft !== null) {
+    return { id: null, title: words.untitledNew, text: '', updatedAt: view.draft.startedAt };
+  }
+
+  const buried = buriedOpenId(view);
+  if (buried === null) return null;
+  const note = view.notes.find((candidate) => candidate.id === buried);
+  return note === undefined ? null : toRow(note, words);
 }
 
 /**
@@ -139,10 +165,12 @@ export function renderList(container: HTMLElement, view: ListView): void {
     return;
   }
 
-  const draft = draftRowFor(view);
-  if (draft !== null) {
-    const element = rowElement(draft, view, false);
-    element.classList.add('draft');
+  const open = openRowFor(view);
+  if (open !== null) {
+    const element = rowElement(open, view, false);
+    element.classList.add('pinned');
+    // Only the unwritten one is italic: the other has a title of his own.
+    if (view.draft !== null) element.classList.add('draft');
     container.append(element);
   }
 
