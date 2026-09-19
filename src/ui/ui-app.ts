@@ -173,7 +173,7 @@ function markMatches(): void {
  * otherwise appear and disappear as he crosses between one match and two,
  * moving the panel twice in as many keystrokes. "Samo jednom" is what makes
  * that greying legible — there is one, so there is nowhere to go — where
- * "1. od 1" would only have stated an ordinal of itself.
+ * "1 od 1" would only have counted him against himself.
  */
 function showFound(): void {
   foundPane.hidden = found.length === 0;

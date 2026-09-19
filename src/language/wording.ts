@@ -48,7 +48,7 @@ const TEXT = {
     noNotesYet: 'Još nema tekstova',
     untitled: 'Bez naslova',
     untitledNew: 'Novi tekst — bez naslova',
-    foundAt: (at: number, total: number) => `${at}. od ${total}`,
+    foundAt: (at: number, total: number) => `${at} od ${total}`,
     foundOnce: 'samo jednom',
     foundPrevious: 'Prethodni',
     foundNext: 'Sledeći',
