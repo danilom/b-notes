@@ -108,6 +108,11 @@
         */
         --wash: rgb(0 0 0 / 0.055);
         --wash-firm: rgb(0 0 0 / 0.12);
+
+        /* What floats above his text casts a shadow onto it. Dark here, and
+           light in the dark mode below — the room it is lit from changes. */
+        --halo: rgb(0 0 0 / 0.2);
+        --halo-near: rgb(0 0 0 / 0.14);
         --panel: hsl(var(--grey-h) var(--surface) var(--l-panel));
 
         /* The one surface that stays out of it. He reads essays off this for
@@ -148,6 +153,9 @@
         /* Light over dark, for the same reason. */
         --wash: rgb(255 255 255 / 0.07);
         --wash-firm: rgb(255 255 255 / 0.16);
+
+        --halo: rgb(255 255 255 / 0.11);
+        --halo-near: rgb(255 255 255 / 0.09);
 
         --l-chosen: 70%;
         --l-chosen-soft: 31%;
@@ -925,17 +933,18 @@
         border-radius: 6px;
         background: var(--panel);
         /*
-          A ring of the page around it, and a soft shadow under it.
+          A halo all the way round, so it reads as floating above his writing
+          rather than sitting in a slot cut for it.
 
-          The ring is the page's own colour, so against the margin it cannot be
-          seen at all — it only does anything where the panel has to sit over
-          his writing, and there it clears a little space so the box doesn't
-          collide with his words. The shadow lifts it off the page, which is
-          what says this belongs to the app rather than to the text.
+          Dark in the light mode and light in the dark one: it is a shadow, and
+          which way a shadow falls depends on the room. Spread rather than
+          offset, so it separates the panel from the text on every side and not
+          only below — and kept faint, because a bright ring would read as the
+          panel being highlighted rather than merely lifted.
         */
         box-shadow:
-          0 0 0 5px var(--page),
-          0 3px 10px hsl(var(--grey-h) var(--surface) var(--l-shadow) / 0.18);
+          0 2px 16px 2px var(--halo),
+          0 1px 4px var(--halo-near);
         font-family: var(--ui-font);
         font-size: calc(var(--ui-size) * 0.85);
         color: var(--quiet);
