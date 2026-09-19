@@ -205,15 +205,18 @@ export function openDeletedDialog(
     back.textContent = words.restore;
     back.addEventListener('click', () => handlers.onRestore(note.id));
 
-    const never = document.createElement('button');
-    never.type = 'button';
-    never.textContent = words.cancel;
-    never.addEventListener('click', () => {
+    // Named for where it goes, not as a cancel. Otkaži here would promise to
+    // undo his coming in at all, and what it does is step back one level — the
+    // behaviour is right, so it is the word that has to say so.
+    const toList = document.createElement('button');
+    toList.type = 'button';
+    toList.textContent = words.deletedBack;
+    toList.addEventListener('click', () => {
       showing = null;
       fill();
     });
 
-    footer.append(back, never);
+    footer.append(back, toList);
     panel.replaceChildren(header, body, footer);
     back.focus();
   }
