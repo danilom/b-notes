@@ -437,6 +437,60 @@ describe('converting to plain text', () => {
   });
 });
 
+describe('his Windows line endings', () => {
+  const CRLF = 'O zimi\r\n\r\nPrvi red.\r\nDrugi red.\r\n';
+  const AS_HE_SEES_IT = 'O zimi\n\nPrvi red.\nDrugi red.\n';
+
+  it('hands his text over the way the box he writes in can hold it', async () => {
+    const { dir, store } = await emptyStore();
+    await writeFile(path.join(dir, 'O zimi.txt'), CRLF, 'utf8');
+
+    assert.equal(await store.read('O zimi'), AS_HE_SEES_IT);
+  });
+
+  it('lists it the same way, so nothing above the store sees two formats', async () => {
+    const { dir, store } = await emptyStore();
+    await writeFile(path.join(dir, 'O zimi.txt'), CRLF, 'utf8');
+
+    const [note] = await store.list();
+    assert.equal(note?.text, AS_HE_SEES_IT);
+    assert.equal(note?.title, 'O zimi');
+  });
+
+  it('settles one of his old files on one format the first time he edits it', async () => {
+    /*
+      The trap this exists for. A textarea cannot hold a carriage return, so the
+      moment he opens one of his files and types, every line differs from what
+      is on disk. Compared as they lie, changing one word reads as the text
+      having gone — and he has 582 files that would each have said so once. The
+      fix is to settle on one format at the door, which is only true if nothing
+      puts the old one back on the way out.
+    */
+    const { dir, store } = await emptyStore();
+    await writeFile(path.join(dir, 'O zimi.txt'), CRLF, 'utf8');
+    const opened = await store.read('O zimi');
+
+    await store.save('O zimi', opened.replace('Prvi', 'Prvi mali'));
+
+    const onDisk = await readFile(path.join(dir, 'O zimi.txt'), 'utf8');
+    assert.ok(!onDisk.includes('\r'), 'a carriage return survived the round trip');
+  });
+
+  it('still keeps a copy when he really does empty one of them', async () => {
+    const { dir, store } = await emptyStore();
+    await writeFile(path.join(dir, 'O zimi.txt'), CRLF, 'utf8');
+
+    await store.save('O zimi', '');
+
+    const kept = await readdir(path.join(dir, VERSIONS_FOLDER, 'O zimi'));
+    assert.equal(kept.length, 1);
+    assert.equal(
+      await readFile(path.join(dir, VERSIONS_FOLDER, 'O zimi', kept[0] ?? ''), 'utf8'),
+      AS_HE_SEES_IT,
+    );
+  });
+});
+
 describe('listing', () => {
   it('keeps the searchable form in step with the text it came from', async () => {
     // It is worked out once, when a note is read, and searching trusts it

@@ -20,6 +20,24 @@ import type { Note, NoteStore } from './note.ts';
 const nameOf = (path: string): string => path.split('/').at(-1) ?? path;
 
 /**
+ * His text as the app works with it, with Windows line endings taken out.
+ *
+ * His files came off Windows and end their lines with a carriage return and a
+ * newline. The box he writes in cannot hold a carriage return — a textarea
+ * hands back bare newlines whatever went in — so a file quietly loses them the
+ * first time he touches it. That is harmless in itself, and nothing here tries
+ * to put them back: one format going forward is less to go wrong than two.
+ *
+ * What is not harmless is comparing a file that still has them against text
+ * that never could. The two differ on every single line, so an edit of one word
+ * reads as the whole text having been replaced — which is the difference
+ * between keeping a copy of something and keeping 582 of them. Reading is the
+ * one place this can be fixed once, so it is fixed here and every comparison
+ * downstream is like for like.
+ */
+const asWritten = (text: string): string => text.replaceAll('\r\n', '\n');
+
+/**
  * Everything that knows what a note is, built on nothing but somewhere to keep
  * files. One implementation, so the browser behaves exactly as the app does.
  *
@@ -127,7 +145,7 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
     async list(): Promise<Note[]> {
       const notes = await Promise.all(
         [...(await noteFiles())].map(async ([id, file]): Promise<Note> => {
-          const text = await files.read(file.path);
+          const text = asWritten(await files.read(file.path));
           return {
             id,
             // From the text, not the name: the name is sanitised and may carry a
@@ -147,7 +165,7 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
     async read(id: string): Promise<string> {
       const file = (await noteFiles()).get(requireNoteId(id));
       if (file === undefined) throw new Error(`No such note: ${id}`);
-      return files.read(file.path);
+      return asWritten(await files.read(file.path));
     },
 
     async save(id: string | null, text: string): Promise<string | null> {
@@ -156,7 +174,8 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
 
       const action = await planSave(id, text, {
         takenIds: async () => new Set(existing.keys()),
-        previousText: async () => (current === undefined ? '' : files.read(current).catch(() => '')),
+        previousText: async () =>
+          current === undefined ? '' : asWritten(await files.read(current).catch(() => '')),
       });
 
       if (action.kind === 'none') return null;
