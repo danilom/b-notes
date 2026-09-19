@@ -71,7 +71,10 @@ const TEXT = {
     close: 'Zatvori',
 
     deleted: 'Obrisani tekstovi',
-    deletedKept: 'Ovi tekstovi se čuvaju. Možeš vratiti bilo koji.',
+    deletedKept: 'Izaberi tekst da vidiš šta je u njemu, pa ga vrati ako želiš.',
+    deletedSee: 'Vidi',
+    deletedPreview: (title: string) => `Pregled: ${title}`,
+    deletedEmpty: 'U ovom tekstu nema ništa.',
     deletedMatching: (n: number, query: string) =>
       `${n} ${plural(n, 'obrisan tekst sadrži', 'obrisana teksta sadrže', 'obrisanih tekstova sadrži')} „${query}“`,
     showAll: 'Prikaži sve',
@@ -138,7 +141,10 @@ const TEXT = {
     close: 'Close',
 
     deleted: 'Deleted texts',
-    deletedKept: 'These texts are kept. You can bring any of them back.',
+    deletedKept: 'Pick a text to see what is in it, then bring it back if you want.',
+    deletedSee: 'View',
+    deletedPreview: (title: string) => `Preview: ${title}`,
+    deletedEmpty: 'There is nothing in this text.',
     deletedMatching: (n: number, query: string) =>
       `${n} deleted text${n === 1 ? '' : 's'} contain${n === 1 ? 's' : ''} “${query}”`,
     showAll: 'Show all',

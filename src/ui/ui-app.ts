@@ -87,7 +87,8 @@ const appearancePane = element('appearance', HTMLDivElement);
 const deleteNote = element('delete-note', HTMLButtonElement);
 const emptyHint = element('empty-hint', HTMLDivElement);
 const deleteNoteLabel = element('delete-note-label', HTMLSpanElement);
-const deletedBlock = element('deleted-block', HTMLButtonElement);
+const deletedBlock = element('deleted-block', HTMLDivElement);
+const deletedSee = element('deleted-see', HTMLButtonElement);
 const deletedBlockLabel = element('deleted-block-label', HTMLSpanElement);
 const deletedBlockCount = element('deleted-block-count', HTMLSpanElement);
 const confirmPane = element('confirm', HTMLDivElement);
@@ -560,7 +561,7 @@ function showDeleted(): void {
   const close = openDeletedDialog(deletedPane, deleted, search.value, language, {
     onClose: () => {
       close();
-      deletedBlock.focus();
+      deletedSee.focus();
     },
     onRestore: (id: string) => {
       close();
@@ -617,7 +618,7 @@ function hideAppearance(): void {
 
 appearanceButton.addEventListener('click', showAppearance);
 deleteNote.addEventListener('click', askToDelete);
-deletedBlock.addEventListener('click', showDeleted);
+deletedSee.addEventListener('click', showDeleted);
 
 /**
  * The shortcut every browser has taught him, pointed at our own setting.
@@ -706,6 +707,10 @@ export async function startApp(host: Host): Promise<void> {
   newNote.prepend(icon('new-text'));
   appearanceLabel.textContent = words.appearance;
   deleteNoteLabel.textContent = words.deleteNote;
+  deletedSee.textContent = words.deletedSee;
+  // The same bin as on the button he pressed to put a text here. One mark for
+  // one idea is the only thing tying the action to the place it sends things.
+  deletedBlock.prepend(icon('delete'));
   deleteNote.prepend(icon('delete'));
   appearanceButton.prepend(icon('appearance'));
   search.placeholder = words.searchPlaceholder;

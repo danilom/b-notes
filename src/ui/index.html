@@ -589,36 +589,57 @@
         answer. Gone entirely while there is nothing in it, so the app does not
         keep a tally of his deletions in front of him.
       */
+      /*
+        Two jobs, two elements. The line says what is there — and while he is
+        searching, how much of it matches — which is a statement and not
+        something to press. The button beside it is the thing to press. Saying
+        both with one control meant the sentence had to read as an instruction,
+        which it cannot in the searching case.
+      */
       #deleted-block {
         display: flex;
-        align-items: baseline;
+        align-items: center;
         gap: 0.5rem;
-        padding: 0.7rem 1rem;
-        border: 0;
+        padding: 0.55rem 0.7rem 0.55rem 1rem;
         border-top: 1px solid var(--line);
-        border-radius: 0;
-        background: none;
         color: var(--quiet);
         font-size: 0.92em;
-        text-align: left;
       }
 
       #deleted-block[hidden] {
         display: none;
       }
 
-      #deleted-block:hover {
-        background: var(--wash);
-        color: var(--ink);
+      #deleted-block svg {
+        flex: none;
+        width: 1em;
+        height: 1em;
+        opacity: 0.8;
       }
 
-      #deleted-block:active {
-        background: var(--wash-firm);
+      /* Shrinks and cuts rather than pushing the button off the edge: the count
+         of what matches is worth less than the way to go and look at it. */
+      #deleted-block-label {
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
       }
 
       #deleted-block-count {
         margin-left: auto;
         font-variant-numeric: tabular-nums;
+      }
+
+      #deleted-see {
+        flex: none;
+        margin-left: auto;
+        padding: 0.25rem 0.7rem;
+        font-size: inherit;
+      }
+
+      #deleted-block-count + #deleted-see {
+        margin-left: 0;
       }
 
       #confirm,
@@ -722,7 +743,7 @@
 
       .deleted-row {
         display: grid;
-        grid-template-columns: 1fr auto;
+        grid-template-columns: 1fr auto auto;
         gap: 0.15rem 1rem;
         width: 100%;
         padding: 0.7rem 0.6rem;
@@ -746,12 +767,13 @@
       }
 
       .deleted-when {
+        grid-column: 2;
         color: var(--quiet);
         font-size: 0.92em;
       }
 
       .deleted-snippet {
-        grid-column: 1 / -1;
+        grid-column: 1 / 3;
         color: var(--quiet);
         /* One line, cut with an ellipsis: it is here to tell two openings
            apart, not to be read. */
@@ -761,23 +783,60 @@
       }
 
       /*
-        His text, in his own face and at his own measure, so it reads as the
-        thing he wrote rather than as something the app is quoting back. Wide
-        panel, narrow column — the width is for the list, not for his lines.
+        His text in his own face, so he recognises it — but on a surface that is
+        plainly not the page he writes on. The typeface is the part that makes a
+        text his, so the cues are everything around it: a tint, an edge, a
+        slightly smaller size, and no I-beam, which is the strongest "type here"
+        signal an interface has and was the one thing most wrong about this
+        before.
+
+        Wide panel, narrow column: the width is for the list, not for his lines.
       */
       .deleted-text {
         flex: 1;
         overflow-y: auto;
         width: 100%;
-        max-width: var(--measure);
-        margin: 0 auto;
-        padding: 1.2rem 0;
+        max-width: calc(var(--measure) + 3rem);
+        margin: 0.4rem auto 1rem;
+        padding: 1.2rem 1.5rem;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--wash);
         color: var(--ink);
+        cursor: default;
         font-family: var(--writing-font);
-        font-size: var(--text-size);
+        font-size: calc(var(--text-size) * 0.9);
         line-height: var(--writing-leading);
         white-space: pre-wrap;
         overflow-wrap: break-word;
+      }
+
+      /* Not his writing, so not in his typeface: a note from the app about a
+         text that has nothing in it, which is otherwise indistinguishable from
+         the dialog having failed to load one. */
+      .deleted-text-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        /* No tint and no edge either: drawing a large empty box to say a text
+           is empty makes it look as though something failed to load into it.
+           The space says it; the sentence names it. */
+        border-color: transparent;
+        background: none;
+        color: var(--quiet);
+        font-family: inherit;
+        font-size: 1em;
+        font-style: italic;
+      }
+
+      /* Quiet enough to ignore while reading the titles, there for the glance
+         that asks whether a row does anything. */
+      .deleted-opens {
+        grid-column: 3;
+        grid-row: 1 / 3;
+        align-self: center;
+        padding-left: 0.4rem;
+        color: var(--quiet);
       }
 
       /*
@@ -1304,10 +1363,11 @@
         </div>
         <div id="list"></div>
       </div>
-      <button id="deleted-block" type="button" hidden>
+      <div id="deleted-block" hidden>
         <span id="deleted-block-label"></span>
         <span id="deleted-block-count"></span>
-      </button>
+        <button id="deleted-see" type="button"></button>
+      </div>
     </div>
 
     <div id="main">

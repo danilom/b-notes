@@ -50,7 +50,12 @@ function rowFor(
   snippet.className = 'deleted-snippet';
   snippet.textContent = snippetOf(note);
 
-  row.append(title, when, snippet);
+  const opens = document.createElement('span');
+  opens.className = 'deleted-opens';
+  opens.setAttribute('aria-hidden', 'true');
+  opens.textContent = '›';
+
+  row.append(title, when, snippet, opens);
   row.addEventListener('click', () => show(note));
   return row;
 }
@@ -173,15 +178,20 @@ export function openDeletedDialog(
   function fillText(note: Note): void {
     const header = document.createElement('header');
     const title = document.createElement('h1');
-    title.textContent = note.title;
+    title.textContent = words.deletedPreview(note.title.length > 0 ? note.title : words.untitled);
     header.append(title, dismissButton());
 
     // A plain block, not a textarea he cannot type into: there is no caret to
     // put in it, so nothing suggests it would take his typing. Selecting still
     // works, which is his way out if what he wants is one paragraph of it.
     const body = document.createElement('div');
-    body.className = 'deleted-text';
-    body.textContent = note.text;
+    if (note.text.trim().length === 0) {
+      body.className = 'deleted-text deleted-text-empty';
+      body.textContent = words.deletedEmpty;
+    } else {
+      body.className = 'deleted-text';
+      body.textContent = note.text;
+    }
 
     const footer = document.createElement('footer');
     const back = document.createElement('button');
