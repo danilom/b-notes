@@ -339,6 +339,13 @@ search.addEventListener('input', () => {
   // A fresh search starts at the top of the text again.
   atFound = 0;
   draw();
+
+  // And at the top of the list. What he found goes above everything else, so
+  // searching from five thousand pixels down would put the answer off-screen
+  // above him with nothing on screen having changed — which reads as the search
+  // having done nothing, or the word not being there. Nothing else moves the
+  // list: opening a text and saving one both leave him where he was.
+  listPane.scrollTop = 0;
   markMatches();
   // Only on a fresh search: once he is reading, moving the page under him would
   // be the app taking the text away from where he had put it.
