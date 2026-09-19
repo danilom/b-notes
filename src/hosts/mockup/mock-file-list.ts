@@ -59,16 +59,49 @@ const ADRIFT_STYLE: Partial<CSSStyleDeclaration> = {
 
 const thousands = (value: number): string => value.toLocaleString('en-GB');
 
-/** One line per file, sizes right-aligned so the big ones stand out. */
-function listing(filter: string): string {
+const HEADING = '#ffffff';
+/** His writing and the app's own files, which sit directly in a folder. */
+const TOP_LEVEL = '#c9ccd1';
+/** What the app has filed away — verzije, Obrisano — which is usually the question. */
+const NESTED = '#7ec4e8';
+
+const isNested = (path: string): boolean => path.split('/').length > 2;
+
+function line(text: string, colour: string): HTMLSpanElement {
+  const span = document.createElement('span');
+  span.style.color = colour;
+  span.textContent = `${text}\n`;
+  return span;
+}
+
+/**
+ * One line per file, sizes right-aligned so the big ones stand out.
+ *
+ * Filed-away files last and in their own colour: there are five hundred texts
+ * at the top level and a handful underneath, and the handful is always what the
+ * question was about.
+ */
+function fill(into: HTMLElement, filter: string): void {
   const all = everyFile();
   const wanted = all.filter((file) => file.path.toLowerCase().includes(filter.toLowerCase()));
   const total = wanted.reduce((sum, file) => sum + file.bytes, 0);
   const width = Math.max(...wanted.map((file) => thousands(file.bytes).length), 1);
+  const shown = (file: { path: string; bytes: number }): string =>
+    `${thousands(file.bytes).padStart(width)}  ${file.path}`;
 
-  const head = `${wanted.length} of ${all.length} files, ${thousands(total)} bytes`;
-  const lines = wanted.map((file) => `${thousands(file.bytes).padStart(width)}  ${file.path}`);
-  return [head, '', ...lines].join('\n');
+  const top = wanted.filter((file) => !isNested(file.path));
+  const nested = wanted.filter((file) => isNested(file.path));
+  const head =
+    `${wanted.length} of ${all.length} files, ${thousands(total)} bytes` +
+    (nested.length > 0 ? ` \u00b7 ${nested.length} filed away` : '');
+
+  into.replaceChildren(
+    line(head, HEADING),
+    line('', HEADING),
+    ...top.map((file) => line(shown(file), TOP_LEVEL)),
+    ...(top.length > 0 && nested.length > 0 ? [line('', HEADING)] : []),
+    ...nested.map((file) => line(shown(file), NESTED)),
+  );
 }
 
 export function addMockFileList(): void {
@@ -96,7 +129,7 @@ export function addMockFileList(): void {
   } satisfies Partial<CSSStyleDeclaration>);
 
   const draw = (): void => {
-    lines.textContent = listing(filter.value);
+    fill(lines, filter.value);
   };
   filter.addEventListener('input', draw);
   panel.append(filter, lines);
