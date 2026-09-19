@@ -21,6 +21,7 @@ import {
 } from './app-settings.ts';
 import { icon } from './icons.ts';
 import { type Draft, renderList } from './note-list.ts';
+import { matchesIn } from './text-match.ts';
 
 /** Long enough that he isn't saved mid-word, short enough to never lose a thought. */
 const AUTOSAVE_IDLE_MS = 800;
@@ -62,6 +63,7 @@ function element<T extends Element>(id: string, kind: new () => T): T {
 
 const listPane = element('list', HTMLDivElement);
 const editor = element('editor', HTMLTextAreaElement);
+const editorMarks = element('editor-marks', HTMLDivElement);
 const statusText = element('status-text', HTMLSpanElement);
 const search = element('search', HTMLInputElement);
 const newNote = element('new-note', HTMLButtonElement);
@@ -99,6 +101,58 @@ let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
 function draw(): void {
   renderList(listPane, { notes, query: search.value, openId, draft, language });
+}
+
+/**
+ * Paints the matches on the layer behind his writing.
+ *
+ * Built out of text nodes and `mark` elements rather than a string of HTML: his
+ * writing is never turned into markup, so there is nothing in it that could be
+ * read as markup — no escaping to get right, and no way for a stray angle
+ * bracket in an essay to become part of the page.
+ */
+function markMatches(): void {
+  const text = editor.value;
+  const found = matchesIn(text, search.value);
+
+  if (found.length === 0) {
+    editorMarks.replaceChildren();
+    return;
+  }
+
+  const pieces: Node[] = [];
+  let at = 0;
+  for (const { start, end } of found) {
+    if (start > at) pieces.push(document.createTextNode(text.slice(at, start)));
+    const mark = document.createElement('mark');
+    mark.textContent = text.slice(start, end);
+    pieces.push(mark);
+    at = end;
+  }
+  // A trailing newline is not given a line of its own unless something follows
+  // it, so the layer would come up a line short of the textarea at the bottom.
+  pieces.push(document.createTextNode(`${text.slice(at)}
+`));
+
+  editorMarks.replaceChildren(...pieces);
+  editorMarks.scrollTop = editor.scrollTop;
+}
+
+/**
+ * Brings the first match into view.
+ *
+ * A textarea cannot say where a character has ended up on screen, so the
+ * position comes from the layer behind it, which is laid out identically and is
+ * made of elements that can be asked. Placed a third of the way down rather than
+ * at the very top, so he can see what comes before it and know where he is.
+ */
+function scrollToFirstMatch(): void {
+  const first = editorMarks.querySelector('mark');
+  if (first === null) return;
+
+  const target = first.offsetTop - editor.clientHeight / 3;
+  editor.scrollTop = Math.max(0, target);
+  editorMarks.scrollTop = editor.scrollTop;
 }
 
 function showStatus(): void {
@@ -166,6 +220,8 @@ async function open(id: string): Promise<void> {
   remember(id);
   editor.setSelectionRange(0, 0);
   editor.scrollTop = 0;
+  markMatches();
+  scrollToFirstMatch();
   draw();
   showStatus();
   log.info('Opened a text', { id });
@@ -177,6 +233,15 @@ listPane.addEventListener('click', (event) => {
   if (id !== undefined) void open(id);
 });
 
+editor.addEventListener('scroll', () => {
+  editorMarks.scrollTop = editor.scrollTop;
+});
+
+// The box changes with the window, and the marks have to be re-fitted to it.
+window.addEventListener('resize', () => {
+  markMatches();
+});
+
 editor.addEventListener('input', () => {
   // He can also start a new text simply by typing, without going near the
   // button. Either way it belongs in the list from the first keystroke.
@@ -184,17 +249,23 @@ editor.addEventListener('input', () => {
     draft = { startedAt: Date.now() };
     draw();
   }
+  markMatches();
   scheduleSave();
 });
 
 search.addEventListener('input', () => {
   draw();
+  markMatches();
+  // Only on a fresh search: once he is reading, moving the page under him would
+  // be the app taking the text away from where he had put it.
+  scrollToFirstMatch();
 });
 
 newNote.addEventListener('click', () => {
   openId = null;
   savedAt = null;
   editor.value = '';
+  editorMarks.replaceChildren();
 
   // The search belonged to whatever he was looking for before, and a new text
   // is not that. There is a precedent: a search isn't restored on startup

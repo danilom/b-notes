@@ -34,6 +34,10 @@
           page, and at book measure the column reads as a poem.
         */
         --measure: 62.5ch;
+        --writing-leading: 1.65;
+        --gutter-left: max(2rem, calc((100% - var(--measure)) * 0.4));
+        --gutter-right: max(2rem, calc((100% - var(--measure)) * 0.6));
+        --scrollbar: 14px;
 
         /*
           Grey chrome, and the colour spent all in one place.
@@ -75,6 +79,7 @@
         --l-page: 100%;
         --l-chosen: 38%;
         --l-chosen-soft: 91%;
+        --l-found: 82%;
         --l-on-chosen: 99%;
         --l-thumb: 82%;
         --l-thumb-hover: 68%;
@@ -112,6 +117,8 @@
         /* Full strength, and only where something must be pointed at. */
         --chosen: hsl(var(--accent-h) var(--strong) var(--l-chosen));
         --chosen-soft: hsl(var(--accent-h) var(--strong) var(--l-chosen-soft));
+        /* Stronger than a selected row: this has to carry his own text on top. */
+        --found: hsl(var(--accent-h) var(--strong) var(--l-found));
         /* Whatever can be read on top of a solid accent, either way up. */
         --on-chosen: hsl(var(--grey-h) var(--muted) var(--l-on-chosen));
       }
@@ -144,6 +151,7 @@
 
         --l-chosen: 70%;
         --l-chosen-soft: 31%;
+        --l-found: 38%;
         --l-on-chosen: 10%;
         --l-thumb: 34%;
         --l-thumb-hover: 48%;
@@ -219,8 +227,8 @@
         trackpad. Thin scrollbars are a young person's affordance.
       */
       ::-webkit-scrollbar {
-        width: 14px;
-        height: 14px;
+        width: var(--scrollbar);
+        height: var(--scrollbar);
       }
 
       ::-webkit-scrollbar-track,
@@ -795,14 +803,94 @@
           toward the list also shortens the trip from choosing a text to
           reading it.
         */
-        padding-left: max(2rem, calc((100% - var(--measure)) * 0.4));
-        padding-right: max(2rem, calc((100% - var(--measure)) * 0.6));
+        padding-left: var(--gutter-left);
+        padding-right: var(--gutter-right);
         border: 0;
         outline: 0;
         resize: none;
-        line-height: 1.65;
+        line-height: var(--writing-leading);
         color: var(--ink);
+        /* See below: the marks show through from behind. */
+        background: none;
+        /*
+          Always a scrollbar, never sometimes. It stops the text reflowing the
+          first time an essay grows past one screen — and, more to the point,
+          the layer behind gets one too, so both give up exactly the same
+          fraction of a pixel to it and wrap on the same words.
+        */
+        overflow-y: scroll;
+      }
+
+      /*
+        The matches, painted behind his writing.
+
+        Text inside a textarea cannot be styled — there are no elements in there
+        to colour. So the same text is laid out again underneath in a plain div,
+        with the matches wrapped in `mark` and everything else made invisible,
+        and the textarea floats on top with no background of its own. He sees
+        his own text, over our highlighting, and the textarea he is typing in is
+        untouched: native editing, native undo, still plain text.
+
+        This layer is also how the scrolling works. A textarea cannot say where
+        a character sits on screen; the div can, so the first match's position
+        here is what the textarea is scrolled to.
+
+        Everything that decides where a line breaks is shared with the textarea
+        above — font, size, leading, gutters, width — because if the two wrap
+        differently the marks land on the wrong words.
+      */
+      #writing {
+        position: relative;
+        flex: 1;
+        min-height: 0;
         background: var(--page);
+      }
+
+      #editor,
+      #editor-marks {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        font-family: var(--writing-font);
+        font-size: var(--text-size);
+        line-height: var(--writing-leading);
+        padding-top: 1.6rem;
+        padding-bottom: 1.6rem;
+      }
+
+      #editor-marks {
+        /*
+          The same gutters as the textarea, and a scrollbar of its own.
+
+          Declaring the gutters plus a nominal scrollbar width was close but not
+          exact — of eighteen combinations of font, size and zoom, thirteen
+          wrapped a line differently, which walks the marks off the words
+          further down a long essay. Copying the textarea's measured width was
+          worse: the width it reports is a whole number and the width it has is
+          not, and a third of a pixel is enough to move a word. Giving this
+          layer a real scrollbar too, and then hiding it, makes the two boxes
+          identical by construction rather than by arithmetic.
+        */
+        padding-left: var(--gutter-left);
+        padding-right: var(--gutter-right);
+        overflow-y: scroll;
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+        color: transparent;
+        user-select: none;
+      }
+
+      /* Present, so it takes up its width; invisible, because it is not his. */
+      #editor-marks::-webkit-scrollbar-thumb,
+      #editor-marks::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      #editor-marks mark {
+        color: transparent;
+        background: var(--found);
+        border-radius: 2px;
       }
     </style>
   </head>
@@ -829,7 +917,10 @@
     </div>
 
     <div id="main">
-      <textarea id="editor" spellcheck="false"></textarea>
+      <div id="writing">
+        <div id="editor-marks" aria-hidden="true"></div>
+        <textarea id="editor" spellcheck="false"></textarea>
+      </div>
       <div id="status">
         <span id="status-text"></span>
         <button id="appearance-button" type="button">
