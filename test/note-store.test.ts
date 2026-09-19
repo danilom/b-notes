@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
@@ -434,6 +434,21 @@ describe('converting to plain text', () => {
     await writeFile(path.join(dir, 'Esej o zimi.md'), 'Esej o zimi\n\nTekst.', 'utf8');
 
     assert.deepEqual(await store.list(), []);
+  });
+});
+
+describe('what he is shown', () => {
+  it('shows him nothing that is filed away under his writing', async () => {
+    // The two folders the app keeps beside his texts. Neither is his writing,
+    // and an extra row in his list reads to him as a text he does not remember.
+    const { dir, store } = await emptyStore();
+    await store.save(null, 'O zimi');
+    for (const folder of [VERSIONS_FOLDER, DELETED_FOLDER]) {
+      await mkdir(path.join(dir, folder, 'O jeseni'), { recursive: true });
+      await writeFile(path.join(dir, folder, 'O jeseni', 'staro.txt'), 'Nekad.', 'utf8');
+    }
+
+    assert.deepEqual((await store.list()).map((note) => note.title), ['O zimi']);
   });
 });
 
