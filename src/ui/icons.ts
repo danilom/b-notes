@@ -15,7 +15,14 @@
 const VIEW_BOX = '0 0 24 24';
 const STROKE_WIDTH = '2';
 
-export type IconName = 'new-text' | 'appearance' | 'close' | 'delete' | 'previous' | 'next';
+export type IconName =
+  | 'new-text'
+  | 'appearance'
+  | 'close'
+  | 'delete'
+  | 'versions'
+  | 'previous'
+  | 'next';
 
 const PATHS = {
   'new-text': [
@@ -28,6 +35,11 @@ const PATHS = {
     'M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z',
   ],
   close: ['M18 6 6 18', 'm6 6 12 12'],
+  versions: [
+    'M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8',
+    'M3 3v5h5',
+    'M12 7v5l4 2',
+  ],
   delete: [
     'M3 6h18',
     'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6',

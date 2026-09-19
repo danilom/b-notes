@@ -831,6 +831,9 @@ export async function startApp(host: Host): Promise<void> {
   // one idea is the only thing tying the action to the place it sends things.
   deletedBlock.prepend(icon('delete'));
   deleteNote.prepend(icon('delete'));
+  // A clock turning back, beside the bin: both mark what the button does to the
+  // text in front of him.
+  seeVersions.prepend(icon('versions'));
   appearanceButton.prepend(icon('appearance'));
   search.placeholder = words.searchPlaceholder;
   search.setAttribute('aria-label', words.searchLabel);
