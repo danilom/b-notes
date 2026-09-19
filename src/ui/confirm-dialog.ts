@@ -1,12 +1,14 @@
 import { type Language, strings } from '../language/wording.ts';
+import { icon } from './icons.ts';
 
 /**
  * What he is being asked, and what happens either way.
  *
- * The title is the thing itself — the text's own name — rather than a question
- * about it. He has to know which text this is about before the answer means
- * anything, and a name he recognises does that faster than a sentence with the
- * name buried in it.
+ * The title names the action and the thing it acts on — "Obriši tekst: Ponta" —
+ * because with an X in the corner and one word on the button, the header is the
+ * only place the whole question is written down. A long title wraps rather than
+ * being cut: the name of the text is the one thing here that cannot afford an
+ * ellipsis.
  */
 export interface Confirmation {
   title: string;
@@ -50,7 +52,18 @@ export function openConfirmDialog(
   const header = document.createElement('header');
   const title = document.createElement('h2');
   title.textContent = confirmation.title;
-  header.append(title);
+
+  // The same way out as the appearance panel's, in the same corner and doing
+  // the same thing. Two dialogs that dismiss differently is one dialog too many
+  // to learn.
+  const dismiss = document.createElement('button');
+  dismiss.type = 'button';
+  dismiss.className = 'close';
+  dismiss.title = words.close;
+  dismiss.setAttribute('aria-label', words.close);
+  dismiss.append(icon('close'));
+  dismiss.addEventListener('click', confirmation.onCancel);
+  header.append(title, dismiss);
 
   const body = document.createElement('p');
   body.className = 'confirm-body';

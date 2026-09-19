@@ -481,7 +481,9 @@ function askToDelete(): void {
   const close = openConfirmDialog(
     confirmPane,
     {
-      title: note.title,
+      // The same word the list and the deleted dialog use for a text with
+      // nothing at the top of it, rather than a heading with a hole in it.
+      title: words.deleteTitle(note.title.length > 0 ? note.title : words.untitled),
       body: words.deleteBody,
       confirm: words.deleteKeep,
       onConfirm: () => {

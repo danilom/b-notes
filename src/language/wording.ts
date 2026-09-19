@@ -63,6 +63,7 @@ const TEXT = {
     noteCount: (n: number) => `${n} ${plural(n, 'tekst', 'teksta', 'tekstova')}`,
 
     deleteNote: 'Obriši tekst',
+    deleteTitle: (title: string) => `Obriši tekst: ${title}`,
     deleteBody: 'Ovaj tekst se sklanja među obrisane. Možeš ga vratiti kad god hoćeš.',
     deleteKeep: 'Obriši',
     cancel: 'Otkaži',
@@ -127,6 +128,7 @@ const TEXT = {
     noteCount: (n: number) => `${n} text${n === 1 ? '' : 's'}`,
 
     deleteNote: 'Delete text',
+    deleteTitle: (title: string) => `Delete text: ${title}`,
     deleteBody: 'This text is moved to the deleted ones. You can bring it back whenever you want.',
     deleteKeep: 'Delete',
     cancel: 'Cancel',

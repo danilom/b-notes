@@ -572,6 +572,20 @@
         display: none;
       }
 
+      /*
+        No rules across it. The appearance panel earns those lines because its
+        choices scroll between them; here there is one sentence, and two
+        horizontal rules around it read as furniture left behind by mistake.
+      */
+      #confirm .panel header {
+        align-items: flex-start;
+        border-bottom: 0;
+      }
+
+      #confirm .panel footer {
+        border-top: 0;
+      }
+
       .confirm-body {
         margin: 0;
         padding: 0.4rem 0 1.2rem;
