@@ -296,6 +296,22 @@ listPane.addEventListener('click', (event) => {
   if (id !== undefined) void open(id);
 });
 
+/**
+ * Leaves the pen in his hand.
+ *
+ * A button takes the focus when it is pressed, which would take the cursor out
+ * of his text — he clicks one of these, then types, and the letters go nowhere.
+ * Refusing the default on the way down means the button never takes focus at
+ * all, so the click still happens and the cursor stays where he left it.
+ */
+function withoutTakingFocus(button: HTMLButtonElement): void {
+  button.addEventListener('mousedown', (event) => {
+    event.preventDefault();
+  });
+}
+
+for (const button of [foundPrevious, foundNext, foundClose]) withoutTakingFocus(button);
+
 foundPrevious.addEventListener('click', () => {
   stepThroughFound(-1);
 });
