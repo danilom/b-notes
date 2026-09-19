@@ -5,6 +5,7 @@ import {
   MOCK_APP_FOLDER,
   MOCK_WRITING_FOLDER,
   createMockFileSystem,
+  everyFile,
   seedIfEmpty,
 } from './mock-file-system.ts';
 
@@ -28,6 +29,26 @@ function setZoom(factor: number): void {
 }
 
 /**
+ * Puts the pretend filesystem where it can be looked at, given `?test`.
+ *
+ * Only ever in this host, which is the only one with a pretend filesystem and
+ * which the packaged app is never built from — so there is nothing here to
+ * leave switched on by accident. Printed once on load for the screenshot, and
+ * left on `window` so it can be asked again after something has moved.
+ */
+function offerTheFileList(): void {
+  if (!new URLSearchParams(window.location.search).has('test')) return;
+
+  const show = (): { path: string; bytes: number }[] => {
+    const files = everyFile();
+    console.table(files);
+    return files;
+  };
+  Object.defineProperty(window, 'showFiles', { value: show, writable: true });
+  show();
+}
+
+/**
  * The browser's host, where the interface is developed.
  *
  * It provides the same capabilities the packaged app does, backed by a pretend
@@ -46,6 +67,7 @@ async function main(): Promise<void> {
   };
 
   await startApp(host);
+  offerTheFileList();
 }
 
 void main();

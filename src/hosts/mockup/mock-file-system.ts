@@ -106,6 +106,19 @@ export function createMockFileSystem(): FileSystem {
 }
 
 /**
+ * Every pretend file there is, with its size, for looking at while testing.
+ *
+ * Straight off the stored map rather than through `list`, on purpose: the point
+ * is to see what is actually there, including the folders the app believes it
+ * has tidied away and anything it has left behind in a corner.
+ */
+export function everyFile(): { path: string; bytes: number }[] {
+  return [...load()]
+    .map(([path, file]) => ({ path, bytes: new TextEncoder().encode(file.text).length }))
+    .sort((first, second) => first.path.localeCompare(second.path));
+}
+
+/**
  * Fills an empty browser with the generated test corpus, so the list can be
  * judged against six hundred texts rather than five. Does nothing if the file
  * isn't being served, which is the ordinary case outside development.
