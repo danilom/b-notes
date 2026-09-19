@@ -1,13 +1,16 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readdir, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
 import { createFileSystem } from '../src/hosts/electron/disk-file-system.ts';
+import type { FileSystem } from '../src/platform/file-system.ts';
 import { createNoteStore } from '../src/notes/note-store.ts';
 import {
   DELETED_FOLDER,
+  EXTENSION,
+  VERSIONS_FOLDER,
   baseOf,
   fileNameBase,
   isConflictedCopy,
@@ -213,7 +216,81 @@ describe('saving', () => {
 
     await store.save(id, '');
 
-    assert.equal((await readdir(dir)).length, 1);
+    assert.deepEqual(
+      (await readdir(dir)).filter((name) => name.endsWith(EXTENSION)),
+      ['O zimi.txt'],
+    );
+  });
+
+  it('keeps what he emptied, since emptying is the one edit that leaves nothing', async () => {
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nSve što je napisao.');
+
+    await store.save(id, '');
+
+    const kept = await readdir(path.join(dir, VERSIONS_FOLDER, 'O zimi'));
+    assert.equal(kept.length, 1);
+    assert.equal(
+      await readFile(path.join(dir, VERSIONS_FOLDER, 'O zimi', kept[0] ?? ''), 'utf8'),
+      'O zimi\n\nSve što je napisao.',
+    );
+  });
+
+  it('does not keep a version of a note that was already empty', async () => {
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nTekst.');
+    await store.save(id, '');
+    await store.save(id, '');
+
+    assert.equal((await readdir(path.join(dir, VERSIONS_FOLDER, 'O zimi'))).length, 1);
+  });
+
+  it('leaves his text alone when the version cannot be kept', async () => {
+    // The save is about to destroy the only copy. If what it would destroy
+    // cannot be kept, it does not happen — he sees "not saved" and the text
+    // is still on disk for the next attempt.
+    const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
+    const real = createFileSystem();
+    const refusesVersions: FileSystem = {
+      ...real,
+      write: async (at, text) =>
+        at.includes(VERSIONS_FOLDER) ? Promise.reject(new Error('disk full')) : real.write(at, text),
+    };
+    const store = createNoteStore(refusesVersions, dir.replaceAll('\\', '/'));
+    const id = await store.save(null, 'O zimi\n\nTekst koji mora preživjeti.');
+
+    await assert.rejects(() => store.save(id, ''));
+
+    assert.equal(await store.read(id ?? ''), 'O zimi\n\nTekst koji mora preživjeti.');
+  });
+
+  it('sends a note\'s earlier versions after it when it is put away', async () => {
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nTekst.');
+    await store.save(id, '');
+
+    await store.moveToDeleted(id ?? '');
+
+    const moved = await readdir(path.join(dir, VERSIONS_FOLDER, DELETED_FOLDER, 'O zimi'));
+    assert.equal(moved.length, 1);
+  });
+
+  it('never lets a new note inherit a dead one\'s versions', async () => {
+    const { dir, store } = await emptyStore();
+    const first = await store.save(null, 'O zimi\n\nPrvi tekst.');
+    await store.save(first, '');
+    await store.moveToDeleted(first ?? '');
+
+    // He writes something new that happens to start with the same words.
+    const second = await store.save(null, 'O zimi\n\nSasvim drugi tekst.');
+    await store.save(second, '');
+
+    const theirs = await readdir(path.join(dir, VERSIONS_FOLDER, 'O zimi'));
+    assert.equal(theirs.length, 1);
+    assert.equal(
+      await readFile(path.join(dir, VERSIONS_FOLDER, 'O zimi', theirs[0] ?? ''), 'utf8'),
+      'O zimi\n\nSasvim drugi tekst.',
+    );
   });
 
   it('emptying a note keeps its name, which is all that is left of it', async () => {

@@ -59,9 +59,18 @@ When the tradeoff is between "powerful" and "impossible to get wrong", choose im
 | --- | --- | --- |
 | his texts | writing folder (Dropbox) | backed up and synced; he never sees the path |
 | `settings.json` | writing folder | which letters and which colour are taste, and travel with him |
+| `Obrisano/` | writing folder | texts he emptied, keeping the name that is all that was left |
+| `verzije/` | writing folder | what a text said before he emptied it, and `verzije/Obrisano/` once the text itself is put away |
 | `screen.json` | `userData` | how big the letters are is the screen in front of him, not taste — syncing it would have one machine keep undoing the other |
 | `session.json` | `userData` | which text he had open, on this machine |
 | `logs/` | `userData` | ours, per machine, safe to delete |
+
+Emptying the text is how he deletes — he never found Resoph's delete command —
+and until now it was the one edit in the app that truly lost writing: the file
+was overwritten with nothing and only the name survived. A version is kept
+before an emptying lands, and if it cannot be kept the emptying does not happen.
+Versions are plain `.txt`, readable in Notepad without this app, and nothing
+ever writes to one after it is made.
 
 Everything in `userData` is safe to delete: it costs him a window position and a
 colour, never a word. Both settings files are written by laying the keys we know

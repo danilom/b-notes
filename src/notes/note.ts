@@ -51,7 +51,12 @@ export interface NoteStore {
  * and his corpus carries dozens of emptied files still sitting in the list.
  */
 export function isEmptied(note: Note): boolean {
-  return note.text.trim().length === 0;
+  return isEmptyText(note.text);
+}
+
+/** The same test, for a save that hasn't become a note yet. */
+export function isEmptyText(text: string): boolean {
+  return text.trim().length === 0;
 }
 
 /**

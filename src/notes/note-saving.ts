@@ -1,5 +1,5 @@
 import { baseOf, fileNameBase, nextFreeId } from './note-naming.ts';
-import { survivedTooLittle } from './note.ts';
+import { isEmptyText, survivedTooLittle } from './note.ts';
 import { titleFrom } from './note-title.ts';
 
 /**
@@ -11,7 +11,8 @@ import { titleFrom } from './note-title.ts';
  */
 export type SaveAction =
   | { kind: 'none' }
-  | { kind: 'write'; id: string }
+  /** `snapshot` is text that must be kept somewhere before this write lands. */
+  | { kind: 'write'; id: string; snapshot?: string }
   | { kind: 'writeAndRename'; id: string; to: string };
 
 export interface SaveContext {
@@ -35,6 +36,22 @@ export async function planSave(
   const base = fileNameBase(titleFrom(text));
 
   if (id === null) return { kind: 'write', id: nextFreeId(base, null, await context.takenIds()) };
+
+  /*
+    Emptying is how he deletes — he never found Resoph's delete command — and it
+    is the one edit that leaves nothing behind. Every other mistake leaves a
+    file to dig at; this one leaves a name and no text, which is exactly what
+    his old corpus is full of. So what was there is kept before the empty lands.
+
+    Ahead of the shortcut below, because a note he never titled is already
+    called "Bez naslova" and emptying it would otherwise look like no change at
+    all to the name, and return before ever reading what it said.
+  */
+  if (isEmptyText(text)) {
+    const previous = await context.previousText();
+    if (isEmptyText(previous)) return { kind: 'write', id };
+    return { kind: 'write', id, snapshot: previous };
+  }
 
   // The id already reflects his opening lines, so leave it be. This is most
   // saves, and it's why the old text hasn't been read.

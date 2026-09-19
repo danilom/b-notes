@@ -7,7 +7,10 @@ import {
   isConvertibleNoteFile,
   isNoteFile,
   nextFreeId,
+  putAwayVersionsFolderFor,
   requireNoteId,
+  versionName,
+  versionsFolderFor,
 } from './note-naming.ts';
 import { deletedIdFor, planSave } from './note-saving.ts';
 import { toSearchable } from '../language/diacritics.ts';
@@ -39,6 +42,36 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
       byId.set(idOf(name), file);
     }
     return byId;
+  }
+
+  /**
+   * Keeps one earlier version of a note.
+   *
+   * Named for the moment it was taken, and never overwriting one already there
+   * — two versions of the same note within a second is barely possible, but the
+   * cost of being wrong is the text this whole thing exists to save.
+   */
+  async function keepVersion(id: string, text: string): Promise<void> {
+    const folder = versionsFolderFor(id);
+    const taken = new Set((await files.list(at(folder)).catch(() => [])).map((file) => idOf(nameOf(file.path))));
+    const name = nextFreeId(versionName(new Date()), null, taken);
+    await files.write(at(folder, `${name}${EXTENSION}`), text);
+  }
+
+  /**
+   * Moves a note's versions, one file at a time.
+   *
+   * File by file because moving a folder is not something the filesystem here
+   * promises to do. The empty folder it leaves behind is untidy and harmless;
+   * removing it needs a way to delete a folder, which nothing else has wanted
+   * yet.
+   */
+  async function moveVersions(id: string, putAwayAs: string): Promise<void> {
+    const from = versionsFolderFor(id);
+    const to = putAwayVersionsFolderFor(putAwayAs);
+    for (const file of await files.list(at(from)).catch(() => [])) {
+      await files.rename(file.path, at(to, nameOf(file.path)));
+    }
   }
 
   async function idsPutAway(): Promise<Set<string>> {
@@ -128,6 +161,14 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
 
       if (action.kind === 'none') return null;
 
+      // Before the write, and if it fails the write does not happen: this save
+      // is about to destroy the only copy, so a version he cannot keep is a
+      // reason not to proceed. He sees "not saved" and the next autosave tries
+      // again; his text stays on disk in the meantime.
+      if (action.kind === 'write' && action.snapshot !== undefined) {
+        await keepVersion(action.id, action.snapshot);
+      }
+
       await files.write(at(`${action.id}${EXTENSION}`), text);
       if (action.kind === 'write') return action.id;
 
@@ -141,6 +182,11 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
 
       const name = deletedIdFor(id, await idsPutAway());
       await files.rename(file.path, at(DELETED_FOLDER, `${name}${EXTENSION}`));
+
+      // Its history follows it, under the name it was put away as. Left where
+      // it was, the next note he happens to give the same title would inherit
+      // a dead note's versions.
+      await moveVersions(id, name);
     },
   };
 }

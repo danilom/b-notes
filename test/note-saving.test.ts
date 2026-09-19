@@ -92,7 +92,47 @@ describe('planSave', () => {
   it('keeps the id when he empties a note, which is how he deletes', async () => {
     const world = context([], 'O zimi\n\nTekst koji je nekad bio ovdje.');
 
-    assert.deepEqual(await planSave('O zimi', '', world), { kind: 'write', id: 'O zimi' });
+    assert.deepEqual(await planSave('O zimi', '', world), {
+      kind: 'write',
+      id: 'O zimi',
+      snapshot: 'O zimi\n\nTekst koji je nekad bio ovdje.',
+    });
+  });
+
+  it('keeps what was there before an emptying lands', async () => {
+    const world = context([], 'O zimi\n\nSve što je napisao.');
+
+    const action = await planSave('O zimi', '', world);
+
+    assert.equal(action.kind === 'write' && action.snapshot, 'O zimi\n\nSve što je napisao.');
+  });
+
+  it('keeps nothing when there was nothing there to begin with', async () => {
+    const world = context([], '');
+
+    assert.deepEqual(await planSave('Bez naslova', '', world), {
+      kind: 'write',
+      id: 'Bez naslova',
+    });
+  });
+
+  it('treats whitespace as emptying, because that is what it looks like to him', async () => {
+    const world = context([], 'O zimi\n\nTekst.');
+
+    const action = await planSave('O zimi', '   \n\n  ', world);
+
+    assert.equal(action.kind === 'write' && action.snapshot, 'O zimi\n\nTekst.');
+  });
+
+  it('keeps the text of a note he never titled, which the name would not notice', async () => {
+    // An untitled note is already called "Bez naslova", and emptying it leaves
+    // the name unchanged — so the shortcut that skips reading the old text must
+    // not get there first.
+    const world = context([], 'Bez naslova\n\nNešto je ipak napisao.');
+
+    const action = await planSave('Bez naslova', '', world);
+
+    assert.equal(action.kind === 'write' && action.snapshot, 'Bez naslova\n\nNešto je ipak napisao.');
   });
 
   it('does not let the disambiguating suffix accumulate', async () => {

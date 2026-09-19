@@ -65,6 +65,46 @@ export function requireNoteId(candidate: string): string {
  */
 export const DELETED_FOLDER = 'Obrisano';
 
+/**
+ * Where earlier versions of his texts are kept.
+ *
+ * Beside his writing rather than with the log, so they travel and are backed up
+ * with everything else. Visible and in his own language: if he ever opens that
+ * folder he should find something he recognises, and every file in it is plain
+ * text that opens in Notepad without this app existing.
+ */
+export const VERSIONS_FOLDER = 'verzije';
+
+/**
+ * The folder holding one note's earlier versions.
+ *
+ * Every path to a version is built here and nowhere else. A note's identity is
+ * its filename today, which is fine while the only notes with versions are ones
+ * that cannot be renamed — and the day that stops being true, this is the one
+ * function that has to learn about it.
+ */
+export function versionsFolderFor(id: string): string {
+  return `${VERSIONS_FOLDER}/${id}`;
+}
+
+/** Where they go once the note itself has been put away. */
+export function putAwayVersionsFolderFor(id: string): string {
+  return `${VERSIONS_FOLDER}/${DELETED_FOLDER}/${id}`;
+}
+
+/**
+ * What one version is called: the moment it was taken.
+ *
+ * Local time, because the only person who will ever read it is in one place,
+ * and because it is meant to be recognisable rather than precise. Sortable, and
+ * free of the characters Windows refuses in a name.
+ */
+export function versionName(when: Date): string {
+  const two = (value: number): string => String(value).padStart(2, '0');
+  const day = `${when.getFullYear()}-${two(when.getMonth() + 1)}-${two(when.getDate())}`;
+  return `${day} ${two(when.getHours())}-${two(when.getMinutes())}-${two(when.getSeconds())}`;
+}
+
 /** Dropbox renames one side of a sync collision to "essay (Someone's conflicted copy 2026-09-18).txt". */
 const CONFLICTED_COPY = /\(.+conflicted copy \d{4}-\d{2}-\d{2}(?: \d+)?\)/i;
 
