@@ -366,12 +366,8 @@ describe('listing', () => {
     // afterwards. If the two ever drift, a search quietly stops finding a text
     // that plainly contains the word — which looks like the text being gone.
     const { store } = await emptyStore();
-    await store.save(null, 'Mačka
-
-Čičak i šećer, đevrek.');
-    await store.save(null, 'Bez kvačica
-
-Cicak i secer.');
+    await store.save(null, 'Mačka\n\nČičak i šećer, đevrek.');
+    await store.save(null, 'Bez kvačica\n\nCicak i secer.');
 
     for (const note of await store.list()) {
       assert.equal(note.searchable, toSearchable(note.text), note.id);
