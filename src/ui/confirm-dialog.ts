@@ -87,10 +87,25 @@ export function openConfirmDialog(
     if (event.key === 'Escape') confirmation.onCancel();
   }
 
+  /*
+    With a word to write out, the box is the only thing here that should hold
+    the cursor: he types, and if it has quietly gone somewhere else nothing
+    appears and the dialog looks broken. A press anywhere that is not one of the
+    answers leaves the cursor where it is rather than taking it away — refused
+    on the way down, so it never moves at all, the same way the buttons beside
+    his text leave the pen in his hand.
+  */
+  function keepTheCursorInTheBox(event: MouseEvent): void {
+    if (asked === null) return;
+    if (event.target instanceof HTMLButtonElement || event.target === asked.box) return;
+    event.preventDefault();
+  }
+
   const close = (): void => {
     container.hidden = true;
     container.replaceChildren();
     document.removeEventListener('keydown', onKey);
+    container.removeEventListener('mousedown', keepTheCursorInTheBox);
   };
 
   const panel = document.createElement('div');
@@ -144,8 +159,10 @@ export function openConfirmDialog(
   // No click-outside-to-close, same as the appearance panel: a stray click
   // should never be an answer to a question he was still reading.
   document.addEventListener('keydown', onKey);
-  if (asked !== null) asked.box.focus();
-  else if (confirmation.danger === true) no.focus();
+  if (asked !== null) {
+    container.addEventListener('mousedown', keepTheCursorInTheBox);
+    asked.box.focus();
+  } else if (confirmation.danger === true) no.focus();
   else yes.focus();
 
   return close;
