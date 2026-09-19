@@ -24,6 +24,7 @@ The consequences that shape the code:
 - Only ever one instance. When nothing appears to happen he will click the icon again, and two copies autosaving into the same folder race each other.
 - A window he cannot see is, to him, work that is gone. Window behaviour is a data-safety concern here, not polish.
 - Roughly 600 texts, possibly more. Search is the primary way he finds anything, not scrolling.
+- Assume his screen is warm. Windows Night Light (and any f.lux-alike) pulls blue down hard, so a palette that leans on faint tints falls apart on it — a two-point green tint arrives at the eye as amber. The chrome is therefore neutral and the colour is spent on the accent, and contrast is checked at 2400K as well as at 6500K. Never judge colour on a screen with it switched on without saying so.
 - He writes Serbian in Latin script and frequently drops the diacritics (`sdzcc` for `šđžčć`). Search must match with or without them, in both directions, or he won't find his own writing.
 - UI text is Serbian (Latin) and English, Serbian first. Keep every string in one place from the start — retrofitting that later is the expensive version.
 - The app addresses him as *ti*, never *vi* — direct singular imperative, `Obriši` not `Obrišite`. It speaks ekavian (`pre`, not `prije`) even though he writes ijekavian: both read as ordinary Serbian to him, and ekavian is shorter, which matters in the narrow column beside his titles. Sample prose in the test corpus stays ijekavian — that stands in for his writing, not for the app's voice.
