@@ -4,7 +4,7 @@ import {
   type Appearance,
   DEFAULT_APPEARANCE,
   FONTS,
-  MAX_SCALE,
+  MAX_WRITING,
   MIN_SCALE,
   MODES,
   WRITING_FONTS,
@@ -321,7 +321,7 @@ function fill(
   // anything. Setting his text first and then the zoom would change it twice.
   panel.replaceChildren(
     header,
-    half(words.appearanceApp, [fonts, row([appSize, accents]), modes]),
+    half(words.appearanceApp, [modes, fonts, row([appSize, accents])]),
     half(words.appearanceWriting, [writingFonts, writingSize]),
     footer,
   );

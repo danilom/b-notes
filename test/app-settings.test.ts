@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type { FileSystem } from '../src/platform/file-system.ts';
-import { MAX_SCALE, MIN_SCALE } from '../src/ui/appearance.ts';
+import { MAX_WRITING, MAX_ZOOM, MIN_SCALE } from '../src/ui/appearance.ts';
 import {
   DEFAULT_SETTINGS,
   type Settings,
@@ -76,8 +76,15 @@ describe('reading how he likes the app set up', () => {
   });
 
   it('brings a zoom from outside the allowed range to the nearest one allowed', () => {
-    assert.equal(settingsFrom({}, { zoom: 12 }).zoom, MAX_SCALE);
+    // The app stops short of where his writing may go, so 200% is not a zoom.
+    assert.equal(settingsFrom({}, { zoom: 12 }).zoom, MAX_ZOOM);
+    assert.equal(settingsFrom({}, { zoom: 2 }).zoom, MAX_ZOOM);
     assert.equal(settingsFrom({}, { zoom: 0.01 }).zoom, MIN_SCALE);
+  });
+
+  it('lets his writing go a step further than the app does', () => {
+    assert.equal(settingsFrom({ writingSize: 2 }, {}).writingSize, MAX_WRITING);
+    assert.ok(MAX_WRITING > MAX_ZOOM);
   });
 
   it('falls back when the stored zoom is not a number at all', () => {

@@ -84,12 +84,25 @@ export const FONTS = {
 export const SCALE_STEPS = [0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2] as const;
 
 export const MIN_SCALE = SCALE_STEPS[0];
-export const MAX_SCALE = SCALE_STEPS[SCALE_STEPS.length - 1] ?? 1;
 
-function nearestStep(factor: number): number {
+/**
+ * How far each of the two sizes may go, and they are not the same.
+ *
+ * The app stops at 175%: past that the panel outgrows the window it sits in
+ * and a title is two words wide. His writing may go to 200%, because that is
+ * the one that has to answer his eyes — and it can, now that it is no longer
+ * the app zoom's job to make his text bigger. Anyone needing more than this
+ * wants Windows' own display scaling, which enlarges every program he uses
+ * rather than this one alone.
+ */
+export const MAX_ZOOM = 1.75;
+export const MAX_WRITING = SCALE_STEPS[SCALE_STEPS.length - 1] ?? 1;
+
+function nearestStep(factor: number, ceiling: number): number {
   let nearest = 0;
   for (let i = 1; i < SCALE_STEPS.length; i += 1) {
     const step = SCALE_STEPS[i] ?? 1;
+    if (step > ceiling) break;
     if (Math.abs(step - factor) < Math.abs((SCALE_STEPS[nearest] ?? 1) - factor)) nearest = i;
   }
   return nearest;
@@ -102,16 +115,21 @@ function nearestStep(factor: number): number {
  * differently — or edited by hand — lands on a real step instead of sitting
  * between two of them, where pressing + would jump somewhere unexpected.
  */
-export function clampScale(factor: number): number {
+export function clampScale(factor: number, ceiling: number = MAX_WRITING): number {
   if (!Number.isFinite(factor)) return DEFAULT_APPEARANCE.zoom;
-  return SCALE_STEPS[nearestStep(factor)] ?? DEFAULT_APPEARANCE.zoom;
+  return SCALE_STEPS[nearestStep(factor, ceiling)] ?? DEFAULT_APPEARANCE.zoom;
 }
 
 /** The next rung up or down, stopping at either end. */
-export function stepScale(factor: number, direction: 1 | -1): number {
-  const next = nearestStep(factor) + direction;
-  if (next < 0 || next >= SCALE_STEPS.length) return clampScale(factor);
-  return SCALE_STEPS[next] ?? DEFAULT_APPEARANCE.zoom;
+export function stepScale(
+  factor: number,
+  direction: 1 | -1,
+  ceiling: number = MAX_WRITING,
+): number {
+  const next = nearestStep(factor, ceiling) + direction;
+  const stepped = SCALE_STEPS[next];
+  if (next < 0 || stepped === undefined || stepped > ceiling) return clampScale(factor, ceiling);
+  return stepped;
 }
 
 export function isScale(value: unknown): value is number {
@@ -129,8 +147,7 @@ export function isScale(value: unknown): value is number {
  * `scale` matches x-heights to Georgia, so changing the face doesn't silently
  * change how big his text is. Measured, not guessed: Verdana runs 15% larger at
  * the same pixel size.
- */
-/**
+ *
  * Shown after each face's name, set in that face.
  *
  * A line of ordinary speech rather than a specimen phrase: what he is judging
@@ -138,7 +155,7 @@ export function isScale(value: unknown): value is number {
  * letters he will never notice. It carries č and ć, which is what he needs to
  * see, and it is a line he will recognise.
  */
-const WRITING_SAMPLE = 'Kakav čoek gospodin bi bio da mu nema te mane';
+const WRITING_SAMPLE = 'Kakav čoek gospodin bi bio da mu nema te mane, no da se hrani vaduhom';
 
 export const WRITING_FONTS = {
   georgia: { label: 'Georgia', stack: "Georgia, 'Times New Roman', serif", scale: 1 },

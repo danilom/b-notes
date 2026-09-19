@@ -4,7 +4,13 @@ import { type Note, isEmptied } from '../notes/note.ts';
 import { BUILD_STAMP } from '../platform/build-info.ts';
 import type { Host } from '../platform/host.ts';
 import type { Log } from '../platform/logging.ts';
-import { type Appearance, DEFAULT_APPEARANCE, applyAppearance, stepScale } from './appearance.ts';
+import {
+  type Appearance,
+  DEFAULT_APPEARANCE,
+  MAX_ZOOM,
+  applyAppearance,
+  stepScale,
+} from './appearance.ts';
 import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
 import { readSession, writeSession } from './app-session.ts';
 import {
@@ -247,8 +253,8 @@ window.addEventListener('keydown', (event) => {
   // the panel showing a size the app is no longer at.
   const showing = appearancePanel?.current() ?? settings;
   const zoom =
-    event.key === '+' || event.key === '=' ? stepScale(showing.zoom, 1)
-    : event.key === '-' ? stepScale(showing.zoom, -1)
+    event.key === '+' || event.key === '=' ? stepScale(showing.zoom, 1, MAX_ZOOM)
+    : event.key === '-' ? stepScale(showing.zoom, -1, MAX_ZOOM)
     : event.key === '0' ? DEFAULT_APPEARANCE.zoom
     : null;
   if (zoom === null) return;

@@ -604,20 +604,63 @@
         flex-wrap: nowrap;
       }
 
-      /* Two groups on one line while they fit, stacked when they don't. */
+      /*
+        Two groups that stay on one line at every size.
+
+        They used to wrap apart at some zooms and not others, which looks like
+        a fault rather than a layout: past a certain zoom the panel stops being
+        32rem wide and becomes as wide as the window allows, so its contents
+        narrow while the buttons inside do not. Rather than let the groups
+        break apart, the swatches wrap within their own group — six across, or
+        three and three, but always beside the size rather than beneath it.
+      */
       .group-row {
         display: flex;
-        flex-wrap: wrap;
-        gap: 0 1.6rem;
+        flex-wrap: nowrap;
+        gap: 0 1.3rem;
         align-items: flex-start;
       }
 
-      /* Stacked and full width: a line of prose has to be seen as a line. */
+      .group-row > * {
+        min-width: 0;
+      }
+
+      /* The size control is nowrap, so it keeps its width and the colours give. */
+      .group-row > *:first-child {
+        flex: 0 0 auto;
+      }
+
+      .group-row > *:last-child {
+        flex: 1 1 0;
+      }
+
+      /*
+        Stacked and full width: a line of prose has to be seen as a line, and
+        all three the same height, which means all three on exactly one line.
+        The sample is longer than the panel, so it trails off rather than
+        wrapping — he is judging the letters, and he can see enough of them.
+      */
       .writing-choice {
         width: 100%;
         justify-content: flex-start;
         text-align: left;
         line-height: 1.3;
+        overflow: hidden;
+      }
+
+      .writing-choice span {
+        display: block;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        /*
+          Fixed rather than proportional, so the three buttons are the same
+          height. Matching x-heights means the three faces are set at three
+          different pixel sizes, and a line box that followed each of them
+          would leave Verdana's button visibly shorter than the other two.
+        */
+        line-height: 22px;
       }
 
       /* Square, and the same square as a colour swatch beside it. */

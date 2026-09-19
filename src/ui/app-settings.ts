@@ -3,6 +3,7 @@ import type { FileSystem } from '../platform/file-system.ts';
 import {
   type Appearance,
   DEFAULT_APPEARANCE,
+  MAX_ZOOM,
   clampScale,
   isAccentChoice,
   isFontChoice,
@@ -109,7 +110,7 @@ export function settingsFrom(
       : DEFAULT_SETTINGS.writingSize,
     // Clamped rather than rejected: a file naming a zoom we no longer allow
     // still means he wanted it big, so bring it to the nearest size we do.
-    zoom: isScale(local['zoom']) ? clampScale(local['zoom']) : DEFAULT_SETTINGS.zoom,
+    zoom: isScale(local['zoom']) ? clampScale(local['zoom'], MAX_ZOOM) : DEFAULT_SETTINGS.zoom,
     mode: isModeChoice(local['mode']) ? local['mode'] : DEFAULT_SETTINGS.mode,
   };
 }
