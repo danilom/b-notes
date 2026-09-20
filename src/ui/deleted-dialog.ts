@@ -5,8 +5,14 @@ import { matches } from './note-list.ts';
 import { titleOf } from './dialog-heading.ts';
 import { onOneLine } from './text-snippet.ts';
 
-/** Enough of the text to tell two similar openings apart, and no more. */
-const SNIPPET = 140;
+/**
+ * Enough of the text to tell two similar openings apart.
+ *
+ * A bound on what goes into the row rather than what shows in it: the row
+ * clamps to two lines and cuts with its own ellipsis, and how many characters
+ * that is depends on how wide his window is and how big he has set the type.
+ */
+const SNIPPET = 320;
 
 export interface DeletedHandlers {
   onRestore: (id: string) => void;
@@ -49,9 +55,14 @@ function rowFor(
   when.className = 'review-when';
   when.textContent = words.deletedWhen(describeWhen(note.updatedAt, language));
 
+  // A text he emptied before deleting has nothing to show. Saying so beats
+  // leaving the line out: the row keeps the height of the others, which is the
+  // difference between a comfortable target and a thin one, and "there is
+  // nothing in this" is a fact about the text rather than a gap in the app.
+  const said = snippetOf(note);
   const snippet = document.createElement('span');
-  snippet.className = 'review-snippet';
-  snippet.textContent = snippetOf(note);
+  snippet.className = said.length > 0 ? 'review-snippet' : 'review-snippet review-snippet-none';
+  snippet.textContent = said.length > 0 ? said : words.untexted;
 
   row.append(title, when, snippet);
   row.addEventListener('click', () => show(note));

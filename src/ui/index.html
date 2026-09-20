@@ -867,15 +867,6 @@
         font-size: 0.92em;
       }
 
-      .review-snippet {
-        grid-column: 1 / -1;
-        color: var(--quiet);
-        /* One line, cut with an ellipsis: it is here to tell two openings
-           apart, not to be read. */
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-      }
 
       /*
         Two panes, not two screens.
@@ -983,14 +974,30 @@
         color: var(--quiet);
       }
 
+      /*
+        Up to two lines, and fewer where there are fewer.
+
+        Not two reserved: most of what he has put away is short or empty, so a
+        second line held open would be white space on nearly every row. Clamped
+        instead, which grows only the rows with something to put there — and
+        those are the rows that needed it.
+
+        These rows carry the decision, unlike the versions index beside a diff:
+        a deleted text has a title and an opening of its own, so this is where
+        he works out which one it is.
+      */
       .review-snippet {
         grid-column: 1 / -1;
-        color: var(--quiet);
-        /* One line, cut with an ellipsis: it is here to tell two openings
-           apart, not to be read. */
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
         overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
+        color: var(--quiet);
+      }
+
+      /* Nothing in it, which is a fact about his text and not a gap here. */
+      .review-snippet-none {
+        font-style: italic;
       }
 
       /*

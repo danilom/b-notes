@@ -47,6 +47,10 @@ const TEXT = {
     nothingFound: 'Ništa nije pronađeno',
     noNotesYet: 'Još nema tekstova',
     untitled: 'Bez naslova',
+    // Said rather than left blank. Two thirds of what he has put away is empty
+    // — the husks of deleting by emptying — and a row with nothing under its
+    // title is both unexplained and half the height of the others to hit.
+    untexted: 'Bez teksta',
     untitledNew: 'Novi tekst — bez naslova',
     foundAt: (at: number, total: number) => `${at} od ${total}`,
     foundOnce: 'samo jednom',
@@ -218,6 +222,7 @@ const TEXT = {
     nothingFound: 'Nothing found',
     noNotesYet: 'No texts yet',
     untitled: 'Untitled',
+    untexted: 'No text',
     untitledNew: 'New text — untitled',
     foundAt: (at: number, total: number) => `${at} of ${total}`,
     foundOnce: 'only once',

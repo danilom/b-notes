@@ -33,11 +33,16 @@ describe('the line under a deleted text', () => {
     assert.equal(snippetOf(note), '');
   });
 
-  it('cuts a long opening rather than laying it across the dialog', () => {
-    const note = noteOf(`Naslov\n\n${'rec '.repeat(200)}`, 'Naslov');
+  it('bounds a long opening rather than putting a whole essay in a row', () => {
+    // A bound on what reaches the row, not on what shows in it: the row clamps
+    // to two lines, and how many characters that is depends on the width of his
+    // window and the size he has set his type to.
+    const note = noteOf(`Naslov
+
+${'rec '.repeat(200)}`, 'Naslov');
 
     const snippet = snippetOf(note);
-    assert.ok(snippet.length < 150, `snippet was ${snippet.length} characters`);
+    assert.ok(snippet.length < 340, `snippet was ${snippet.length} characters`);
     assert.ok(snippet.endsWith('…'), 'a cut snippet says it was cut');
   });
 });
