@@ -7,12 +7,46 @@ import { scrollShowing } from './change-in-view.ts';
 import { createStepper } from './stepper.ts';
 import { type Titled, titleOf } from './dialog-heading.ts';
 import { beginningAndEnd } from './text-snippet.ts';
+import { countWords } from '../notes/word-count.ts';
 import { describeVersion } from './version-row.ts';
 
 export interface VersionsHandlers {
   /** Put this text in front of him. The save that follows keeps what was there. */
   onRestore: (version: NoteVersion) => void;
   onClose: () => void;
+}
+
+/**
+ * The head of the index: his text as it stands.
+ *
+ * A row, so it can be looked at like any other — but visibly not one of the
+ * copies. It carries no number, because it is not one of the things the
+ * numbers count; it sits flush where their numbers do, so the difference is
+ * the first thing about it; and it says nothing about how it compares, having
+ * nothing to compare itself to.
+ */
+function activeRowFor(current: string, language: Language, show: () => void): HTMLButtonElement {
+  const words = strings(language);
+
+  const row = document.createElement('button');
+  row.type = 'button';
+  row.className = 'index-row index-row-active';
+
+  const line = document.createElement('span');
+  line.className = 'index-line';
+
+  const name = document.createElement('span');
+  name.className = 'index-size';
+  name.textContent = words.activeText;
+
+  const size = document.createElement('span');
+  size.className = 'index-when';
+  size.textContent = words.versionWords(countWords(current));
+
+  line.append(name, size);
+  row.append(line);
+  row.addEventListener('click', show);
+  return row;
 }
 
 /**
@@ -242,8 +276,19 @@ export function openVersionsDialog(
   said.className = 'review-note';
   said.textContent = words.versionsNote;
 
-  const rows = versions.map((version, at) =>
-    rowFor(version, current, title, language, { row: at + 1, of: versions.length }, select),
+  /**
+   * What the index lists: his text as it stands, and then the copies of it.
+   *
+   * The active text is in the list because every row under it counts itself
+   * against "sada" — the reference for the whole column, and until it was put
+   * here, the one thing in the dialog he could not see.
+   */
+  const entries: (NoteVersion | null)[] = [null, ...versions];
+
+  const rows = entries.map((version, at) =>
+    version === null
+      ? activeRowFor(current, language, () => select(0))
+      : rowFor(version, current, title, language, { row: at, of: versions.length }, () => select(at)),
   );
   index.append(...rows);
 
@@ -294,8 +339,9 @@ export function openVersionsDialog(
    * goes through three copies looking for the one he wants, and going back is
    * not a journey — the place he would go back to never left the screen.
    */
-  function fillPreview(version: NoteVersion): void {
-    const { pieces, unrelated } = diffParagraphs(version.text, current);
+  /** @param version The copy to show, or null for his text as it stands. */
+  function fillPreview(version: NoteVersion | null): void {
+    const { pieces, unrelated } = diffParagraphs(version?.text ?? current, current);
     const runs = runsOf(pieces);
 
     const text = document.createElement('div');
@@ -312,7 +358,10 @@ export function openVersionsDialog(
     // what he is here to do.
     const about = document.createElement('p');
     about.className = 'review-note-aside';
-    about.textContent = words.versionWhen(describeWhen(version.takenAt, language));
+    about.textContent =
+      version === null
+        ? words.activeTextNow
+        : words.versionWhen(describeWhen(version.takenAt, language));
 
     // The stepper floats over the box, so the box is what it is placed
     // against. Hung on the column instead, it lands on whatever lines are
@@ -328,15 +377,22 @@ export function openVersionsDialog(
     preview.replaceChildren(column);
   }
 
-  function select(row: number): void {
-    const version = versions[row - 1];
-    if (version === undefined) return;
+  function select(at: number): void {
+    if (at < 0 || at >= entries.length) return;
+    const version = entries[at] ?? null;
 
-    showing = { version, at: row };
-    rows.forEach((one, at) => {
-      one.classList.toggle('row-open', at === row - 1);
-      one.setAttribute('aria-current', at === row - 1 ? 'true' : 'false');
+    showing = version === null ? null : { version, at };
+    rows.forEach((one, row) => {
+      one.classList.toggle('row-open', row === at);
+      one.setAttribute('aria-current', row === at ? 'true' : 'false');
     });
+
+    // Nothing to bring back from the text he already has. The button goes
+    // quiet rather than away, and the note beside it — which describes a
+    // replacement that would not happen — goes with it.
+    back.disabled = version === null;
+    says.hidden = version === null;
+
     fillPreview(version);
   }
 

@@ -1002,6 +1002,26 @@
         padding: 0.5rem 0.6rem;
       }
 
+      /*
+        The head of the list: his text as it stands, which the copies under it
+        all measure themselves against.
+
+        Its two halves go to the two ends rather than sitting together on the
+        left, and it carries no number — so it reads as the thing the list is
+        about before he has read a word of it, rather than as the first of the
+        copies.
+      */
+      .index-row-active .index-line {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.5rem;
+      }
+
+      .index-row-active .index-when {
+        margin-left: 0;
+      }
+
       .index-line {
         display: block;
         color: var(--ink);

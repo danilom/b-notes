@@ -135,6 +135,10 @@ const TEXT = {
     // where the thing he is looking at came from: the app kept it, at a
     // moment, and that is the whole of what he needs to know about it.
     versionsNote: 'Izaberi verziju da vidiš po čemu se razlikuje, pa je vrati ako želiš.',
+    // At the head of the list, above the copies. Every row below it counts
+    // itself against "sada", which until now was a thing he could not see.
+    activeText: 'Aktivni tekst',
+    activeTextNow: 'Ovo je tekst koji sada imaš.',
     versionWhen: (when: string) => `Ova verzija je sačuvana ${when}.`,
     // Two numbers, because they answer two different questions. How long it
     // was tells him whether this is the essay he remembers; how it compares to
@@ -283,6 +287,8 @@ const TEXT = {
     versionTitle: 'Version preview',
     versionNumber: (at: number) => `#${at}`,
     versionsNote: 'Pick a version to see how it differs, then bring it back if you want.',
+    activeText: 'Active text',
+    activeTextNow: 'This is the text you have now.',
     versionWhen: (when: string) => `This copy was kept ${when}.`,
     versionWords: (count: number) =>
       `${count.toLocaleString('en-GB')} word${count === 1 ? '' : 's'}`,
