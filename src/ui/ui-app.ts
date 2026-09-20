@@ -628,7 +628,7 @@ async function bringBackVersion(text: string): Promise<void> {
 function showDeleted(): void {
   if (deletedPane.open) return;
 
-  const close = openDeletedDialog(deletedPane, deleted, search.value, language, {
+  const close = openDeletedDialog(deletedPane, { deleted, query: search.value }, language, {
     onClose: () => {
       close();
       deletedSee.focus();

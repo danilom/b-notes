@@ -78,10 +78,20 @@ function rowFor(
  * writing while it is open is what makes the text inside it obviously not his
  * to edit — no caret, nothing to type into, and no explaining required.
  */
+/** What this dialog is about: everything he has put away, and what he searched. */
+export interface DeletedTexts {
+  deleted: readonly DeletedNote[];
+  /**
+   * What was in the search box when he opened it, which the list arrives
+   * filtered by. Named rather than ordered, so it cannot be handed over in the
+   * place where the language goes.
+   */
+  query: string;
+}
+
 export function openDeletedDialog(
   container: HTMLDialogElement,
-  deleted: readonly DeletedNote[],
-  query: string,
+  { deleted, query }: DeletedTexts,
   language: Language,
   handlers: DeletedHandlers,
 ): () => void {

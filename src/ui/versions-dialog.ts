@@ -8,7 +8,7 @@ import { createStepper } from './stepper.ts';
 import { type Titled, titleOf } from './dialog-heading.ts';
 import { beginningAndEnd } from './text-snippet.ts';
 import { countWords } from '../notes/word-count.ts';
-import { describeVersion } from './version-row.ts';
+import { type VersionInList, describeVersion } from './version-row.ts';
 
 export interface VersionsHandlers {
   /** Put this text in front of him. The save that follows keeps what was there. */
@@ -56,16 +56,8 @@ function activeRowFor(current: string, language: Language, show: () => void): HT
  * it says is no longer trying to be a reason to pick it — the diff beside it is
  * that.
  */
-function rowFor(
-  version: NoteVersion,
-  current: string,
-  title: string,
-  language: Language,
-  at: { row: number; of: number },
-  restoredFrom: boolean,
-  show: () => void,
-): HTMLButtonElement {
-  const said = describeVersion(version, current, title, language, at, restoredFrom);
+function rowFor(about: VersionInList, language: Language, show: () => void): HTMLButtonElement {
+  const said = describeVersion(about, language);
 
   const row = document.createElement('button');
   row.type = 'button';
@@ -311,12 +303,14 @@ export function openVersionsDialog(
     version === null
       ? activeRowFor(current, language, () => select(0))
       : rowFor(
-          version,
-          current,
-          title,
+          {
+            version,
+            current,
+            currentTitle: title,
+            at: { row: at, of: versions.length },
+            restoredFrom: version.id === previouslyActive,
+          },
           language,
-          { row: at, of: versions.length },
-          version.id === previouslyActive,
           () => select(at),
         ),
   );

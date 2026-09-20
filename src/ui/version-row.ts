@@ -37,13 +37,28 @@ export interface VersionRow {
   note: string | null;
 }
 
+/**
+ * One copy and everything needed to say anything about it.
+ *
+ * Named rather than ordered. Two of these are strings a few characters apart in
+ * meaning — his text, and what his text is called — and a list of parameters is
+ * the wrong place to keep two of those side by side.
+ */
+export interface VersionInList {
+  version: NoteVersion;
+  /** His text as it stands, which the copy is read against. */
+  current: string;
+  /** What that text is called now, so a copy that opened differently can say so. */
+  currentTitle: string;
+  /** Where the copy sits in the list as drawn. */
+  at?: { row: number; of: number };
+  /** Whether a restore in this sitting is what made this copy. */
+  restoredFrom?: boolean;
+}
+
 export function describeVersion(
-  version: NoteVersion,
-  current: string,
-  currentTitle: string,
+  { version, current, currentTitle, at = { row: 1, of: 1 }, restoredFrom = false }: VersionInList,
   language: Language,
-  at: { row: number; of: number } = { row: 1, of: 1 },
-  restoredFrom = false,
 ): VersionRow {
   const words = strings(language);
   const was = titleFrom(version.text);

@@ -54,21 +54,21 @@ describe('what a row in the versions list says', () => {
   it('gives the length on its own, with the comparison on the line below', () => {
     // The two used to be one string. The index column has no room for that,
     // and the second line is where the one fact worth a second line goes.
-    const row = describeVersion(versionOf('O zimi\n\nPrvi pasus.\n\nDrugi pasus.'), current, 'O zimi', 'sr');
+    const row = describeVersion({ version: versionOf('O zimi\n\nPrvi pasus.\n\nDrugi pasus.'), current: current, currentTitle: 'O zimi' }, 'sr');
 
     assert.equal(row.size, '6 reči');
     assert.equal(row.note, '2 reči više nego sada');
   });
 
   it('says so when a copy is shorter than what he has now', () => {
-    const row = describeVersion(versionOf('O zimi'), current, 'O zimi', 'sr');
+    const row = describeVersion({ version: versionOf('O zimi'), current: current, currentTitle: 'O zimi' }, 'sr');
 
     assert.equal(row.size, '2 reči');
     assert.equal(row.note, '2 reči manje nego sada');
   });
 
   it('leaves the second line off when there is no difference to report', () => {
-    const row = describeVersion(versionOf('O zimi\n\nDrugi tekst.'), current, 'O zimi', 'sr');
+    const row = describeVersion({ version: versionOf('O zimi\n\nDrugi tekst.'), current: current, currentTitle: 'O zimi' }, 'sr');
 
     assert.equal(row.size, '4 reči');
     assert.equal(row.note, null);
@@ -77,16 +77,14 @@ describe('what a row in the versions list says', () => {
   it('gives the second line to the old name when this copy opened differently', () => {
     // The rarer fact and the more distinctive one. The length it displaces is
     // what the diff beside the row is about to make plain anyway.
-    const row = describeVersion(versionOf('Pismo bratu\n\nPrvi pasus.'), current, 'O zimi', 'sr');
+    const row = describeVersion({ version: versionOf('Pismo bratu\n\nPrvi pasus.'), current: current, currentTitle: 'O zimi' }, 'sr');
 
     assert.equal(row.note, 'Zvao se: „Pismo bratu“');
   });
 
   it('stays quiet about the title while it is the one on every other row', () => {
     const row = describeVersion(
-      versionOf('O zimi\n\nPrvi pasus. Jos nesto.'),
-      current,
-      'O zimi',
+      { version: versionOf('O zimi\n\nPrvi pasus. Jos nesto.'), current, currentTitle: 'O zimi' },
       'sr',
     );
 
@@ -94,7 +92,7 @@ describe('what a row in the versions list says', () => {
   });
 
   it('counts words in English too, with the English comparison', () => {
-    const row = describeVersion(versionOf('On winter\n\nFirst one.'), 'On winter', 'On winter', 'en');
+    const row = describeVersion({ version: versionOf('On winter\n\nFirst one.'), current: 'On winter', currentTitle: 'On winter' }, 'en');
 
     assert.equal(row.size, '4 words');
     assert.equal(row.note, '2 words more than now');
@@ -145,7 +143,15 @@ describe('keeping both ends of a paragraph he can read elsewhere', () => {
 describe('marking which row of the list a copy is', () => {
   const current = 'O zimi\n\nDrugi pasus.';
   const rowIn = (at: number, of: number) =>
-    describeVersion(versionOf('O zimi\n\nStari pasus.'), current, 'O zimi', 'sr', { row: at, of });
+    describeVersion(
+      {
+        version: versionOf('O zimi\n\nStari pasus.'),
+        current,
+        currentTitle: 'O zimi',
+        at: { row: at, of },
+      },
+      'sr',
+    );
 
   it('numbers from the top, which is the order he reads them in', () => {
     assert.equal(rowIn(1, 6).number, '#1');

@@ -32,10 +32,15 @@ function marked(at: number) {
     unrelated: diff.unrelated,
     added: diff.pieces.filter((piece) => piece.kind === 'added').map((piece) => piece.text),
     missing: diff.pieces.filter((piece) => piece.kind === 'missing').map((piece) => piece.text),
-    row: describeVersion(version ?? { id: '', takenAt: 0, text: '' }, SAMPLE_TEXT, SAMPLE_ID, 'en', {
-      row: at + 1,
-      of: copies().length,
-    }),
+    row: describeVersion(
+      {
+        version: version ?? { id: '', takenAt: 0, text: '' },
+        current: SAMPLE_TEXT,
+        currentTitle: SAMPLE_ID,
+        at: { row: at + 1, of: copies().length },
+      },
+      'en',
+    ),
   };
 }
 
