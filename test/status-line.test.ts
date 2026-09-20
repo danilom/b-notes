@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { type WhatIsHappening, canDelete, emptyHintShows, statusFor } from '../src/ui/status-line.ts';
+import {
+  type WhatIsHappening,
+  canDelete,
+  emptyHintShows,
+  keptOf,
+  statusFor,
+} from '../src/ui/status-line.ts';
 
 const AT_REST: WhatIsHappening = {
   openId: 'O zimi',
@@ -82,5 +88,29 @@ describe('whether there is anything to put away', () => {
 
   it('is the open text once it has', () => {
     assert.equal(canDelete(at({ openId: 'O zimi' })), true);
+  });
+});
+
+describe('how many copies the open text has', () => {
+  it('counts the ones taken for the text he is in', () => {
+    assert.equal(keptOf('O zimi', { note: 'O zimi', count: 4 }), 4);
+  });
+
+  it('counts none with nothing open, whatever was counted before', () => {
+    // Both ways he gets here: deleting the text the count belonged to, and
+    // starting a new one. The editor is empty either way and the number is
+    // still sitting there from the text he left, which used to be offered to
+    // him against an empty screen.
+    assert.equal(keptOf(null, { note: 'O zimi', count: 4 }), 0);
+  });
+
+  it('counts none while the number still belongs to the text he left', () => {
+    // The disk has not answered for the new one yet, and the old answer is not
+    // an answer about it.
+    assert.equal(keptOf('O jeseni', { note: 'O zimi', count: 4 }), 0);
+  });
+
+  it('counts none before anything has been counted at all', () => {
+    assert.equal(keptOf('O zimi', { note: null, count: 0 }), 0);
   });
 });

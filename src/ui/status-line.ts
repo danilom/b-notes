@@ -60,3 +60,24 @@ export function emptyHintShows(now: WhatIsHappening): boolean {
 export function canDelete(now: WhatIsHappening): boolean {
   return now.openId !== null;
 }
+
+/** A count of the copies kept of one text, and which text it was counted for. */
+export interface KeptCopies {
+  /** The text the count belongs to. Null before anything has been counted. */
+  note: string | null;
+  count: number;
+}
+
+/**
+ * How many copies are kept of whatever he has open.
+ *
+ * None unless the count was taken for that very text. Holding the number on its
+ * own meant every place that changes which text is open had to remember to
+ * clear it, and the two that forgot left the way to one text's copies live over
+ * another's — over a text he had just started, and over the empty editor a
+ * delete leaves behind. Tying the count to its text makes forgetting impossible
+ * rather than making it a thing to remember.
+ */
+export function keptOf(openId: string | null, kept: KeptCopies): number {
+  return openId !== null && kept.note === openId ? kept.count : 0;
+}

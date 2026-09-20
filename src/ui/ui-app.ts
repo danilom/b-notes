@@ -27,7 +27,14 @@ import {
 import { icon } from './icons.ts';
 import { type Draft, renderList } from './note-list.ts';
 import { deletedStripFor } from './deleted-strip.ts';
-import { type WhatIsHappening, canDelete, emptyHintShows, statusFor } from './status-line.ts';
+import {
+  type KeptCopies,
+  type WhatIsHappening,
+  canDelete,
+  emptyHintShows,
+  keptOf,
+  statusFor,
+} from './status-line.ts';
 import { type Stepper, createStepper } from './stepper.ts';
 import { type TextMatch, foundPanelFor, matchesIn } from './text-match.ts';
 
@@ -122,12 +129,15 @@ let notes: Note[] = [];
 let deleted: DeletedNote[] = [];
 
 /**
- * How many copies are kept of the text he has open.
+ * How many copies are kept, and which text they were counted for.
  *
- * Counted rather than read: it decides only whether the way to them is there at
- * all, and for most of his texts the answer is none.
+ * Counted rather than read: it decides only what the way to them says and
+ * whether it is live, and for most of his texts the answer is none.
+ *
+ * Carried with its text rather than on its own, so that a count taken for one
+ * can never be shown against another. See `keptOf`.
  */
-let keptOfOpen = 0;
+let kept: KeptCopies = { note: null, count: 0 };
 let openId: string | null = null;
 
 /**
@@ -364,7 +374,6 @@ async function open(id: string): Promise<void> {
   atFound = 0;
   markMatches();
   scrollToCurrentMatch();
-  keptOfOpen = 0;
   draw();
   showStatus();
   void countKeptOfOpen();
@@ -440,9 +449,6 @@ search.addEventListener('input', searchChanged);
 newNote.addEventListener('click', () => {
   openId = null;
   savedAt = null;
-  // A new text has no copies. Left alone, the count belonged to whatever he was
-  // in before, and the way to that text's copies stayed live over this one.
-  keptOfOpen = 0;
   editor.value = '';
   editorMarks.replaceChildren();
   found = [];
@@ -554,17 +560,19 @@ function showVersionsButton(): void {
     — and the first thing he needs to learn here is that the app keeps copies
     at all.
   */
-  seeVersionsLabel.textContent = `${words.versions} (${keptOfOpen})`;
-  seeVersions.disabled = keptOfOpen === 0;
+  const count = keptOf(openId, kept);
+  seeVersionsLabel.textContent = `${words.versions} (${count})`;
+  seeVersions.disabled = count === 0;
 }
 
 /** Asks the store how many copies the open text has, and shows the way to them. */
 async function countKeptOfOpen(): Promise<void> {
   const asking = openId;
-  const kept = asking === null ? 0 : await store.countVersions(asking).catch(() => 0);
-  // He may have moved on while the disk was answering.
+  const count = asking === null ? 0 : await store.countVersions(asking).catch(() => 0);
+  // He may have moved on while the disk was answering, in which case this
+  // answer is about a text he is no longer in and would displace a fresher one.
   if (asking !== openId) return;
-  keptOfOpen = kept;
+  kept = { note: asking, count };
   showVersionsButton();
 }
 
