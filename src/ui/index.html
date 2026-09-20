@@ -698,13 +698,23 @@
         cursor: pointer;
       }
 
+      /*
+        Laid over whatever is behind it, the way every other hover in the app
+        is, rather than set as a background colour.
+
+        The two read the same here, because nothing under this strip is
+        coloured. They stop reading the same the moment something is: a
+        background shorthand replaces what was there, where a layer sits on top
+        of it. That is how the rows in the review lists came to need their
+        selected state excluded from their own hover by hand.
+      */
       #deleted-block:hover {
-        background: var(--wash);
+        background-image: linear-gradient(var(--wash), var(--wash));
         color: var(--ink);
       }
 
       #deleted-block:active {
-        background: var(--wash-firm);
+        background-image: linear-gradient(var(--wash-firm), var(--wash-firm));
       }
 
       #deleted-block[hidden] {
