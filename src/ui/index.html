@@ -1171,15 +1171,17 @@
       }
 
       /*
-        What the button beside it is about to do. On the left, where reading
-        order puts it before the button rather than after, and pushing the
-        buttons to their own end with the margin the flex row was already
-        using. On a narrow panel it wraps above them instead of squeezing them.
+        What the button beside it is about to do, against the button rather than
+        away across the footer. Right-aligned, so its two lines end where the
+        button begins and there is nothing between them to read it as belonging
+        to instead. On a narrow panel it wraps above the buttons rather than
+        squeezing them.
       */
       .footer-note {
-        margin: 0 auto 0 0;
+        margin: 0 0.4rem 0 0;
         color: var(--quiet);
         line-height: 1.45;
+        text-align: right;
       }
 
       .footer-note span {
