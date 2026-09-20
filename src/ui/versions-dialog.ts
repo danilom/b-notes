@@ -90,9 +90,7 @@ function blockFor(run: DiffRun, words: ReturnType<typeof strings>): HTMLElement 
 
   block.append(
     tag,
-    ...run.paragraphs.map((paragraph) =>
-      paragraphOf(added ? paragraph : beginningAndEnd(paragraph, REMINDER)),
-    ),
+    ...run.paragraphs.map((paragraph) => (added ? paragraphOf(paragraph) : shortenedOf(paragraph))),
   );
   return block;
 }
@@ -100,6 +98,28 @@ function blockFor(run: DiffRun, words: ReturnType<typeof strings>): HTMLElement 
 function paragraphOf(text: string): HTMLParagraphElement {
   const paragraph = document.createElement('p');
   paragraph.textContent = text;
+  return paragraph;
+}
+
+/**
+ * A paragraph with its middle dropped, and something in the gap that he cannot
+ * have typed.
+ *
+ * Not an ellipsis: he uses those, and one of ours sitting in a paragraph of his
+ * would read as his own trailing off rather than as the app having cut
+ * something out. Three middle dots in the colour of the block instead, which
+ * belong to nothing on his keyboard.
+ */
+function shortenedOf(text: string): HTMLParagraphElement {
+  const { head, tail } = beginningAndEnd(text, REMINDER);
+  const paragraph = paragraphOf(head);
+  if (tail === null) return paragraph;
+
+  const cut = document.createElement('span');
+  cut.className = 'review-cut';
+  cut.textContent = '···';
+
+  paragraph.append(' ', cut, ` ${tail}`);
   return paragraph;
 }
 

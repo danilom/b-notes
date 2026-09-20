@@ -119,9 +119,10 @@ const TEXT = {
     versionsTitle: 'Ranije verzije',
     versionsNote: 'Ovako je tekst izgledao ranije. Izaberi kad, pa ga vrati ako hoćeš.',
     versionTitle: 'Pregled verzije',
-    // The heading names the text, like every other dialog's. When it was
-    // taken moves here, where it has room to be a sentence.
-    versionWhen: (when: string) => `Ovako je izgledao ${when}.`,
+    // The heading names the text, like every other dialog's. This line says
+    // where the thing he is looking at came from: the app kept it, at a
+    // moment, and that is the whole of what he needs to know about it.
+    versionWhen: (when: string) => `Ova verzija je sačuvana ${when}.`,
     // Two numbers, because they answer two different questions. How long it
     // was tells him whether this is the essay he remembers; how it compares to
     // what he has now tells him whether opening it would get anything back.
@@ -254,7 +255,7 @@ const TEXT = {
     versionsTitle: 'Earlier versions',
     versionsNote: 'This is how the text looked before. Pick when, then bring it back if you want.',
     versionTitle: 'Version preview',
-    versionWhen: (when: string) => `This is how it looked ${when}.`,
+    versionWhen: (when: string) => `This copy was kept ${when}.`,
     versionSize: (words: number, difference: number) => {
       const count = `${words.toLocaleString('en-GB')} word${words === 1 ? '' : 's'}`;
       if (difference === 0) return count;

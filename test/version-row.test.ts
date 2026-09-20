@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { countWords } from '../src/notes/word-count.ts';
-import { onOneLine } from '../src/ui/text-snippet.ts';
+import { beginningAndEnd, onOneLine } from '../src/ui/text-snippet.ts';
 import { describeVersion, versionsWorthShowing } from '../src/ui/version-row.ts';
 
 const versionOf = (text: string, takenAt = 0) => ({ id: String(takenAt), takenAt, text });
@@ -152,5 +152,27 @@ describe('which copies are worth offering him', () => {
     const kept = [versionOf('O zimi\n\nDrugi tekst.', 1)];
 
     assert.equal(versionsWorthShowing(kept, current).length, 1);
+  });
+});
+
+describe('keeping both ends of a paragraph he can read elsewhere', () => {
+  it('gives back the whole thing when nothing had to go', () => {
+    assert.deepEqual(beginningAndEnd('Pada sneg nad gradom.', 60), {
+      head: 'Pada sneg nad gradom.',
+      tail: null,
+    });
+  });
+
+  it('hands the two ends back apart, for the caller to mark the gap', () => {
+    // Not joined by an ellipsis here: his own writing has ellipses in it, so
+    // what stands for the missing middle is the caller's to choose.
+    const { head, tail } = beginningAndEnd('Prvi deo recenice pa onda jos teksta i najzad kraj.', 24);
+
+    assert.ok(head.startsWith('Prvi deo'), head);
+    assert.ok(tail !== null && tail.endsWith('kraj.'), String(tail));
+  });
+
+  it('flattens the line breaks his paragraphs are wrapped at', () => {
+    assert.equal(beginningAndEnd('Pada sneg\nnad gradom.', 60).head, 'Pada sneg nad gradom.');
   });
 });

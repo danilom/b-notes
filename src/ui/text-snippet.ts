@@ -20,6 +20,19 @@ export function onOneLine(text: string, most: number): string {
 }
 
 /**
+ * What is left of a paragraph once the middle is dropped.
+ *
+ * `tail` is null when nothing had to go. The two ends come back apart rather
+ * than joined by an ellipsis, because the mark between them is not ours to
+ * choose here: his own writing has ellipses in it, and whatever stands for the
+ * missing middle has to be something he would not have typed.
+ */
+export interface BothEnds {
+  head: string;
+  tail: string | null;
+}
+
+/**
  * The start and the end of something, with the middle left out.
  *
  * For a paragraph he can already read in full somewhere else, where the job is
@@ -28,9 +41,9 @@ export function onOneLine(text: string, most: number): string {
  *
  * @param most How many characters the two ends have between them.
  */
-export function beginningAndEnd(text: string, most: number): string {
+export function beginningAndEnd(text: string, most: number): BothEnds {
   const flat = text.replace(/\s+/g, ' ').trim();
-  if (flat.length <= most) return flat;
+  if (flat.length <= most) return { head: flat, tail: null };
 
   const half = Math.floor(most / 2);
   const opening = flat.slice(0, half);
@@ -43,5 +56,5 @@ export function beginningAndEnd(text: string, most: number): string {
   const head = afterWord > half * 0.7 ? opening.slice(0, afterWord) : opening;
   const tail = beforeWord !== -1 && beforeWord < half * 0.3 ? closing.slice(beforeWord + 1) : closing;
 
-  return `${head.trimEnd()} … ${tail.trimStart()}`;
+  return { head: head.trimEnd(), tail: tail.trimStart() };
 }
