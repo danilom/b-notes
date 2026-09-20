@@ -577,6 +577,14 @@
         opacity: 0.45;
       }
 
+      /* Except the one he is in. Dimming that would be the list hiding his own
+         text from him, which is the thing the search must never do — and it is
+         the whole reason the open text used to be lifted out to the top. It can
+         stay where it is and simply not go quiet. */
+      .note.aside[aria-current='true'] {
+        opacity: 1;
+      }
+
       /* Italic because it is not a title yet — it is the app describing what he
          is looking at until his own first line takes over. */
       .note.draft .note-title {

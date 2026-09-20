@@ -66,55 +66,45 @@ function toRow(note: Note, words: ReturnType<typeof strings>): Row {
   };
 }
 
-/**
- * The text he has open, when the search would otherwise leave it dimmed.
- *
- * Null unless something is actually hiding it: with no query nothing is, and a
- * text that matches is already at the top of what was found.
- */
-function buriedOpenId(view: ListView): string | null {
-  if (view.openId === null || view.query.trim().length === 0) return null;
-  const open = view.notes.find((note) => note.id === view.openId);
-  if (open === undefined) return null;
-  return matches(open, view.query) ? null : view.openId;
-}
-
 function rowsFor(view: ListView): Row[] {
   const words = strings(view.language);
-  const buried = buriedOpenId(view);
-  // Shown above instead, so it isn't in two places at once.
-  return view.notes.filter((note) => note.id !== buried).map((note) => toRow(note, words));
+  return view.notes.map((note) => toRow(note, words));
 }
 
 /**
- * The text he is in, pinned above every section and never dimmed.
+ * The text he has begun, which belongs to no section.
  *
- * Two things end up here, for one reason. A text he has begun has no words in
- * it, so it can match no search and would sink into the dimmed remainder — at
- * the very moment Nedavni is gone too, leaving the text he just asked for
- * nowhere he would look. And a saved text he is editing can stop matching under
- * him: search for a word, open what you found, delete the word, and the list
- * quietly greys out the thing you are typing in.
+ * It has no words in it, so it can match no search and would sink into the
+ * dimmed remainder — at the very moment Nedavni is gone too, leaving the text
+ * he just asked for nowhere he would look. It also has no file yet, so there is
+ * no row anywhere else for it to be.
  *
- * Neither is a text he is searching for. Both are the text he is in, and the
- * list is never allowed to hide that from him.
+ * A saved text he is editing briefly lived here too, for the case where it
+ * stops matching under him: search for a word, open what you found, delete the
+ * word. That moved a row he had just clicked from where he clicked it to the
+ * top of the list, which is a worse thing to watch than a row going quiet. It
+ * stays where it belongs now and is marked instead — the list still never
+ * hides the text he is in, it just no longer carries it about.
  */
 export function openRowFor(view: ListView): Row | null {
   const words = strings(view.language);
-  if (view.draft !== null) {
-    return { id: null, title: words.untitledNew, searchable: '', updatedAt: view.draft.startedAt };
-  }
-
-  const buried = buriedOpenId(view);
-  if (buried === null) return null;
-  const note = view.notes.find((candidate) => candidate.id === buried);
-  return note === undefined ? null : toRow(note, words);
+  if (view.draft === null) return null;
+  return { id: null, title: words.untitledNew, searchable: '', updatedAt: view.draft.startedAt };
 }
 
 /**
- * Sections promote, they never filter. Every text is present in every view, so
- * nothing can appear to have gone missing — searching pushes what didn't match
- * downwards rather than taking it away.
+ * Sections promote, they never filter.
+ *
+ * Svi tekstovi means all of them, always — every text he has, in one order,
+ * whatever else is on screen. Anything above it is a shortcut into it rather
+ * than a slice taken out of it, so a text found by a search and a text he has
+ * open are each in two places at once, and that is the point: the complete list
+ * is the one thing in the app that never changes shape under him.
+ *
+ * It used to hold only what a search had *not* matched, which made the heading
+ * name something it wasn't, and made clicking a dimmed row look like the row
+ * had gone — it left the remainder the moment it became the text he was in,
+ * and reappeared at the top with nothing to connect the two.
  */
 export function sectionsFor(view: ListView): Section[] {
   const words = strings(view.language);
@@ -130,10 +120,9 @@ export function sectionsFor(view: ListView): Section[] {
   }
 
   const found = byRecency.filter((row) => matches(row, view.query));
-  const rest = all.filter((row) => !matches(row, view.query));
   return [
     { heading: words.sectionFound, rows: found },
-    { heading: words.sectionAll, rows: rest, aside: true },
+    { heading: words.sectionAll, rows: all, aside: true },
   ];
 }
 

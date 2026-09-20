@@ -47,19 +47,32 @@ describe('the list of texts', () => {
     assert.equal(openRowFor(view()), null);
   });
 
-  it('pins the text he is editing when the search would dim it', () => {
+  it('leaves the text he is editing where it is, rather than lifting it out', () => {
     // He searched for a word, opened what he found, and then deleted the word.
+    // It used to be pulled up to the top of the list, which moved a row out
+    // from under the click that had just opened it.
     const searching = view({ query: 'kamen', openId: 'Zima' });
-    assert.equal(openRowFor(searching)?.title, 'Zima');
-    // And it is not also left sitting in the dimmed remainder below.
-    assert.deepEqual(titlesIn(sectionsFor(searching), 'Svi tekstovi'), ['Amsterdam']);
+
+    assert.equal(openRowFor(searching), null);
   });
 
-  it('leaves the text he is editing alone when it matches the search', () => {
+  it('keeps every text in Svi tekstovi, matched, open or neither', () => {
+    // The heading says all of them, so it holds all of them. It used to hold
+    // only what the search had missed, which is why clicking a dimmed row read
+    // as the row disappearing: opening it took it out of the remainder and put
+    // it at the top, with nothing to connect the two.
+    const searching = view({ query: 'kamen', openId: 'Zima' });
+
+    assert.deepEqual(titlesIn(sectionsFor(searching), 'Svi tekstovi'), [
+      'Amsterdam',
+      'Ponta',
+      'Zima',
+    ]);
+    assert.deepEqual(titlesIn(sectionsFor(searching), 'Pronađeni'), ['Ponta']);
+  });
+
+  it('lifts nothing out for a saved text, matching or not, searching or not', () => {
     assert.equal(openRowFor(view({ query: 'kamen', openId: 'Ponta' })), null);
-  });
-
-  it('pins nothing while there is no search to hide anything', () => {
     assert.equal(openRowFor(view({ openId: 'Zima' })), null);
   });
 
