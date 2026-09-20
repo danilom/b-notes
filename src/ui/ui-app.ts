@@ -544,6 +544,17 @@ async function deleteOpenNote(id: string): Promise<void> {
  * been given to tell him.
  */
 function showVersionsButton(): void {
+  /*
+    The count, not merely the way in. Whether a text has copies kept of it is
+    something he otherwise cannot find out without opening the thing that shows
+    them, and the number belongs where that question gets asked.
+
+    Zero is written out like any other. A figure that appears only once it is
+    above zero is one he has to have seen before to know what its absence means
+    — and the first thing he needs to learn here is that the app keeps copies
+    at all.
+  */
+  seeVersionsLabel.textContent = `${words.versions} (${keptOfOpen})`;
   seeVersions.disabled = keptOfOpen === 0;
 }
 
@@ -871,7 +882,6 @@ export async function startApp(host: Host): Promise<void> {
   appearanceLabel.textContent = words.appearance;
   deleteNoteLabel.textContent = words.deleteNote;
   deletedSee.textContent = words.deletedSee;
-  seeVersionsLabel.textContent = words.versions;
   // The same bin as on the button he pressed to put a text here. One mark for
   // one idea is the only thing tying the action to the place it sends things.
   deletedBlock.prepend(icon('delete'));
