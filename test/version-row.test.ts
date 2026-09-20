@@ -176,3 +176,20 @@ describe('keeping both ends of a paragraph he can read elsewhere', () => {
     assert.equal(beginningAndEnd('Pada sneg\nnad gradom.', 60).head, 'Pada sneg nad gradom.');
   });
 });
+
+describe('marking which row of the list a copy is', () => {
+  const current = 'O zimi\n\nDrugi pasus.';
+  const rowIn = (at: number, of: number) =>
+    describeVersion(versionOf('O zimi\n\nStari pasus.'), current, 'O zimi', 'sr', { row: at, of });
+
+  it('numbers from the top, which is the order he reads them in', () => {
+    assert.equal(rowIn(1, 6).number, '#1');
+    assert.equal(rowIn(4, 6).number, '#4');
+  });
+
+  it('says nothing when there is only one copy to point at', () => {
+    // "#1" against a single row names nothing it was not already the only
+    // answer to.
+    assert.equal(rowIn(1, 1).number, null);
+  });
+});

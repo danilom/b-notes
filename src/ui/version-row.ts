@@ -37,6 +37,16 @@ function firstOfKind(
  * back, and what it never had.
  */
 export interface VersionRow {
+  /**
+   * Where this copy sits in the list as drawn, or null when it is the only one.
+   *
+   * A place, not a name. It exists so a row and the page it opens can be
+   * recognised as the same thing while he goes back and forth between two of
+   * them — which holds because the dialog is modal, so no copy can be taken
+   * while he is looking and the list cannot move under him. Open it again
+   * tomorrow and the same copy may carry a different one.
+   */
+  number: string | null;
   /** How long it was, and what that is beside his text now. */
   size: string;
   when: string;
@@ -60,11 +70,15 @@ export interface Difference {
   text: string;
 }
 
+/**
+ * @param at Which row this is, counting from one, and how many rows there are.
+ */
 export function describeVersion(
   version: NoteVersion,
   current: string,
   currentTitle: string,
   language: Language,
+  at: { row: number; of: number } = { row: 1, of: 1 },
 ): VersionRow {
   const words = strings(language);
   const was = titleFrom(version.text);
@@ -77,6 +91,9 @@ export function describeVersion(
   const gone = firstOfKind(diff, 'missing', currentTitle);
 
   return {
+    // One copy needs no number: it is the only row, and the heading says which
+    // text it belongs to already.
+    number: at.of > 1 ? words.versionNumber(at.row) : null,
     size: words.versionSize(length, length - countWords(current)),
     when: describeWhen(version.takenAt, language),
     wasCalled: was.length > 0 && was !== currentTitle ? words.versionWasCalled(was) : null,

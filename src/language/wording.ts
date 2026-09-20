@@ -119,6 +119,11 @@ const TEXT = {
     versionsTitle: 'Ranije verzije',
     versionsNote: 'Ovako je tekst izgledao ranije. Izaberi kad, pa ga vrati ako hoćeš.',
     versionTitle: 'Pregled verzije',
+    // Where he is in the list, not which copy this is. It is there so that a
+    // row and the page it opens are recognisably the same thing — every copy
+    // of a text carries the same title, so the heading cannot tell them apart
+    // on its own, and the date it shows moves under him.
+    versionNumber: (at: number) => `#${at}`,
     // The heading names the text, like every other dialog's. This line says
     // where the thing he is looking at came from: the app kept it, at a
     // moment, and that is the whole of what he needs to know about it.
@@ -272,6 +277,7 @@ const TEXT = {
     versionsTitle: 'Earlier versions',
     versionsNote: 'This is how the text looked before. Pick when, then bring it back if you want.',
     versionTitle: 'Version preview',
+    versionNumber: (at: number) => `#${at}`,
     versionWhen: (when: string) => `This copy was kept ${when}.`,
     versionSize: (words: number, difference: number) => {
       const count = `${words.toLocaleString('en-GB')} word${words === 1 ? '' : 's'}`;

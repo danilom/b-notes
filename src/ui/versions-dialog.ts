@@ -51,9 +51,10 @@ function rowFor(
   current: string,
   title: string,
   language: Language,
-  show: (version: NoteVersion) => void,
+  at: { row: number; of: number },
+  show: (version: NoteVersion, at: number) => void,
 ): HTMLElement {
-  const said = describeVersion(version, current, title, language);
+  const said = describeVersion(version, current, title, language, at);
 
   const row = document.createElement('button');
   row.type = 'button';
@@ -61,7 +62,13 @@ function rowFor(
 
   const size = document.createElement('span');
   size.className = 'review-title';
-  size.textContent = said.size;
+  if (said.number !== null) {
+    const which = document.createElement('span');
+    which.className = 'row-number';
+    which.textContent = said.number;
+    size.append(which);
+  }
+  size.append(said.size);
 
   const when = document.createElement('span');
   when.className = 'review-when';
@@ -74,7 +81,7 @@ function rowFor(
   if (said.added !== null) row.append(differenceUnder(said.added, 'added'));
   if (said.missing !== null) row.append(differenceUnder(said.missing, 'missing'));
 
-  row.addEventListener('click', () => show(version));
+  row.addEventListener('click', () => show(version, at.row));
   return row;
 }
 
@@ -192,7 +199,8 @@ export function openVersionsDialog(
   handlers: VersionsHandlers,
 ): () => void {
   const words = strings(language);
-  let showing: NoteVersion | null = null;
+  /** The copy in front of him, and which row of the list it came from. */
+  let showing: { version: NoteVersion; at: number } | null = null;
 
   function onKey(event: KeyboardEvent): void {
     if (event.key !== 'Escape') return;
@@ -240,17 +248,17 @@ export function openVersionsDialog(
     return header;
   }
 
-  function show(version: NoteVersion): void {
-    showing = version;
+  function show(version: NoteVersion, at: number): void {
+    showing = { version, at };
     fill();
   }
 
   function fillList(): void {
     const list = document.createElement('div');
     list.className = 'review-list';
-    for (const version of versions) {
-      list.append(rowFor(version, current, title, language, show));
-    }
+    versions.forEach((version, at) => {
+      list.append(rowFor(version, current, title, language, { row: at + 1, of: versions.length }, show));
+    });
 
     const footer = document.createElement('footer');
     const done = document.createElement('button');
@@ -320,7 +328,7 @@ export function openVersionsDialog(
   }
 
   /** One copy, with both ways it differs from the active text marked in place. */
-  function fillText(version: NoteVersion): void {
+  function fillText(version: NoteVersion, at: number): void {
     const { pieces, unrelated } = diffParagraphs(version.text, current);
     const runs = runsOf(pieces);
 
@@ -366,7 +374,16 @@ export function openVersionsDialog(
     footer.append(says, back, toList);
     panel.replaceChildren(
       heading(
-        { mark: 'versions', label: words.versionTitle, name: title },
+        // The same mark the row carried, so the two screens are visibly one
+        // thing. On the label side: it names the copy, not the text.
+        {
+          mark: 'versions',
+          label:
+            versions.length > 1
+              ? `${words.versionTitle} ${words.versionNumber(at)}`
+              : words.versionTitle,
+          name: title,
+        },
         words.versionWhen(describeWhen(version.takenAt, language)),
       ),
       column,
@@ -377,7 +394,7 @@ export function openVersionsDialog(
 
   function fill(): void {
     if (showing === null) fillList();
-    else fillText(showing);
+    else fillText(showing.version, showing.at);
   }
 
   fill();

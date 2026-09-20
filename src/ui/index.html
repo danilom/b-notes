@@ -871,6 +871,20 @@
         font-weight: 600;
       }
 
+      /*
+        Which row of the list this is, so he can go back to one he has already
+        looked at. Tabular figures and a fixed width, so the counts beside them
+        start on one line down the page rather than stepping in and out with
+        the width of the number.
+      */
+      .row-number {
+        display: inline-block;
+        min-width: 2.1em;
+        color: var(--quiet);
+        font-variant-numeric: tabular-nums;
+        font-weight: 400;
+      }
+
       .review-when {
         color: var(--quiet);
         font-size: 0.92em;
