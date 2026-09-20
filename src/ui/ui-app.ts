@@ -290,7 +290,7 @@ function showStatus(): void {
   const now = whatIsHappening();
 
   deleteNote.disabled = !canDelete(now);
-  seeVersions.hidden = keptOfOpen === 0;
+  showVersionsButton();
   emptyHint.textContent = words.emptiedHint;
   emptyHint.hidden = !emptyHintShows(now);
   if (!emptyHint.hidden) pointHintAtDeleteButton();
@@ -437,6 +437,9 @@ search.addEventListener('input', searchChanged);
 newNote.addEventListener('click', () => {
   openId = null;
   savedAt = null;
+  // A new text has no copies. Left alone, the count belonged to whatever he was
+  // in before, and the way to that text's copies stayed live over this one.
+  keptOfOpen = 0;
   editor.value = '';
   editorMarks.replaceChildren();
   found = [];
@@ -529,6 +532,18 @@ async function deleteOpenNote(id: string): Promise<void> {
   log.info('Put a text away', { id });
 }
 
+/**
+ * Puts the way to his copies within reach, or visibly out of it.
+ *
+ * Never taken off the strip. Set on its own rather than through the status
+ * line, because the count arrives from the disk a moment after everything else
+ * and redrawing the whole strip for it would swallow whatever the line had just
+ * been given to tell him.
+ */
+function showVersionsButton(): void {
+  seeVersions.disabled = keptOfOpen === 0;
+}
+
 /** Asks the store how many copies the open text has, and shows the way to them. */
 async function countKeptOfOpen(): Promise<void> {
   const asking = openId;
@@ -536,7 +551,7 @@ async function countKeptOfOpen(): Promise<void> {
   // He may have moved on while the disk was answering.
   if (asking !== openId) return;
   keptOfOpen = kept;
-  seeVersions.hidden = keptOfOpen === 0;
+  showVersionsButton();
 }
 
 function showVersions(): void {
