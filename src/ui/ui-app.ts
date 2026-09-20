@@ -107,6 +107,16 @@ let appearancePanel: OpenPanel | null = null;
  */
 let showAppearanceOf: (appearance: Appearance) => void;
 
+/**
+ * The copy a restore made of what he had, and which text it belongs to.
+ *
+ * Kept for as long as the app runs and no longer. It answers "where was I
+ * before I pressed that", which is a question about this sitting rather than
+ * about the file — so it lives here instead of on disk, where it would be one
+ * more thing to write, read back, validate and keep true.
+ */
+let restored: { note: string; version: string } | null = null;
+
 let notes: Note[] = [];
 /** Everything he has put away. Held like `notes`, and for the same reason. */
 let deleted: DeletedNote[] = [];
@@ -547,9 +557,12 @@ function showVersions(): void {
 
     const close = openVersionsDialog(
       versionsPane,
-      notes.find((note) => note.id === id)?.title ?? words.untitled,
-      versions,
-      editor.value,
+      {
+        title: notes.find((note) => note.id === id)?.title ?? words.untitled,
+        versions,
+        current: editor.value,
+        previouslyActive: restored?.note === id ? restored.version : null,
+      },
       language,
       {
         onClose: () => {
@@ -569,7 +582,13 @@ function showVersions(): void {
  * Puts an old copy back in front of him.
  *
  * Through the editor rather than straight to disk, so the ordinary save carries
- * it out and undoing this is the same as undoing anything else he has typed.
+ * it out.
+ *
+ * Not undoable with Ctrl+Z, and deliberately. Setting the value clears the
+ * textarea's undo history, which this comment used to claim it did not — but
+ * the behaviour is the one we want anyway: bringing a version back is a
+ * deliberate act with its own way back, the copy kept below, and not an edit to
+ * be reversed by a keystroke he may never have used.
  *
  * The copy of what he has now is taken here rather than left to that save. The
  * save applies the rule built for him editing, which declines when little
@@ -587,7 +606,7 @@ async function bringBackVersion(text: string): Promise<void> {
   if (id === null) return;
 
   try {
-    await store.keepCopy(id, editor.value);
+    restored = { note: id, version: await store.keepCopy(id, editor.value) };
   } catch (failure) {
     log.error('Could not keep a copy before bringing a version back', { id, failure });
     notice = words.notRestored;

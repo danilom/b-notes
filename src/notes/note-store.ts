@@ -122,11 +122,12 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
    * — two versions of the same note within a second is barely possible, but the
    * cost of being wrong is the text this whole thing exists to save.
    */
-  async function keepVersion(id: string, text: string): Promise<void> {
+  async function keepVersion(id: string, text: string): Promise<string> {
     const folder = versionsFolderFor(id);
     const taken = new Set((await files.list(at(folder)).catch(() => [])).map((file) => idOf(nameOf(file.path))));
     const name = nextFreeId(versionName(new Date()), null, taken);
     await files.write(at(folder, `${name}${EXTENSION}`), text);
+    return name;
   }
 
   /**
@@ -335,8 +336,8 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
       await files.removeEmptyFolder(at(DELETED_FOLDER, VERSIONS_FOLDER));
     },
 
-    async keepCopy(id: string, text: string): Promise<void> {
-      await keepVersion(requireNoteId(id), text);
+    async keepCopy(id: string, text: string): Promise<string> {
+      return keepVersion(requireNoteId(id), text);
     },
 
     async countVersions(id: string): Promise<number> {

@@ -139,6 +139,10 @@ const TEXT = {
     // itself against "sada", which until now was a thing he could not see.
     activeText: 'Aktivni tekst',
     activeTextNow: 'Ovo je tekst koji sada imaš.',
+    // On the copy a restore made of what he had. Every copy in the list was
+    // the active text once, so "prethodni" is doing the work: the one
+    // immediately before this, not merely one from earlier.
+    previouslyActive: 'Prethodni aktivni tekst',
     versionWhen: (when: string) => `Ova verzija je sačuvana ${when}.`,
     // Two numbers, because they answer two different questions. How long it
     // was tells him whether this is the essay he remembers; how it compares to
@@ -289,6 +293,7 @@ const TEXT = {
     versionsNote: 'Pick a version to see how it differs, then bring it back if you want.',
     activeText: 'Active text',
     activeTextNow: 'This is the text you have now.',
+    previouslyActive: 'Previous active text',
     versionWhen: (when: string) => `This copy was kept ${when}.`,
     versionWords: (count: number) =>
       `${count.toLocaleString('en-GB')} word${count === 1 ? '' : 's'}`,

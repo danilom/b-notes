@@ -12,6 +12,15 @@ import { countWords } from '../notes/word-count.ts';
  * so the row's job is to be a place in a list and not a summary of one.
  */
 export interface VersionRow {
+  /**
+   * Set on the copy a restore made of what he had before it.
+   *
+   * Above the rest of the row rather than under it, and in the accent, because
+   * it answers a question the other lines cannot: he restored something, wants
+   * it back the way it was, and this is the only row that can give it to him.
+   * It does not displace the comparison, which is still worth reading.
+   */
+  wasActive: string | null;
   /** Where this copy sits in the list as drawn, or null when it is the only one. */
   number: string | null;
   /** How long it was. */
@@ -34,6 +43,7 @@ export function describeVersion(
   currentTitle: string,
   language: Language,
   at: { row: number; of: number } = { row: 1, of: 1 },
+  restoredFrom = false,
 ): VersionRow {
   const words = strings(language);
   const was = titleFrom(version.text);
@@ -42,6 +52,7 @@ export function describeVersion(
 
   const renamed = was.length > 0 && was !== currentTitle;
   return {
+    wasActive: restoredFrom ? words.previouslyActive : null,
     // One copy needs no number: it is the only row, and the heading says which
     // text it belongs to already.
     number: at.of > 1 ? words.versionNumber(at.row) : null,

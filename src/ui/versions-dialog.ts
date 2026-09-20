@@ -62,13 +62,21 @@ function rowFor(
   title: string,
   language: Language,
   at: { row: number; of: number },
-  show: (at: number) => void,
+  restoredFrom: boolean,
+  show: () => void,
 ): HTMLButtonElement {
-  const said = describeVersion(version, current, title, language, at);
+  const said = describeVersion(version, current, title, language, at, restoredFrom);
 
   const row = document.createElement('button');
   row.type = 'button';
   row.className = 'index-row';
+
+  if (said.wasActive !== null) {
+    const mark = document.createElement('span');
+    mark.className = 'index-was-active';
+    mark.textContent = said.wasActive;
+    row.append(mark);
+  }
 
   const top = document.createElement('span');
   top.className = 'index-line';
@@ -98,7 +106,7 @@ function rowFor(
     row.append(note);
   }
 
-  row.addEventListener('click', () => show(at.row));
+  row.addEventListener('click', show);
   return row;
 }
 
@@ -207,11 +215,25 @@ function shortenedOf(text: string): HTMLParagraphElement {
  * opening is no use for telling them apart — what each one still holds that his
  * text has since lost is, and that is the question he came in with.
  */
+/** The text this dialog is about, and what is kept of it. */
+export interface VersionsOf {
+  title: string;
+  versions: readonly NoteVersion[];
+  /** His text as it stands, which every copy is read against. */
+  current: string;
+  /**
+   * The copy made of what he had, if a restore in this sitting made one.
+   *
+   * Held by the caller for as long as the app runs rather than written down
+   * anywhere: it says where he was a moment ago, which is a fact about this
+   * sitting and not about the file.
+   */
+  previouslyActive: string | null;
+}
+
 export function openVersionsDialog(
   container: HTMLDialogElement,
-  title: string,
-  versions: readonly NoteVersion[],
-  current: string,
+  { title, versions, current, previouslyActive }: VersionsOf,
   language: Language,
   handlers: VersionsHandlers,
 ): () => void {
@@ -288,7 +310,15 @@ export function openVersionsDialog(
   const rows = entries.map((version, at) =>
     version === null
       ? activeRowFor(current, language, () => select(0))
-      : rowFor(version, current, title, language, { row: at, of: versions.length }, () => select(at)),
+      : rowFor(
+          version,
+          current,
+          title,
+          language,
+          { row: at, of: versions.length },
+          version.id === previouslyActive,
+          () => select(at),
+        ),
   );
   index.append(...rows);
 

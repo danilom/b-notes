@@ -89,8 +89,11 @@ export interface NoteStore {
    * Neither reading applies to a whole text being replaced on purpose, and the
    * caller that does that is promising him in so many words that what is there
    * now will still be there afterwards.
+   *
+   * @returns what the copy is called, so a caller that made one on his behalf
+   * can point at it afterwards.
    */
-  keepCopy(id: string, text: string): Promise<void>;
+  keepCopy(id: string, text: string): Promise<string>;
 
   countVersions(id: string): Promise<number>;
   /** Every copy kept of a note, newest first. */
