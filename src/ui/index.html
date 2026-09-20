@@ -1133,7 +1133,10 @@
         flex-direction: column;
         width: 100%;
         max-width: calc(var(--measure) + 3rem);
-        margin: 0.4rem auto 1rem;
+        /* No bottom margin of its own: the footer below carries the gap, and
+           in a flex column the two do not collapse into one — they added up,
+           and the space under the box came out twice what it looked like. */
+        margin: 0.4rem auto 0;
         font-family: var(--writing-font);
         font-size: var(--text-size);
       }
