@@ -2,6 +2,7 @@ import { type Language, describeWhen, strings } from '../language/wording.ts';
 import type { NoteVersion } from '../notes/note.ts';
 import { type DiffRun, diffParagraphs, runsOf } from '../notes/paragraph-diff.ts';
 import { icon } from './icons.ts';
+import { type Titled, titleOf } from './dialog-heading.ts';
 import { beginningAndEnd } from './text-snippet.ts';
 import { describeVersion } from './version-row.ts';
 
@@ -151,18 +152,16 @@ export function openVersionsDialog(
     return dismiss;
   }
 
-  function heading(name: string, note: string): HTMLElement {
+  function heading(named: Titled, note: string): HTMLElement {
     const header = document.createElement('header');
     const stacked = document.createElement('div');
     stacked.className = 'review-heading';
 
-    const what = document.createElement('h1');
-    what.textContent = name;
     const said = document.createElement('p');
     said.className = 'review-note';
     said.textContent = note;
 
-    stacked.append(what, said);
+    stacked.append(titleOf(named), said);
     header.append(stacked, dismissButton());
     return header;
   }
@@ -187,7 +186,11 @@ export function openVersionsDialog(
     done.addEventListener('click', handlers.onClose);
     footer.append(done);
 
-    panel.replaceChildren(heading(words.versionsTitle(title), words.versionsNote), list, footer);
+    panel.replaceChildren(
+      heading({ label: words.versionsTitle, name: title }, words.versionsNote),
+      list,
+      footer,
+    );
     done.focus();
   }
 
@@ -226,7 +229,10 @@ export function openVersionsDialog(
 
     footer.append(back, toList);
     panel.replaceChildren(
-      heading(words.versionTitle(describeWhen(version.takenAt, language)), title),
+      heading(
+        { label: words.versionTitle, name: title },
+        words.versionWhen(describeWhen(version.takenAt, language)),
+      ),
       column,
       footer,
     );

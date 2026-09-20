@@ -78,6 +78,12 @@
         --l-panel: 96.5%;
         --l-page: 100%;
         --l-chosen: 38%;
+        /* The accent as text rather than as a surface. Four points darker,
+           which is what it takes: at 38% the teal, green and gold accents come
+           in under 4.5:1 on white, and this heading is 15.68px — bold, but not
+           the 18.66px that would let it off at 3:1. At 34% the worst of the six
+           is 5.29. */
+        --l-chosen-ink: 34%;
         --l-chosen-soft: 91%;
         --l-found: 82%;
         --l-on-chosen: 99%;
@@ -139,6 +145,7 @@
 
         /* Full strength, and only where something must be pointed at. */
         --chosen: hsl(var(--accent-h) var(--strong) var(--l-chosen));
+        --chosen-ink: hsl(var(--accent-h) var(--strong) var(--l-chosen-ink));
         --chosen-soft: hsl(var(--accent-h) var(--strong) var(--l-chosen-soft));
         /* Stronger than a selected row: this has to carry his own text on top. */
         --found: hsl(var(--accent-h) var(--strong) var(--l-found));
@@ -181,6 +188,7 @@
         --halo-near: rgb(255 255 255 / 0.09);
 
         --l-chosen: 70%;
+        --l-chosen-ink: 70%;
         --l-chosen-soft: 31%;
         --l-found: 38%;
         --l-on-chosen: 10%;
@@ -1179,6 +1187,12 @@
       .panel h1 {
         margin: 0;
         font-size: 1.12em;
+      }
+
+      /* The name of the text, inside a heading that also names the action. He
+         is looking for one of these two things and never the other. */
+      .heading-name {
+        color: var(--chosen-ink);
       }
 
       /* The two halves: his writing, and the app around it. */

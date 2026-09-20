@@ -63,7 +63,7 @@ const TEXT = {
     noteCount: (n: number) => `${n} ${plural(n, 'tekst', 'teksta', 'tekstova')}`,
 
     deleteNote: 'Obriši tekst',
-    deleteTitle: (title: string) => `Obriši tekst: ${title}`,
+    deleteTitle: 'Obriši tekst',
     deleteBody: 'Ovaj tekst se sklanja među obrisane. Možeš ga vratiti kad god hoćeš.',
     deleteEmptyBody: 'U ovom tekstu nema ništa.',
     deleteKeep: 'Obriši',
@@ -73,7 +73,7 @@ const TEXT = {
     deleted: 'Obrisani tekstovi',
     deletedKept: 'Izaberi tekst da vidiš šta je u njemu, pa ga vrati ako želiš.',
     deletedSee: 'Vidi',
-    deletedPreview: (title: string) => `Pregled: ${title}`,
+    deletedPreview: 'Pregled',
     deletedPreviewHelp: 'Ovde možeš samo da čitaš. Vrati tekst ako hoćeš da ga menjaš.',
     deletedEmpty: 'U ovom tekstu nema ništa.',
     // Lower case, like the times in his list beside it: juce, pre 5 minuta.
@@ -97,7 +97,7 @@ const TEXT = {
     restore: 'Vrati među tekstove',
     deletedBack: 'Nazad na obrisane',
     destroy: 'Uništi zauvek',
-    destroyTitle: (title: string) => `Uništi zauvek: ${title}`,
+    destroyTitle: 'Uništi zauvek',
     destroyBody: 'Ovaj tekst se uništava zauvek. Ne može se vratiti.',
     destroyBodyWithVersions:
       'Ovaj tekst se uništava zauvek, zajedno sa svim ranijim verzijama. Ne može se vratiti.',
@@ -116,9 +116,12 @@ const TEXT = {
     notDestroyed: 'Tekst nije uništen',
 
     versions: 'Ranije verzije',
-    versionsTitle: (title: string) => `Ranije verzije: ${title}`,
+    versionsTitle: 'Ranije verzije',
     versionsNote: 'Ovako je tekst izgledao ranije. Izaberi kad, pa ga vrati ako hoćeš.',
-    versionTitle: (when: string) => `Ovako je izgledao ${when}`,
+    versionTitle: 'Ranija verzija',
+    // The heading names the text, like every other dialog's. When it was
+    // taken moves here, where it has room to be a sentence.
+    versionWhen: (when: string) => `Ovako je izgledao ${when}.`,
     // Two numbers, because they answer two different questions. How long it
     // was tells him whether this is the essay he remembers; how it compares to
     // what he has now tells him whether opening it would get anything back.
@@ -211,7 +214,7 @@ const TEXT = {
     noteCount: (n: number) => `${n} text${n === 1 ? '' : 's'}`,
 
     deleteNote: 'Delete text',
-    deleteTitle: (title: string) => `Delete text: ${title}`,
+    deleteTitle: 'Delete text',
     deleteBody: 'This text is moved to the deleted ones. You can bring it back whenever you want.',
     deleteEmptyBody: 'There is nothing in this text.',
     deleteKeep: 'Delete',
@@ -221,7 +224,7 @@ const TEXT = {
     deleted: 'Deleted texts',
     deletedKept: 'Pick a text to see what is in it, then bring it back if you want.',
     deletedSee: 'View',
-    deletedPreview: (title: string) => `Preview: ${title}`,
+    deletedPreview: 'Preview',
     deletedPreviewHelp: 'You can only read here. Bring the text back if you want to change it.',
     deletedEmpty: 'There is nothing in this text.',
     deletedWhen: (when: string) => `deleted ${when}`,
@@ -233,7 +236,7 @@ const TEXT = {
     restore: 'Bring this text back',
     deletedBack: 'Back to deleted texts',
     destroy: 'Destroy forever',
-    destroyTitle: (title: string) => `Destroy forever: ${title}`,
+    destroyTitle: 'Destroy forever',
     destroyBody: 'This text is destroyed for good. It cannot be brought back.',
     destroyBodyWithVersions:
       'This text is destroyed for good, along with every earlier version of it. It cannot be brought back.',
@@ -246,9 +249,10 @@ const TEXT = {
     notDestroyed: 'Text not destroyed',
 
     versions: 'Earlier versions',
-    versionsTitle: (title: string) => `Earlier versions: ${title}`,
+    versionsTitle: 'Earlier versions',
     versionsNote: 'This is how the text looked before. Pick when, then bring it back if you want.',
-    versionTitle: (when: string) => `How it looked ${when}`,
+    versionTitle: 'Earlier version',
+    versionWhen: (when: string) => `This is how it looked ${when}.`,
     versionSize: (words: number, difference: number) => {
       const count = `${words.toLocaleString('en-GB')} word${words === 1 ? '' : 's'}`;
       if (difference === 0) return count;

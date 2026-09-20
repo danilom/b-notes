@@ -2,6 +2,7 @@ import { type Language, describeWhen, strings } from '../language/wording.ts';
 import type { DeletedNote } from '../notes/note.ts';
 import { icon } from './icons.ts';
 import { matches } from './note-list.ts';
+import { titleOf } from './dialog-heading.ts';
 import { onOneLine } from './text-snippet.ts';
 
 /** Enough of the text to tell two similar openings apart, and no more. */
@@ -180,8 +181,10 @@ export function openDeletedDialog(
     // in it — and what to press if that is what he wanted.
     const heading = document.createElement('div');
     heading.className = 'review-heading';
-    const title = document.createElement('h1');
-    title.textContent = words.deletedPreview(note.title.length > 0 ? note.title : words.untitled);
+    const title = titleOf({
+      label: words.deletedPreview,
+      name: note.title.length > 0 ? note.title : words.untitled,
+    });
     const help = document.createElement('p');
     help.className = 'review-note';
     help.textContent = words.deletedPreviewHelp;

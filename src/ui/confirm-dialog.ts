@@ -1,5 +1,6 @@
 import { toSearchable } from '../language/diacritics.ts';
 import { type Language, strings } from '../language/wording.ts';
+import { type Titled, titleOf } from './dialog-heading.ts';
 import { icon } from './icons.ts';
 
 /**
@@ -12,7 +13,7 @@ import { icon } from './icons.ts';
  * ellipsis.
  */
 export interface Confirmation {
-  title: string;
+  title: Titled;
   body: string;
   /** The affirmative, named for what it does. Never "U redu". */
   confirm: string;
@@ -176,8 +177,7 @@ export function openConfirmDialog(
   panel.setAttribute('aria-modal', 'true');
 
   const header = document.createElement('header');
-  const title = document.createElement('h1');
-  title.textContent = confirmation.title;
+  const title = titleOf(confirmation.title);
 
   // The same way out as the appearance panel's, in the same corner and doing
   // the same thing. Two dialogs that dismiss differently is one dialog too many
