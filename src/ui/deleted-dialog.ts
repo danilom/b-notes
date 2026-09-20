@@ -179,7 +179,7 @@ export function openDeletedDialog(
     footer.append(done);
 
     panel.replaceChildren(header, list, footer);
-    done.focus();
+    if (!container.hidden) done.focus();
   }
 
   /** One text, to read but not to touch. */
@@ -269,6 +269,20 @@ export function openDeletedDialog(
   fill();
   container.replaceChildren(panel);
   container.hidden = false;
+  /*
+    After the panel is on screen, not before.
+
+    Focusing a hidden element does nothing, so a call made while the panel was
+    still being built was silently lost — and what it was lost to is the editor
+    behind the dialog. He clicks the text he cannot edit, types, and the letters
+    go into the writing underneath, where the panel hides them until the save
+    carries them to disk.
+
+    The panel itself rather than a button in it: focus has to leave the editor,
+    but Enter is a reflex at a dialog and nothing here should answer it.
+  */
+  panel.tabIndex = -1;
+  panel.focus();
   document.addEventListener('keydown', onKey);
 
   return close;
