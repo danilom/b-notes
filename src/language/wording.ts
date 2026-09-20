@@ -155,11 +155,13 @@ const TEXT = {
     versionsAllSame: 'Sve sačuvane verzije su iste kao aktivni tekst.',
     versionsBack: 'Nazad na verzije',
     versionRestore: 'Vrati ovaj tekst',
-    // Said once, over the whole preview, rather than spelt out on every block.
-    versionDiffNote:
-      'Zeleno je ono čega u aktivnom tekstu više nema. Crveno je ono što je u aktivnom tekstu, a u ovoj verziji ga nema.',
+    // Each block says which way round it is, rather than sending him back to a
+    // sentence at the top of the page to work it out. Both halves are spelt
+    // out because "dodato" alone begs the question added to what.
     versionAddedTag: '(+) Dodato',
+    versionAddedWhy: '(nije u aktivnom tekstu, postoji u ovoj verziji)',
     versionMissingTag: '(−) Nedostaje',
+    versionMissingWhy: '(nije u ovoj verziji, postoji u aktivnom tekstu)',
     versionUnrelated: 'Ovo je sasvim drugi tekst — nijedan pasus se ne poklapa s aktivnim.',
     noteDeleted: 'Tekst je obrisan',
     emptiedHint: 'Tekst je prazan. Obriši ga ako ti više ne treba.',
@@ -265,10 +267,10 @@ const TEXT = {
     versionsAllSame: 'Every copy kept is the same as the active text.',
     versionsBack: 'Back to versions',
     versionRestore: 'Bring this text back',
-    versionDiffNote:
-      'Green is what the active text no longer has. Red is what the active text has and this copy does not.',
     versionAddedTag: '(+) Extra',
+    versionAddedWhy: '(not in the active text, present in this copy)',
     versionMissingTag: '(−) Missing',
+    versionMissingWhy: '(not in this copy, present in the active text)',
     versionUnrelated: 'This is a different text altogether — not one paragraph matches the active one.',
     noteDeleted: 'Text deleted',
     emptiedHint: 'This text is empty. Delete it if you no longer need it.',

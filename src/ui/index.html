@@ -928,12 +928,26 @@
         are, quietly enough that they stay the thing being read.
       */
       .review-run {
-        /* Out by its own padding, so the text inside it lands on the same left
-           edge as the paragraphs above and below. A box that shifts his lines
-           sideways reads as a different column rather than the same page. */
-        margin: 1em calc(-1 * var(--run-inset));
+        /* The edge is the part that carries at a glance: the fill is pale
+           enough to read his writing on, which is pale enough to miss when
+           scrolling past. Square on that side so it reads as a bar rather than
+           as the corner of a box. */
+        --run-edge: 3px;
+        /* Out by its own padding, and by the edge on top of that, so the text
+           inside lands on the same left margin as the paragraphs above and
+           below. A box that shifts his lines sideways reads as a different
+           column rather than the same page. */
+        margin: 1em calc(-1 * var(--run-inset)) 1em calc(-1 * (var(--run-inset) + var(--run-edge)));
         padding: 0.7rem var(--run-inset);
-        border-radius: 6px;
+        border-left: var(--run-edge) solid transparent;
+        border-radius: 0 6px 6px 0;
+      }
+
+      /* Which way round this block is, spelt out beside the word for it. Grey,
+         because the word is the label and this is the footnote to it. */
+      .review-tag-why {
+        color: var(--quiet);
+        font-weight: 400;
       }
 
       .review-tag {
@@ -947,6 +961,7 @@
       }
 
       .review-run-added {
+        border-left-color: var(--added-ink);
         background: var(--added);
       }
 
@@ -955,6 +970,7 @@
       }
 
       .review-run-missing {
+        border-left-color: var(--missing-ink);
         background: var(--missing);
       }
 

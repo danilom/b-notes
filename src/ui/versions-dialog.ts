@@ -81,7 +81,12 @@ function blockFor(run: DiffRun, words: ReturnType<typeof strings>): HTMLElement 
 
   const tag = document.createElement('span');
   tag.className = 'review-tag';
-  tag.textContent = added ? words.versionAddedTag : words.versionMissingTag;
+
+  const why = document.createElement('span');
+  why.className = 'review-tag-why';
+  why.textContent = added ? words.versionAddedWhy : words.versionMissingWhy;
+
+  tag.append(`${added ? words.versionAddedTag : words.versionMissingTag} `, why);
 
   block.append(
     tag,
@@ -205,8 +210,8 @@ export function openVersionsDialog(
 
     const aside = document.createElement('p');
     aside.className = 'review-note-aside';
-    aside.textContent = unrelated ? words.versionUnrelated : words.versionDiffNote;
-    aside.hidden = !unrelated && runs.every((run) => run.kind === 'same');
+    aside.textContent = words.versionUnrelated;
+    aside.hidden = !unrelated;
 
     const column = document.createElement('div');
     column.className = 'review-body';
