@@ -36,11 +36,13 @@ function rowFor(
   note: DeletedNote,
   language: Language,
   words: ReturnType<typeof strings>,
+  opened: boolean,
   show: (note: DeletedNote) => void,
 ): HTMLElement {
   const row = document.createElement('button');
   row.type = 'button';
-  row.className = 'review-row';
+  row.className = opened ? 'review-row row-open' : 'review-row';
+  if (opened) row.setAttribute('aria-current', 'true');
 
   const title = document.createElement('span');
   title.className = 'review-title';
@@ -130,7 +132,18 @@ export function openDeletedDialog(
   const shown = (): readonly DeletedNote[] =>
     filter.length === 0 ? deleted : deleted.filter((note) => matches(note, filter));
 
+  /**
+   * Which one he last looked at, kept after he has come back from looking.
+   *
+   * Unlike `showing`, which is only what is on screen now. Going back to the
+   * list used to leave no trace of where he had been, and a list of texts that
+   * begin alike is exactly where that costs him — he reads one, returns, and
+   * has to work out which row he came from.
+   */
+  let opened: string | null = null;
+
   function show(note: DeletedNote): void {
+    opened = note.id;
     showing = note;
     fill();
   }
@@ -168,7 +181,9 @@ export function openDeletedDialog(
       list.append(line);
     }
 
-    for (const note of shown()) list.append(rowFor(note, language, words, show));
+    for (const note of shown()) {
+      list.append(rowFor(note, language, words, note.id === opened, show));
+    }
 
     const footer = document.createElement('footer');
     const done = document.createElement('button');

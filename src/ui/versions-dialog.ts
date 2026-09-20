@@ -322,7 +322,7 @@ export function openVersionsDialog(
 
     showing = { version, at: row };
     rows.forEach((one, at) => {
-      one.classList.toggle('index-row-open', at === row - 1);
+      one.classList.toggle('row-open', at === row - 1);
       one.setAttribute('aria-current', at === row - 1 ? 'true' : 'false');
     });
     fillPreview(version);

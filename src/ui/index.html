@@ -854,51 +854,58 @@
       }
 
       /*
-        Rows touch, so what separates them is this padding and nothing else.
+        One row in either of the two lists he picks from: the texts he has put
+        away, and the copies of one text. They are the same act in two places,
+        so they are the same row — a bar down the side for the one he is on, a
+        rule under it to tell it from the next, and nothing else.
 
-        It was opened up for the versions rows, which carried three lines and
-        two coloured labels and needed the air. Those went to their own index
-        beside a diff, and what is left here is a title, a date and up to two
-        quiet lines — which reads fine closer together, and puts more of his
-        deleted texts on one screen.
+        Square on the left, because the bar wants to be a bar rather than the
+        corner of something.
       */
-      .review-row {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 0.25rem 1rem;
+      .review-row,
+      .index-row {
         width: 100%;
-        /* Vertical only. This list can run to everything he has ever put away,
-           so the room between rows is room he pays for by the hundred; the
-           inset at the sides is what keeps the text off the hover edge.
-
-           Back to the tighter setting now that a line does the separating:
-           what the padding had to buy on its own was the gap that told one row
-           from the next, and a rule says it in one pixel. */
-        padding: 0.3rem 0.6rem;
         border: 0;
-        border-radius: 6px;
+        border-left: 3px solid transparent;
+        border-radius: 0 6px 6px 0;
         background: none;
         text-align: left;
       }
 
-      /*
-        A rule between rows, not after the last one.
-
-        The two lines of a row are held together by weight and colour — the
-        title dark and heavy, the line under it quiet — but at this spacing that
-        was being asked to carry the separation between rows as well. The rule
-        carries it in a pixel, which is room the padding gets back.
-      */
-      .review-row:not(:last-child) {
+      /* Between rows, and not after the last one. */
+      .review-row:not(:last-child),
+      .index-row:not(:last-child) {
         border-bottom: 1px solid var(--line);
       }
 
-      .review-row:hover {
+      .review-row:hover:not(.row-open),
+      .index-row:hover:not(.row-open) {
         background: var(--wash);
       }
 
-      .review-row:active {
+      .review-row:active:not(.row-open),
+      .index-row:active:not(.row-open) {
         background: var(--wash-firm);
+      }
+
+      /*
+        The one he is on, marked the way the list of his texts marks the text he
+        has open. In the deleted list it is the one he last read, which is what
+        he wants to know on coming back from reading it.
+      */
+      .row-open {
+        border-left-color: var(--chosen);
+        background: var(--chosen-soft);
+      }
+
+      .review-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.25rem 1rem;
+        /* Vertical only. This list can hold everything he has ever put away, so
+           room between rows is room paid for by the hundred; the inset at the
+           sides is what keeps the text off the hover edge. */
+        padding: 0.3rem 0.6rem;
       }
 
       .review-title {
@@ -958,24 +965,7 @@
 
       .index-row {
         display: block;
-        width: 100%;
         padding: 0.5rem 0.6rem;
-        border: 0;
-        border-left: 3px solid transparent;
-        border-radius: 0 6px 6px 0;
-        background: none;
-        text-align: left;
-      }
-
-      .index-row:hover:not(.index-row-open) {
-        background: var(--wash);
-      }
-
-      /* The one he is looking at, marked the way the list of his texts marks
-         the text he has open. One habit, two places. */
-      .index-row-open {
-        border-left-color: var(--chosen);
-        background: var(--chosen-soft);
       }
 
       .index-line {
