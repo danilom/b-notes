@@ -890,8 +890,11 @@
 
       /*
         The one he is on, marked the way the list of his texts marks the text he
-        has open. In the deleted list it is the one he last read, which is what
-        he wants to know on coming back from reading it.
+        has open.
+
+        Only the versions index has one. Picking a deleted text opens a screen
+        of its own rather than filling a pane beside the list, so there is no
+        moment where a row is the chosen one and visible at the same time.
       */
       .row-open {
         border-left-color: var(--chosen);
