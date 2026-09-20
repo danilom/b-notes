@@ -101,6 +101,11 @@
            from outside it. */
         --changed: hsl(212 48% 93%);
         --changed-ink: hsl(212 62% 32%);
+        /* A word marked as the new wording. On a pale page the natural
+           highlight is behind the word, since the word itself is already
+           dark. See the dark mode below, where it is the other way up. */
+        --word-new-fill: var(--added);
+        --word-new-ink: var(--ink);
         --l-thumb: 82%;
         --l-thumb-hover: 68%;
         --l-shadow: 12%;
@@ -204,6 +209,13 @@
         --missing-ink: hsl(4 50% 70%);
         --changed: hsl(212 26% 22%);
         --changed-ink: hsl(212 52% 70%);
+        /* The other way up. A tint behind a word barely registers against a
+           dark page, and two dark patches an inch apart at the same
+           lightness read as staining rather than as marking — the green
+           wash sat at 1.06 against the blue block it lived in. What is
+           bright here is the text, so the mark goes on the text. */
+        --word-new-fill: transparent;
+        --word-new-ink: var(--added-ink);
         --l-thumb: 34%;
         --l-thumb-hover: 48%;
         --l-shadow: 2%;
@@ -1023,8 +1035,9 @@
 
       .word-new {
         border-radius: 3px;
-        background: var(--added);
-        box-shadow: 0 0 0 2px var(--added);
+        background: var(--word-new-fill);
+        box-shadow: 0 0 0 2px var(--word-new-fill);
+        color: var(--word-new-ink);
       }
 
       .review-run-missing .review-tag {
