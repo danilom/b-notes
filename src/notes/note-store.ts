@@ -116,6 +116,30 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
   }
 
   /**
+   * A copy of this note that already says exactly this, if there is one.
+   *
+   * What stops a restore breeding copies. Bringing a version back keeps what he
+   * had, and what he had is very often a copy already sitting in the folder —
+   * he restores one, changes his mind, restores the other, and each trip
+   * deliberately wrote down a text that was already written down. Four round
+   * trips, four new files, two of every text.
+   *
+   * It reads them all, which the dialog that led him here has just done too.
+   * The ordinary save does not do this: it has the coalescing rule instead, and
+   * this is the guard for the one caller that deliberately steps around it.
+   */
+  async function sameCopy(id: string, text: string): Promise<string | null> {
+    const kept = await files.list(at(versionsFolderFor(id))).catch(() => []);
+    const texts = await Promise.all(
+      kept.map(async (file) => asWritten(await files.read(file.path).catch(() => ''))),
+    );
+
+    const at_ = texts.indexOf(text);
+    const found = at_ === -1 ? undefined : kept[at_];
+    return found === undefined ? null : idOf(nameOf(found.path));
+  }
+
+  /**
    * Keeps one earlier version of a note.
    *
    * Named for the moment it was taken, and never overwriting one already there
@@ -337,7 +361,9 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
     },
 
     async keepCopy(id: string, text: string): Promise<string> {
-      return keepVersion(requireNoteId(id), text);
+      const note = requireNoteId(id);
+      const already = await sameCopy(note, asWritten(text));
+      return already ?? keepVersion(note, text);
     },
 
     async countVersions(id: string): Promise<number> {

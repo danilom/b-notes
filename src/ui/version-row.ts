@@ -88,10 +88,22 @@ export function describeVersion(
  * replace his text with itself is offering him nothing. It happens for real:
  * the moment he brings a copy back, that copy is what he has, and it would sit
  * in this list from then on saying so.
+ *
+ * Nor two copies that say the same thing, which would be two rows he cannot
+ * tell apart opening the same diff. The store no longer makes those, but a
+ * folder that collected some before it stopped should not go on showing them.
+ *
+ * Newest first, so the one kept of any repeated text is the most recent.
  */
 export function versionsWorthShowing(
   versions: readonly NoteVersion[],
   current: string,
 ): NoteVersion[] {
-  return versions.filter((version) => version.text !== current);
+  const already = new Set<string>([current]);
+
+  return versions.filter((version) => {
+    if (already.has(version.text)) return false;
+    already.add(version.text);
+    return true;
+  });
 }

@@ -1121,6 +1121,35 @@ describe('keeping a copy because the caller says so', () => {
     assert.equal((await kept(dir)).length, 2);
   });
 
+  it('does not keep a second copy of what it is already keeping', async () => {
+    // What made a restore breed files: bringing a version back keeps what he
+    // had, and what he had is very often a copy already in the folder. Four
+    // trips back and forth, four new files, two of every text.
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nPrvi.');
+
+    const first = await store.keepCopy(id ?? '', 'O zimi\n\nPrvi.');
+    await after(1100);
+    const second = await store.keepCopy(id ?? '', 'O zimi\n\nPrvi.');
+
+    assert.equal((await kept(dir)).length, 1);
+    assert.equal(second, first, 'and it says which copy is already holding it');
+  });
+
+  it('points at the older copy when that is the one already holding it', async () => {
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nPrvi.');
+
+    const older = await store.keepCopy(id ?? '', 'O zimi\n\nPrvi.');
+    await after(1100);
+    await store.keepCopy(id ?? '', 'O zimi\n\nDrugi.');
+    await after(1100);
+    const again = await store.keepCopy(id ?? '', 'O zimi\n\nPrvi.');
+
+    assert.equal((await kept(dir)).length, 2, 'nothing new written');
+    assert.equal(again, older);
+  });
+
   it('writes what it was handed, not what is on disk', async () => {
     const { dir, store } = await emptyStore();
     const id = await store.save(null, 'O zimi\n\nNa disku.');

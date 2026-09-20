@@ -111,6 +111,19 @@ describe('which copies are worth offering him', () => {
     );
   });
 
+  it('drops a second copy that says exactly what an earlier one says', () => {
+    // Two rows he cannot tell apart, opening the same diff. Restoring back and
+    // forth used to make these by the pair.
+    const same = 'O zimi\n\nIsti tekst.';
+    const kept = [versionOf(same, 3), versionOf('O zimi\n\nNesto drugo.', 2), versionOf(same, 1)];
+
+    assert.deepEqual(
+      versionsWorthShowing(kept, current).map((version) => version.id),
+      ['3', '2'],
+      'the newer of the two identical ones',
+    );
+  });
+
   it('keeps one of the same length that says something else', () => {
     const kept = [versionOf('O zimi\n\nDrugi tekst.', 1)];
 
