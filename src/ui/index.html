@@ -73,6 +73,9 @@
         --l-ink: 15%;
         --l-quiet: 38%;
         --l-faint: 40%;
+        /* Dimmer than anything the app states, because it is not a
+           statement: it is the box describing itself until he types. */
+        --l-hint: 48%;
         --l-line: 86%;
         --l-toolbar: 93%;
         --l-panel: 96.5%;
@@ -119,6 +122,7 @@
         --ink: hsl(var(--grey-h) var(--muted) var(--l-ink));
         --quiet: hsl(var(--grey-h) var(--muted) var(--l-quiet));
         --faint: hsl(var(--grey-h) var(--muted) var(--l-faint));
+        --hint: hsl(var(--grey-h) var(--muted) var(--l-hint));
         --line: hsl(var(--grey-h) var(--surface) var(--l-line));
         --toolbar: hsl(var(--grey-h) var(--surface) var(--l-toolbar));
         /*
@@ -182,6 +186,7 @@
         --l-ink: 88%;
         --l-quiet: 68%;
         --l-faint: 68%;
+        --l-hint: 54%;
         --l-line: 27%;
         --l-toolbar: 20%;
         --l-panel: 18%;
@@ -476,11 +481,20 @@
         padding: 0 0.9rem 0.5rem;
       }
 
-      /* Left to itself this is Chromium's own grey, which belongs to no theme
-         and sits badly beside the section headings a few pixels below it. */
+      /*
+        Left to itself this is Chromium's own grey, which belongs to no theme
+        and sits badly beside the section headings a few pixels below it.
+
+        Dimmer than the app's own quiet text, and italic: at the strength it had
+        it read as something already typed into the box rather than as the box
+        saying what it is for. Not dimmer than it can be read, though — there is
+        no label anywhere else, so this line is the only thing that says what
+        the box does.
+      */
       ::placeholder {
-        color: var(--faint);
+        color: var(--hint);
         opacity: 1;
+        font-style: italic;
       }
 
       #search {
