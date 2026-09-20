@@ -176,9 +176,20 @@ const TEXT = {
     // Both read as the copy against his text: what it holds on top of what he
     // has, and what he has that it never did.
     versionsAllSame: 'Sve sačuvane verzije su iste kao aktivni tekst.',
-    // Feminine, because what is being counted is an izmena — the search
-    // pane's own Prethodni/Sledeci are counting something else.
-    changeAt: (at: number, total: number) => `Izmena ${at} od ${total}`,
+    /*
+      Razlika rather than izmena, which is the name of one of the three kinds
+      of block this counts — (±) Izmenjeno. Counting all three by the name of
+      one of them puts "Izmena 2 od 3" over a block reading (+) Dodato.
+
+      It is also the word the rest of the screen already uses ("po čemu se
+      razlikuje", "manje nego sada"), and it takes no side about which text
+      moved: an izmena is something done to something, and which way round the
+      marks run is the one thing the tags are at pains to spell out.
+
+      Feminine either way, so Prethodna/Sledeca are untouched — the search
+      pane's own Prethodni/Sledeci are counting something else.
+    */
+    changeAt: (at: number, total: number) => `Razlika ${at} od ${total}`,
     changePrevious: 'Prethodna',
     changeNext: 'Sledeća',
     versionRestore: 'Vrati tekst na ovu verziju',
@@ -307,7 +318,7 @@ const TEXT = {
     },
     versionWasCalled: (title: string) => `Was called: “${title}”`,
     versionsAllSame: 'Every copy kept is the same as the active text.',
-    changeAt: (at: number, total: number) => `Change ${at} of ${total}`,
+    changeAt: (at: number, total: number) => `Difference ${at} of ${total}`,
     changePrevious: 'Previous',
     changeNext: 'Next',
     versionRestore: 'Take the text back to this version',
