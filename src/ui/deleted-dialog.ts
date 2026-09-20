@@ -130,8 +130,7 @@ export function openDeletedDialog(
     // The title and its sentence stack; the X sits beside the pair of them.
     const heading = document.createElement('div');
     heading.className = 'review-heading';
-    const title = document.createElement('h1');
-    title.textContent = words.deleted;
+    const title = titleOf({ mark: 'delete', label: words.deleted });
     const kept = document.createElement('p');
     kept.className = 'review-note';
     kept.textContent = words.deletedKept;
@@ -182,6 +181,7 @@ export function openDeletedDialog(
     const heading = document.createElement('div');
     heading.className = 'review-heading';
     const title = titleOf({
+      mark: 'delete',
       label: words.deletedPreview,
       name: note.title.length > 0 ? note.title : words.untitled,
     });

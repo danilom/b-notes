@@ -28,7 +28,7 @@ describe('what he is told before a text is put away', () => {
   it('names the action and the text, since the header is where the question is', () => {
     const asked = confirmationForDeleting(noteOf('O zimi', 'O zimi\n\nTekst.'), 'sr');
 
-    assert.deepEqual(asked.title, { label: 'Obriši tekst', name: 'O zimi' });
+    assert.deepEqual(asked.title, { mark: 'delete', label: 'Obriši tekst', name: 'O zimi' });
     assert.equal(asked.confirm, 'Obriši');
   });
 
@@ -48,7 +48,7 @@ describe('what he is told before a text is put away', () => {
   it('calls a text with no title what the list calls it', () => {
     const asked = confirmationForDeleting(noteOf('', ''), 'sr');
 
-    assert.deepEqual(asked.title, { label: 'Obriši tekst', name: 'Bez naslova' });
+    assert.deepEqual(asked.title, { mark: 'delete', label: 'Obriši tekst', name: 'Bez naslova' });
   });
 
   it('never asks him to write anything out, because it can be undone', () => {

@@ -47,7 +47,7 @@ function named(title: string, language: Language): string {
 export function confirmationForDeleting(note: Note, language: Language): Asked {
   const words = strings(language);
   return {
-    title: { label: words.deleteTitle, name: named(note.title, language) },
+    title: { mark: 'delete', label: words.deleteTitle, name: named(note.title, language) },
     // No promise of getting back a text that has nothing in it, since that is
     // the one text the promise might not hold for.
     body: isEmptyText(note.text) ? words.deleteEmptyBody : words.deleteBody,
@@ -65,7 +65,7 @@ export function confirmationForDeleting(note: Note, language: Language): Asked {
 export function confirmationForDestroying(note: DeletedNote, language: Language): Asked {
   const words = strings(language);
   return {
-    title: { label: words.destroyTitle, name: named(note.title, language) },
+    title: { mark: 'delete', label: words.destroyTitle, name: named(note.title, language) },
     body: note.versions > 0 ? words.destroyBodyWithVersions : words.destroyBody,
     confirm: words.destroy,
     danger: true,

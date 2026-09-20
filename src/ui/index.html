@@ -765,7 +765,11 @@
         One line, cut if it has to be. The title carries the name of the text,
         and a name that wraps pushes the X out of the corner it belongs in.
       */
-      #confirm .panel h1 {
+      /* The name of his text can be a whole opening paragraph. It is cut with
+         an ellipsis rather than wrapped: this header sits above one sentence
+         and two buttons, and a title three lines deep would push the question
+         out of the way of the thing it is asking about. */
+      #confirm .panel h1 .heading-text {
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
@@ -1185,8 +1189,27 @@
       }
 
       .panel h1 {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
         margin: 0;
         font-size: 1.12em;
+      }
+
+      /* The same mark as on the control he pressed to get here, so the dialog
+         is visibly the far end of that press. Quiet, because it is a signpost
+         and the two things beside it are what he reads. */
+      .panel h1 svg {
+        flex: none;
+        width: 1em;
+        height: 1em;
+        color: var(--quiet);
+      }
+
+      /* Lets the text shrink inside the flex row, which is what an ellipsis
+         needs before it can happen at all. */
+      .heading-text {
+        min-width: 0;
       }
 
       /* The name of the text, inside a heading that also names the action. He

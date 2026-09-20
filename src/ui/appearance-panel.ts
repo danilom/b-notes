@@ -12,6 +12,7 @@ import {
   stepScale,
   writingSampleFor,
 } from './appearance.ts';
+import { titleOf } from './dialog-heading.ts';
 import { icon } from './icons.ts';
 
 /**
@@ -215,8 +216,7 @@ function fill(
   const words = strings(language);
 
   const header = document.createElement('header');
-  const title = document.createElement('h1');
-  title.textContent = words.appearance;
+  const title = titleOf({ mark: 'appearance', label: words.appearance });
 
   const close = document.createElement('button');
   close.type = 'button';

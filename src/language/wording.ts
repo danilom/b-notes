@@ -73,7 +73,7 @@ const TEXT = {
     deleted: 'Obrisani tekstovi',
     deletedKept: 'Izaberi tekst da vidiš šta je u njemu, pa ga vrati ako želiš.',
     deletedSee: 'Vidi',
-    deletedPreview: 'Pregled',
+    deletedPreview: 'Pregled obrisanog',
     deletedPreviewHelp: 'Ovde možeš samo da čitaš. Vrati tekst ako hoćeš da ga menjaš.',
     deletedEmpty: 'U ovom tekstu nema ništa.',
     // Lower case, like the times in his list beside it: juce, pre 5 minuta.
@@ -118,7 +118,7 @@ const TEXT = {
     versions: 'Ranije verzije',
     versionsTitle: 'Ranije verzije',
     versionsNote: 'Ovako je tekst izgledao ranije. Izaberi kad, pa ga vrati ako hoćeš.',
-    versionTitle: 'Ranija verzija',
+    versionTitle: 'Pregled verzije',
     // The heading names the text, like every other dialog's. When it was
     // taken moves here, where it has room to be a sentence.
     versionWhen: (when: string) => `Ovako je izgledao ${when}.`,
@@ -224,7 +224,7 @@ const TEXT = {
     deleted: 'Deleted texts',
     deletedKept: 'Pick a text to see what is in it, then bring it back if you want.',
     deletedSee: 'View',
-    deletedPreview: 'Preview',
+    deletedPreview: 'Deleted text preview',
     deletedPreviewHelp: 'You can only read here. Bring the text back if you want to change it.',
     deletedEmpty: 'There is nothing in this text.',
     deletedWhen: (when: string) => `deleted ${when}`,
@@ -251,7 +251,7 @@ const TEXT = {
     versions: 'Earlier versions',
     versionsTitle: 'Earlier versions',
     versionsNote: 'This is how the text looked before. Pick when, then bring it back if you want.',
-    versionTitle: 'Earlier version',
+    versionTitle: 'Version preview',
     versionWhen: (when: string) => `This is how it looked ${when}.`,
     versionSize: (words: number, difference: number) => {
       const count = `${words.toLocaleString('en-GB')} word${words === 1 ? '' : 's'}`;

@@ -187,7 +187,7 @@ export function openVersionsDialog(
     footer.append(done);
 
     panel.replaceChildren(
-      heading({ label: words.versionsTitle, name: title }, words.versionsNote),
+      heading({ mark: 'versions', label: words.versionsTitle, name: title }, words.versionsNote),
       list,
       footer,
     );
@@ -230,7 +230,7 @@ export function openVersionsDialog(
     footer.append(back, toList);
     panel.replaceChildren(
       heading(
-        { label: words.versionTitle, name: title },
+        { mark: 'versions', label: words.versionTitle, name: title },
         words.versionWhen(describeWhen(version.takenAt, language)),
       ),
       column,
