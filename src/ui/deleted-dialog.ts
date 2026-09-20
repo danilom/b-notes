@@ -207,16 +207,12 @@ export function openDeletedDialog(
     alsoKept.textContent = words.deletedVersions(note.versions);
     alsoKept.hidden = note.versions === 0;
 
-    // What the box is, against the box rather than under the title: that it
-    // will not take his typing is a fact about the thing right below this, and
-    // it named something six inches away while it sat in the header.
-    //
-    // A plain block, not a textarea he cannot type into: there is no caret to
-    // put in it, so nothing suggests it would take his typing. Selecting still
-    // works, which is his way out if what he wants is one paragraph of it.
-    const help = document.createElement('p');
-    help.className = 'review-note-aside';
-    help.textContent = words.deletedPreviewHelp;
+    // No line saying it cannot be written in. The surface says it: a plain
+    // block rather than a textarea, tinted and bordered where the page is
+    // neither, at a smaller size, with no caret to put in it and an arrow over
+    // it rather than an I-beam. Selecting still works, which is his way out if
+    // what he wants is one paragraph of it — and the button that brings the
+    // whole thing back is already on screen below.
 
     const body = document.createElement('div');
     if (note.text.trim().length === 0) {
@@ -259,7 +255,7 @@ export function openDeletedDialog(
     // where the text starts.
     const column = document.createElement('div');
     column.className = 'review-body';
-    column.append(alsoKept, help, body);
+    column.append(alsoKept, body);
 
     panel.replaceChildren(header, column, footer);
     back.focus();

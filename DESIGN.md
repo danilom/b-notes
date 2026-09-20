@@ -38,9 +38,13 @@ him to decide:
 - **The line under the title says what to do here.** *Izaberi verziju da vidiš
   po čemu se razlikuje, pa je vrati ako želiš.* It is an instruction, so it is
   set at the same size as the note beside the button, not as fine print.
-- **A line above a box says what that box is.** That it will not take his
-  typing, when it was saved, what is missing from it. These belong against the
-  thing they describe — under the title they name something six inches away.
+- **A line above a box says what that box is.** When it was saved, what is
+  missing from it. These belong against the thing they describe — under the
+  title they name something six inches away. Say only what the surface cannot:
+  that a box will not take his typing is already carried by its tint, its
+  border, the smaller type, the absent caret and the arrow over it instead of
+  an I-beam, and a sentence saying so again is a line he reads every visit for
+  something he learns once.
 - **A line beside a button says what pressing it will do.** *Ova verzija
   postaje aktivni tekst.*
 
