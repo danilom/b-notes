@@ -871,14 +871,26 @@
            so the room between rows is room he pays for by the hundred; the
            inset at the sides is what keeps the text off the hover edge.
 
-           An odd number because it was arrived at rather than chosen: it puts
-           fifteen pixels between one row's text and the next, which is where
-           close enough stopped being too close. */
-        padding: 0.42rem 0.6rem;
+           Back to the tighter setting now that a line does the separating:
+           what the padding had to buy on its own was the gap that told one row
+           from the next, and a rule says it in one pixel. */
+        padding: 0.3rem 0.6rem;
         border: 0;
         border-radius: 6px;
         background: none;
         text-align: left;
+      }
+
+      /*
+        A rule between rows, not after the last one.
+
+        The two lines of a row are held together by weight and colour — the
+        title dark and heavy, the line under it quiet — but at this spacing that
+        was being asked to carry the separation between rows as well. The rule
+        carries it in a pixel, which is room the padding gets back.
+      */
+      .review-row:not(:last-child) {
+        border-bottom: 1px solid var(--line);
       }
 
       .review-row:hover {
