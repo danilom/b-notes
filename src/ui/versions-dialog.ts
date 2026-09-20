@@ -70,7 +70,6 @@ const REMINDER = 150;
 function blockFor(run: DiffRun, words: ReturnType<typeof strings>): HTMLElement {
   if (run.kind === 'same') {
     const plain = document.createElement('div');
-    plain.className = 'review-same';
     plain.append(...run.paragraphs.map(paragraphOf));
     return plain;
   }

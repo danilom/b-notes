@@ -888,6 +888,8 @@
       }
 
       .review-text {
+        /* How far the marked blocks reach past the text, in both directions. */
+        --run-inset: 0.9rem;
         flex: 1;
         overflow-y: auto;
         padding: 1.2rem 1.5rem;
@@ -914,17 +916,12 @@
         are, quietly enough that they stay the thing being read.
       */
       .review-run {
-        margin: 0.9rem 0;
-        padding: 0.7rem 0.9rem;
+        /* Out by its own padding, so the text inside it lands on the same left
+           edge as the paragraphs above and below. A box that shifts his lines
+           sideways reads as a different column rather than the same page. */
+        margin: 1em calc(-1 * var(--run-inset));
+        padding: 0.7rem var(--run-inset);
         border-radius: 6px;
-      }
-
-      .review-run p {
-        margin: 0 0 0.9rem;
-      }
-
-      .review-run p:last-child {
-        margin-bottom: 0;
       }
 
       .review-tag {
@@ -959,12 +956,17 @@
         color: var(--quiet);
       }
 
-      .review-same {
-        margin: 0.9rem 0;
+      /*
+        One rhythm for every paragraph in here, boxed or not. They are all his
+        writing read at the same size, and a marked one that sat on a tighter
+        gap than the rest would look like a different kind of thing.
+      */
+      .review-text p {
+        margin: 0 0 1em;
       }
 
-      .review-same:first-child {
-        margin-top: 0;
+      .review-text p:last-child {
+        margin-bottom: 0;
       }
 
       .review-text-empty {
