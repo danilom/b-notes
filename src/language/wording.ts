@@ -117,7 +117,6 @@ const TEXT = {
 
     versions: 'Ranije verzije',
     versionsTitle: 'Ranije verzije',
-    versionsNote: 'Ovako je tekst izgledao ranije. Izaberi kad, pa ga vrati ako hoćeš.',
     versionTitle: 'Pregled verzije',
     // Where he is in the list, not which copy this is. It is there so that a
     // row and the page it opens are recognisably the same thing — every copy
@@ -131,14 +130,14 @@ const TEXT = {
     // Two numbers, because they answer two different questions. How long it
     // was tells him whether this is the essay he remembers; how it compares to
     // what he has now tells him whether opening it would get anything back.
-    versionSize: (words: number, difference: number) => {
-      const count = `${words.toLocaleString('sr-RS')} ${plural(words, 'reč', 'reči', 'reči')}`;
-      // The same count says nothing about whether it is the same writing, and
-      // the two lines under it are about to say what changed. A number that
-      // only means "no answer here" is worse than no number.
-      if (difference === 0) return count;
-      const by = Math.abs(difference).toLocaleString('sr-RS');
-      return `${count} (${by} ${difference > 0 ? 'više' : 'manje'} nego sada)`;
+    versionWords: (count: number) =>
+      `${count.toLocaleString('sr-RS')} ${plural(count, 'reč', 'reči', 'reči')}`,
+    // On its own line under the count, and left out when there is no difference
+    // to report: a number that only means "no answer here" is worse than none.
+    versionCompared: (difference: number) => {
+      const by = Math.abs(difference);
+      const counted = `${by.toLocaleString('sr-RS')} ${plural(by, 'reč', 'reči', 'reči')}`;
+      return `${counted} ${difference > 0 ? 'više' : 'manje'} nego sada`;
     },
     // "Aktivni tekst", never "tvoj tekst" and never "sadašnji tekst".
     //
@@ -156,11 +155,7 @@ const TEXT = {
     versionWasCalled: (title: string) => `Zvao se: „${title}“`,
     // Both read as the copy against his text: what it holds on top of what he
     // has, and what he has that it never did.
-    // The tags below carry the words for these two; all that is needed here
-    // is his writing set off from ours, in the marks his language uses.
-    quoted: (text: string) => `„${text}“`,
     versionsAllSame: 'Sve sačuvane verzije su iste kao aktivni tekst.',
-    versionsBack: 'Nazad na verzije',
     // Feminine, because what is being counted is an izmena — the search
     // pane's own Prethodni/Sledeci are counting something else.
     changeAt: (at: number, total: number) => `Izmena ${at} od ${total}`,
@@ -275,20 +270,17 @@ const TEXT = {
 
     versions: 'Earlier versions',
     versionsTitle: 'Earlier versions',
-    versionsNote: 'This is how the text looked before. Pick when, then bring it back if you want.',
     versionTitle: 'Version preview',
     versionNumber: (at: number) => `#${at}`,
     versionWhen: (when: string) => `This copy was kept ${when}.`,
-    versionSize: (words: number, difference: number) => {
-      const count = `${words.toLocaleString('en-GB')} word${words === 1 ? '' : 's'}`;
-      if (difference === 0) return count;
-      const by = Math.abs(difference).toLocaleString('en-GB');
-      return `${count} (${by} ${difference > 0 ? 'more' : 'fewer'} than now)`;
+    versionWords: (count: number) =>
+      `${count.toLocaleString('en-GB')} word${count === 1 ? '' : 's'}`,
+    versionCompared: (difference: number) => {
+      const by = Math.abs(difference);
+      return `${by.toLocaleString('en-GB')} word${by === 1 ? '' : 's'} ${difference > 0 ? 'more' : 'fewer'} than now`;
     },
     versionWasCalled: (title: string) => `Was called: “${title}”`,
-    quoted: (text: string) => `“${text}”`,
     versionsAllSame: 'Every copy kept is the same as the active text.',
-    versionsBack: 'Back to versions',
     changeAt: (at: number, total: number) => `Change ${at} of ${total}`,
     changePrevious: 'Previous',
     changeNext: 'Next',

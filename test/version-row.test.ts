@@ -51,88 +51,53 @@ describe('shortening a paragraph to one line', () => {
 describe('what a row in the versions list says', () => {
   const current = 'O zimi\n\nDrugi pasus.';
 
-  it('gives the length and what it is beside his text now', () => {
+  it('gives the length on its own, with the comparison on the line below', () => {
+    // The two used to be one string. The index column has no room for that,
+    // and the second line is where the one fact worth a second line goes.
     const row = describeVersion(versionOf('O zimi\n\nPrvi pasus.\n\nDrugi pasus.'), current, 'O zimi', 'sr');
 
-    assert.equal(row.size, '6 reči (2 više nego sada)');
+    assert.equal(row.size, '6 reči');
+    assert.equal(row.note, '2 reči više nego sada');
   });
 
   it('says so when a copy is shorter than what he has now', () => {
     const row = describeVersion(versionOf('O zimi'), current, 'O zimi', 'sr');
 
-    assert.equal(row.size, '2 reči (2 manje nego sada)');
+    assert.equal(row.size, '2 reči');
+    assert.equal(row.note, '2 reči manje nego sada');
   });
 
-  it('gives the count alone when it matches, since the same count is not the same writing', () => {
-    const row = describeVersion(versionOf('O zimi\n\nDrugi pasus.'), current, 'O zimi', 'sr');
+  it('leaves the second line off when there is no difference to report', () => {
+    const row = describeVersion(versionOf('O zimi\n\nDrugi tekst.'), current, 'O zimi', 'sr');
 
     assert.equal(row.size, '4 reči');
+    assert.equal(row.note, null);
   });
 
-  it('shows the paragraph the copy holds that his text lost', () => {
-    const row = describeVersion(versionOf('O zimi\n\nPrvi pasus.\n\nDrugi pasus.'), current, 'O zimi', 'sr');
+  it('gives the second line to the old name when this copy opened differently', () => {
+    // The rarer fact and the more distinctive one. The length it displaces is
+    // what the diff beside the row is about to make plain anyway.
+    const row = describeVersion(versionOf('Pismo bratu\n\nPrvi pasus.'), current, 'O zimi', 'sr');
 
-    assert.deepEqual(row.added, { tag: '(+) Dodato', text: '„Prvi pasus.“' });
-  });
-
-  it('offers nothing back when his text already holds all of it', () => {
-    const row = describeVersion(versionOf('O zimi'), current, 'O zimi', 'sr');
-
-    assert.equal(row.added, null);
-    assert.deepEqual(row.missing, { tag: '(−) Nedostaje', text: '„Drugi pasus.“' });
-  });
-
-  it('shows both directions at once, since a copy can differ in both', () => {
-    const row = describeVersion(
-      versionOf('O zimi\n\nStari pasus.'),
-      'O zimi\n\nNovi pasus.',
-      'O zimi',
-      'sr',
-    );
-
-    assert.equal(row.added?.text, '„Stari pasus.“');
-    assert.equal(row.missing?.text, '„Novi pasus.“');
+    assert.equal(row.note, 'Zvao se: „Pismo bratu“');
   });
 
   it('stays quiet about the title while it is the one on every other row', () => {
-    const row = describeVersion(versionOf('O zimi\n\nPrvi pasus.'), current, 'O zimi', 'sr');
-
-    assert.equal(row.wasCalled, null);
-  });
-
-  it('shows the old title when this copy opened differently', () => {
-    const row = describeVersion(versionOf('Pismo bratu\n\nPrvi pasus.'), current, 'O zimi', 'sr');
-
-    assert.equal(row.wasCalled, 'Zvao se: „Pismo bratu“');
-  });
-
-  it('shows neither direction when he rewrote the whole thing, as the preview marks nothing', () => {
-    // The guard the row borrows from the preview: marking every paragraph says
-    // no more than marking none, so both have to agree that nothing is marked.
-    const row = describeVersion(versionOf('Prvi.\n\nDrugi.'), 'Sasvim drugi tekst.', 'Sasvim', 'sr');
-
-    assert.equal(row.added, null);
-    assert.equal(row.missing, null);
-  });
-
-  it('does not repeat the old title as the paragraph it would bring back', () => {
-    // A changed title is its own paragraph, and so the first one gone from his
-    // text — but the line above the row has already said it.
     const row = describeVersion(
-      versionOf('Pismo bratu\n\nPrvi pasus.\n\nDrugi pasus.'),
+      versionOf('O zimi\n\nPrvi pasus. Jos nesto.'),
       current,
       'O zimi',
       'sr',
     );
 
-    assert.equal(row.wasCalled, 'Zvao se: „Pismo bratu“');
-    assert.deepEqual(row.added, { tag: '(+) Dodato', text: '„Prvi pasus.“' });
+    assert.equal(row.note, '2 reči više nego sada', 'the comparison, not the name');
   });
 
   it('counts words in English too, with the English comparison', () => {
     const row = describeVersion(versionOf('On winter\n\nFirst one.'), 'On winter', 'On winter', 'en');
 
-    assert.equal(row.size, '4 words (2 more than now)');
+    assert.equal(row.size, '4 words');
+    assert.equal(row.note, '2 words more than now');
   });
 });
 

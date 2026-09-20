@@ -1,78 +1,33 @@
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 import type { NoteVersion } from '../notes/note.ts';
 import { titleFrom } from '../notes/note-title.ts';
-import { diffParagraphs } from '../notes/paragraph-diff.ts';
 import { countWords } from '../notes/word-count.ts';
-import { onOneLine } from './text-snippet.ts';
-
-/** Enough of a paragraph to recognise it by, on the one line a row has for it. */
-const SNIPPET = 120;
 
 /**
- * The first paragraph of one kind in the same comparison the preview draws.
+ * One row of the index beside a diff.
  *
- * The one comparison, not a second one that agrees with it most of the time: a
- * row promising something the preview then fails to mark is the kind of fault
- * nobody finds until he does.
- *
- * Never `alreadySaid`, whichever title is on screen already — a row that says
- * the same thing on two lines reads as broken.
- */
-function firstOfKind(
-  diff: ReturnType<typeof diffParagraphs>,
-  kind: 'added' | 'missing',
-  alreadySaid: string,
-): string | null {
-  if (diff.unrelated) return null;
-  const only = diff.pieces.find((piece) => piece.kind === kind && piece.text !== alreadySaid);
-  return only?.text ?? null;
-}
-
-/**
- * What one row in the versions list says.
- *
- * Every copy of a text opens the same way, so its opening tells them apart
- * about as well as its file size does. What does tell them apart is how it
- * differs from what he has now, in both directions — what it would give him
- * back, and what it never had.
+ * Thin on purpose. A row cannot say which copy he wants — every copy of one
+ * text opens the same way, so anything it puts on a line is a guess at what
+ * distinguishes them. What tells him is the diff, which is now open beside it,
+ * so the row's job is to be a place in a list and not a summary of one.
  */
 export interface VersionRow {
-  /**
-   * Where this copy sits in the list as drawn, or null when it is the only one.
-   *
-   * A place, not a name. It exists so a row and the page it opens can be
-   * recognised as the same thing while he goes back and forth between two of
-   * them — which holds because the dialog is modal, so no copy can be taken
-   * while he is looking and the list cannot move under him. Open it again
-   * tomorrow and the same copy may carry a different one.
-   */
+  /** Where this copy sits in the list as drawn, or null when it is the only one. */
   number: string | null;
-  /** How long it was, and what that is beside his text now. */
+  /** How long it was. */
   size: string;
   when: string;
-  /** Only when this copy opened differently from the way the text opens now. */
-  wasCalled: string | null;
-  /** The first thing it holds that his text no longer does, if there is one. */
-  added: Difference | null;
-  /** The first thing his text holds that this copy never did. */
-  missing: Difference | null;
+  /**
+   * The one line underneath: what the copy was called, where that differed, and
+   * otherwise how its length compares. Null when it is neither.
+   *
+   * The title wins the line when both apply. A copy that opened differently is
+   * the rarer thing and the more distinctive, and the length is the fact the
+   * diff beside it will make plain anyway.
+   */
+  note: string | null;
 }
 
-/**
- * One of the two directions, as a row says it.
- *
- * The two halves apart, because they are read differently: the tag is ours and
- * carries the colour of the block it stands for in the preview, and the rest is
- * a piece of his writing.
- */
-export interface Difference {
-  tag: string;
-  text: string;
-}
-
-/**
- * @param at Which row this is, counting from one, and how many rows there are.
- */
 export function describeVersion(
   version: NoteVersion,
   current: string,
@@ -83,28 +38,20 @@ export function describeVersion(
   const words = strings(language);
   const was = titleFrom(version.text);
   const length = countWords(version.text);
+  const difference = length - countWords(current);
 
-  // Each direction skips the title that is already on screen for it: the copy's
-  // own on the line above, and the active text's in the heading over the dialog.
-  const diff = diffParagraphs(version.text, current);
-  const extra = firstOfKind(diff, 'added', was);
-  const gone = firstOfKind(diff, 'missing', currentTitle);
-
+  const renamed = was.length > 0 && was !== currentTitle;
   return {
     // One copy needs no number: it is the only row, and the heading says which
     // text it belongs to already.
     number: at.of > 1 ? words.versionNumber(at.row) : null,
-    size: words.versionSize(length, length - countWords(current)),
+    size: words.versionWords(length),
     when: describeWhen(version.takenAt, language),
-    wasCalled: was.length > 0 && was !== currentTitle ? words.versionWasCalled(was) : null,
-    added:
-      extra === null
+    note: renamed
+      ? words.versionWasCalled(was)
+      : difference === 0
         ? null
-        : { tag: words.versionAddedTag, text: words.quoted(onOneLine(extra, SNIPPET)) },
-    missing:
-      gone === null
-        ? null
-        : { tag: words.versionMissingTag, text: words.quoted(onOneLine(gone, SNIPPET)) },
+        : words.versionCompared(difference),
   };
 }
 

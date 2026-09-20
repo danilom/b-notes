@@ -14,37 +14,12 @@ export interface VersionsHandlers {
   onClose: () => void;
 }
 
-/** A line that spans the row, under the two the row opens with. */
-function under(text: string): HTMLElement {
-  const line = document.createElement('span');
-  line.className = 'review-snippet';
-  line.textContent = text;
-  return line;
-}
-
 /**
- * The same, with the tag in the colour its block has in the preview.
+ * One row of the index, and nothing more than a place in it.
  *
- * Only the tag: the rest of the line is a piece of his writing quoted back at
- * him, and colouring that would be marking up the thing rather than the label
- * on it.
- */
-function differenceUnder(said: { tag: string; text: string }, kind: 'added' | 'missing'): HTMLElement {
-  const line = document.createElement('span');
-  line.className = 'review-snippet';
-
-  const tag = document.createElement('span');
-  tag.className = `snippet-tag snippet-tag-${kind}`;
-  tag.textContent = `${said.tag}:`;
-
-  line.append(tag, ` ${said.text}`);
-  return line;
-}
-
-/**
- * One copy, laid out the way the list of his texts is: what it is on the left,
- * when it was on the right. The same two columns in the same two places, since
- * the one he reads every day is the one he has learned.
+ * Two lines: what it is, and the one thing about it worth a second line. What
+ * it says is no longer trying to be a reason to pick it — the diff beside it is
+ * that.
  */
 function rowFor(
   version: NoteVersion,
@@ -52,36 +27,43 @@ function rowFor(
   title: string,
   language: Language,
   at: { row: number; of: number },
-  show: (version: NoteVersion, at: number) => void,
-): HTMLElement {
+  show: (at: number) => void,
+): HTMLButtonElement {
   const said = describeVersion(version, current, title, language, at);
 
   const row = document.createElement('button');
   row.type = 'button';
-  row.className = 'review-row';
+  row.className = 'index-row';
 
-  const size = document.createElement('span');
-  size.className = 'review-title';
+  const top = document.createElement('span');
+  top.className = 'index-line';
+
   if (said.number !== null) {
     const which = document.createElement('span');
     which.className = 'row-number';
     which.textContent = said.number;
-    size.append(which);
+    top.append(which);
   }
-  size.append(said.size);
+
+  const size = document.createElement('span');
+  size.className = 'index-size';
+  size.textContent = said.size;
 
   const when = document.createElement('span');
-  when.className = 'review-when';
+  when.className = 'index-when';
   when.textContent = said.when;
 
-  row.append(size, when);
-  // In the order he cares about them: what it was called, then what it would
-  // give him back, then what bringing it back would cost.
-  if (said.wasCalled !== null) row.append(under(said.wasCalled));
-  if (said.added !== null) row.append(differenceUnder(said.added, 'added'));
-  if (said.missing !== null) row.append(differenceUnder(said.missing, 'missing'));
+  top.append(size, when);
+  row.append(top);
 
-  row.addEventListener('click', () => show(version, at.row));
+  if (said.note !== null) {
+    const note = document.createElement('span');
+    note.className = 'index-note';
+    note.textContent = said.note;
+    row.append(note);
+  }
+
+  row.addEventListener('click', () => show(at.row));
   return row;
 }
 
@@ -202,14 +184,14 @@ export function openVersionsDialog(
   /** The copy in front of him, and which row of the list it came from. */
   let showing: { version: NoteVersion; at: number } | null = null;
 
+  /**
+   * Escape closes, with nothing to back out to first.
+   *
+   * It used to step back to the list, which was a screen of its own. The list
+   * is beside him now, so the only way out of this dialog is out.
+   */
   function onKey(event: KeyboardEvent): void {
-    if (event.key !== 'Escape') return;
-    if (showing === null) {
-      handlers.onClose();
-      return;
-    }
-    showing = null;
-    fill();
+    if (event.key === 'Escape') handlers.onClose();
   }
 
   const close = (): void => {
@@ -248,46 +230,24 @@ export function openVersionsDialog(
     return header;
   }
 
-  function show(version: NoteVersion, at: number): void {
-    showing = { version, at };
-    fill();
-  }
+  const index = document.createElement('div');
+  index.className = 'review-index';
 
-  function fillList(): void {
-    const list = document.createElement('div');
-    list.className = 'review-list';
-    versions.forEach((version, at) => {
-      list.append(rowFor(version, current, title, language, { row: at + 1, of: versions.length }, show));
-    });
+  const preview = document.createElement('div');
+  preview.className = 'review-preview';
 
-    const footer = document.createElement('footer');
-    const done = document.createElement('button');
-    done.type = 'button';
-    done.className = 'keep';
-    done.textContent = words.close;
-    done.addEventListener('click', handlers.onClose);
-    footer.append(done);
+  const body = document.createElement('div');
+  body.className = 'review-panes';
+  body.append(index, preview);
 
-    panel.replaceChildren(
-      heading({ mark: 'versions', label: words.versionsTitle, name: title }, words.versionsNote),
-      list,
-      footer,
-    );
-    done.focus();
-  }
+  const said = document.createElement('p');
+  said.className = 'review-note';
 
-/**
-   * The way through a diff that is twelve screens tall.
-   *
-   * His copies differ in two to eight places spread over the whole text, and not
-   * one of them is on the screen the dialog opens at — so without this the only
-   * way to find out what changed is to read the lot. The shape is the one the
-   * search does over his writing, in the same corner, because it is the only
-   * control of this kind he has already met.
-   *
-   * A change is a marked block, not a paragraph: seven paragraphs deleted in one
-   * save is one thing that happened to him.
-   */
+  const rows = versions.map((version, at) =>
+    rowFor(version, current, title, language, { row: at + 1, of: versions.length }, select),
+  );
+  index.append(...rows);
+
   function stepper(body: HTMLElement): HTMLElement {
     const changes = [...body.querySelectorAll<HTMLElement>('.review-run')];
 
@@ -328,13 +288,20 @@ export function openVersionsDialog(
   }
 
   /** One copy, with both ways it differs from the active text marked in place. */
-  function fillText(version: NoteVersion, at: number): void {
+  /**
+   * Puts one copy in the right-hand pane.
+   *
+   * The list stays where it is. That is the whole point of the two panes: he
+   * goes through three copies looking for the one he wants, and going back is
+   * not a journey — the place he would go back to never left the screen.
+   */
+  function fillPreview(version: NoteVersion): void {
     const { pieces, unrelated } = diffParagraphs(version.text, current);
     const runs = runsOf(pieces);
 
-    const body = document.createElement('div');
-    body.className = 'review-text';
-    body.append(...runs.map((run) => blockFor(run, words)));
+    const text = document.createElement('div');
+    text.className = 'review-text';
+    text.append(...runs.map((run) => blockFor(run, words)));
 
     const aside = document.createElement('p');
     aside.className = 'review-note-aside';
@@ -343,61 +310,61 @@ export function openVersionsDialog(
 
     const column = document.createElement('div');
     column.className = 'review-body';
-    column.append(aside, body, stepper(body));
+    column.append(aside, text, stepper(text));
 
-    const footer = document.createElement('footer');
+    preview.replaceChildren(column);
+    said.textContent = words.versionWhen(describeWhen(version.takenAt, language));
+  }
 
-    // What the button is about to do, in the two halves he would ask about:
-    // where this goes, and where what he has now goes.
-    const says = document.createElement('p');
-    says.className = 'footer-note';
-    for (const line of [words.versionRestoreNote, words.versionRestoreKept]) {
-      const said = document.createElement('span');
-      said.textContent = line;
-      says.append(said);
-    }
+  function select(row: number): void {
+    const version = versions[row - 1];
+    if (version === undefined) return;
 
-    const back = document.createElement('button');
-    back.type = 'button';
-    back.className = 'keep';
-    back.textContent = words.versionRestore;
-    back.addEventListener('click', () => handlers.onRestore(version));
-
-    const toList = document.createElement('button');
-    toList.type = 'button';
-    toList.textContent = words.versionsBack;
-    toList.addEventListener('click', () => {
-      showing = null;
-      fill();
+    showing = { version, at: row };
+    rows.forEach((one, at) => {
+      one.classList.toggle('index-row-open', at === row - 1);
+      one.setAttribute('aria-current', at === row - 1 ? 'true' : 'false');
     });
-
-    footer.append(says, back, toList);
-    panel.replaceChildren(
-      heading(
-        // The same mark the row carried, so the two screens are visibly one
-        // thing. On the label side: it names the copy, not the text.
-        {
-          mark: 'versions',
-          label:
-            versions.length > 1
-              ? `${words.versionTitle} ${words.versionNumber(at)}`
-              : words.versionTitle,
-          name: title,
-        },
-        words.versionWhen(describeWhen(version.takenAt, language)),
-      ),
-      column,
-      footer,
-    );
-    back.focus();
+    fillPreview(version);
   }
 
-  function fill(): void {
-    if (showing === null) fillList();
-    else fillText(showing.version, showing.at);
+  const footer = document.createElement('footer');
+
+  // What the button is about to do, in the two halves he would ask about:
+  // where this goes, and where what he has now goes.
+  const says = document.createElement('p');
+  says.className = 'footer-note';
+  for (const line of [words.versionRestoreNote, words.versionRestoreKept]) {
+    const one = document.createElement('span');
+    one.textContent = line;
+    says.append(one);
   }
 
-  fill();
+  const back = document.createElement('button');
+  back.type = 'button';
+  back.className = 'keep';
+  back.textContent = words.versionRestore;
+  back.addEventListener('click', () => {
+    if (showing !== null) handlers.onRestore(showing.version);
+  });
+
+  const done = document.createElement('button');
+  done.type = 'button';
+  done.textContent = words.close;
+  done.addEventListener('click', handlers.onClose);
+
+  footer.append(says, back, done);
+
+  const header = document.createElement('header');
+  const stacked = document.createElement('div');
+  stacked.className = 'review-heading';
+  stacked.append(titleOf({ mark: 'versions', label: words.versionsTitle, name: title }), said);
+  header.append(stacked, dismissButton());
+
+  panel.replaceChildren(header, body, footer);
+  // The newest, so he opens on a difference rather than on an empty half.
+  select(1);
+
   container.replaceChildren(panel);
   container.hidden = false;
   document.addEventListener('keydown', onKey);
