@@ -32,6 +32,22 @@ The consequences that shape the code:
 
 When the tradeoff is between "powerful" and "impossible to get wrong", choose impossible to get wrong.
 
+Where the app's own words go, on any screen that shows him something and asks
+him to decide:
+
+- **The line under the title says what to do here.** *Izaberi verziju da vidiš
+  po čemu se razlikuje, pa je vrati ako želiš.* It is an instruction, so it is
+  set at the same size as the note beside the button, not as fine print.
+- **A line above a box says what that box is.** That it will not take his
+  typing, when it was saved, what is missing from it. These belong against the
+  thing they describe — under the title they name something six inches away.
+- **A line beside a button says what pressing it will do.** *Ova verzija
+  postaje aktivni tekst.*
+
+Each of the three had drifted into the wrong slot at least once. The test is
+whether the sentence is about the screen, about a thing on it, or about an act
+— and then putting it where that thing is.
+
 ## Stack
 
 - Electron + TypeScript. The Electron version is pinned deliberately: the app is local-files-only with no network and no untrusted content, so there is no pressure to chase Chromium updates. Don't upgrade it without a concrete reason.

@@ -242,6 +242,7 @@ export function openVersionsDialog(
 
   const said = document.createElement('p');
   said.className = 'review-note';
+  said.textContent = words.versionsNote;
 
   const rows = versions.map((version, at) =>
     rowFor(version, current, title, language, { row: at + 1, of: versions.length }, select),
@@ -308,12 +309,25 @@ export function openVersionsDialog(
     aside.textContent = words.versionUnrelated;
     aside.hidden = !unrelated;
 
+    // Which copy this is and what the box is, against the box. Both are facts
+    // about the thing underneath them, and the line under the title is for
+    // what he is here to do.
+    const about = document.createElement('p');
+    about.className = 'review-note-aside';
+    about.textContent = words.versionWhen(describeWhen(version.takenAt, language));
+
+    // The stepper floats over the box, so the box is what it is placed
+    // against. Hung on the column instead, it lands on whatever lines are
+    // above the box — and how many of those there are varies.
+    const framed = document.createElement('div');
+    framed.className = 'review-framed';
+    framed.append(text, stepper(text));
+
     const column = document.createElement('div');
     column.className = 'review-body';
-    column.append(aside, text, stepper(text));
+    column.append(aside, about, framed);
 
     preview.replaceChildren(column);
-    said.textContent = words.versionWhen(describeWhen(version.takenAt, language));
   }
 
   function select(row: number): void {

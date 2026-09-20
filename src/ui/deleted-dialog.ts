@@ -186,9 +186,7 @@ export function openDeletedDialog(
   function fillText(note: DeletedNote): void {
     const header = document.createElement('header');
     // The same shape as the list's heading, and for the same reason: the line
-    // under the title is where this dialog says what he can do from here. It
-    // names the one thing the surface can only hint at — that he cannot write
-    // in it — and what to press if that is what he wanted.
+    // under the title says what he is here to do.
     const heading = document.createElement('div');
     heading.className = 'review-heading';
     const title = titleOf({
@@ -196,21 +194,29 @@ export function openDeletedDialog(
       label: words.deletedPreview,
       name: note.title.length > 0 ? note.title : words.untitled,
     });
-    const help = document.createElement('p');
-    help.className = 'review-note';
-    help.textContent = words.deletedPreviewHelp;
-    heading.append(title, help);
+    const check = document.createElement('p');
+    check.className = 'review-note';
+    check.textContent = words.deletedPreviewCheck;
+    heading.append(title, check);
     header.append(heading, dismissButton());
 
-    // A plain block, not a textarea he cannot type into: there is no caret to
-    // put in it, so nothing suggests it would take his typing. Selecting still
-    // works, which is his way out if what he wants is one paragraph of it.
     // What else is kept of it. Above the text, because it is about the writing
     // rather than about the dialog, and silent when there is nothing to say.
     const alsoKept = document.createElement('p');
     alsoKept.className = 'review-note-aside';
     alsoKept.textContent = words.deletedVersions(note.versions);
     alsoKept.hidden = note.versions === 0;
+
+    // What the box is, against the box rather than under the title: that it
+    // will not take his typing is a fact about the thing right below this, and
+    // it named something six inches away while it sat in the header.
+    //
+    // A plain block, not a textarea he cannot type into: there is no caret to
+    // put in it, so nothing suggests it would take his typing. Selecting still
+    // works, which is his way out if what he wants is one paragraph of it.
+    const help = document.createElement('p');
+    help.className = 'review-note-aside';
+    help.textContent = words.deletedPreviewHelp;
 
     const body = document.createElement('div');
     if (note.text.trim().length === 0) {
@@ -253,7 +259,7 @@ export function openDeletedDialog(
     // where the text starts.
     const column = document.createElement('div');
     column.className = 'review-body';
-    column.append(alsoKept, body);
+    column.append(alsoKept, help, body);
 
     panel.replaceChildren(header, column, footer);
     back.focus();

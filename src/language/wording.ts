@@ -78,6 +78,11 @@ const TEXT = {
     deletedKept: 'Izaberi tekst da vidiš šta je u njemu, pa ga vrati ako želiš.',
     deletedSee: 'Vidi',
     deletedPreview: 'Pregled obrisanog',
+    // Two jobs, two places. A dialog's second line says what to do on this
+    // screen; the line above a box says what the box is. These used to be one
+    // line doing both, under the title, where the second half described
+    // something six inches further down.
+    deletedPreviewCheck: 'Proveri da li je ovo tekst koji želiš da vratiš.',
     deletedPreviewHelp: 'Ovde možeš samo da čitaš. Vrati tekst ako hoćeš da ga menjaš.',
     deletedEmpty: 'U ovom tekstu nema ništa.',
     // Lower case, like the times in his list beside it: juce, pre 5 minuta.
@@ -130,7 +135,12 @@ const TEXT = {
     // The heading names the text, like every other dialog's. This line says
     // where the thing he is looking at came from: the app kept it, at a
     // moment, and that is the whole of what he needs to know about it.
-    versionWhen: (when: string) => `Ova verzija je sačuvana ${when}.`,
+    versionsNote: 'Izaberi verziju da vidiš po čemu se razlikuje, pa je vrati ako želiš.',
+    // Only the first half of what the deleted texts' box says: the button
+    // below this one has a note of its own about bringing it back, and saying
+    // it twice on one screen is worse than saying it once.
+    versionWhen: (when: string) =>
+      `Ova verzija je sačuvana ${when}. Ovde možeš samo da čitaš.`,
     // Two numbers, because they answer two different questions. How long it
     // was tells him whether this is the essay he remembers; how it compares to
     // what he has now tells him whether opening it would get anything back.
@@ -250,6 +260,7 @@ const TEXT = {
     deletedKept: 'Pick a text to see what is in it, then bring it back if you want.',
     deletedSee: 'View',
     deletedPreview: 'Deleted text preview',
+    deletedPreviewCheck: 'Check whether this is the text you want back.',
     deletedPreviewHelp: 'You can only read here. Bring the text back if you want to change it.',
     deletedEmpty: 'There is nothing in this text.',
     deletedWhen: (when: string) => `deleted ${when}`,
@@ -277,7 +288,8 @@ const TEXT = {
     versionsTitle: 'Earlier versions',
     versionTitle: 'Version preview',
     versionNumber: (at: number) => `#${at}`,
-    versionWhen: (when: string) => `This copy was kept ${when}.`,
+    versionsNote: 'Pick a version to see how it differs, then bring it back if you want.',
+    versionWhen: (when: string) => `This copy was kept ${when}. You can only read here.`,
     versionWords: (count: number) =>
       `${count.toLocaleString('en-GB')} word${count === 1 ? '' : 's'}`,
     versionCompared: (difference: number) => {
