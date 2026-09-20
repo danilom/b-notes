@@ -21,6 +21,25 @@ function under(text: string): HTMLElement {
 }
 
 /**
+ * The same, with the tag in the colour its block has in the preview.
+ *
+ * Only the tag: the rest of the line is a piece of his writing quoted back at
+ * him, and colouring that would be marking up the thing rather than the label
+ * on it.
+ */
+function differenceUnder(said: { tag: string; text: string }, kind: 'added' | 'missing'): HTMLElement {
+  const line = document.createElement('span');
+  line.className = 'review-snippet';
+
+  const tag = document.createElement('span');
+  tag.className = `snippet-tag snippet-tag-${kind}`;
+  tag.textContent = `${said.tag}:`;
+
+  line.append(tag, ` ${said.text}`);
+  return line;
+}
+
+/**
  * One copy, laid out the way the list of his texts is: what it is on the left,
  * when it was on the right. The same two columns in the same two places, since
  * the one he reads every day is the one he has learned.
@@ -49,9 +68,9 @@ function rowFor(
   row.append(size, when);
   // In the order he cares about them: what it was called, then what it would
   // give him back, then what bringing it back would cost.
-  for (const line of [said.wasCalled, said.added, said.missing]) {
-    if (line !== null) row.append(under(line));
-  }
+  if (said.wasCalled !== null) row.append(under(said.wasCalled));
+  if (said.added !== null) row.append(differenceUnder(said.added, 'added'));
+  if (said.missing !== null) row.append(differenceUnder(said.missing, 'missing'));
 
   row.addEventListener('click', () => show(version));
   return row;

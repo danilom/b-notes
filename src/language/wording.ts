@@ -151,8 +151,9 @@ const TEXT = {
     versionWasCalled: (title: string) => `Zvao se: „${title}“`,
     // Both read as the copy against his text: what it holds on top of what he
     // has, and what he has that it never did.
-    versionAdded: (text: string) => `Dodato: „${text}“`,
-    versionMissing: (text: string) => `Nedostaje: „${text}“`,
+    // The tags below carry the words for these two; all that is needed here
+    // is his writing set off from ours, in the marks his language uses.
+    quoted: (text: string) => `„${text}“`,
     versionsAllSame: 'Sve sačuvane verzije su iste kao aktivni tekst.',
     versionsBack: 'Nazad na verzije',
     versionRestore: 'Vrati ovaj tekst',
@@ -263,8 +264,7 @@ const TEXT = {
       return `${count} (${by} ${difference > 0 ? 'more' : 'fewer'} than now)`;
     },
     versionWasCalled: (title: string) => `Was called: “${title}”`,
-    versionAdded: (text: string) => `Extra: “${text}”`,
-    versionMissing: (text: string) => `Missing: “${text}”`,
+    quoted: (text: string) => `“${text}”`,
     versionsAllSame: 'Every copy kept is the same as the active text.',
     versionsBack: 'Back to versions',
     versionRestore: 'Bring this text back',

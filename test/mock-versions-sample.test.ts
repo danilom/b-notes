@@ -45,7 +45,7 @@ describe('the versions sample', () => {
     const row = rows()[0];
 
     assert.ok(row?.size.includes('more than now'), row?.size ?? 'no row');
-    assert.ok(row?.added?.startsWith('Extra: “X.'), row?.added ?? 'no added line');
+    assert.ok(row?.added?.text.startsWith('“X.'), row?.added?.text ?? 'no added line');
     assert.equal(row?.missing, null);
   });
 
@@ -54,29 +54,29 @@ describe('the versions sample', () => {
 
     assert.ok(row?.size.includes('fewer than now'), row?.size ?? 'no row');
     assert.equal(row?.added, null);
-    assert.ok(row?.missing?.startsWith('Missing: “C.'), row?.missing ?? 'no missing line');
+    assert.ok(row?.missing?.text.startsWith('“C.'), row?.missing?.text ?? 'no missing line');
   });
 
   it('shows one that differs in both directions at once', () => {
     const row = rows()[2];
 
-    assert.ok(row?.added?.startsWith('Extra: “X.'), row?.added ?? 'no added line');
-    assert.ok(row?.missing?.startsWith('Missing: “B.'), row?.missing ?? 'no missing line');
+    assert.ok(row?.added?.text.startsWith('“X.'), row?.added?.text ?? 'no added line');
+    assert.ok(row?.missing?.text.startsWith('“B.'), row?.missing?.text ?? 'no missing line');
   });
 
   it('shows one that opened under a different title', () => {
     const row = rows()[3];
 
     assert.equal(row?.wasCalled, 'Was called: “Staro ime”');
-    assert.ok(row?.added?.startsWith('Extra: “Y.'), row?.added ?? 'no added line');
+    assert.ok(row?.added?.text.startsWith('“Y.'), row?.added?.text ?? 'no added line');
   });
 
   it('shows one of the same length that is not the same writing', () => {
     const row = rows()[4];
 
     assert.ok(!row?.size.includes('('), `the count alone, with no comparison: ${row?.size}`);
-    assert.ok(row?.added?.startsWith('Extra: “C. Ali'), row?.added ?? 'no added line');
-    assert.ok(row?.missing?.startsWith('Missing: “C. I'), row?.missing ?? 'no missing line');
+    assert.ok(row?.added?.text.startsWith('“C. Ali'), row?.added?.text ?? 'no added line');
+    assert.ok(row?.missing?.text.startsWith('“C. I'), row?.missing?.text ?? 'no missing line');
   });
 
   it('shows one he rewrote outright, which marks no paragraphs either way', () => {

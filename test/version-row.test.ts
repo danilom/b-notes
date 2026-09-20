@@ -72,14 +72,14 @@ describe('what a row in the versions list says', () => {
   it('shows the paragraph the copy holds that his text lost', () => {
     const row = describeVersion(versionOf('O zimi\n\nPrvi pasus.\n\nDrugi pasus.'), current, 'O zimi', 'sr');
 
-    assert.equal(row.added, 'Dodato: „Prvi pasus.“');
+    assert.deepEqual(row.added, { tag: '(+) Dodato', text: '„Prvi pasus.“' });
   });
 
   it('offers nothing back when his text already holds all of it', () => {
     const row = describeVersion(versionOf('O zimi'), current, 'O zimi', 'sr');
 
     assert.equal(row.added, null);
-    assert.equal(row.missing, 'Nedostaje: „Drugi pasus.“');
+    assert.deepEqual(row.missing, { tag: '(−) Nedostaje', text: '„Drugi pasus.“' });
   });
 
   it('shows both directions at once, since a copy can differ in both', () => {
@@ -90,8 +90,8 @@ describe('what a row in the versions list says', () => {
       'sr',
     );
 
-    assert.equal(row.added, 'Dodato: „Stari pasus.“');
-    assert.equal(row.missing, 'Nedostaje: „Novi pasus.“');
+    assert.equal(row.added?.text, '„Stari pasus.“');
+    assert.equal(row.missing?.text, '„Novi pasus.“');
   });
 
   it('stays quiet about the title while it is the one on every other row', () => {
@@ -126,7 +126,7 @@ describe('what a row in the versions list says', () => {
     );
 
     assert.equal(row.wasCalled, 'Zvao se: „Pismo bratu“');
-    assert.equal(row.added, 'Dodato: „Prvi pasus.“');
+    assert.deepEqual(row.added, { tag: '(+) Dodato', text: '„Prvi pasus.“' });
   });
 
   it('counts words in English too, with the English comparison', () => {

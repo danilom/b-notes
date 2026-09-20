@@ -43,9 +43,21 @@ export interface VersionRow {
   /** Only when this copy opened differently from the way the text opens now. */
   wasCalled: string | null;
   /** The first thing it holds that his text no longer does, if there is one. */
-  added: string | null;
+  added: Difference | null;
   /** The first thing his text holds that this copy never did. */
-  missing: string | null;
+  missing: Difference | null;
+}
+
+/**
+ * One of the two directions, as a row says it.
+ *
+ * The two halves apart, because they are read differently: the tag is ours and
+ * carries the colour of the block it stands for in the preview, and the rest is
+ * a piece of his writing.
+ */
+export interface Difference {
+  tag: string;
+  text: string;
 }
 
 export function describeVersion(
@@ -68,8 +80,14 @@ export function describeVersion(
     size: words.versionSize(length, length - countWords(current)),
     when: describeWhen(version.takenAt, language),
     wasCalled: was.length > 0 && was !== currentTitle ? words.versionWasCalled(was) : null,
-    added: extra === null ? null : words.versionAdded(onOneLine(extra, SNIPPET)),
-    missing: gone === null ? null : words.versionMissing(onOneLine(gone, SNIPPET)),
+    added:
+      extra === null
+        ? null
+        : { tag: words.versionAddedTag, text: words.quoted(onOneLine(extra, SNIPPET)) },
+    missing:
+      gone === null
+        ? null
+        : { tag: words.versionMissingTag, text: words.quoted(onOneLine(gone, SNIPPET)) },
   };
 }
 
