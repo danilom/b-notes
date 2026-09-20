@@ -28,6 +28,7 @@ import { icon } from './icons.ts';
 import { type Draft, renderList } from './note-list.ts';
 import { deletedStripFor } from './deleted-strip.ts';
 import { type WhatIsHappening, canDelete, emptyHintShows, statusFor } from './status-line.ts';
+import { type Stepper, createStepper } from './stepper.ts';
 import { type TextMatch, foundPanelFor, matchesIn } from './text-match.ts';
 
 /** Long enough that he isn't saved mid-word, short enough to never lose a thought. */
@@ -62,12 +63,6 @@ function reportUncaught(): void {
   });
 }
 
-function textIn(words: string): HTMLSpanElement {
-  const span = document.createElement('span');
-  span.textContent = words;
-  return span;
-}
-
 function element<T extends Element>(id: string, kind: new () => T): T {
   const found = document.getElementById(id);
   if (!(found instanceof kind)) throw new Error(`Missing element: #${id}`);
@@ -78,10 +73,6 @@ const listPane = element('list', HTMLDivElement);
 const editor = element('editor', HTMLTextAreaElement);
 const editorMarks = element('editor-marks', HTMLDivElement);
 const foundPane = element('found', HTMLDivElement);
-const foundAt = element('found-at', HTMLSpanElement);
-const foundPrevious = element('found-previous', HTMLButtonElement);
-const foundNext = element('found-next', HTMLButtonElement);
-const foundClose = element('found-close', HTMLButtonElement);
 const statusText = element('status-text', HTMLSpanElement);
 const search = element('search', HTMLInputElement);
 const newNote = element('new-note', HTMLButtonElement);
@@ -160,6 +151,8 @@ function draw(): void {
  */
 let found: TextMatch[] = [];
 let atFound = 0;
+/** Built once the words are known, since its buttons are named in them. */
+let foundSteps: Stepper;
 
 /**
  * Paints the matches on the layer behind his writing.
@@ -217,21 +210,22 @@ function markMatches(): void {
 function showFound(): void {
   const panel = foundPanelFor(found, atFound, language);
   foundPane.hidden = !panel.shown;
-  foundAt.textContent = panel.label;
-  foundPrevious.disabled = !panel.steppable;
-  foundNext.disabled = !panel.steppable;
+  foundSteps.showing(panel.label, { canGoBack: panel.canGoBack, canGoOn: panel.canGoOn });
 }
 
 /**
  * Moves to the match before or after this one, round the ends.
  *
- * Wrapping rather than stopping, so neither button is ever a dead one — and
- * because the alternative is him pressing a button that does nothing and
- * concluding the app has stopped working.
+ * Stopping at the ends rather than wrapping. Wrapping kept both buttons alive,
+ * but a list that silently starts over is worse than a button that is visibly
+ * spent: he presses on, lands back at the first match, and has no way of
+ * telling whether he has seen them all or lost his place. The greyed-out
+ * button says where the end is before he reaches for it.
  */
 function stepThroughFound(direction: 1 | -1): void {
-  if (found.length === 0) return;
-  atFound = (atFound + direction + found.length) % found.length;
+  const next = atFound + direction;
+  if (next < 0 || next >= found.length) return;
+  atFound = next;
   markMatches();
   scrollToCurrentMatch();
 }
@@ -370,29 +364,6 @@ listPane.addEventListener('click', (event) => {
   if (id !== undefined) void open(id);
 });
 
-/**
- * Leaves the pen in his hand.
- *
- * A button takes the focus when it is pressed, which would take the cursor out
- * of his text — he clicks one of these, then types, and the letters go nowhere.
- * Refusing the default on the way down means the button never takes focus at
- * all, so the click still happens and the cursor stays where he left it.
- */
-function withoutTakingFocus(button: HTMLButtonElement): void {
-  button.addEventListener('mousedown', (event) => {
-    event.preventDefault();
-  });
-}
-
-for (const button of [foundPrevious, foundNext, foundClose]) withoutTakingFocus(button);
-
-foundPrevious.addEventListener('click', () => {
-  stepThroughFound(-1);
-});
-
-foundNext.addEventListener('click', () => {
-  stepThroughFound(1);
-});
 
 /**
  * Enter in the search box goes to the next one.
@@ -451,13 +422,7 @@ function searchChanged(): void {
 
 search.addEventListener('input', searchChanged);
 
-foundClose.addEventListener('click', () => {
-  // The whole search, not merely these marks. Stopping the highlighting while
-  // the list stayed filtered would leave two thirds of his texts missing with
-  // nothing on screen left to explain why.
-  search.value = '';
-  searchChanged();
-});
+
 
 newNote.addEventListener('click', () => {
   openId = null;
@@ -848,11 +813,21 @@ export async function startApp(host: Host): Promise<void> {
 
   store = createNoteStore(host.files, host.writingFolder);
   newNoteLabel.textContent = words.newNote;
-  foundPrevious.append(icon('previous'), textIn(words.foundPrevious));
-  foundNext.append(icon('next'), textIn(words.foundNext));
-  foundClose.append(icon('close'));
-  foundClose.title = words.clearSearch;
-  foundClose.setAttribute('aria-label', words.clearSearch);
+  foundSteps = createStepper(
+    { previous: words.foundPrevious, next: words.foundNext, close: words.clearSearch },
+    {
+      onPrevious: () => stepThroughFound(-1),
+      onNext: () => stepThroughFound(1),
+      // The whole search, not merely these marks. Stopping the highlighting
+      // while the list stayed filtered would leave two thirds of his texts
+      // missing with nothing on screen left to explain why.
+      onClose: () => {
+        search.value = '';
+        searchChanged();
+      },
+    },
+  );
+  foundPane.append(foundSteps.root);
   newNote.prepend(icon('new-text'));
   appearanceLabel.textContent = words.appearance;
   deleteNoteLabel.textContent = words.deleteNote;

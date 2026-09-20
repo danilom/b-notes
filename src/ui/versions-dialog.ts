@@ -3,6 +3,7 @@ import type { NoteVersion } from '../notes/note.ts';
 import { type DiffPiece, type DiffRun, diffParagraphs, runsOf } from '../notes/paragraph-diff.ts';
 import { icon } from './icons.ts';
 import { scrollShowing } from './change-in-view.ts';
+import { createStepper } from './stepper.ts';
 import { type Titled, titleOf } from './dialog-heading.ts';
 import { beginningAndEnd } from './text-snippet.ts';
 import { describeVersion } from './version-row.ts';
@@ -280,56 +281,44 @@ export function openVersionsDialog(
    * save is one thing that happened to him.
    */
   function stepper(body: HTMLElement): HTMLElement {
-    const words = strings(language);
     const changes = [...body.querySelectorAll<HTMLElement>('.review-run')];
-  
-    const steps = document.createElement('div');
-    steps.className = 'review-steps';
+
+    let showing = 0;
+    const steps = createStepper(
+      { previous: words.changePrevious, next: words.changeNext },
+      { onPrevious: () => goTo(showing - 1), onNext: () => goTo(showing + 1) },
+    );
+    steps.root.classList.add('review-steps');
     // Held back until it is known whether there is anywhere to go, which needs
     // the panel laid out. Hidden is the safe state to start in.
-    steps.hidden = true;
-  
-    const at = document.createElement('span');
-    at.className = 'review-steps-at';
-  
-    const back = document.createElement('button');
-    back.type = 'button';
-    back.textContent = words.changePrevious;
-  
-    const on = document.createElement('button');
-    on.type = 'button';
-    on.textContent = words.changeNext;
-  
-    let showing = 0;
-    const goTo = (which: number): void => {
+    steps.root.hidden = true;
+
+    function goTo(which: number): void {
       showing = Math.max(0, Math.min(which, changes.length - 1));
-      at.textContent = words.changeAt(showing + 1, changes.length);
-      back.disabled = showing === 0;
-      on.disabled = showing === changes.length - 1;
-  
+      steps.showing(words.changeAt(showing + 1, changes.length), {
+        canGoBack: showing > 0,
+        canGoOn: showing < changes.length - 1,
+      });
+
       const change = changes[showing];
       if (change === undefined) return;
       body.scrollTop = scrollShowing(
         { top: change.offsetTop - body.offsetTop, height: change.offsetHeight },
         { height: body.clientHeight, scrollable: body.scrollHeight - body.clientHeight },
       );
-    };
-  
-    back.addEventListener('click', () => goTo(showing - 1));
-    on.addEventListener('click', () => goTo(showing + 1));
-  
-    steps.append(at, back, on);
+    }
+
     // After the panel is in the document, or every measurement here is zero.
     queueMicrotask(() => {
       // A copy short enough to read without scrolling has nothing to steer
       // through: he can see all of it, and a stepper over it is chrome.
       if (changes.length === 0 || body.scrollHeight <= body.clientHeight) return;
-      steps.hidden = false;
+      steps.root.hidden = false;
       goTo(0);
     });
-    return steps;
+    return steps.root;
   }
-  
+
   /** One copy, with both ways it differs from the active text marked in place. */
   function fillText(version: NoteVersion): void {
     const { pieces, unrelated } = diffParagraphs(version.text, current);

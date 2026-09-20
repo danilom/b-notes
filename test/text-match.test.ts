@@ -59,10 +59,10 @@ describe('the panel counting what a search found', () => {
     assert.equal(foundPanelFor(some(1), 0, 'sr').label, 'samo jednom');
   });
 
-  it('leaves the arrows quiet when there is nowhere to step', () => {
-    // A button that does nothing when pressed is how he concludes the app has
-    // stopped working.
-    assert.equal(foundPanelFor(some(1), 0, 'sr').steppable, false);
+  it('leaves both arrows quiet when there is nowhere to step', () => {
+    const panel = foundPanelFor(some(1), 0, 'sr');
+
+    assert.deepEqual([panel.canGoBack, panel.canGoOn], [false, false]);
   });
 
   it('counts from one, where he counts from', () => {
@@ -73,8 +73,24 @@ describe('the panel counting what a search found', () => {
     assert.equal(foundPanelFor(some(81), 40, 'sr').label, '41 od 81');
   });
 
-  it('lets him step once there is more than one', () => {
-    assert.equal(foundPanelFor(some(2), 0, 'sr').steppable, true);
+  it('lets him step on once there is more than one', () => {
+    const panel = foundPanelFor(some(2), 0, 'sr');
+
+    assert.deepEqual([panel.canGoBack, panel.canGoOn], [false, true]);
+  });
+
+  it('stops at the last one rather than starting over', () => {
+    // It used to wrap. A list that silently begins again leaves him unable to
+    // tell whether he has seen them all or lost his place.
+    const panel = foundPanelFor(some(9), 8, 'sr');
+
+    assert.deepEqual([panel.canGoBack, panel.canGoOn], [true, false]);
+  });
+
+  it('lets him go both ways in the middle', () => {
+    const panel = foundPanelFor(some(9), 4, 'sr');
+
+    assert.deepEqual([panel.canGoBack, panel.canGoOn], [true, true]);
   });
 
   it('counts the same way in English', () => {

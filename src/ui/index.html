@@ -1075,46 +1075,15 @@
         margin-bottom: 0;
       }
 
-      /*
-        The way through a diff twelve screens tall, in the corner the search
-        uses over his writing. Same shape, same place, same halo — it is the
-        only control of this kind he has already met, and meeting it twice in
-        two places is one thing learned rather than two.
-      */
       .review-steps {
         position: absolute;
         top: 0.7rem;
         right: calc(var(--scrollbar) + 0.5rem);
         z-index: 2;
-        display: flex;
-        align-items: center;
-        gap: 0.3rem;
-        padding: 0.3rem 0.4rem;
-        border: 1px solid var(--line);
-        border-radius: 6px;
-        background: var(--panel);
-        box-shadow:
-          0 2px 16px 2px var(--halo),
-          0 1px 4px var(--halo-near);
-        font-family: 'Segoe UI', system-ui, sans-serif;
-        font-size: 13px;
-        color: var(--quiet);
       }
 
       .review-steps[hidden] {
         display: none;
-      }
-
-      .review-steps-at {
-        padding: 0 0.3rem;
-        font-variant-numeric: tabular-nums;
-        white-space: nowrap;
-      }
-
-      .review-steps button {
-        padding: 0.25rem 0.5rem;
-        font-size: inherit;
-        white-space: nowrap;
       }
 
       .review-text-empty {
@@ -1697,11 +1666,12 @@
         narrow one it tucks into the corner over the first line, which is the
         least of his text to sit on.
       */
-      #found {
-        position: absolute;
-        top: 0.7rem;
-        right: calc(var(--scrollbar) + 0.4rem);
-        z-index: 2;
+      /*
+        The box that counts a run of things and steps through them: search
+        matches over his writing, and the places a copy differs over a diff.
+        One look for both, because they are one control met in two places.
+      */
+      .stepper {
         display: flex;
         align-items: center;
         gap: 0.3rem;
@@ -1727,17 +1697,13 @@
         color: var(--quiet);
       }
 
-      #found[hidden] {
-        display: none;
-      }
-
-      #found-at {
+      .stepper-at {
         padding: 0 0.3rem;
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
       }
 
-      #found button {
+      .stepper button {
         display: inline-flex;
         align-items: center;
         gap: 0.25rem;
@@ -1746,24 +1712,36 @@
         white-space: nowrap;
       }
 
+      .stepper svg {
+        width: 14px;
+        height: 14px;
+      }
+
       /*
-        The way out, on the thing he is looking at.
-        
-        Without it his only route back to the whole list is the search box in
-        the other pane, and nothing connects the two for him. Clearing the
-        search from here is deliberately action at a distance: it is the one
-        moment the app shows him that the box over there and the marks in his
-        text are the same thing.
+        Its own way out, which the diff has no use for: there is nothing there
+        to clear, and the dialog already has an X of its own.
       */
-      #found-close {
+      .stepper-close {
         margin-left: 0.15rem;
         padding: 0.25rem;
         border-color: transparent;
         background: none;
       }
 
-      #found-close:hover:not(:disabled) {
+      .stepper-close:hover:not(:disabled) {
         border-color: var(--line);
+      }
+
+      /* Where each of the two sits. Nothing else differs between them. */
+      #found {
+        position: absolute;
+        top: 0.7rem;
+        right: calc(var(--scrollbar) + 0.4rem);
+        z-index: 2;
+      }
+
+      #found[hidden] {
+        display: none;
       }
     </style>
   </head>
@@ -1805,12 +1783,7 @@
           while a search has found something here.
         -->
         <div id="empty-hint" hidden></div>
-        <div id="found" hidden>
-          <span id="found-at"></span>
-          <button id="found-previous" type="button"></button>
-          <button id="found-next" type="button"></button>
-          <button id="found-close" type="button"></button>
-        </div>
+        <div id="found" hidden></div>
       </div>
       <div id="status">
         <span id="status-text"></span>

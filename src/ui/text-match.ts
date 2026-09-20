@@ -49,8 +49,17 @@ export function matchesIn(text: string, query: string): TextMatch[] {
 export interface FoundPanel {
   shown: boolean;
   label: string;
-  /** Whether there is anywhere to step to. */
-  steppable: boolean;
+  /**
+   * Whether there is anywhere to step, in each direction separately.
+   *
+   * It used to wrap, on the grounds that a button which does nothing is how he
+   * concludes the app has stopped working. But a list that silently starts over
+   * is the same problem one step later: he presses on, lands back at the top,
+   * and cannot tell whether he has seen everything or lost his place. A button
+   * greyed out says where the end is before he presses it.
+   */
+  canGoBack: boolean;
+  canGoOn: boolean;
 }
 
 /**
@@ -68,7 +77,14 @@ export function foundPanelFor(
 ): FoundPanel {
   const words = strings(language);
 
-  if (found.length === 0) return { shown: false, label: '', steppable: false };
-  if (found.length === 1) return { shown: true, label: words.foundOnce, steppable: false };
-  return { shown: true, label: words.foundAt(at + 1, found.length), steppable: true };
+  if (found.length === 0) return { shown: false, label: '', canGoBack: false, canGoOn: false };
+  if (found.length === 1) {
+    return { shown: true, label: words.foundOnce, canGoBack: false, canGoOn: false };
+  }
+  return {
+    shown: true,
+    label: words.foundAt(at + 1, found.length),
+    canGoBack: at > 0,
+    canGoOn: at < found.length - 1,
+  };
 }
