@@ -859,16 +859,19 @@
         so they are the same row — a bar down the side for the one he is on, a
         rule under it to tell it from the next, and nothing else.
 
-        Square, with the bar down the left doing what a rounded pill was doing
-        before: saying where the row begins. A radius on the right end only
-        curls the rule under it up at that end, which reads as a tray rather
-        than a line.
+        The bar is an inset shadow rather than a left border, and that is not a
+        detail. These rows are buttons, and the app's button hover paints
+        border-color grey — so a border kept transparent to reserve the bar's
+        place turned grey under the pointer, giving every row a little bar it
+        had no business having. The list of his texts escaped it only by being
+        made of divs. With no border at all there is nothing for that rule to
+        colour, and the shadow sits inside the padding without reserving
+        anything.
       */
       .review-row,
       .index-row {
         width: 100%;
         border: 0;
-        border-left: 3px solid transparent;
         border-radius: 0;
         background: none;
         text-align: left;
@@ -880,14 +883,14 @@
         border-bottom: 1px solid var(--line);
       }
 
-      .review-row:hover:not(.row-open),
-      .index-row:hover:not(.row-open) {
-        background: var(--wash);
-      }
-
-      .review-row:active:not(.row-open),
-      .index-row:active:not(.row-open) {
-        background: var(--wash-firm);
+      /*
+        A row is a place in a list, not a key to press. The app's buttons dip a
+        pixel when pressed, which is right for a thing that does something and
+        wrong for a thing that takes him somewhere.
+      */
+      .review-row:active,
+      .index-row:active {
+        transform: none;
       }
 
       /*
@@ -899,7 +902,7 @@
         moment where a row is the chosen one and visible at the same time.
       */
       .row-open {
-        border-left-color: var(--chosen);
+        box-shadow: inset 3px 0 0 var(--chosen);
         background: var(--chosen-soft);
       }
 
