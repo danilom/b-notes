@@ -156,6 +156,11 @@ const TEXT = {
     quoted: (text: string) => `„${text}“`,
     versionsAllSame: 'Sve sačuvane verzije su iste kao aktivni tekst.',
     versionsBack: 'Nazad na verzije',
+    // Feminine, because what is being counted is an izmena — the search
+    // pane's own Prethodni/Sledeci are counting something else.
+    changeAt: (at: number, total: number) => `Izmena ${at} od ${total}`,
+    changePrevious: 'Prethodna',
+    changeNext: 'Sledeća',
     versionRestore: 'Vrati tekst na ovu verziju',
     // Beside the button rather than in a dialog in front of it. Nothing here
     // is lost, so there is nothing to stop him for — but "vrati" alone does
@@ -278,6 +283,9 @@ const TEXT = {
     quoted: (text: string) => `“${text}”`,
     versionsAllSame: 'Every copy kept is the same as the active text.',
     versionsBack: 'Back to versions',
+    changeAt: (at: number, total: number) => `Change ${at} of ${total}`,
+    changePrevious: 'Previous',
+    changeNext: 'Next',
     versionRestore: 'Take the text back to this version',
     versionRestoreNote: 'This version becomes the active text.',
     versionRestoreKept: 'What is in it now is kept as a new version.',

@@ -926,6 +926,9 @@
         out two different widths, and the narrower one drifted to the middle.
       */
       .review-body {
+        /* What the stepper in the corner is placed against: the box around the
+           text, not the text, which scrolls out from under it. */
+        position: relative;
         flex: 1;
         min-height: 0;
         display: flex;
@@ -1070,6 +1073,48 @@
 
       .review-text p:last-child {
         margin-bottom: 0;
+      }
+
+      /*
+        The way through a diff twelve screens tall, in the corner the search
+        uses over his writing. Same shape, same place, same halo — it is the
+        only control of this kind he has already met, and meeting it twice in
+        two places is one thing learned rather than two.
+      */
+      .review-steps {
+        position: absolute;
+        top: 0.7rem;
+        right: calc(var(--scrollbar) + 0.5rem);
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.3rem 0.4rem;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--panel);
+        box-shadow:
+          0 2px 16px 2px var(--halo),
+          0 1px 4px var(--halo-near);
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        font-size: 13px;
+        color: var(--quiet);
+      }
+
+      .review-steps[hidden] {
+        display: none;
+      }
+
+      .review-steps-at {
+        padding: 0 0.3rem;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+
+      .review-steps button {
+        padding: 0.25rem 0.5rem;
+        font-size: inherit;
+        white-space: nowrap;
       }
 
       .review-text-empty {
