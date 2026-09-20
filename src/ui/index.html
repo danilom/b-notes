@@ -95,6 +95,12 @@
         --added-ink: hsl(142 55% 26%);
         --missing: hsl(4 58% 94%);
         --missing-ink: hsl(4 58% 38%);
+        /* The third case. Blue because it is neither of the other two and
+           must not read as half of one; the same hue the app's own default
+           accent uses, so it belongs to the family rather than arriving
+           from outside it. */
+        --changed: hsl(212 48% 93%);
+        --changed-ink: hsl(212 62% 32%);
         --l-thumb: 82%;
         --l-thumb-hover: 68%;
         --l-shadow: 12%;
@@ -196,6 +202,8 @@
         --added-ink: hsl(142 40% 66%);
         --missing: hsl(4 26% 22%);
         --missing-ink: hsl(4 50% 70%);
+        --changed: hsl(212 26% 22%);
+        --changed-ink: hsl(212 52% 70%);
         --l-thumb: 34%;
         --l-thumb-hover: 48%;
         --l-shadow: 2%;
@@ -990,6 +998,33 @@
       .review-run-missing {
         border-left-color: var(--missing-ink);
         background: var(--missing);
+      }
+
+      .review-run-changed {
+        border-left-color: var(--changed-ink);
+        background: var(--changed);
+      }
+
+      .review-run-changed .review-tag {
+        color: var(--changed-ink);
+      }
+
+      /*
+        Inside a changed paragraph, the two marks mean what they already mean
+        four inches up the same page. Struck through says plainly that this is
+        not text to read, which is the one of the two that has to be
+        unmistakable; the wash behind the new words is the green of the block
+        above, at the size of a word.
+      */
+      .word-gone {
+        color: var(--missing-ink);
+        text-decoration: line-through;
+      }
+
+      .word-new {
+        border-radius: 3px;
+        background: var(--added);
+        box-shadow: 0 0 0 2px var(--added);
       }
 
       .review-run-missing .review-tag {

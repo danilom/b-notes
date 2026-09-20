@@ -170,6 +170,11 @@ const TEXT = {
     versionAddedWhy: '(nije u aktivnom tekstu, postoji u ovoj verziji)',
     versionMissingTag: '(−) Nedostaje',
     versionMissingWhy: '(nije u ovoj verziji, postoji u aktivnom tekstu)',
+    // The third case: one paragraph that is in both and is not the same in
+    // both. Its parenthetical has a second job the other two do not — saying
+    // which way round the marks inside it run.
+    versionChangedTag: '(±) Izmenjeno',
+    versionChangedWhy: '(postoji u oba teksta; precrtano je staro, zeleno je novo)',
     versionUnrelated: 'Ovo je sasvim drugi tekst — nijedan pasus se ne poklapa s aktivnim.',
     noteDeleted: 'Tekst je obrisan',
     emptiedHint: 'Tekst je prazan. Obriši ga ako ti više ne treba.',
@@ -280,6 +285,8 @@ const TEXT = {
     versionAddedWhy: '(not in the active text, present in this copy)',
     versionMissingTag: '(−) Missing',
     versionMissingWhy: '(not in this copy, present in the active text)',
+    versionChangedTag: '(±) Changed',
+    versionChangedWhy: '(in both; struck through is the old wording, green the new)',
     versionUnrelated: 'This is a different text altogether — not one paragraph matches the active one.',
     noteDeleted: 'Text deleted',
     emptiedHint: 'This text is empty. Delete it if you no longer need it.',

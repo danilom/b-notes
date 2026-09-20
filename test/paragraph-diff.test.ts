@@ -37,15 +37,64 @@ describe('comparing a copy with the active text', () => {
     assert.deepEqual(shown(was, now), ['same Naslov', 'added Stari.', 'missing Novi.', 'same Kraj.']);
   });
 
-  it('reports a paragraph he reworded as replaced, which at this grain it is', () => {
-    const was = joined('Naslov', 'Bilo je hladno te zime.');
-    const now = joined('Naslov', 'Bilo je hladno te godine.');
+  const OPENING = 'Bilo je hladno te zime i sjedili smo oko peci cijelo vece,';
+
+  it('calls a paragraph he reworded one paragraph changed, not two swapped', () => {
+    const was = joined('Naslov', `${OPENING} dok je napolju padao snijeg.`);
+    const now = joined('Naslov', `${OPENING} a niko nije govorio nista.`);
 
     assert.deepEqual(shown(was, now), [
       'same Naslov',
-      'added Bilo je hladno te zime.',
-      'missing Bilo je hladno te godine.',
+      `changed ${OPENING} dok je napolju padao snijeg.`,
     ]);
+  });
+
+  it('marks which words changed inside it, and leaves the rest alone', () => {
+    const diff = diffParagraphs(
+      joined('N', `${OPENING} dok je padao snijeg.`),
+      joined('N', `${OPENING} dok je padala kisa.`),
+    );
+    const one = diff.pieces[1];
+
+    assert.equal(one?.kind, 'changed');
+    assert.deepEqual(
+      one?.kind === 'changed' ? one.words.filter((word) => word.kind !== 'same') : [],
+      [
+        { kind: 'added', text: 'padao' },
+        { kind: 'added', text: 'snijeg.' },
+        { kind: 'missing', text: 'padala' },
+        { kind: 'missing', text: 'kisa.' },
+      ],
+    );
+  });
+
+  it('leaves short paragraphs alone, where half the words is one word', () => {
+    // Two words each: one match is fifty per cent, and "reworded" would be a
+    // worse account of them than "replaced".
+    const kinds = shown(joined('N', 'Stari pasus.'), joined('N', 'Novi pasus.')).map(
+      (piece) => piece.split(' ')[0],
+    );
+
+    assert.deepEqual(kinds, ['same', 'added', 'missing']);
+  });
+
+  it('leaves two unrelated paragraphs as two, rather than making confetti of them', () => {
+    // Below the bar the word comparison stops informing: the little words match
+    // across sentences that have nothing to do with each other.
+    const was = joined('Naslov', 'Pada sneg nad gradom i nad rekom.');
+    const now = joined('Naslov', 'Otputovao je u Beograd na tri dana.');
+
+    assert.deepEqual(shown(was, now).map((piece) => piece.split(' ')[0]), ['same', 'added', 'missing']);
+  });
+
+  it('leaves two rewordings side by side alone, since which goes with which is a guess', () => {
+    const was = joined('N', 'Prvi pasus o zimi.', 'Drugi pasus o letu.');
+    const now = joined('N', 'Prvi pasus o jeseni.', 'Drugi pasus o prolecu.');
+
+    const kinds = shown(was, now).map((piece) => piece.split(' ')[0]);
+
+    assert.equal(kinds.filter((kind) => kind === 'changed').length, 0);
+    assert.equal(kinds.filter((kind) => kind === 'added').length, 2);
   });
 
   it('follows a paragraph he moved, rather than calling everything between it changed', () => {
@@ -92,11 +141,14 @@ describe('grouping the paragraphs a label covers', () => {
       { kind: 'missing', text: 'D' },
     ]);
 
-    assert.deepEqual(runs, [
-      { kind: 'same', paragraphs: ['A'] },
-      { kind: 'added', paragraphs: ['B', 'C'] },
-      { kind: 'missing', paragraphs: ['D'] },
-    ]);
+    assert.deepEqual(
+      runs.map((run) => [run.kind, run.pieces.map((piece) => piece.text)]),
+      [
+        ['same', ['A']],
+        ['added', ['B', 'C']],
+        ['missing', ['D']],
+      ],
+    );
   });
 
   it('gives nothing back for nothing', () => {

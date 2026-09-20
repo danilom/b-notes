@@ -1,6 +1,6 @@
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 import type { NoteVersion } from '../notes/note.ts';
-import { type DiffRun, diffParagraphs, runsOf } from '../notes/paragraph-diff.ts';
+import { type DiffPiece, type DiffRun, diffParagraphs, runsOf } from '../notes/paragraph-diff.ts';
 import { icon } from './icons.ts';
 import { type Titled, titleOf } from './dialog-heading.ts';
 import { beginningAndEnd } from './text-snippet.ts';
@@ -90,33 +90,61 @@ const REMINDER = 150;
 function blockFor(run: DiffRun, words: ReturnType<typeof strings>): HTMLElement {
   if (run.kind === 'same') {
     const plain = document.createElement('div');
-    plain.append(...run.paragraphs.map(paragraphOf));
+    plain.append(...run.pieces.map((piece) => paragraphOf(piece.text)));
     return plain;
   }
 
-  const added = run.kind === 'added';
   const block = document.createElement('div');
-  block.className = `review-run review-run-${added ? 'added' : 'missing'}`;
+  block.className = `review-run review-run-${run.kind}`;
+  block.append(tagFor(run.kind, words), ...run.pieces.map(paragraphFor));
+  return block;
+}
+
+function tagFor(kind: DiffRun['kind'], words: ReturnType<typeof strings>): HTMLElement {
+  const said = {
+    added: [words.versionAddedTag, words.versionAddedWhy],
+    missing: [words.versionMissingTag, words.versionMissingWhy],
+    changed: [words.versionChangedTag, words.versionChangedWhy],
+    same: ['', ''],
+  }[kind];
 
   const tag = document.createElement('span');
   tag.className = 'review-tag';
 
   const why = document.createElement('span');
   why.className = 'review-tag-why';
-  why.textContent = added ? words.versionAddedWhy : words.versionMissingWhy;
+  why.textContent = said[1] ?? '';
 
-  tag.append(`${added ? words.versionAddedTag : words.versionMissingTag} `, why);
+  tag.append(`${said[0] ?? ''} `, why);
+  return tag;
+}
 
-  block.append(
-    tag,
-    ...run.paragraphs.map((paragraph) => (added ? paragraphOf(paragraph) : shortenedOf(paragraph))),
-  );
-  return block;
+function paragraphFor(piece: DiffPiece): HTMLParagraphElement {
+  if (piece.kind === 'changed') return rewordedOf(piece.words);
+  if (piece.kind === 'missing') return shortenedOf(piece.text);
+  return paragraphOf(piece.text);
 }
 
 function paragraphOf(text: string): HTMLParagraphElement {
   const paragraph = document.createElement('p');
   paragraph.textContent = text;
+  return paragraph;
+}
+
+/** One paragraph shown once, with only the words that changed marked. */
+function rewordedOf(words: readonly { kind: string; text: string }[]): HTMLParagraphElement {
+  const paragraph = document.createElement('p');
+
+  for (const word of words) {
+    if (word.kind === 'same') {
+      paragraph.append(`${word.text} `);
+      continue;
+    }
+    const marked = document.createElement('span');
+    marked.className = word.kind === 'added' ? 'word-gone' : 'word-new';
+    marked.textContent = word.text;
+    paragraph.append(marked, ' ');
+  }
   return paragraph;
 }
 
