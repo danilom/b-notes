@@ -1,3 +1,4 @@
+import { type Shown, showAsModal } from './modal.ts';
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 import type { NoteVersion } from '../notes/note.ts';
 import { type DiffPiece, type DiffRun, diffParagraphs, runsOf } from '../notes/paragraph-diff.ts';
@@ -173,7 +174,7 @@ function shortenedOf(text: string): HTMLParagraphElement {
  * text has since lost is, and that is the question he came in with.
  */
 export function openVersionsDialog(
-  container: HTMLElement,
+  container: HTMLDialogElement,
   title: string,
   versions: readonly NoteVersion[],
   current: string,
@@ -190,14 +191,11 @@ export function openVersionsDialog(
    * It used to step back to the list, which was a screen of its own. The list
    * is beside him now, so the only way out of this dialog is out.
    */
-  function onKey(event: KeyboardEvent): void {
-    if (event.key === 'Escape') handlers.onClose();
-  }
+  /** The open dialog, once it is open. */
+  let modal: Shown | null = null;
 
   const close = (): void => {
-    container.hidden = true;
-    container.replaceChildren();
-    document.removeEventListener('keydown', onKey);
+    modal?.close();
   };
 
   const panel = document.createElement('div');
@@ -379,8 +377,7 @@ export function openVersionsDialog(
   // The newest, so he opens on a difference rather than on an empty half.
   select(1);
 
-  container.replaceChildren(panel);
-  container.hidden = false;
+  modal = showAsModal(container, panel, () => handlers.onClose());
   /*
     After the panel is on screen, not before.
 
@@ -395,7 +392,6 @@ export function openVersionsDialog(
   */
   panel.tabIndex = -1;
   panel.focus();
-  document.addEventListener('keydown', onKey);
 
   return close;
 }

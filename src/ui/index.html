@@ -654,19 +654,55 @@
 
       /* ---- letters and colours ---- */
 
-      #appearance {
-        position: fixed;
-        inset: 0;
-        z-index: 10;
+      /*
+        The four dialogs, as real modal dialogs rather than divs made to look
+        like them. showModal is what puts focus inside, keeps it from tabbing
+        out, stops everything behind answering the keyboard, and hands focus
+        back when the dialog goes — the set a hand-rolled overlay has to
+        remember, and this one did not.
+
+        It also takes the stacking off our hands. The confirm dialog is asked
+        from the deleted one and has to sit above it; in the top layer the one
+        opened later is the one on top, so the z-index that used to say so is
+        gone.
+
+        What is left here is undoing the browser's own box. The app draws its
+        own panel inside, so this element is only the room around it.
+      */
+      #appearance,
+      #confirm,
+      #deleted,
+      #versions {
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        max-height: none;
+        margin: 0;
+        border: 0;
+        background: none;
+        overflow: hidden;
+      }
+
+      /* Only when open, or the author rule would beat the browser's own
+         `dialog:not([open]) { display: none }` and show a closed one. */
+      #appearance[open],
+      #confirm[open],
+      #deleted[open],
+      #versions[open] {
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 1.5rem;
+      }
+
+      #appearance::backdrop,
+      #confirm::backdrop,
+      #deleted::backdrop,
+      #versions::backdrop {
         background: hsl(var(--grey-h) var(--surface) var(--l-shadow) / 0.42);
       }
 
-      #appearance[hidden] {
-        display: none;
+      #appearance {
+        padding: 1.5rem;
       }
 
       /* ---- what he has put away ---- */
@@ -744,22 +780,7 @@
         font-size: inherit;
       }
 
-      #confirm,
-      #deleted,
-      #versions {
-        position: fixed;
-        inset: 0;
-        z-index: 10;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: hsl(var(--grey-h) var(--surface) var(--l-shadow) / 0.42);
-      }
-
       #confirm {
-        /* Above the deleted dialog, which it is asked from and which it covers
-           rather than replaces — he should still see the list he came out of. */
-        z-index: 11;
         padding: 1.5rem;
       }
 
@@ -768,12 +789,6 @@
       #deleted,
       #versions {
         padding: 0.9rem;
-      }
-
-      #confirm[hidden],
-      #deleted[hidden],
-      #versions[hidden] {
-        display: none;
       }
 
       /*
@@ -1983,10 +1998,10 @@
       </div>
     </div>
 
-    <div id="appearance" hidden></div>
-    <div id="confirm" hidden></div>
-    <div id="deleted" hidden></div>
-    <div id="versions" hidden></div>
+    <dialog id="appearance"></dialog>
+    <dialog id="confirm"></dialog>
+    <dialog id="deleted"></dialog>
+    <dialog id="versions"></dialog>
 
     <script src="renderer.js"></script>
   </body>

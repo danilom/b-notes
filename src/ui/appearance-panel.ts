@@ -1,3 +1,4 @@
+import { type Shown, showAsModal } from './modal.ts';
 import { type Language, strings } from '../language/wording.ts';
 import {
   ACCENTS,
@@ -346,19 +347,16 @@ function fill(
  * has decided what to do about the choices inside it.
  */
 export function openAppearancePanel(
-  container: HTMLElement,
+  container: HTMLDialogElement,
   appearance: Appearance,
   language: Language,
   handlers: PanelHandlers,
 ): OpenPanel {
-  function onKey(event: KeyboardEvent): void {
-    if (event.key === 'Escape') handlers.onCancel();
-  }
+  /** The open dialog, once it is open. */
+  let modal: Shown | null = null;
 
   const close = (): void => {
-    container.hidden = true;
-    container.replaceChildren();
-    document.removeEventListener('keydown', onKey);
+    modal?.close();
   };
 
   const panel = document.createElement('div');
@@ -376,12 +374,10 @@ export function openAppearancePanel(
   };
 
   fill(panel, working, language, handlers, change);
-  container.replaceChildren(panel);
-  container.hidden = false;
+  modal = showAsModal(container, panel, () => handlers.onCancel());
 
   // No click-outside-to-close. Everywhere else in the app a stray click costs
   // him nothing, but here it would throw away colours he was still choosing.
-  document.addEventListener('keydown', onKey);
 
   return { close, current: () => working, change };
 }

@@ -1,4 +1,5 @@
 import { type Language, describeWhen, strings } from '../language/wording.ts';
+import { type Shown, showAsModal } from './modal.ts';
 import type { DeletedNote } from '../notes/note.ts';
 import { icon } from './icons.ts';
 import { matches } from './note-list.ts';
@@ -78,7 +79,7 @@ function rowFor(
  * to edit — no caret, nothing to type into, and no explaining required.
  */
 export function openDeletedDialog(
-  container: HTMLElement,
+  container: HTMLDialogElement,
   deleted: readonly DeletedNote[],
   query: string,
   language: Language,
@@ -88,10 +89,11 @@ export function openDeletedDialog(
   let filter = query.trim();
   let showing: DeletedNote | null = null;
 
-  function onKey(event: KeyboardEvent): void {
-    if (event.key !== 'Escape') return;
-    // One step back, not all the way out. Escape costs him nothing here — it
-    // closes something he cannot type into — which is why it is allowed at all.
+  /**
+   * One step back, not all the way out. Escape costs him nothing here — it
+   * leaves something he cannot type into — which is why it is allowed at all.
+   */
+  function stepBack(): void {
     if (showing === null) {
       handlers.onClose();
       return;
@@ -100,10 +102,11 @@ export function openDeletedDialog(
     fill();
   }
 
+  /** The open dialog, once it is open. */
+  let modal: Shown | null = null;
+
   const close = (): void => {
-    container.hidden = true;
-    container.replaceChildren();
-    document.removeEventListener('keydown', onKey);
+    modal?.close();
   };
 
   const panel = document.createElement('div');
@@ -267,8 +270,7 @@ export function openDeletedDialog(
   }
 
   fill();
-  container.replaceChildren(panel);
-  container.hidden = false;
+  modal = showAsModal(container, panel, stepBack);
   /*
     After the panel is on screen, not before.
 
@@ -283,7 +285,6 @@ export function openDeletedDialog(
   */
   panel.tabIndex = -1;
   panel.focus();
-  document.addEventListener('keydown', onKey);
 
   return close;
 }

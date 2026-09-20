@@ -1,3 +1,4 @@
+import { type Shown, showAsModal } from './modal.ts';
 import { toSearchable } from '../language/diacritics.ts';
 import { type Language, strings } from '../language/wording.ts';
 import { type Titled, titleOf } from './dialog-heading.ts';
@@ -140,15 +141,11 @@ function phraseFor(
  * since changed.
  */
 export function openConfirmDialog(
-  container: HTMLElement,
+  container: HTMLDialogElement,
   confirmation: Confirmation,
   language: Language,
 ): () => void {
   const words = strings(language);
-
-  function onKey(event: KeyboardEvent): void {
-    if (event.key === 'Escape') confirmation.onCancel();
-  }
 
   /*
     With a word to write out, the box is the only thing here that should hold
@@ -164,10 +161,11 @@ export function openConfirmDialog(
     event.preventDefault();
   }
 
+  /** The open dialog, once it is open. */
+  let modal: Shown | null = null;
+
   const close = (): void => {
-    container.hidden = true;
-    container.replaceChildren();
-    document.removeEventListener('keydown', onKey);
+    modal?.close();
     container.removeEventListener('mousedown', keepTheCursorInTheBox);
   };
 
@@ -215,12 +213,10 @@ export function openConfirmDialog(
       : phraseFor(confirmation.phrase, yes, confirmation.onConfirm);
 
   panel.append(header, body, ...(asked === null ? [] : [asked.label]), footer);
-  container.replaceChildren(panel);
-  container.hidden = false;
+  modal = showAsModal(container, panel, () => confirmation.onCancel());
 
   // No click-outside-to-close, same as the appearance panel: a stray click
   // should never be an answer to a question he was still reading.
-  document.addEventListener('keydown', onKey);
   if (asked !== null) {
     container.addEventListener('mousedown', keepTheCursorInTheBox);
     asked.box.focus();

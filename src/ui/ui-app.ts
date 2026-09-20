@@ -79,16 +79,16 @@ const newNote = element('new-note', HTMLButtonElement);
 const newNoteLabel = element('new-note-label', HTMLSpanElement);
 const appearanceButton = element('appearance-button', HTMLButtonElement);
 const appearanceLabel = element('appearance-label', HTMLSpanElement);
-const appearancePane = element('appearance', HTMLDivElement);
+const appearancePane = element('appearance', HTMLDialogElement);
 const deleteNote = element('delete-note', HTMLButtonElement);
 const emptyHint = element('empty-hint', HTMLDivElement);
 const deleteNoteLabel = element('delete-note-label', HTMLSpanElement);
 const deletedBlock = element('deleted-block', HTMLDivElement);
 const deletedSee = element('deleted-see', HTMLButtonElement);
 const deletedBlockLabel = element('deleted-block-label', HTMLSpanElement);
-const confirmPane = element('confirm', HTMLDivElement);
-const deletedPane = element('deleted', HTMLDivElement);
-const versionsPane = element('versions', HTMLDivElement);
+const confirmPane = element('confirm', HTMLDialogElement);
+const deletedPane = element('deleted', HTMLDialogElement);
+const versionsPane = element('versions', HTMLDialogElement);
 const seeVersions = element('see-versions', HTMLButtonElement);
 const seeVersionsLabel = element('see-versions-label', HTMLSpanElement);
 
@@ -530,7 +530,7 @@ async function countKeptOfOpen(): Promise<void> {
 }
 
 function showVersions(): void {
-  if (!versionsPane.hidden || openId === null) return;
+  if (versionsPane.open || openId === null) return;
   const id = openId;
 
   void (async () => {
@@ -607,7 +607,7 @@ async function bringBackVersion(text: string): Promise<void> {
 }
 
 function showDeleted(): void {
-  if (!deletedPane.hidden) return;
+  if (deletedPane.open) return;
 
   const close = openDeletedDialog(deletedPane, deleted, search.value, language, {
     onClose: () => {
