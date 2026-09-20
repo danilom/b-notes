@@ -362,7 +362,9 @@ export function openAppearancePanel(
   };
 
   const panel = document.createElement('div');
-  panel.className = 'panel';
+  // Its own class carries the fixed face: this panel is the instrument, and a
+  // sample judged through a lens that changes with it tells him nothing.
+  panel.className = 'panel appearance-panel';
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
 

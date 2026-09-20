@@ -1253,16 +1253,19 @@
 
 
       /*
-        The panel is the instrument, not the thing being measured. It keeps one
-        face at one size whatever he picks, for two reasons: a sample judged
-        through a lens that changes with it tells him nothing, and at Najveća a
-        panel that grew too would stop fitting on the old laptop's screen. The
-        app behind it is the preview. Colour still reaches it, because colour is
-        not the thing it is measuring.
+        Every dialog's surface. It takes the face he chose for the app, like
+        everything else does, and sits a little under it in size — the
+        0.85 being the same step the counters over his writing take.
+
+        Expressed through --ui-size rather than a flat 14px so that the
+        correction inside it comes along: --ui-size is the base times a scale
+        per font, because Calibri and Corbel render small at the same nominal
+        pixel. At his default font this works out to 14.025px, which is what
+        was written here by hand before.
       */
       .panel {
-        font-family: 'Segoe UI', system-ui, sans-serif;
-        font-size: 14px;
+        font-family: var(--ui-font);
+        font-size: calc(var(--ui-size) * 0.85);
         width: min(32rem, 100%);
         max-height: 100%;
         overflow-y: auto;
@@ -1477,6 +1480,22 @@
          is looking for one of these two things and never the other. */
       .heading-name {
         color: var(--chosen-ink);
+      }
+
+      /*
+        Except this one. Izgled is the instrument, not the thing being measured:
+        it keeps one face at one size whatever he picks, because a sample judged
+        through a lens that changes with it tells him nothing. The app behind it
+        is the preview. Colour still reaches it, since colour is not what it is
+        measuring.
+
+        This rule was on .panel itself, written when Izgled was the only dialog
+        there was. The three that came after reused the class and inherited an
+        argument about a panel they are not.
+      */
+      .panel.appearance-panel {
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        font-size: 14px;
       }
 
       /* The two halves: his writing, and the app around it. */
