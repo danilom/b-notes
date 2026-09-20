@@ -303,8 +303,11 @@ function showStatus(): void {
 
 function drawDeletedBlock(): void {
   const strip = deletedStripFor(deleted, search.value, language);
-  deletedBlock.hidden = !strip.shown;
   deletedBlockLabel.textContent = strip.label;
+  deletedSee.disabled = !strip.canOpen;
+  // The whole strip is the target, so the whole strip has to go quiet with the
+  // button: the cursor and the hover are what promise there is something here.
+  deletedBlock.classList.toggle('dead', !strip.canOpen);
 }
 
 async function saveNow(): Promise<void> {
@@ -765,7 +768,9 @@ appearanceButton.addEventListener('click', showAppearance);
 deleteNote.addEventListener('click', askToDelete);
 // On the strip, not the button: a press on the button bubbles up to here, so
 // there is one way in rather than two that have to agree.
-deletedBlock.addEventListener('click', showDeleted);
+deletedBlock.addEventListener('click', () => {
+  if (!deletedSee.disabled) showDeleted();
+});
 seeVersions.addEventListener('click', showVersions);
 
 /**

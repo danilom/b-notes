@@ -723,8 +723,7 @@
       /*
         Pinned under the list rather than scrolled with it: it is the answer to
         "where did my text go", and an answer six hundred rows down is no
-        answer. Gone entirely while there is nothing in it, so the app does not
-        keep a tally of his deletions in front of him.
+        answer — so it is always here, empty or not, and says which it is.
       */
       /*
         Two jobs, two elements. The line says what is there — and while he is
@@ -766,8 +765,19 @@
         background-image: linear-gradient(var(--wash-firm), var(--wash-firm));
       }
 
-      #deleted-block[hidden] {
-        display: none;
+      /*
+        Nothing thrown away yet. Still a strip, still saying what this place is
+        — only with nothing to press, and saying that with the cursor and the
+        dead hover before he presses anything.
+      */
+      #deleted-block.dead {
+        cursor: default;
+      }
+
+      #deleted-block.dead:hover,
+      #deleted-block.dead:active {
+        background-image: none;
+        color: var(--quiet);
       }
 
       #deleted-block svg {
@@ -2015,7 +2025,7 @@
         </div>
         <div id="list"></div>
       </div>
-      <div id="deleted-block" hidden>
+      <div id="deleted-block">
         <span id="deleted-block-label"></span>
         <button id="deleted-see" type="button"></button>
       </div>

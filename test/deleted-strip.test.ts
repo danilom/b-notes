@@ -30,8 +30,11 @@ describe('the strip under his list', () => {
     assert.equal(deletedStripFor(THREE.slice(0, 1), '', 'sr').label, 'Obrisani tekstovi · 1 tekst');
   });
 
-  it('is not there at all when he has thrown nothing away', () => {
-    assert.equal(deletedStripFor([], '', 'sr').shown, false);
+  it('says so rather than going when he has thrown nothing away', () => {
+    const strip = deletedStripFor([], '', 'sr');
+
+    assert.equal(strip.label, 'Obrisani tekstovi · nema obrisanih');
+    assert.equal(strip.canOpen, false, 'nothing in there to open');
   });
 
   it('says how many match while he is searching', () => {
@@ -44,8 +47,13 @@ describe('the strip under his list', () => {
     assert.equal(deletedStripFor(THREE, 'lisce', 'sr').label, '1 obrisan tekst sadrži „lisce“');
   });
 
-  it('goes away when nothing he has thrown away matches', () => {
-    assert.equal(deletedStripFor(THREE, 'traktor', 'sr').shown, false);
+  it('counts the nothing that matched, and still offers what is in there', () => {
+    // Where the strip used to go, which is the one moment it has something to
+    // tell him: the text he cannot find may be among these three.
+    const strip = deletedStripFor(THREE, 'traktor', 'sr');
+
+    assert.equal(strip.label, '0 obrisanih tekstova sadrži „traktor“');
+    assert.equal(strip.canOpen, true);
   });
 
   it('ignores space he typed either side of the word', () => {

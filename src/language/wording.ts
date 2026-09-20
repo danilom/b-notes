@@ -75,6 +75,9 @@ const TEXT = {
     close: 'Zatvori',
 
     deleted: 'Obrisani tekstovi',
+    // Said, rather than the strip going. What he has thrown away is a place in
+    // the app, and a place he can see is empty is one he knows the shape of.
+    deletedNone: 'nema obrisanih',
     deletedKept: 'Izaberi tekst da vidiš šta je u njemu, pa ga vrati ako želiš.',
     deletedSee: 'Vidi',
     deletedPreview: 'Pregled obrisanog',
@@ -260,6 +263,7 @@ const TEXT = {
     close: 'Close',
 
     deleted: 'Deleted texts',
+    deletedNone: 'none deleted',
     deletedKept: 'Pick a text to see what is in it, then bring it back if you want.',
     deletedSee: 'View',
     deletedPreview: 'Deleted text preview',
