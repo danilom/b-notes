@@ -172,6 +172,36 @@ describe('saving', () => {
     assert.deepEqual(await readdir(dir), ['O ljetu.txt']);
   });
 
+  it('takes the copies with it when renaming, so he can still reach them', async () => {
+    // The versions folder is named after the note. A retitle that left it
+    // behind orphaned every copy he had: the files stayed on disk and nothing
+    // in the app could reach them again.
+    const { store } = await emptyStore();
+    const first = await store.save(null, 'O zimi\n\nTekst.');
+    await store.keepCopy(first ?? '', 'O zimi\n\nStariji tekst.');
+
+    const second = await store.save(first, 'O ljetu\n\nTekst.');
+
+    const kept = await store.listVersions(second ?? '');
+    assert.equal(kept.length, 1);
+    assert.equal(kept[0]?.text, 'O zimi\n\nStariji tekst.');
+  });
+
+  it('keeps a copy when a rewritten opening line also cuts most of the text', async () => {
+    // Both halves of one save: the name changes and a great deal of the text
+    // goes — though not so much that it counts as a replacement, which does not
+    // rename at all. The rename used to swallow the copy the cut asked for.
+    const { store } = await emptyStore();
+    const long = `O zimi\n\n${'rec '.repeat(400)}`;
+    const first = await store.save(null, long);
+
+    const second = await store.save(first, `O ljetu\n\n${'rec '.repeat(200)}`);
+
+    const kept = await store.listVersions(second ?? '');
+    assert.equal(kept.length, 1, 'what he had before the cut');
+    assert.equal(kept[0]?.text, long);
+  });
+
   it('keeps the text when renaming', async () => {
     const { store } = await emptyStore();
     const first = await store.save(null, 'O zimi\n\nTekst.');

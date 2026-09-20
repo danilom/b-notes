@@ -274,13 +274,28 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
       // is about to destroy the only copy, so a version he cannot keep is a
       // reason not to proceed. He sees "not saved" and the next autosave tries
       // again; his text stays on disk in the meantime.
-      if (action.kind === 'write' && action.snapshot !== undefined) {
-        await keepVersion(action.id, action.snapshot);
-      }
+      //
+      // Under the name the note still has, so that a rename below carries it
+      // across with every other copy rather than leaving today's behind.
+      if (action.snapshot !== undefined) await keepVersion(action.id, action.snapshot);
 
       await files.write(at(`${action.id}${EXTENSION}`), text);
       if (action.kind === 'write') return action.id;
 
+      /*
+        His copies move with the text they are copies of. `Verzije/` is named
+        after the note, so a retitle that left the folder behind orphaned every
+        copy he had — the files stayed on disk and nothing in the app could
+        reach them again.
+
+        Before the file is renamed rather than after. Moving them afterwards
+        would put a failure between the rename and the id this returns, leaving
+        his text under a name the app does not believe in — the one arrangement
+        here that nothing recovers from. Done first, a failure leaves everything
+        where it stood and the next autosave plans the same rename and tries
+        again.
+      */
+      await moveVersions(versionsFolderFor(action.id), versionsFolderFor(action.to));
       await files.rename(at(`${action.id}${EXTENSION}`), at(`${action.to}${EXTENSION}`));
       return action.to;
     },

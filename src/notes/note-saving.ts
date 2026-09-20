@@ -10,11 +10,26 @@ import { titleFrom } from './note-title.ts';
  * Everything here is in ids — the extensionless name. Which file an id lives in,
  * and whether that file ends `.txt` or `.md`, is storage's concern.
  */
+/**
+ * What both kinds of write have in common.
+ *
+ * The snapshot belongs to the write, not to whether the name changes with it:
+ * a save that rewrites his opening line can also be the save that cuts half the
+ * text, and it used to be declared on only one of the two. `planSave` put it on
+ * both regardless — a spread carries no excess property check — so the store
+ * quietly dropped it on the renaming half, and the one save that both renames
+ * and cuts kept nothing.
+ */
+interface Written {
+  id: string;
+  /** Text that must be kept somewhere before this write lands. */
+  snapshot?: string;
+}
+
 export type SaveAction =
   | { kind: 'none' }
-  /** `snapshot` is text that must be kept somewhere before this write lands. */
-  | { kind: 'write'; id: string; snapshot?: string }
-  | { kind: 'writeAndRename'; id: string; to: string };
+  | ({ kind: 'write' } & Written)
+  | ({ kind: 'writeAndRename'; to: string } & Written);
 
 export interface SaveContext {
   takenIds: () => Promise<ReadonlySet<string>>;
