@@ -7,7 +7,6 @@ import {
   MOCK_WRITING_FOLDER,
   createMockFileSystem,
   everyFile,
-  placeSamples,
   seedIfEmpty,
 } from './mock-file-system.ts';
 
@@ -61,7 +60,6 @@ function offerTheFileList(): void {
  */
 async function main(): Promise<void> {
   await seedIfEmpty();
-  placeSamples();
 
   const host: Host = {
     name: 'browser',

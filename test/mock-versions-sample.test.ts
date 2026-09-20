@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { SAMPLE_ID, SAMPLE_TEXT, versionsSample } from '../src/hosts/mockup/mock-versions-sample.ts';
-import { withSamplesPlaced } from '../src/hosts/mockup/mock-sample-files.ts';
 import { diffParagraphs } from '../src/notes/paragraph-diff.ts';
 import { describeVersion, versionsWorthShowing } from '../src/ui/version-row.ts';
 
@@ -103,31 +102,5 @@ describe('the versions sample', () => {
 
     assert.equal(unrelated, true);
     assert.deepEqual([added, missing], [[], []]);
-  });
-});
-
-describe('placing the samples more than once', () => {
-  const stored = (file: { text: string; updatedAt: number }) => file;
-  const place = (files: ReadonlyMap<string, { text: string; updatedAt: number }>, when: number) =>
-    withSamplesPlaced(
-      files,
-      [{ id: SAMPLE_ID, files: versionsSample(when, 'Tekstovi') }],
-      'Tekstovi',
-      stored,
-    );
-
-  it('does not breed a fresh set of copies on every start', () => {
-    // It did. The ages are counted from now, so the filenames differ each time,
-    // and the browser ended up showing twenty-four rows of six.
-    const once = place(new Map(), NOW);
-    const twice = place(once, NOW + 42 * 60_000);
-
-    assert.equal(twice.size, once.size);
-  });
-
-  it('leaves everything that is not its own alone', () => {
-    const his = new Map([['Tekstovi/Njegov tekst.txt', { text: 'Njegovo.', updatedAt: 1 }]]);
-
-    assert.equal(place(his, NOW).get('Tekstovi/Njegov tekst.txt')?.text, 'Njegovo.');
   });
 });

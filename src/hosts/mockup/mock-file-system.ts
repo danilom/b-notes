@@ -1,7 +1,4 @@
 import type { FileInfo, FileSystem } from '../../platform/file-system.ts';
-import { LONG_SAMPLE_ID, longDiffSample } from './mock-long-diff-sample.ts';
-import { withSamplesPlaced } from './mock-sample-files.ts';
-import { SAMPLE_ID, versionsSample } from './mock-versions-sample.ts';
 
 const KEY = 'b-notes:mock-files';
 
@@ -121,33 +118,18 @@ export function everyFile(): { path: string; bytes: number }[] {
     .sort((first, second) => first.path.localeCompare(second.path));
 }
 
-/**
- * Puts the samples where the app will find them, every start.
- *
- * Over whatever is there rather than only when they are missing: what they
- * exist to show is only worth looking at while they still say what they were
- * written to say. Editing one in the browser therefore does not survive a
- * reload.
- */
-export function placeSamples(): void {
-  const now = Date.now();
-  store(
-    withSamplesPlaced(
-      load(),
-      [
-        { id: SAMPLE_ID, files: versionsSample(now, MOCK_WRITING_FOLDER) },
-        { id: LONG_SAMPLE_ID, files: longDiffSample(now, MOCK_WRITING_FOLDER) },
-      ],
-      MOCK_WRITING_FOLDER,
-      (file) => ({ text: file.text, updatedAt: file.updatedAt }),
-    ),
-  );
-}
 
 /**
  * Fills an empty browser with the generated test corpus, so the list can be
  * judged against six hundred texts rather than five. Does nothing if the file
  * isn't being served, which is the ordinary case outside development.
+ *
+ * The only way files arrive here. The development samples used to be written
+ * over the top on every load, which made a second arrival path and two bugs of
+ * its own — copies breeding on each reload, and a second Versions sample once
+ * the app had renamed the first. They are in `corpus.json` now, seeded like any
+ * other text and editable like one; `corpus.cmd` and an empty browser is how
+ * they come back as they were.
  */
 export async function seedIfEmpty(): Promise<void> {
   if (load().size > 0) return;

@@ -14,6 +14,10 @@
  * regenerate the corpus. It is not in the repository and not backed up by it.
  */
 import { mkdir, readFile, rm, utimes, writeFile } from 'node:fs/promises';
+
+import { MOCK_WRITING_FOLDER } from '../src/hosts/mockup/mock-file-system.ts';
+import { longDiffSample } from '../src/hosts/mockup/mock-long-diff-sample.ts';
+import { versionsSample } from '../src/hosts/mockup/mock-versions-sample.ts';
 import path from 'node:path';
 
 const args = new Map();
@@ -282,6 +286,32 @@ for (const [name, note] of written) {
     updatedAt: note.modified.getTime(),
   });
 }
+/*
+  The two development samples go in here with everything else.
+
+  They used to be written into the browser's store on every load, on the
+  reasoning that a fixture which has been edited is no use for looking at. What
+  that actually bought was a second way for files to arrive, and it produced two
+  bugs on its own: samples breeding a fresh set of copies every reload, and a
+  second Versions sample appearing once the app renamed the first. Seeded like
+  any other text they are ordinary texts, and getting them back as they were is
+  this script plus an empty browser.
+
+  Their ages are relative to when this runs, so re-running is also how they stop
+  reading as months old.
+*/
+const now = Date.now();
+for (const file of [
+  ...versionsSample(now, MOCK_WRITING_FOLDER),
+  ...longDiffSample(now, MOCK_WRITING_FOLDER),
+]) {
+  browser.push({
+    id: file.path.slice(MOCK_WRITING_FOLDER.length + 1),
+    text: file.text,
+    updatedAt: file.updatedAt,
+  });
+}
+
 const browserChars = browser.reduce((sum, note) => sum + note.text.length, 0);
 await writeFile(path.join(path.dirname(OUT), 'corpus.json'), JSON.stringify(browser), 'utf8');
 
