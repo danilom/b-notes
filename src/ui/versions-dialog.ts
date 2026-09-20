@@ -257,6 +257,17 @@ export function openVersionsDialog(
     column.append(aside, body);
 
     const footer = document.createElement('footer');
+
+    // What the button is about to do, in the two halves he would ask about:
+    // where this goes, and where what he has now goes.
+    const says = document.createElement('p');
+    says.className = 'footer-note';
+    for (const line of [words.versionRestoreNote, words.versionRestoreKept]) {
+      const said = document.createElement('span');
+      said.textContent = line;
+      says.append(said);
+    }
+
     const back = document.createElement('button');
     back.type = 'button';
     back.className = 'keep';
@@ -271,7 +282,7 @@ export function openVersionsDialog(
       fill();
     });
 
-    footer.append(back, toList);
+    footer.append(says, back, toList);
     panel.replaceChildren(
       heading(
         { mark: 'versions', label: words.versionTitle, name: title },

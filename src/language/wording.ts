@@ -156,7 +156,13 @@ const TEXT = {
     quoted: (text: string) => `„${text}“`,
     versionsAllSame: 'Sve sačuvane verzije su iste kao aktivni tekst.',
     versionsBack: 'Nazad na verzije',
-    versionRestore: 'Vrati ovaj tekst',
+    versionRestore: 'Vrati tekst na ovu verziju',
+    // Beside the button rather than in a dialog in front of it. Nothing here
+    // is lost, so there is nothing to stop him for — but "vrati" alone does
+    // not say that the text he is looking at goes somewhere, and he should not
+    // have to press it to find out where.
+    versionRestoreNote: 'Ova verzija postaje aktivni tekst.',
+    versionRestoreKept: 'Ono što je sada u njemu čuva se kao nova verzija.',
     // Each block says which way round it is, rather than sending him back to a
     // sentence at the top of the page to work it out. Both halves are spelt
     // out because "dodato" alone begs the question added to what.
@@ -267,7 +273,9 @@ const TEXT = {
     quoted: (text: string) => `“${text}”`,
     versionsAllSame: 'Every copy kept is the same as the active text.',
     versionsBack: 'Back to versions',
-    versionRestore: 'Bring this text back',
+    versionRestore: 'Take the text back to this version',
+    versionRestoreNote: 'This version becomes the active text.',
+    versionRestoreKept: 'What is in it now is kept as a new version.',
     versionAddedTag: '(+) Extra',
     versionAddedWhy: '(not in the active text, present in this copy)',
     versionMissingTag: '(−) Missing',

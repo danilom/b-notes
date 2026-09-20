@@ -335,6 +335,10 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
       await files.removeEmptyFolder(at(DELETED_FOLDER, VERSIONS_FOLDER));
     },
 
+    async keepCopy(id: string, text: string): Promise<void> {
+      await keepVersion(requireNoteId(id), text);
+    },
+
     async countVersions(id: string): Promise<number> {
       return (await files.list(at(versionsFolderFor(requireNoteId(id)))).catch(() => [])).length;
     },

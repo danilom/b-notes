@@ -81,6 +81,17 @@ export interface NoteStore {
    */
   restore(id: string): Promise<string>;
   /** How many copies are kept of a note. Counted without reading any of them. */
+  /**
+   * Keeps a copy of a note's text now, whatever the ordinary rule would say.
+   *
+   * That rule is built for him editing: it declines when little enough is
+   * going, and declines again when the newest copy already holds most of it.
+   * Neither reading applies to a whole text being replaced on purpose, and the
+   * caller that does that is promising him in so many words that what is there
+   * now will still be there afterwards.
+   */
+  keepCopy(id: string, text: string): Promise<void>;
+
   countVersions(id: string): Promise<number>;
   /** Every copy kept of a note, newest first. */
   listVersions(id: string): Promise<NoteVersion[]>;

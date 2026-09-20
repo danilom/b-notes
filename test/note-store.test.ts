@@ -1093,3 +1093,44 @@ describe('listing', () => {
     assert.equal(note?.bytes, Buffer.byteLength('Samo naslov', 'utf8'));
   });
 });
+
+describe('keeping a copy because the caller says so', () => {
+  const kept = async (dir: string) => readdir(path.join(dir, VERSIONS_FOLDER, 'O zimi'));
+
+  it('keeps one however little is changing', async () => {
+    // The ordinary rule would decline — nothing like two hundred characters is
+    // going. A restore is not editing, and the dialog has promised otherwise.
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nKratko.');
+
+    await store.keepCopy(id ?? '', 'O zimi\n\nKratko.');
+
+    assert.deepEqual((await kept(dir)).length, 1);
+  });
+
+  it('keeps one even when the newest copy already holds nearly all of it', async () => {
+    // The rule's second gate, which stops a long cutting session leaving six
+    // near-identical copies. It has no business in a restore either.
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nPrvi.');
+
+    await store.keepCopy(id ?? '', 'O zimi\n\nPrvi.');
+    await after(1100);
+    await store.keepCopy(id ?? '', 'O zimi\n\nPrvi. I jos malo.');
+
+    assert.equal((await kept(dir)).length, 2);
+  });
+
+  it('writes what it was handed, not what is on disk', async () => {
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nNa disku.');
+
+    await store.keepCopy(id ?? '', 'O zimi\n\nOno što je bilo u editoru.');
+
+    const [only] = await kept(dir);
+    assert.equal(
+      await readFile(path.join(dir, VERSIONS_FOLDER, 'O zimi', only ?? ''), 'utf8'),
+      'O zimi\n\nOno što je bilo u editoru.',
+    );
+  });
+});

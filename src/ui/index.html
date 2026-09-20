@@ -1123,6 +1123,22 @@
       }
 
       /*
+        What the button beside it is about to do. On the left, where reading
+        order puts it before the button rather than after, and pushing the
+        buttons to their own end with the margin the flex row was already
+        using. On a narrow panel it wraps above them instead of squeezing them.
+      */
+      .footer-note {
+        margin: 0 auto 0 0;
+        color: var(--quiet);
+        line-height: 1.45;
+      }
+
+      .footer-note span {
+        display: block;
+      }
+
+      /*
         A real button, not a ghost.
 
         It was drawn faintly to keep it out of the way, and went too far: a

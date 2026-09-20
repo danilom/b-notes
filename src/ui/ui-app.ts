@@ -593,7 +593,7 @@ function showVersions(): void {
         },
         onRestore: (version) => {
           close();
-          bringBackVersion(version.text);
+          void bringBackVersion(version.text);
         },
       },
     );
@@ -604,10 +604,32 @@ function showVersions(): void {
  * Puts an old copy back in front of him.
  *
  * Through the editor rather than straight to disk, so the ordinary save carries
- * it out — which means the text it is writing over is itself kept first, and
- * undoing this is the same as undoing anything else he has typed.
+ * it out and undoing this is the same as undoing anything else he has typed.
+ *
+ * The copy of what he has now is taken here rather than left to that save. The
+ * save applies the rule built for him editing, which declines when little
+ * enough is going and declines again when the newest copy already holds most
+ * of it — and measured against the samples it declined on five restores out of
+ * eleven, twice on texts where two hundred characters were going. Neither
+ * reading fits a whole text replaced on purpose, and the dialog has just
+ * promised him in so many words that what is there now will be kept.
+ *
+ * Nothing is replaced if that copy cannot be written. A restore he was told is
+ * safe, carried out unprotected, is the one outcome here worth refusing over.
  */
-function bringBackVersion(text: string): void {
+async function bringBackVersion(text: string): Promise<void> {
+  const id = openId;
+  if (id === null) return;
+
+  try {
+    await store.keepCopy(id, editor.value);
+  } catch (failure) {
+    log.error('Could not keep a copy before bringing a version back', { id, failure });
+    notice = words.notRestored;
+    showStatus();
+    return;
+  }
+
   editor.value = text;
   editor.setSelectionRange(0, 0);
   editor.scrollTop = 0;
