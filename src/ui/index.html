@@ -87,25 +87,14 @@
         --l-chosen-soft: 91%;
         --l-found: 82%;
         --l-on-chosen: 99%;
-        /* The diff's two colours. The hue is the meaning and never moves; only
-           the lightness turns over between modes, the way --danger already
-           does. A fixed pair would put near-white ink on a pale wash the
-           moment the app went dark. */
-        --added: hsl(142 44% 91%);
+        /* The diff's three colours, as ink rather than as surfaces. The hue
+           is the meaning and never moves; only the lightness turns over
+           between modes, the way --danger already does. */
         --added-ink: hsl(142 55% 26%);
-        --missing: hsl(4 58% 94%);
         --missing-ink: hsl(4 58% 38%);
         /* The third case. Blue because it is neither of the other two and
-           must not read as half of one; the same hue the app's own default
-           accent uses, so it belongs to the family rather than arriving
-           from outside it. */
-        --changed: hsl(212 48% 93%);
+           must not read as half of one. */
         --changed-ink: hsl(212 62% 32%);
-        /* A word marked as the new wording. On a pale page the natural
-           highlight is behind the word, since the word itself is already
-           dark. See the dark mode below, where it is the other way up. */
-        --word-new-fill: var(--added);
-        --word-new-ink: var(--ink);
         --l-thumb: 82%;
         --l-thumb-hover: 68%;
         --l-shadow: 12%;
@@ -203,19 +192,17 @@
         --l-chosen-soft: 31%;
         --l-found: 38%;
         --l-on-chosen: 10%;
-        --added: hsl(142 24% 20%);
-        --added-ink: hsl(142 40% 66%);
-        --missing: hsl(4 26% 22%);
-        --missing-ink: hsl(4 50% 70%);
-        --changed: hsl(212 26% 22%);
-        --changed-ink: hsl(212 52% 70%);
-        /* The other way up. A tint behind a word barely registers against a
-           dark page, and two dark patches an inch apart at the same
-           lightness read as staining rather than as marking — the green
-           wash sat at 1.06 against the blue block it lived in. What is
-           bright here is the text, so the mark goes on the text. */
-        --word-new-fill: transparent;
-        --word-new-ink: var(--added-ink);
+        /*
+          Not one lightness for the three. A hue's luminance is mostly its
+          green — the coefficients are 0.72 green, 0.21 red, 0.07 blue — so at
+          the same 70% the green ink reads 5.84 against the block it sits on,
+          the blue 4.55 and the red 4.09. The red and the blue are lifted until
+          all three clear 4.5 with room, which is what "the same strength"
+          actually means here.
+        */
+        --added-ink: hsl(142 40% 68%);
+        --missing-ink: hsl(4 50% 78%);
+        --changed-ink: hsl(212 52% 76%);
         --l-thumb: 34%;
         --l-thumb-hover: 48%;
         --l-shadow: 2%;
@@ -970,7 +957,7 @@
            enough to read his writing on, which is pale enough to miss when
            scrolling past. Square on that side so it reads as a bar rather than
            as the corner of a box. */
-        --run-edge: 3px;
+        --run-edge: 4px;
         /* Out by its own padding, and by the edge on top of that, so the text
            inside lands on the same left margin as the paragraphs above and
            below. A box that shifts his lines sideways reads as a different
@@ -998,9 +985,31 @@
         text-transform: uppercase;
       }
 
+      /*
+        One grey for all three kinds, and the colour on the edge and the label
+        instead.
+
+        Colour identifies; it does not have to saturate. At this scale there is
+        a bar and a heading to carry which kind of block this is, so a field of
+        it behind three hundred words of his writing says the same thing a
+        second time at the cost of reading it. The word marks below have no bar
+        and no heading, so there the ink has to do it.
+
+        It also stops the two from fighting. A green wash inside a blue block
+        sat at 1.06 against it — the same lightness, differing only in hue,
+        which is the one channel about one man in twelve cannot read.
+
+        The grey is the page's own wash laid over itself, so it is a step away
+        from the surface it sits on in both modes and turns over with them.
+      */
+      .review-run-added,
+      .review-run-missing,
+      .review-run-changed {
+        background: var(--wash);
+      }
+
       .review-run-added {
         border-left-color: var(--added-ink);
-        background: var(--added);
       }
 
       .review-run-added .review-tag {
@@ -1009,12 +1018,14 @@
 
       .review-run-missing {
         border-left-color: var(--missing-ink);
-        background: var(--missing);
+      }
+
+      .review-run-missing .review-tag {
+        color: var(--missing-ink);
       }
 
       .review-run-changed {
         border-left-color: var(--changed-ink);
-        background: var(--changed);
       }
 
       .review-run-changed .review-tag {
@@ -1022,11 +1033,11 @@
       }
 
       /*
-        Inside a changed paragraph, the two marks mean what they already mean
-        four inches up the same page. Struck through says plainly that this is
-        not text to read, which is the one of the two that has to be
-        unmistakable; the wash behind the new words is the green of the block
-        above, at the size of a word.
+        Inside a changed paragraph, where a word has nothing but its own ink to
+        say which side it is on. Struck through as well as coloured for the
+        removed ones: that mark says "not text to read" without needing to be
+        seen as red, which matters for the eyes that cannot separate it from
+        the green beside it.
       */
       .word-gone {
         color: var(--missing-ink);
@@ -1034,20 +1045,15 @@
       }
 
       .word-new {
-        border-radius: 3px;
-        background: var(--word-new-fill);
-        box-shadow: 0 0 0 2px var(--word-new-fill);
-        color: var(--word-new-ink);
-      }
-
-      .review-run-missing .review-tag {
-        color: var(--missing-ink);
+        color: var(--added-ink);
       }
 
       /* Shortened, so it reads as a reference to a paragraph rather than as
-         one of his that has been cut off. */
+         one of his that has been cut off. Struck as well, for now, to be
+         looked at: a run this long may be more than the mark can carry. */
       .review-run-missing p {
         color: var(--quiet);
+        text-decoration: line-through;
       }
 
       /* Where the middle of a paragraph was taken out. In the block's own
