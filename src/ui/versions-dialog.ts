@@ -201,7 +201,7 @@ export function openVersionsDialog(
   };
 
   const panel = document.createElement('div');
-  panel.className = 'panel review-panel';
+  panel.className = 'panel review-panel versions-panel';
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
 

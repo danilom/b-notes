@@ -799,8 +799,17 @@
         line-height: 1.5;
       }
 
+      /*
+        As wide as what is in it, and no wider.
+
+        The body caps at the measure plus 3rem and the panel adds its own 1.4rem
+        sides, which comes to about 53rem. The nine rem it used to have beyond
+        that did not vanish into margins — it went into the gap between a row's
+        title and its date, two things that belong to each other and were being
+        held apart by it.
+      */
       .panel.review-panel {
-        width: min(62rem, 100%);
+        width: min(53rem, 100%);
         height: 100%;
         display: flex;
         flex-direction: column;
@@ -811,6 +820,13 @@
 
       /* The X stays level with the top of the title, whether the heading beside
          it is one line or two. */
+      /* The same, plus the index column and the gap beside it. Wider rather than
+         narrower: this one has a second thing to hold, and without the room its
+         diff never reaches the measure it is written for. */
+      .panel.versions-panel {
+        width: min(67rem, 100%);
+      }
+
       .panel.review-panel header {
         align-items: flex-start;
       }
