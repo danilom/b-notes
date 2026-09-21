@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { describeError } from '../src/platform/logging.ts';
+
 import {
   type LogFileInfo,
   type LogRetention,
@@ -183,5 +185,22 @@ describe('filesToPrune', () => {
     const strict: LogRetention = { maxAgeDays: 1, maxTotalBytes: 1000 };
 
     assert.deepEqual(filesToPrune([old, ACTIVE], strict, TODAY, ACTIVE.name), [old.name]);
+  });
+});
+
+describe('describing an error so it survives the trip to the log', () => {
+  it('flattens it, since an Error clones across as an empty object', () => {
+    const described = describeError(new TypeError('no such folder')) as Record<string, unknown>;
+
+    assert.equal(described['name'], 'TypeError');
+    assert.equal(described['message'], 'no such folder');
+    assert.equal(typeof described['stack'], 'string');
+  });
+
+  it('passes anything that is not an Error straight through', () => {
+    // A rejection can carry any value, and a string saying what happened is
+    // worth more than the same string wrapped in a shape it does not have.
+    assert.equal(describeError('the drive went away'), 'the drive went away');
+    assert.equal(describeError(undefined), undefined);
   });
 });

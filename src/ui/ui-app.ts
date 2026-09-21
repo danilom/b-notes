@@ -3,7 +3,7 @@ import { createNoteStore } from '../notes/note-store.ts';
 import { type DeletedNote, type Note, isEmptyText } from '../notes/note.ts';
 import { BUILD_STAMP } from '../platform/build-info.ts';
 import type { Host } from '../platform/host.ts';
-import type { Log } from '../platform/logging.ts';
+import { type Log, describeError } from '../platform/logging.ts';
 import {
   type Appearance,
   DEFAULT_APPEARANCE,
@@ -56,14 +56,6 @@ let log: Log;
  * only a host can do with them. Nothing else here reaches for it.
  */
 let host: Host;
-
-/** Errors don't survive structured cloning intact, so flatten before sending. */
-function describeError(value: unknown): unknown {
-  if (value instanceof Error) {
-    return { name: value.name, message: value.message, stack: value.stack };
-  }
-  return value;
-}
 
 function reportUncaught(): void {
   window.addEventListener('error', (event) => {

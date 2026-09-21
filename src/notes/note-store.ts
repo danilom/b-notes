@@ -1,5 +1,5 @@
 import type { FileInfo, FileSystem } from '../platform/file-system.ts';
-import type { Log } from '../platform/logging.ts';
+import { type Log, describeError } from '../platform/logging.ts';
 import {
   baseOf,
   DELETED_FOLDER,
@@ -22,10 +22,6 @@ import { type DeletedNote, type Note, type NoteStore, type NoteVersion, isEmptyT
 
 const nameOf = (path: string): string => path.split('/').at(-1) ?? path;
 
-/** Errors do not survive structured cloning to the log process intact. */
-function describeFailure(value: unknown): unknown {
-  return value instanceof Error ? { name: value.name, message: value.message } : value;
-}
 
 /**
  * His text as the app works with it, with Windows line endings taken out.
@@ -77,7 +73,7 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
       // either way — he keeps his text, and one unreadable folder of copies is
       // not worth stopping him — but discarding the only evidence of a fault at
       // the one moment it exists is how a disk quietly rotting stays invisible.
-      log.warn('Could not look in a folder', { folder, failure: describeFailure(failure) });
+      log.warn('Could not look in a folder', { folder, failure: describeError(failure) });
       return [];
     }
   }
@@ -87,7 +83,7 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
     try {
       return await files.read(path);
     } catch (failure: unknown) {
-      log.warn('Could not read a file', { path, failure: describeFailure(failure) });
+      log.warn('Could not read a file', { path, failure: describeError(failure) });
       return null;
     }
   }
