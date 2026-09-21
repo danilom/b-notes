@@ -324,10 +324,11 @@ function drawDeletedBlock(): void {
 
 async function saveNow(): Promise<void> {
   const text = editor.value;
+  const was = openId;
   const id = await store.save(openId, text);
   if (id === null) return;
 
-  const wasNew = openId === null;
+  const wasNew = was === null;
   openId = id;
   savedAt = Date.now();
   draft = null;
@@ -341,7 +342,18 @@ async function saveNow(): Promise<void> {
   // A save may have kept a copy before it landed, which is when the way to them
   // first appears.
   void countKeptOfOpen();
+
+  /*
+    The save itself is not logged, and deliberately: it lands within a second of
+    him stopping, so a session would be a thousand identical lines, and a log
+    nobody can read is a log we do not have.
+
+    What is logged is the part that moves a file. Rewriting his first line
+    renames the text and takes its copies with it, which is the question a
+    telephone call is actually about — and until now it happened in silence.
+  */
   if (wasNew) log.info('Created a text', { id });
+  else if (id !== was) log.info('Renamed a text, since his first line changed', { from: was, to: id });
 }
 
 function scheduleSave(): void {
@@ -607,6 +619,7 @@ function showVersions(): void {
       return;
     }
 
+    log.info('Looked at the copies kept of a text', { id, copies: versions.length });
     const close = openVersionsDialog(
       versionsPane,
       {
@@ -680,6 +693,7 @@ async function bringBackVersion(text: string): Promise<void> {
 function showDeleted(): void {
   if (deletedPane.open) return;
 
+  log.info('Looked at the texts he has put away', { count: deleted.length });
   const close = openDeletedDialog(deletedPane, { deleted, query: search.value }, language, {
     onClose: () => {
       close();
@@ -766,12 +780,17 @@ async function restoreNote(id: string): Promise<void> {
 /** Both lists, after anything that can move a text between them. */
 async function reload(): Promise<void> {
   [notes, deleted] = await Promise.all([store.list(), store.listDeleted()]);
+  // How many there are, every time it changes. A count in the log is what tells
+  // a folder that emptied itself from a man who deleted one text, days later,
+  // over the telephone — and it costs one line per delete or restore.
+  log.info('The list now holds', { texts: notes.length, deleted: deleted.length });
   draw();
 }
 
 function showAppearance(): void {
   if (appearancePanel !== null) return;
 
+  log.info('Opened the appearance panel');
   appearancePanel = openAppearancePanel(appearancePane, settings, language, {
     // Shown, not kept. Nothing reaches the disk until he says so.
     onPreview: showAppearanceOf,

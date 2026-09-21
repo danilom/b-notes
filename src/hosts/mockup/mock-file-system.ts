@@ -1,4 +1,9 @@
-import type { FileInfo, FileSystem } from '../../platform/file-system.ts';
+import {
+  type FileInfo,
+  type FileSystem,
+  FileMissing,
+  FolderMissing,
+} from '../../platform/file-system.ts';
 
 const KEY = 'b-notes:mock-files';
 
@@ -49,7 +54,13 @@ export function createMockFileSystem(): FileSystem {
   return {
     async list(folder: string): Promise<FileInfo[]> {
       const wanted: FileInfo[] = [];
+      // Folders here exist only because keys contain slashes, so one is real
+      // exactly when something lives in or under it. The real filesystem throws
+      // for a folder that is not there, and so must this, or the mock would
+      // answer a question differently from the thing it stands in for.
+      let anyUnder = false;
       for (const [at, file] of load()) {
+        if (at.startsWith(`${folder}/`)) anyUnder = true;
         if (folderOf(at) !== folder) continue;
         wanted.push({
           path: at,
@@ -57,6 +68,7 @@ export function createMockFileSystem(): FileSystem {
           bytes: new TextEncoder().encode(file.text).length,
         });
       }
+      if (!anyUnder) throw new FolderMissing(folder);
       return wanted;
     },
 
@@ -72,7 +84,7 @@ export function createMockFileSystem(): FileSystem {
 
     async read(at: string): Promise<string> {
       const file = load().get(at);
-      if (file === undefined) throw new Error(`No such file: ${at}`);
+      if (file === undefined) throw new FileMissing(at);
       return file.text;
     },
 

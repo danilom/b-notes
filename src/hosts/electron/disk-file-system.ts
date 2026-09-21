@@ -2,7 +2,12 @@ import type { Dirent } from 'node:fs';
 import { mkdir, readFile, readdir, rename, rmdir, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import type { FileInfo, FileSystem } from '../../platform/file-system.ts';
+import {
+  type FileInfo,
+  type FileSystem,
+  FileMissing,
+  FolderMissing,
+} from '../../platform/file-system.ts';
 
 const WRITING_SUFFIX = '.saving';
 
@@ -22,11 +27,11 @@ export function createFileSystem(): FileSystem {
       try {
         entries = await readdir(folder, { withFileTypes: true });
       } catch (error: unknown) {
-        // Only the one condition, and everything else goes on up. This is the
-        // one place in the app that knows a missing folder from a folder it
-        // could not open, and it is the reason the rule above exists.
+        // Named rather than turned into an empty answer. Everything else goes
+        // up as it came: a folder that is shut to us is not a folder that has
+        // nothing in it, and only here can the two still be told apart.
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-        entries = [];
+        throw new FolderMissing(folder);
       }
 
       return Promise.all(
@@ -55,7 +60,12 @@ export function createFileSystem(): FileSystem {
     },
 
     async read(at: string): Promise<string> {
-      return readFile(at, 'utf8');
+      try {
+        return await readFile(at, 'utf8');
+      } catch (error: unknown) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+        throw new FileMissing(at);
+      }
     },
 
     /**

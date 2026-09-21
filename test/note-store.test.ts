@@ -81,7 +81,7 @@ describe('a text that will not convert', () => {
 });
 
 describe('a disk that will not answer', () => {
-  it('says so rather than reporting that he has no copies', async () => {
+  it('refuses to answer rather than reporting that he has no copies', async () => {
     // The bug this guards: an unreadable folder and a folder with nothing in it
     // both came out as "no versions kept", so a disk quietly going wrong looked
     // exactly like a text he had never edited.
@@ -94,17 +94,13 @@ describe('a disk that will not answer', () => {
         return real.list(folder);
       },
     };
-    const log = silentLog();
-    const store = createNoteStore(refuses, dir.replaceAll('\\', '/'), log);
+    const store = createNoteStore(refuses, dir.replaceAll('\\', '/'), silentLog());
     const id = await store.save(null, 'O zimi\n\nTekst.');
 
-    const counted = await store.countVersions(id ?? '');
-
-    assert.equal(counted, 0, 'it carries on');
-    assert.ok(
-      log.said.some((line) => line.level === 'warn' && line.message.includes('folder')),
-      'and it reported the fault: ' + JSON.stringify(log.said),
-    );
+    // It used to answer 0, which is the same answer as a text nobody has ever
+    // edited. A folder shut to us is not a folder with nothing in it, and the
+    // store now says so rather than choosing a number.
+    await assert.rejects(() => store.countVersions(id ?? ''), /permission denied/);
   });
 });
 

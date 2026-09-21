@@ -14,6 +14,41 @@
  *
  * Paths are always forward-slash strings, whatever the platform writes on disk.
  */
+/**
+ * Nothing is there. An answer, not a fault — but its own answer.
+ *
+ * The one distinction this contract exists to keep. A folder that is not there
+ * used to come back as an empty one, so "he has written nothing" and "his
+ * writing is unreachable" arrived identically, and the app said the first when
+ * it meant the second. Callers for whom absence is ordinary — the versions
+ * folder before a copy is kept, the deleted folder before anything is thrown
+ * away — catch this and nothing else, which is what makes everything they do
+ * not catch visible.
+ */
+export class FolderMissing extends Error {
+  // Written out rather than declared in the constructor: parameter properties
+  // are one of the two things `erasableSyntaxOnly` forbids, and that flag is
+  // what lets `node --test` run these sources with no build step.
+  readonly folder: string;
+
+  constructor(folder: string) {
+    super(`No such folder: ${folder}`);
+    this.name = 'FolderMissing';
+    this.folder = folder;
+  }
+}
+
+/** The same, for a file. Thrown where a read finds nothing to read. */
+export class FileMissing extends Error {
+  readonly path: string;
+
+  constructor(path: string) {
+    super(`No such file: ${path}`);
+    this.name = 'FileMissing';
+    this.path = path;
+  }
+}
+
 export interface FileInfo {
   path: string;
   updatedAt: number;
@@ -22,9 +57,13 @@ export interface FileInfo {
 
 export interface FileSystem {
   /**
-   * Files directly inside `folder`. Subfolders aren't listed, and a folder that
-   * isn't there is empty rather than an error — asking what is somewhere must
-   * not bring it into being, or every question leaves a folder behind.
+   * Files directly inside `folder`. Subfolders aren't listed.
+   *
+   * Throws `FolderMissing` where there is no such folder, and does not create
+   * one — asking what is somewhere must not bring it into being. It used to
+   * answer with an empty list instead, which conflated the folder we have not
+   * made yet with the folder holding six hundred essays that has gone, and the
+   * app duly told him he had written nothing.
    */
   list(folder: string): Promise<FileInfo[]>;
   /**
@@ -41,6 +80,7 @@ export interface FileSystem {
    * usable — they have the same answer.
    */
   folderExists(folder: string): Promise<boolean>;
+  /** Throws `FileMissing` where there is no such file. */
   read(path: string): Promise<string>;
   /** Must not be able to leave a half-written file behind. */
   write(path: string, text: string): Promise<void>;

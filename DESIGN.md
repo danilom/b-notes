@@ -192,18 +192,36 @@ he reports problems by phone, vaguely, days later.
 
 Log:
 
-- Every significant operation — a note opened, saved, created, renamed; a
-  conflicted copy detected or resolved; the notes folder being located.
+- Every significant operation — a note opened, created or renamed; a copy kept
+  before a risky save; a conflicted copy detected or resolved; the notes folder
+  being located. And how many texts are in the list whenever that changes: a
+  count is what tells a folder that emptied itself from a man who deleted one
+  text, days later, over the telephone.
 - Every UI interaction except typing — buttons, selections, navigation.
 - Every error, including ones recovered from silently. *Especially* those: an
   error he never saw is one he can't tell us about.
 
 Don't log:
 
-- Note contents, or fragments of them. His essays are private, the files get
-  large, and the logs may eventually leave the machine (see `TODO.md`).
+- Note contents. His essays are private and the files get large.
+- **Saves.** Autosave lands within a second of him stopping, so a session would
+  be a thousand identical lines and the one that mattered would be unfindable.
+  What gets logged instead is the part of a save that moves a file: a rename
+  when his first line changed, and a copy kept before a risky write.
+- **What he searched for.** A query is a word out of his writing, or one he is
+  hunting in it, so logging queries gives away what his essays are about
+  without ever quoting one.
 - Anything per-keystroke. Writes are synchronous so entries survive a crash,
   which makes them too expensive to do on a spinning disk at typing speed.
+
+**The log carries his titles, and that is deliberate.** A note's id is its
+filename, which is built from his first line — so every line naming a text names
+a fragment of his writing. The alternative is a hash, and a hash is useless the
+moment he telephones to say the one about Tivat has gone wrong. The diagnosis is
+worth more than the redaction *while the log stays on his machine*, which makes
+this a condition rather than a decision: **the telemetry idea in `TODO.md` —
+putting logs in a shared Dropbox folder — cannot proceed until they are redacted
+first.** Treat a log file as being as private as the writing itself.
 
 One file per run, named for its start time, pid and kind of run
 (`b-notes-2026-09-18-162537-31240-installed.log`), so a dev build and the

@@ -1,4 +1,9 @@
-import type { FileInfo, FileSystem } from '../platform/file-system.ts';
+import {
+  type FileInfo,
+  type FileSystem,
+  FileMissing,
+  FolderMissing,
+} from '../platform/file-system.ts';
 import { type Log, describeError } from '../platform/logging.ts';
 import {
   baseOf,
@@ -76,11 +81,11 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
     try {
       return await files.list(folder);
     } catch (failure: unknown) {
-      // Said before it is thrown away. Carrying on with none of them is right
-      // either way — he keeps his text, and one unreadable folder of copies is
-      // not worth stopping him — but discarding the only evidence of a fault at
-      // the one moment it exists is how a disk quietly rotting stays invisible.
-      log.warn('Could not look in a folder', { folder, failure: describeError(failure) });
+      // Only the folder we have not made yet. `Verzije/` and `Obrisano/` come
+      // into being the first time they are used, so asking about one before
+      // then is an ordinary question with an empty answer — and nothing else
+      // is, which is why everything else goes up to somebody who can say so.
+      if (!(failure instanceof FolderMissing)) throw failure;
       return [];
     }
   }
@@ -90,7 +95,7 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
     try {
       return await files.read(path);
     } catch (failure: unknown) {
-      log.warn('Could not read a file', { path, failure: describeError(failure) });
+      if (!(failure instanceof FileMissing)) throw failure;
       return null;
     }
   }
@@ -107,6 +112,21 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
       byId.set(idOf(name), file);
     }
     return byId;
+  }
+
+  /**
+   * The same, for the folder of texts he has put away.
+   *
+   * That one comes into being the first time he deletes something, so not being
+   * there is an ordinary answer where for the writing folder it is the alarm.
+   */
+  async function putAwayFiles(): Promise<Map<string, FileInfo>> {
+    try {
+      return await noteFiles(at(DELETED_FOLDER));
+    } catch (failure: unknown) {
+      if (!(failure instanceof FolderMissing)) throw failure;
+      return new Map();
+    }
   }
 
   /** Everything about a note that the app works with, read off one file. */
@@ -196,6 +216,9 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
     const taken = new Set((await filesIn(at(folder))).map((file) => idOf(nameOf(file.path))));
     const name = nextFreeId(versionName(new Date()), null, taken);
     await files.write(at(folder, `${name}${EXTENSION}`), text);
+    // The safety net firing. Rare, and the one line that answers "where did the
+    // paragraph I deleted go" — which is the reason any of this exists.
+    log.info('Kept a copy of a text before writing over it', { id, copy: name });
     return name;
   }
 
@@ -278,7 +301,7 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
 
     async listDeleted(): Promise<DeletedNote[]> {
       const notes = await Promise.all(
-        [...(await noteFiles(at(DELETED_FOLDER)))].map(async ([id, file]): Promise<DeletedNote> => {
+        [...(await putAwayFiles())].map(async ([id, file]): Promise<DeletedNote> => {
           // Counted, not read: how many there are decides how hard it should be
           // to destroy this, and that question does not need their contents.
           const kept = await filesIn(at(putAwayVersionsFolderFor(id)));
@@ -403,7 +426,7 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
     },
 
     async destroy(id: string): Promise<void> {
-      const file = (await noteFiles(at(DELETED_FOLDER))).get(requireNoteId(id));
+      const file = (await putAwayFiles()).get(requireNoteId(id));
       if (file === undefined) throw new Error(`No such deleted note: ${id}`);
 
       // The note first, then what was kept of it. Should this stop halfway, a
@@ -449,7 +472,7 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
     },
 
     async restore(id: string): Promise<string> {
-      const file = (await noteFiles(at(DELETED_FOLDER))).get(requireNoteId(id));
+      const file = (await putAwayFiles()).get(requireNoteId(id));
       if (file === undefined) throw new Error(`No such deleted note: ${id}`);
 
       // He may have written something new under the same opening words while
