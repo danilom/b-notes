@@ -18,6 +18,22 @@ are for refining it afterwards.
   window, or genuinely gone. Different answers point at very different fixes.
 - **How does he move between texts?** Search, scrolling the list, or reopening
   whatever was last on screen.
+- **Can he work the scrollbar we have given him?** The one that matters, because
+  it gates the answer above. His list is 592 texts and about 17 rows of it are on
+  screen at the default size — 8 at the largest, which is the size he is most
+  likely to choose. Ours is a modern thin bar: 17px of target with 11px painted,
+  and a thumb at about 1.5:1 against the page. Darkening it to clear 3:1 was
+  tried and turned down, and so were arrows at the ends of the track.
+
+  ResophNotes gave him the classic Windows scrollbar, stepper buttons and all,
+  and he used it for years — so he may well reach for buttons that are not there.
+  Against that: he reads web pages, which have had thin bars for a decade, so he
+  may be perfectly fluent and the worry is ours rather than his. That is exactly
+  why this is watched rather than asked.
+
+  Watch for which he reaches for — the bar, the wheel, or neither. Someone who
+  scrolls by searching for a word instead has told us something larger than the
+  answer to this question.
 - **How does a variant get created?** The moment a second copy of an essay comes
   into being is the thing we're trying to design away, and he probably can't
   narrate it.
