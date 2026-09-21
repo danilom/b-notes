@@ -51,6 +51,54 @@ describe('isConflictedCopy', () => {
   });
 });
 
+describe('the disambiguating suffix, which is ours and not his', () => {
+  it('never stacks one on another', async () => {
+    // It did: a first line ending in (1) became part of the name, so the next
+    // clash put another on top and `Pismo (1) (1)` was born.
+    const { dir, store } = await emptyStore();
+
+    await store.save(null, 'Pismo (1)\n\nPrvi.');
+    await store.save(null, 'Pismo (1)\n\nDrugi.');
+
+    assert.deepEqual((await readdir(dir)).sort(), ['Pismo (1).txt', 'Pismo.txt']);
+  });
+
+  it('leaves the title he wrote alone', async () => {
+    // Only the file is renamed. What he reads comes from his own words.
+    const { store } = await emptyStore();
+    await store.save(null, 'Pismo (1)\n\nPrvi.');
+
+    assert.equal((await store.list())[0]?.title, 'Pismo (1)');
+  });
+
+  it('does not stack one while putting a .md file into plain text', async () => {
+    // About twenty of his arrive from Simplenote already carrying a suffix,
+    // and the conversion runs over all of them at the first startup.
+    const { dir, store } = await emptyStore();
+    await writeFile(path.join(dir, 'Esej.md'), 'Esej\n\nJedan.', 'utf8');
+    await writeFile(path.join(dir, 'Esej (1).md'), 'Esej\n\nDva.', 'utf8');
+    await writeFile(path.join(dir, 'Esej (1).txt'), 'Esej\n\nTri.', 'utf8');
+
+    await store.convertToPlainText();
+
+    assert.deepEqual((await readdir(dir)).sort(), ['Esej (1).txt', 'Esej (2).txt', 'Esej.txt']);
+  });
+
+  it('takes every suffix off, so a doubled name heals', () => {
+    // Stripping once left the damage in place for good: it survived a save, a
+    // delete and a restore, gathering another on every clash.
+    assert.equal(baseOf('Pismo (1) (2)'), 'Pismo');
+    assert.equal(fileNameBase('Pismo (1) (2)'), 'Pismo');
+  });
+
+  it('leaves a bare bracket alone, since the suffix needs its space', () => {
+    // A title that is only "(1)" is his writing, and names a file that reads
+    // back as itself.
+    assert.equal(fileNameBase('(1)'), '(1)');
+    assert.equal(baseOf('(1)'), '(1)');
+  });
+});
+
 describe('a text that will not convert', () => {
   it('says why, not only which', async () => {
     // Held open by Dropbox, already gone, and refused by Windows are three

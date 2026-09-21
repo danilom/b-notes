@@ -277,7 +277,10 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
         const name = nameOf(file.path);
         if (!isConvertibleNoteFile(name) || isConflictedCopy(name)) continue;
 
-        const id = nextFreeId(idOf(name), null, taken);
+        // `baseOf` rather than `idOf`: a file that arrives already carrying
+        // our suffix — and about twenty of his do, from Simplenote — would
+        // otherwise be the base for another one on the next clash.
+        const id = nextFreeId(baseOf(name), null, taken);
         try {
           await files.rename(file.path, at(`${id}${EXTENSION}`));
           taken.add(id);

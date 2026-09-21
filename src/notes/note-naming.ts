@@ -117,6 +117,22 @@ const CONFLICTED_COPY = /\(.+conflicted copy \d{4}-\d{2}-\d{2}(?: \d+)?\)/i;
 /** Our own disambiguating suffix, which looks exactly like Simplenote's. */
 const COPY_SUFFIX = / \(\d+\)$/;
 
+/**
+ * The name with every one of our suffixes taken off, not merely the last.
+ *
+ * Stripping once left `Pismo (1) (1)` reading as `Pismo (1)`, so a doubled name
+ * never healed: it survived a save, a delete and a restore, gathering another
+ * every time it collided again. To exhaustion, so damage already on disk goes
+ * the first time the text is written.
+ */
+function withoutCopySuffix(name: string): string {
+  let bare = name;
+  for (let shorter = bare.replace(COPY_SUFFIX, ''); shorter !== bare; shorter = bare.replace(COPY_SUFFIX, '')) {
+    bare = shorter;
+  }
+  return bare;
+}
+
 const RESERVED_CHARACTERS = '<>:"/\\|?*';
 const RESERVED_ON_WINDOWS = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
 
@@ -147,9 +163,22 @@ export function fileNameBase(title: string): string {
     .replace(/\.+$/, '')
     .trim();
 
-  if (cleaned.length === 0) return 'Bez naslova';
-  if (RESERVED_ON_WINDOWS.test(cleaned)) return `_${cleaned}`;
-  return cleaned;
+  /*
+    His own trailing `(1)` is not allowed to become part of the name.
+
+    The suffix is ours: it is what a collision adds, and a base that already
+    carries one stacks another on the next clash — `Pismo (1) (1)`. He labels
+    drafts with *prefixes* rather than suffixes, and not one of his 592 titles
+    ends this way, so taking the namespace back costs him nothing he does.
+
+    Only the file is affected. The title he reads comes from his text and still
+    says whatever he wrote, so the two can differ and he never sees it.
+  */
+  const bare = withoutCopySuffix(cleaned).trim();
+
+  if (bare.length === 0) return 'Bez naslova';
+  if (RESERVED_ON_WINDOWS.test(bare)) return `_${bare}`;
+  return bare;
 }
 
 /**
@@ -160,7 +189,7 @@ export function fileNameBase(title: string): string {
  * text, never from parsing an id, so a suffix can't accumulate.
  */
 export function baseOf(id: string): string {
-  return idOf(id).replace(COPY_SUFFIX, '');
+  return withoutCopySuffix(idOf(id));
 }
 
 /**
