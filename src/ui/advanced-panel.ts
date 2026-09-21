@@ -132,7 +132,7 @@ export function openAdvancedPanel(
     */
     const warnings: Record<string, string> = {
       browser: 'Test in a browser. These folders are pretend and nothing here touches a disk.',
-      dev: 'Development build. These folders are real.',
+      dev: 'Development build (not the installed app). These folders are real.',
     };
     const said = warnings[host.runMode];
 
