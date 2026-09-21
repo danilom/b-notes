@@ -890,6 +890,10 @@
         align-items: center;
         gap: 0.4rem;
         margin-left: auto;
+        /* Sitting on the same line as the size buttons rather than floating at
+           their middle. It is shorter than they are, and centred it read as
+           adrift between two rows instead of belonging to this one. */
+        align-self: flex-end;
         padding: 0.3rem 0.6rem;
         border-color: transparent;
         background: none;
