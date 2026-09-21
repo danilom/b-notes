@@ -60,6 +60,16 @@ export function createMockFileSystem(): FileSystem {
       return wanted;
     },
 
+    /**
+     * Folders here exist only because keys contain slashes, so one is real
+     * exactly when something lives in it. Close enough to the real answer for
+     * the one question this is asked.
+     */
+    async folderExists(folder: string): Promise<boolean> {
+      for (const at of load().keys()) if (at.startsWith(`${folder}/`)) return true;
+      return false;
+    },
+
     async read(at: string): Promise<string> {
       const file = load().get(at);
       if (file === undefined) throw new Error(`No such file: ${at}`);

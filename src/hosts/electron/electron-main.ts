@@ -146,6 +146,7 @@ handle('app:restart', async () => {
   app.exit(0);
 });
 handle('files:list', (args) => files.list(asString(args[0], 'folder')));
+handle('files:folderExists', (args) => files.folderExists(asString(args[0], 'folder')));
 handle('files:read', (args) => files.read(asString(args[0], 'path')));
 handle('files:write', (args) => files.write(asString(args[0], 'path'), asString(args[1], 'text')));
 handle('files:rename', (args) => files.rename(asString(args[0], 'from'), asString(args[1], 'to')));

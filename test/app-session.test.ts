@@ -11,6 +11,7 @@ function filesHolding(contents: Record<string, string>) {
   const stored = new Map(Object.entries(contents));
   const files: FileSystem = {
     list: async () => [...stored.keys()].map((path) => ({ path, updatedAt: 0, bytes: 0 })),
+    folderExists: async () => true,
     read: async (path) => {
       const text = stored.get(path);
       if (text === undefined) throw new Error(`no such file: ${path}`);

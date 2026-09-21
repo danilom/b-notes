@@ -20,6 +20,7 @@ function slowFiles() {
 
   const files: FileSystem = {
     list: async () => [...stored.keys()].map((path) => ({ path, updatedAt: 0, bytes: 0 })),
+    folderExists: async () => true,
     read: async (path) => {
       const text = stored.get(path);
       if (text === undefined) throw new Error(`no such file: ${path}`);
@@ -165,6 +166,7 @@ describe('saving how he likes the app set up', () => {
   it('reports a failed write rather than swallowing it', async () => {
     const failing: FileSystem = {
       list: async () => [],
+      folderExists: async () => true,
       read: async () => {
         throw new Error('nothing here');
       },

@@ -43,6 +43,17 @@ export function createFileSystem(): FileSystem {
       );
     },
 
+    async folderExists(folder: string): Promise<boolean> {
+      try {
+        return (await stat(folder)).isDirectory();
+      } catch {
+        // Not there, or there and shut to us. Not logged: this is asked in
+        // order to report the answer on screen, so a false here is on its way
+        // in front of someone already.
+        return false;
+      }
+    },
+
     async read(at: string): Promise<string> {
       return readFile(at, 'utf8');
     },

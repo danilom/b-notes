@@ -12,6 +12,7 @@ const files = {
   list: (folder: string) => ipcRenderer.invoke('files:list', folder),
   read: (path: string) => ipcRenderer.invoke('files:read', path),
   write: (path: string, text: string) => ipcRenderer.invoke('files:write', path, text),
+  folderExists: (folder: string) => ipcRenderer.invoke('files:folderExists', folder),
   rename: (from: string, to: string) => ipcRenderer.invoke('files:rename', from, to),
   removeEmptyFolder: (folder: string) => ipcRenderer.invoke('files:removeEmptyFolder', folder),
   removeEmptyFile: (path: string) => ipcRenderer.invoke('files:removeEmptyFile', path),

@@ -54,7 +54,28 @@ function folderRow(
     });
   });
 
-  row.append(name, open);
+  /*
+    Said on the row rather than only when it fails later.
+
+    A path that is not a place looks exactly like one that is, and the app
+    started from it shows an empty list — which is the catastrophe as far as he
+    is concerned. Checked as the panel is drawn, so a folder typed or picked
+    wrongly is caught before Apply rather than after a restart.
+  */
+  const missing = document.createElement('span');
+  missing.className = 'advanced-missing';
+  missing.textContent = 'not found';
+  missing.hidden = true;
+  void host.files
+    .folderExists(path)
+    .then((there) => {
+      missing.hidden = there;
+    })
+    .catch((failure: unknown) => {
+      host.log.warn('Could not check whether a folder is there', { path, failure });
+    });
+
+  row.append(name, open, missing);
 
   if (change !== null) {
     const pick = document.createElement('button');

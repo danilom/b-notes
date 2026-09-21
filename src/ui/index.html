@@ -986,6 +986,22 @@
         text-decoration: underline;
       }
 
+      /* Beside the path rather than under it: what is wrong is this one line,
+         and a line of its own would push the three folders apart. */
+      .advanced-missing {
+        flex: none;
+        padding: 0.1rem 0.4rem;
+        border: 1px solid var(--danger);
+        color: var(--danger);
+        font-size: 0.8em;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .advanced-missing[hidden] {
+        display: none;
+      }
+
       .advanced-change {
         flex: none;
         padding: 0.25rem 0.6rem;

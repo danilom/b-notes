@@ -27,6 +27,20 @@ export interface FileSystem {
    * not bring it into being, or every question leaves a folder behind.
    */
   list(folder: string): Promise<FileInfo[]>;
+  /**
+   * Whether a folder is there and can be looked in.
+   *
+   * `list` deliberately cannot answer this — a folder that isn't there is empty
+   * rather than an error, which is right for the ones we make on demand and
+   * useless for the one holding his writing. Asked directly here, and only
+   * where the answer is the point: the advanced panel, saying whether a path
+   * someone typed is a real place.
+   *
+   * False covers unreachable as well as absent. They are different problems and
+   * this cannot tell them apart, but for the one question it is asked — is this
+   * usable — they have the same answer.
+   */
+  folderExists(folder: string): Promise<boolean>;
   read(path: string): Promise<string>;
   /** Must not be able to leave a half-written file behind. */
   write(path: string, text: string): Promise<void>;
