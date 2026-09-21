@@ -12,3 +12,7 @@ testdata/
 
 # Notes to self, not part of the project.
 TODO.md
+
+# Playwright output.
+test-results/
+playwright-report/
