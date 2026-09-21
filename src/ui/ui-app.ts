@@ -14,6 +14,8 @@ import {
 import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
 import { openConfirmDialog } from './confirm-dialog.ts';
 import { openAdvancedPanel } from './advanced-panel.ts';
+import { showLostTexts } from './lost-texts.ts';
+import { looksLikeLoss, readTextsLastSeen, writeTextsLastSeen } from './texts-last-seen.ts';
 import { openDeletedDialog } from './deleted-dialog.ts';
 import { openVersionsDialog } from './versions-dialog.ts';
 import { versionsWorthShowing } from './version-row.ts';
@@ -987,6 +989,37 @@ export async function startApp(runningOn: Host): Promise<void> {
   // empty text now stays where he left it, and the status line points him at
   // the button for getting rid of it.
   [notes, deleted] = await Promise.all([store.list(), store.listDeleted()]);
+
+  /*
+    Everything gone, rather than nothing written yet.
+
+    A folder that is not there reads as empty by design, so without this the app
+    greets him with "Jos nema tekstova" when six hundred essays have gone — the
+    single worst sentence it could put in front of him, and the one that has
+    made every past disappearance impossible to tell from a minimised window.
+
+    The count is kept per machine, so pointing the app at a different folder is
+    not a loss, a first run has nothing to compare against, and a man who really
+    has deleted everything still has it among his deleted texts.
+  */
+  const seen = await readTextsLastSeen(host.files, host.appFolder);
+  const nowSeen = { folder: host.writingFolder, texts: notes.length + deleted.length };
+
+  if (looksLikeLoss(seen, nowSeen)) {
+    log.error('His texts are not where they were', { ...nowSeen, had: seen?.texts });
+    showLostTexts(document.body, host.writingFolder, language, {
+      // Straight in, with no word to type. The guard is there to stop idle
+      // curiosity, and a man staring at this screen is not idly curious.
+      onAdvanced: showAdvanced,
+    });
+    return;
+  }
+
+  // Not awaited: remembering this is worth nothing beside showing him his
+  // writing, and a failure to write it costs one startup check.
+  void writeTextsLastSeen(host.files, host.appFolder, nowSeen).catch((error: unknown) => {
+    log.warn('Could not remember how many texts there were', describeError(error));
+  });
 
   // Reopen what he was last in. The search is deliberately not restored — a
   // filtered list on startup looks exactly like texts having gone missing.

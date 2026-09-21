@@ -811,6 +811,66 @@
         font-size: inherit;
       }
 
+      /*
+        Both halves of the app, put away while it has nothing to show him.
+
+        `hidden` alone loses to their own `display`, the same way it does for
+        the strip under the list — the attribute is a hint at the bottom of the
+        cascade and an id selector beats it every time.
+      */
+      #side[hidden],
+      #main[hidden] {
+        display: none;
+      }
+
+      /*
+        The whole window, because there is nothing behind it worth looking at
+        and nothing here for him to dismiss his way past.
+      */
+      .lost {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        max-width: 34rem;
+        margin: 12vh auto 0;
+        padding: 0 2rem;
+      }
+
+      .lost h1 {
+        margin: 0;
+        font-size: 1.5em;
+        color: var(--danger);
+      }
+
+      .lost p {
+        margin: 0;
+        line-height: 1.5;
+      }
+
+      .lost-advice {
+        font-weight: 500;
+      }
+
+      /* One block, read aloud down a telephone. Selectable, and wide enough
+         that a path does not wrap in the middle of a folder name. */
+      .lost-said {
+        align-self: stretch;
+        padding: 0.7rem 0.9rem;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        font-family: Consolas, 'Courier New', monospace;
+        font-size: 0.95em;
+        white-space: pre-wrap;
+        word-break: break-all;
+        user-select: text;
+      }
+
+      .lost button svg {
+        width: 1em;
+        height: 1em;
+      }
+
       #confirm {
         padding: 1.5rem;
       }

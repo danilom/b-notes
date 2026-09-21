@@ -213,6 +213,26 @@ const TEXT = {
     versionChangedWhy: '(postoji u oba teksta; precrtano je staro, zeleno je novo)',
     versionUnrelated: 'Ovo je sasvim drugi tekst — nijedan pasus se ne poklapa s aktivnim.',
     noteDeleted: 'Tekst je obrisan',
+    /*
+      The worst thing that can happen, said in the fewest words that are true.
+
+      He has reported writing "disappearing" for years, and the causes were
+      never established — a minimised window, a sync gone wrong, or nothing at
+      all. This is the app saying which of those it is: it can see that his
+      texts were here yesterday and are not here now, and it is saying so
+      instead of greeting him with "Još nema tekstova", which is the single
+      worst sentence it could put in front of him.
+
+      No blame, no jargon, and one instruction: do not touch anything, and read
+      this line out. The line is what turns a phone call that begins "everything
+      is gone" into one that begins with a version number.
+    */
+    lostTitle: 'Ne mogu da nađem tvoje tekstove',
+    lostBody:
+      'Tvoji tekstovi nisu obrisani. Aplikacija ne može da dođe do mesta na kom se čuvaju — ' +
+      'možda je fascikla premeštena ili disk nije priključen.',
+    lostAdvice: 'Nemoj ništa da menjaš. Pozovi za pomoć i pročitaj ovo:',
+    lostSettings: 'Napredna podešavanja',
     emptiedHint: 'Tekst je prazan. Obriši ga ako ti više ne treba.',
   },
   en: {
@@ -332,6 +352,12 @@ const TEXT = {
     versionChangedWhy: '(in both; struck through is the old wording, green the new)',
     versionUnrelated: 'This is a different text altogether — not one paragraph matches the active one.',
     noteDeleted: 'Text deleted',
+    lostTitle: 'I cannot find your texts',
+    lostBody:
+      'Your texts have not been deleted. The app cannot reach the place where they are kept — ' +
+      'the folder may have moved, or the drive may not be connected.',
+    lostAdvice: 'Do not change anything. Call for help and read this out:',
+    lostSettings: 'Advanced settings',
     emptiedHint: 'This text is empty. Delete it if you no longer need it.',
   },
 } satisfies Record<
