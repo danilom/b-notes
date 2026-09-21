@@ -20,7 +20,36 @@ export interface Host {
   readonly writingFolder: string;
   /** Ours: the log, what he had open, how he likes the app set up. */
   readonly appFolder: string;
+  /** Where the log files go. Separable from `appFolder` so they can be put
+      somewhere shared, which is the cheapest telemetry available to us. */
+  readonly logsFolder: string;
   readonly log: Log;
+  /**
+   * Opens a folder in whatever the desktop uses to show folders.
+   *
+   * For the advanced panel alone, which is the one surface in this app that is
+   * not written for him. Everywhere else, showing a path is forbidden.
+   */
+  readonly openFolder: (path: string) => Promise<void>;
+  /**
+   * Asks for a folder, starting from `from`. Null when nothing was chosen.
+   *
+   * The host's job because only it has a picker: Electron has the real one, and
+   * a browser tab has nothing and has to make do.
+   */
+  readonly chooseFolder: (from: string) => Promise<string | null>;
+  /**
+   * Remembers where his writing and our logs should live, from now on.
+   *
+   * Written where the app can find it before anything else starts, which is why
+   * it is the host's to keep rather than something `notes/` could hold: the
+   * writing folder cannot be configured from inside the writing folder.
+   *
+   * Takes effect on the next start. Nothing here moves a single file — pointing
+   * the app somewhere else is not the same as taking his writing there, and the
+   * one that silently moved six hundred files would be unforgivable.
+   */
+  readonly rememberFolders: (folders: { writing: string; logs: string }) => Promise<void>;
   /**
    * Scales the whole window, exactly as Ctrl+ and Ctrl- do in a browser.
    *

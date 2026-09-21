@@ -6,7 +6,10 @@ import { startApp } from '../../ui/ui-app.ts';
 declare global {
   interface Window {
     files?: FileSystem;
-    folders?: () => Promise<{ writing: string; app: string }>;
+    folders?: () => Promise<{ writing: string; app: string; logs: string }>;
+    openFolder?: (path: string) => Promise<void>;
+    chooseFolder?: (from: string) => Promise<string | null>;
+    rememberFolders?: (next: { writing: string; logs: string }) => Promise<void>;
     log?: Log;
     setZoom?: (factor: number) => void;
   }
@@ -20,13 +23,13 @@ declare global {
  * the mock out of what he installs.
  */
 async function main(): Promise<void> {
-  const files = window.files;
-  const folders = window.folders;
-  const log = window.log;
-  const setZoom = window.setZoom;
+  const { files, folders, openFolder, chooseFolder, rememberFolders, log, setZoom } = window;
   if (
     files === undefined ||
     folders === undefined ||
+    openFolder === undefined ||
+    chooseFolder === undefined ||
+    rememberFolders === undefined ||
     log === undefined ||
     setZoom === undefined
   ) {
@@ -42,6 +45,10 @@ async function main(): Promise<void> {
     files,
     writingFolder: where.writing,
     appFolder: where.app,
+    logsFolder: where.logs,
+    openFolder,
+    chooseFolder,
+    rememberFolders,
     log,
     setZoom,
   };

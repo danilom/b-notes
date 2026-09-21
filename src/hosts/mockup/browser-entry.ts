@@ -67,6 +67,21 @@ async function main(): Promise<void> {
     writingFolder: MOCK_WRITING_FOLDER,
     appFolder: MOCK_APP_FOLDER,
     log: consoleLog,
+    logsFolder: `${MOCK_APP_FOLDER}/logs`,
+    /*
+      Nothing here can show a folder or ask for one: a browser tab has no
+      desktop to open and no picker to raise. Stubbed rather than left out, so
+      the advanced panel can be worked on here and behaves recognisably — and
+      so the contract keeps both hosts answering for the same capabilities.
+    */
+    openFolder: async (path: string) => {
+      window.alert(`Would open in Explorer:
+${path}`);
+    },
+    chooseFolder: async (from: string) => window.prompt('Folder', from),
+    rememberFolders: async (next: { writing: string; logs: string }) => {
+      window.localStorage.setItem('b-notes:mock-folders', JSON.stringify(next));
+    },
     setZoom,
   };
 

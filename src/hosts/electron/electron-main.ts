@@ -1,9 +1,10 @@
-import { BrowserWindow, Menu, app, ipcMain, screen } from 'electron';
+import { BrowserWindow, Menu, app, dialog, ipcMain, screen, shell } from 'electron';
 import path from 'node:path';
 
 import { BUILD_STAMP } from '../../platform/build-info.ts';
 import { LOG_LEVELS, createFileLogger } from './log-file.ts';
 import { createFileSystem } from './disk-file-system.ts';
+import { readChosenFolders, writeChosenFolders } from './chosen-folders.ts';
 import { startUpdateChecks } from './app-updates.ts';
 import { type Rect, deskAround, keptOnTheDesk } from './window-bounds.ts';
 
@@ -32,7 +33,12 @@ const runMode = app.isPackaged ? 'installed' : 'dev';
 // what he had open and how he likes the app set up all live here together — per
 // machine, never synced, and all of it safe to delete.
 const appFolder = app.getPath('userData');
-const log = createFileLogger(path.join(appFolder, 'logs'), runMode);
+
+// Read before the log exists, because one of the things it decides is where the
+// log goes. Anything wrong with the file reads as "nothing was chosen", which
+// starts the app in its default places rather than not at all.
+const chosen = readChosenFolders(appFolder);
+const log = createFileLogger(chosen.logs ?? path.join(appFolder, 'logs'), runMode);
 const rendererLog = log.scoped('renderer');
 
 // Nothing here reaches a terminal: Electron detaches stdout on Windows, so an
@@ -45,9 +51,12 @@ process.on('unhandledRejection', (reason) => log.error('Unhandled rejection', re
 // which needs detecting at first run. Documents keeps this runnable until then.
 // Forward slashes throughout, which is what the filesystem contract expects and
 // which Windows accepts perfectly well.
+const asPath = (value: string): string => value.replaceAll('\\', '/');
+
 const folders = {
-  writing: path.join(app.getPath('documents'), 'b-notes').replaceAll('\\', '/'),
-  app: appFolder.replaceAll('\\', '/'),
+  writing: chosen.writing ?? asPath(path.join(app.getPath('documents'), 'b-notes')),
+  app: asPath(appFolder),
+  logs: chosen.logs ?? asPath(path.join(appFolder, 'logs')),
 };
 const files = createFileSystem();
 
@@ -86,6 +95,37 @@ function handle(channel: string, handler: (args: unknown[]) => Promise<unknown>)
 // is named, saved or put away, is the app's business and lives in shared code —
 // this process has no idea any of it exists.
 handle('app:folders', async () => folders);
+
+/*
+  The advanced panel's three, and the only place in the app allowed to know a
+  path exists. Nothing here moves a file: pointing the app at another folder is
+  not the same as taking his writing there, and the version that quietly moved
+  six hundred files would be the worst bug this app could have.
+*/
+handle('app:openFolder', async (args) => {
+  const failure = await shell.openPath(asString(args[0], 'path'));
+  // `openPath` reports by returning a message rather than by throwing.
+  if (failure.length > 0) throw new Error(failure);
+});
+
+handle('app:chooseFolder', async (args) => {
+  const chose = await dialog.showOpenDialog({
+    defaultPath: asString(args[0], 'from'),
+    properties: ['openDirectory', 'createDirectory'],
+  });
+  return chose.canceled ? null : (chose.filePaths[0] ?? null);
+});
+
+handle('app:rememberFolders', async (args) => {
+  const next = args[0];
+  if (typeof next !== 'object' || next === null) throw new TypeError('folders must be an object');
+  const held = next as Record<string, unknown>;
+  writeChosenFolders(appFolder, {
+    writing: asString(held['writing'], 'writing'),
+    logs: asString(held['logs'], 'logs'),
+  });
+  log.warn('The folders were pointed somewhere else', held);
+});
 handle('files:list', (args) => files.list(asString(args[0], 'folder')));
 handle('files:read', (args) => files.read(asString(args[0], 'path')));
 handle('files:write', (args) => files.write(asString(args[0], 'path'), asString(args[1], 'text')));

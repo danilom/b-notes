@@ -21,6 +21,12 @@ const files = {
 /** Only the main process knows where Windows keeps his Documents folder. */
 const folders = () => ipcRenderer.invoke('app:folders');
 
+/** The advanced panel's three, and nothing else in the app uses them. */
+const openFolder = (path: string) => ipcRenderer.invoke('app:openFolder', path);
+const chooseFolder = (from: string) => ipcRenderer.invoke('app:chooseFolder', from);
+const rememberFolders = (next: { writing: string; logs: string }) =>
+  ipcRenderer.invoke('app:rememberFolders', next);
+
 const log = {
   info: (message: string, detail?: unknown) => ipcRenderer.send('log:write', 'info', message, detail),
   warn: (message: string, detail?: unknown) => ipcRenderer.send('log:write', 'warn', message, detail),
@@ -48,4 +54,7 @@ webFrame.setVisualZoomLevelLimits(1, 1);
 contextBridge.exposeInMainWorld('files', files);
 contextBridge.exposeInMainWorld('setZoom', setZoom);
 contextBridge.exposeInMainWorld('folders', folders);
+contextBridge.exposeInMainWorld('openFolder', openFolder);
+contextBridge.exposeInMainWorld('chooseFolder', chooseFolder);
+contextBridge.exposeInMainWorld('rememberFolders', rememberFolders);
 contextBridge.exposeInMainWorld('log', log);
