@@ -18,7 +18,14 @@ import {
 import { deletedIdFor, planSave } from './note-saving.ts';
 import { toSearchable } from '../language/diacritics.ts';
 import { titleFrom } from './note-title.ts';
-import { type DeletedNote, type Note, type NoteStore, type NoteVersion, isEmptyText } from './note.ts';
+import {
+  type Converted,
+  type DeletedNote,
+  type Note,
+  type NoteStore,
+  type NoteVersion,
+  isEmptyText,
+} from './note.ts';
 
 const nameOf = (path: string): string => path.split('/').at(-1) ?? path;
 
@@ -234,14 +241,14 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
      * A file that won't move is reported rather than skipped silently: it would
      * otherwise be invisible in the list, which reads to him as loss.
      */
-    async convertToPlainText(): Promise<{ converted: number; refused: string[] }> {
+    async convertToPlainText(): Promise<Converted> {
       const all = await files.list(folder);
       const taken = new Set(
         all.filter((file) => isNoteFile(nameOf(file.path))).map((file) => idOf(nameOf(file.path))),
       );
 
       let converted = 0;
-      const refused: string[] = [];
+      const refused: Converted['refused'] = [];
 
       for (const file of all) {
         const name = nameOf(file.path);
@@ -252,9 +259,12 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
           await files.rename(file.path, at(`${id}${EXTENSION}`));
           taken.add(id);
           converted += 1;
-        } catch {
-          // One file held open elsewhere shouldn't stop the rest converting.
-          refused.push(name);
+        } catch (failure: unknown) {
+          // One file held open elsewhere shouldn't stop the rest converting —
+          // but why it was refused goes with it. Held open by Dropbox, already
+          // gone, and refused by Windows are three different problems, and the
+          // name alone makes them one.
+          refused.push({ name, failure: describeError(failure) });
         }
       }
 

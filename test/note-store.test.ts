@@ -51,6 +51,35 @@ describe('isConflictedCopy', () => {
   });
 });
 
+describe('a text that will not convert', () => {
+  it('says why, not only which', async () => {
+    // Held open by Dropbox, already gone, and refused by Windows are three
+    // different problems. The name alone makes them one, and the reason is
+    // there for the taking at exactly the moment it is thrown away.
+    const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
+    const real = createFileSystem();
+    const refuses: FileSystem = {
+      ...real,
+      rename: async () => {
+        throw Object.assign(new Error('EBUSY: resource busy or locked'), { code: 'EBUSY' });
+      },
+    };
+    await writeFile(path.join(dir, 'Stari zapis.md'), 'Stari zapis\n\nTekst.', 'utf8');
+    const store = createNoteStore(refuses, dir.replaceAll('\\', '/'), silentLog());
+
+    const { converted, refused } = await store.convertToPlainText();
+
+    assert.equal(converted, 0);
+    assert.equal(refused.length, 1);
+    assert.equal(refused[0]?.name, 'Stari zapis.md');
+    assert.match(
+      JSON.stringify(refused[0]?.failure),
+      /EBUSY/,
+      'the reason travels with the name',
+    );
+  });
+});
+
 describe('a disk that will not answer', () => {
   it('says so rather than reporting that he has no copies', async () => {
     // The bug this guards: an unreadable folder and a folder with nothing in it

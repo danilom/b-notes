@@ -997,7 +997,15 @@ export async function startApp(runningOn: Host): Promise<void> {
       log.info('Put texts into plain text', { count: converted.converted });
     }
     if (converted.refused.length > 0) {
-      log.warn('Could not convert some texts, so they are not in the list', converted.refused);
+      // One line each, with the reason. A list of names told us a file was not
+      // in his list and left us guessing at why, which is the whole of what a
+      // log is for.
+      for (const { name, failure } of converted.refused) {
+        log.warn('Could not put a text into plain text, so it is not in the list', {
+          name,
+          failure,
+        });
+      }
     }
     const [live, away] = await Promise.all([store.list(), store.listDeleted()]);
     return { notes: live, deleted: away };

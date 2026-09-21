@@ -50,12 +50,25 @@ export interface NoteVersion {
   text: string;
 }
 
+/**
+ * What a run of the conversion did, and what it could not do.
+ *
+ * `refused` carries why as well as which. A name on its own says a file is not
+ * in his list and leaves the reason on the floor at the one moment it existed —
+ * and held open by Dropbox, gone, and refused by Windows all want different
+ * answers from whoever reads the log.
+ */
+export interface Converted {
+  converted: number;
+  refused: { name: string; failure: unknown }[];
+}
+
 export interface NoteStore {
   /**
    * Puts anything he has in another format into `.txt`, and reports what it
    * couldn't move. Run once at startup, before anything is listed.
    */
-  convertToPlainText(): Promise<{ converted: number; refused: string[] }>;
+  convertToPlainText(): Promise<Converted>;
   /**
    * Every note, text included. His whole corpus is under 3MB, so holding it in
    * memory makes searching instant and costs nothing worth measuring.
