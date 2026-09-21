@@ -975,12 +975,45 @@ export async function startApp(runningOn: Host): Promise<void> {
   search.placeholder = words.searchPlaceholder;
   search.setAttribute('aria-label', words.searchLabel);
 
-  // Before anything is listed: a note still in another format is one he can't
-  // open without this app, which is the guarantee .txt was chosen for.
-  const converted = await store.convertToPlainText();
-  if (converted.converted > 0) log.info('Put texts into plain text', { count: converted.converted });
-  if (converted.refused.length > 0) {
-    log.warn('Could not convert some texts, so they are not in the list', converted.refused);
+  /**
+   * Everything the app cannot start without, or what stopped it.
+   *
+   * A folder that is not there answers every question with nothing, which is
+   * handled below. A folder that cannot be *read* — gone to a file, a
+   * permission Windows changed, a drive that answers but will not open — throws
+   * instead, and used to take the whole startup down as an unhandled rejection:
+   * he was left looking at the frame of an app that never filled in.
+   */
+  async function readEverything(): Promise<{ notes: Note[]; deleted: DeletedNote[] }> {
+    // Before anything is listed: a note still in another format is one he can't
+    // open without this app, which is the guarantee .txt was chosen for.
+    const converted = await store.convertToPlainText();
+    if (converted.converted > 0) {
+      log.info('Put texts into plain text', { count: converted.converted });
+    }
+    if (converted.refused.length > 0) {
+      log.warn('Could not convert some texts, so they are not in the list', converted.refused);
+    }
+    const [live, away] = await Promise.all([store.list(), store.listDeleted()]);
+    return { notes: live, deleted: away };
+  }
+
+  function cannotReachHisWriting(because?: string): void {
+    showLostTexts(document.body, { folder: host.writingFolder, because }, language, {
+      // Straight in, with no word to type. The guard is there to stop idle
+      // curiosity, and a man staring at this screen is not idly curious.
+      onAdvanced: showAdvanced,
+    });
+  }
+
+  try {
+    ({ notes, deleted } = await readEverything());
+  } catch (error: unknown) {
+    log.error('Could not read his writing at all', describeError(error));
+    // Verbatim. It is the only thing that tells a disconnected drive from a
+    // permission that changed, and he is going to read it down a telephone.
+    cannotReachHisWriting(error instanceof Error ? error.message : String(error));
+    return;
   }
 
   // Emptied texts used to be swept away here, on the reading that clearing one
@@ -988,8 +1021,6 @@ export async function startApp(runningOn: Host): Promise<void> {
   // put in the trash against 8 emptied ones left sitting in the list — so an
   // empty text now stays where he left it, and the status line points him at
   // the button for getting rid of it.
-  [notes, deleted] = await Promise.all([store.list(), store.listDeleted()]);
-
   /*
     Everything gone, rather than nothing written yet.
 
@@ -1007,11 +1038,7 @@ export async function startApp(runningOn: Host): Promise<void> {
 
   if (looksLikeLoss(seen, nowSeen)) {
     log.error('His texts are not where they were', { ...nowSeen, had: seen?.texts });
-    showLostTexts(document.body, host.writingFolder, language, {
-      // Straight in, with no word to type. The guard is there to stop idle
-      // curiosity, and a man staring at this screen is not idly curious.
-      onAdvanced: showAdvanced,
-    });
+    cannotReachHisWriting();
     return;
   }
 

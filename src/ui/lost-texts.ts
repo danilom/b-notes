@@ -18,9 +18,25 @@ export interface LostHandlers {
   onAdvanced: () => void;
 }
 
+/** What went wrong, as far as it can be told. */
+export interface WhatIsLost {
+  /** Where his writing was meant to be. */
+  folder: string;
+  /**
+   * What the machine said, where it said anything.
+   *
+   * Absent when the folder was simply not there — that is not an error, it is
+   * an empty answer. Present when reading it actually failed, and then it is
+   * the only thing that distinguishes a disconnected drive from a permission
+   * Windows changed, so it goes in front of him verbatim rather than being
+   * softened into a sentence that fits every case and explains none.
+   */
+  because?: string;
+}
+
 export function showLostTexts(
   root: HTMLElement,
-  folder: string,
+  { folder, because }: WhatIsLost,
   language: Language,
   handlers: LostHandlers,
 ): void {
@@ -47,7 +63,9 @@ export function showLostTexts(
   // the one moment where the answer is the path, and he is on the telephone.
   const said = document.createElement('div');
   said.className = 'lost-said';
-  said.textContent = `b-notes ${APP_VERSION} · ${BUILD_STAMP}\n${folder}`;
+  const lines = [`b-notes ${APP_VERSION} · ${BUILD_STAMP}`, folder];
+  if (because !== undefined && because.length > 0) lines.push(because);
+  said.textContent = lines.join('\n');
 
   const door = document.createElement('button');
   door.type = 'button';
