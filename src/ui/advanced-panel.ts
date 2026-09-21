@@ -63,7 +63,12 @@ function folderRow(
     pick.textContent = 'Change…';
     pick.addEventListener('click', () => {
       void (async () => {
-        const chose = await host.chooseFolder(path).catch(() => null);
+        let chose: string | null = null;
+        try {
+          chose = await host.chooseFolder(path);
+        } catch (failure: unknown) {
+          host.log.warn('Could not ask for a folder', { failure });
+        }
         if (chose !== null && chose.trim().length > 0) change(chose.trim());
       })();
     });

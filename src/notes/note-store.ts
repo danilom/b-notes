@@ -51,6 +51,36 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
   const at = (...parts: string[]): string => [folder, ...parts].join('/');
 
   /**
+   * What is in a folder we may never have made.
+   *
+   * `Verzije/` and `Obrisano/` come into being the first time they are used, so
+   * asking about one that is not there yet is an ordinary question with an
+   * empty answer.
+   *
+   * Everything else — a drive that has gone, a permission Windows changed —
+   * comes out as empty too, and should not. That is a gap rather than a
+   * decision: the filesystem contract has no way to say which failure this was,
+   * so there is nothing here to tell them apart with. It is one place to fix
+   * rather than the eight it used to be spread across.
+   */
+  async function filesIn(folder: string): Promise<FileInfo[]> {
+    try {
+      return await files.list(folder);
+    } catch {
+      return [];
+    }
+  }
+
+  /** A file's text, or nothing at all where it cannot be had. Same gap as above. */
+  async function textOf(path: string): Promise<string | null> {
+    try {
+      return await files.read(path);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Every note's id and the file it lives in. One extension, so an id can only
    * ever name one file.
    */
@@ -99,7 +129,7 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
     // one second are named "...15" and "...15 (1)", and with the extension on
     // the end the space in " (1)" sorts before the dot in ".txt" — so the newer
     // of the two came out first and the older one was read as the newest.
-    const kept = [...(await files.list(at(versionsFolderFor(id))).catch(() => []))].sort(
+    const kept = [...(await filesIn(at(versionsFolderFor(id))))].sort(
       (first, second) => {
         const [a, b] = [idOf(nameOf(first.path)), idOf(nameOf(second.path))];
         return a < b ? -1 : a > b ? 1 : 0;
@@ -107,7 +137,7 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
     );
     const newest = kept.at(-1);
     if (newest === undefined) return null;
-    return asWritten(await files.read(newest.path).catch(() => '')) || null;
+    return asWritten((await textOf(newest.path)) ?? '') || null;
   }
 
   /** The same, but only when the note itself has nothing left in it. */
@@ -129,9 +159,9 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
    * this is the guard for the one caller that deliberately steps around it.
    */
   async function sameCopy(id: string, text: string): Promise<string | null> {
-    const kept = await files.list(at(versionsFolderFor(id))).catch(() => []);
+    const kept = await filesIn(at(versionsFolderFor(id)));
     const texts = await Promise.all(
-      kept.map(async (file) => asWritten(await files.read(file.path).catch(() => ''))),
+      kept.map(async (file) => asWritten((await textOf(file.path)) ?? '')),
     );
 
     const at_ = texts.indexOf(text);
@@ -148,7 +178,7 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
    */
   async function keepVersion(id: string, text: string): Promise<string> {
     const folder = versionsFolderFor(id);
-    const taken = new Set((await files.list(at(folder)).catch(() => [])).map((file) => idOf(nameOf(file.path))));
+    const taken = new Set((await filesIn(at(folder))).map((file) => idOf(nameOf(file.path))));
     const name = nextFreeId(versionName(new Date()), null, taken);
     await files.write(at(folder, `${name}${EXTENSION}`), text);
     return name;
@@ -163,7 +193,7 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
    * in it, says something of his went missing.
    */
   async function moveVersions(from: string, to: string): Promise<void> {
-    for (const file of await files.list(at(from)).catch(() => [])) {
+    for (const file of await filesIn(at(from))) {
       await files.rename(file.path, at(to, nameOf(file.path)));
     }
     await files.removeEmptyFolder(at(from));
@@ -174,7 +204,7 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
   }
 
   async function idsPutAway(): Promise<Set<string>> {
-    const found = await files.list(at(DELETED_FOLDER)).catch(() => []);
+    const found = await filesIn(at(DELETED_FOLDER));
     return new Set(found.map((file) => idOf(nameOf(file.path))));
   }
 
@@ -233,7 +263,7 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
         [...(await noteFiles(at(DELETED_FOLDER)))].map(async ([id, file]): Promise<DeletedNote> => {
           // Counted, not read: how many there are decides how hard it should be
           // to destroy this, and that question does not need their contents.
-          const kept = await files.list(at(putAwayVersionsFolderFor(id))).catch(() => []);
+          const kept = await filesIn(at(putAwayVersionsFolderFor(id)));
           return { ...(await noteFrom(id, file)), versions: kept.length };
         }),
       );
@@ -258,7 +288,7 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
       // 145KB essay this is the expensive part of a save.
       let asItWas: string | null = null;
       const previousText = async (): Promise<string> => {
-        asItWas ??= current === undefined ? '' : asWritten(await files.read(current).catch(() => ''));
+        asItWas ??= current === undefined ? '' : asWritten((await textOf(current)) ?? '');
         return asItWas;
       };
 
@@ -306,10 +336,8 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
 
       // Null when it cannot be read at all, which is the one case where nothing
       // below should touch what is in it.
-      const text = await files
-        .read(file.path)
-        .then(asWritten)
-        .catch(() => null);
+      const held = await textOf(file.path);
+      const text = held === null ? null : asWritten(held);
 
       /*
         A text with nothing in it and no earlier version is not a text. Filing
@@ -323,7 +351,7 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
         being kept, which costs a row and loses nothing.
       */
       if (text !== null && isEmptyText(text)) {
-        const versions = await files.list(at(versionsFolderFor(id))).catch(() => []);
+        const versions = await filesIn(at(versionsFolderFor(id)));
         if (versions.length === 0 && (await files.removeEmptyFile(file.path))) return;
       }
 
@@ -368,7 +396,7 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
       await files.removeFile(file.path);
 
       const folder = putAwayVersionsFolderFor(id);
-      for (const version of await files.list(at(folder)).catch(() => [])) {
+      for (const version of await filesIn(at(folder))) {
         await files.removeFile(version.path);
       }
       await files.removeEmptyFolder(at(folder));
@@ -382,11 +410,11 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
     },
 
     async countVersions(id: string): Promise<number> {
-      return (await files.list(at(versionsFolderFor(requireNoteId(id)))).catch(() => [])).length;
+      return (await filesIn(at(versionsFolderFor(requireNoteId(id))))).length;
     },
 
     async listVersions(id: string): Promise<NoteVersion[]> {
-      const kept = await files.list(at(versionsFolderFor(requireNoteId(id)))).catch(() => []);
+      const kept = await filesIn(at(versionsFolderFor(requireNoteId(id))));
       const versions = await Promise.all(
         kept.map(async (file): Promise<NoteVersion> => ({
           id: idOf(nameOf(file.path)),
@@ -394,7 +422,7 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
           // file's time alone, so this survives the text being put away and
           // brought back.
           takenAt: file.updatedAt,
-          text: asWritten(await files.read(file.path).catch(() => '')),
+          text: asWritten((await textOf(file.path)) ?? ''),
         })),
       );
       // Newest first, by name rather than by time: two taken inside one second
@@ -417,7 +445,7 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
       // thing for a text in his list to claim — and the date he wrote it was
       // spent then. Now is the honest answer: he has just asked for it back,
       // and that is when it last changed.
-      const text = await files.read(at(`${back}${EXTENSION}`)).catch(() => null);
+      const text = await textOf(at(`${back}${EXTENSION}`));
       if (text !== null) await files.write(at(`${back}${EXTENSION}`), text);
 
       // The copies come with it and are not spent: throwing away the only other

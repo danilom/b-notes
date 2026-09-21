@@ -134,8 +134,15 @@ export function everyFile(): { path: string; bytes: number }[] {
 export async function seedIfEmpty(): Promise<void> {
   if (load().size > 0) return;
 
-  const response = await fetch('corpus.json').catch(() => null);
-  if (response === null || !response.ok) return;
+  let response: Response;
+  try {
+    response = await fetch('corpus.json');
+  } catch {
+    // Not being served is the ordinary case outside development, and the app
+    // starts empty rather than not at all.
+    return;
+  }
+  if (!response.ok) return;
 
   const seeded = new Map<string, StoredFile>();
   for (const entry of (await response.json()) as { id: string; text: string; updatedAt: number }[]) {

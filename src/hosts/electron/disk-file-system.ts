@@ -1,3 +1,4 @@
+import type { Dirent } from 'node:fs';
 import { mkdir, readFile, readdir, rename, rmdir, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -17,10 +18,16 @@ export function createFileSystem(): FileSystem {
       // A missing folder is an empty one. His writing folder comes into being
       // on the first save, which mkdirs on the way, so nothing needs it made
       // early — and the app asks about folders it would rather not create.
-      const entries = await readdir(folder, { withFileTypes: true }).catch((error: unknown) => {
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
-        throw error;
-      });
+      let entries: Dirent[];
+      try {
+        entries = await readdir(folder, { withFileTypes: true });
+      } catch (error: unknown) {
+        // Only the one condition, and everything else goes on up. This is the
+        // one place in the app that knows a missing folder from a folder it
+        // could not open, and it is the reason the rule above exists.
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+        entries = [];
+      }
 
       return Promise.all(
         entries

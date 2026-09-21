@@ -82,8 +82,15 @@ function asObject(text: string): Record<string, unknown> | null {
  * him working.
  */
 async function readRaw(files: FileSystem, path: string): Promise<Record<string, unknown>> {
-  const text = await files.read(path).catch(() => null);
-  return text === null ? {} : (asObject(text) ?? {});
+  let text: string;
+  try {
+    text = await files.read(path);
+  } catch {
+    // No settings yet, or none we can read: either way he gets the defaults,
+    // which is a working app rather than a missing one.
+    return {};
+  }
+  return asObject(text) ?? {};
 }
 
 /**

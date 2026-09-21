@@ -45,6 +45,17 @@ stack, how it's packaged and shipped, and what to log. This file stays general.
 - Prefer `async/await` over raw promise chains.
 - Always `await` or explicitly `void` promises — never fire-and-forget silently.
 - Handle `Promise.allSettled` vs `Promise.all` deliberately (fail-fast vs. partial results).
+- **Where you await, catch with `try`/`catch`, not `.catch()`.** `.catch()` on an
+  awaited call is no more asynchronous — same microtask, same suspension — but it
+  hides what is being swallowed. `await read(p).catch(() => '')` reads as "default
+  when absent" and in fact means "default when *anything at all* goes wrong",
+  including a permission change or a disconnected drive. A `try`/`catch` puts the
+  error somewhere it can be looked at and told apart.
+- `.catch()` is right, and the only option, on a promise you deliberately do not
+  await — `void write(…).catch(…)` for something whose failure costs nothing.
+- **Never turn an error into a default value without saying which error.** An
+  empty array standing for both "not there yet" and "could not be read" is how a
+  missing folder comes to be reported as a man having written nothing.
 
 ## Dependencies & Imports
 

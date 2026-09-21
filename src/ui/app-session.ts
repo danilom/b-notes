@@ -18,7 +18,14 @@ const NOTHING_OPEN: Session = { openNoteId: null };
  * and a stale one must not become a path.
  */
 export async function readSession(files: FileSystem, folder: string): Promise<Session> {
-  const text = await files.read(`${folder}/${FILE}`).catch(() => null);
+  let text: string;
+  try {
+    text = await files.read(`${folder}/${FILE}`);
+  } catch {
+    // Nothing remembered yet is the ordinary case on a first run, and a session
+    // we cannot read is worth exactly as much: he starts with nothing open.
+    return { openNoteId: null };
+  }
   if (text === null) return NOTHING_OPEN;
 
   try {

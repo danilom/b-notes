@@ -578,7 +578,20 @@ function showVersionsButton(): void {
 /** Asks the store how many copies the open text has, and shows the way to them. */
 async function countKeptOfOpen(): Promise<void> {
   const asking = openId;
-  const count = asking === null ? 0 : await store.countVersions(asking).catch(() => 0);
+  let count = 0;
+  if (asking !== null) {
+    try {
+      count = await store.countVersions(asking);
+    } catch (error: unknown) {
+      // The number on a button is not worth failing a startup over, but it is
+      // worth saying so: a text whose copies cannot be counted has something
+      // wrong with it.
+      log.warn('Could not count the copies kept of a text', {
+        id: asking,
+        failure: describeError(error),
+      });
+    }
+  }
   // He may have moved on while the disk was answering, in which case this
   // answer is about a text he is no longer in and would displace a fresher one.
   if (asking !== openId) return;
