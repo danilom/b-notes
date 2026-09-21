@@ -9,3 +9,6 @@ release/
 # Test corpora and the real metadata they're shaped from. His titles are his
 # first lines, so none of this is ever committed.
 testdata/
+
+# Notes to self, not part of the project.
+TODO.md
