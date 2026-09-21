@@ -929,6 +929,27 @@
         color: var(--quiet);
       }
 
+      /*
+        Loud for the browser and quiet for a dev build, because they are
+        different warnings. One says nothing here is real; the other says
+        everything here is real and the app around it is being changed.
+      */
+      .advanced-warning {
+        margin: 0 0 1.2rem;
+        padding: 0.6rem 0.8rem;
+        border: 2px solid var(--danger);
+        background: var(--danger-wash);
+        color: var(--danger);
+        font-weight: 500;
+      }
+
+      .advanced-warning.mild {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--quiet);
+        font-weight: 400;
+      }
+
       .advanced-folders {
         display: flex;
         flex-direction: column;

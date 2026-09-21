@@ -62,7 +62,7 @@ async function main(): Promise<void> {
   await seedIfEmpty();
 
   const host: Host = {
-    name: 'browser',
+    runMode: 'browser',
     files: createMockFileSystem(),
     writingFolder: MOCK_WRITING_FOLDER,
     appFolder: MOCK_APP_FOLDER,

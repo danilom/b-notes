@@ -1076,7 +1076,7 @@ export async function startApp(runningOn: Host): Promise<void> {
     build: BUILD_STAMP,
     notes: notes.length,
     deleted: deleted.length,
-    host: host.name,
+    host: host.runMode,
     viewport: { width: window.innerWidth, height: window.innerHeight },
     body: { width: Math.round(body.width), height: Math.round(body.height) },
     devicePixelRatio: window.devicePixelRatio,

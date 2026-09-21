@@ -1,12 +1,12 @@
 import type { FileSystem } from '../../platform/file-system.ts';
-import type { Host } from '../../platform/host.ts';
+import type { Host, RunMode } from '../../platform/host.ts';
 import type { Log } from '../../platform/logging.ts';
 import { startApp } from '../../ui/ui-app.ts';
 
 declare global {
   interface Window {
     files?: FileSystem;
-    folders?: () => Promise<{ writing: string; app: string; logs: string }>;
+    folders?: () => Promise<{ writing: string; app: string; logs: string; mode: RunMode }>;
     openFolder?: (path: string) => Promise<void>;
     chooseFolder?: (from: string) => Promise<string | null>;
     rememberFolders?: (next: { writing: string; logs: string }) => Promise<void>;
@@ -44,7 +44,7 @@ async function main(): Promise<void> {
   const where = await folders();
 
   const host: Host = {
-    name: 'electron',
+    runMode: where.mode,
     files,
     writingFolder: where.writing,
     appFolder: where.app,

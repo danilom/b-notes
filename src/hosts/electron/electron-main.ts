@@ -54,6 +54,8 @@ process.on('unhandledRejection', (reason) => log.error('Unhandled rejection', re
 const asPath = (value: string): string => value.replaceAll('\\', '/');
 
 const folders = {
+  // The renderer cannot ask whether this was packaged; only this process can.
+  mode: runMode,
   writing: chosen.writing ?? asPath(path.join(app.getPath('documents'), 'b-notes')),
   app: asPath(appFolder),
   logs: chosen.logs ?? asPath(path.join(appFolder, 'logs')),

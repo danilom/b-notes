@@ -120,6 +120,22 @@ export function openAdvancedPanel(
     stamp.textContent = BUILD_STAMP;
     build.append(version, stamp);
 
+    /*
+      Which copy of the app this is, said where the person changing things will
+      see it.
+
+      A browser copy is reading pretend files: everything in this panel points
+      at names that exist only in a tab, and pressing anything here changes
+      nothing on any disk. A dev build is the opposite danger — it is reading
+      his real writing while being altered underneath. What he has installed
+      says nothing at all, because for him there is nothing to warn about.
+    */
+    const warnings: Record<string, string> = {
+      browser: 'Test in a browser. These folders are pretend and nothing here touches a disk.',
+      dev: 'Development build. These folders are real.',
+    };
+    const said = warnings[host.runMode];
+
     const folders = document.createElement('div');
     folders.className = 'advanced-folders';
     folders.append(
@@ -153,7 +169,15 @@ export function openAdvancedPanel(
     cancel.addEventListener('click', handlers.onClose);
     footer.append(keep, cancel);
 
-    panel.replaceChildren(header, build, folders, note, footer);
+    const pieces: HTMLElement[] = [header, build];
+    if (said !== undefined) {
+      const warning = document.createElement('p');
+      warning.className = host.runMode === 'browser' ? 'advanced-warning' : 'advanced-warning mild';
+      warning.textContent = said;
+      pieces.push(warning);
+    }
+
+    panel.replaceChildren(...pieces, folders, note, footer);
   }
 
   fill();

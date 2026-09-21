@@ -1,6 +1,9 @@
 import type { FileSystem } from './file-system.ts';
 import type { Log } from './logging.ts';
 
+/** What a copy of the app is: installed, built to work on, or the mock. */
+export type RunMode = 'installed' | 'dev' | 'browser';
+
 /**
  * Everything a host provides, in one declaration.
  *
@@ -13,8 +16,16 @@ import type { Log } from './logging.ts';
  * in here. That belongs to the app and lives in `notes/`.
  */
 export interface Host {
-  /** Which host this is, for the log: `electron` or `browser`. */
-  readonly name: string;
+  /**
+   * Which of the three ways this copy is running.
+   *
+   * `installed` is what he has; the other two are somebody working on it. The
+   * distinction is not cosmetic — a browser copy is reading pretend files, so
+   * anything done to it is done to nothing, and a dev build is reading his real
+   * writing while being changed underneath. Both want saying out loud, and only
+   * where they can be seen by the person they concern.
+   */
+  readonly runMode: RunMode;
   readonly files: FileSystem;
   /** Where his texts live. He must never be shown this. */
   readonly writingFolder: string;
