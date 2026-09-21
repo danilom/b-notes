@@ -4,7 +4,7 @@ import path from 'node:path';
 import { BUILD_STAMP } from '../../platform/build-info.ts';
 import { LOG_LEVELS, createFileLogger } from './log-file.ts';
 import { createFileSystem } from './disk-file-system.ts';
-import { readChosenFolders, writeChosenFolders } from './chosen-folders.ts';
+import { readChosenFolders, whereToOpen, writeChosenFolders } from './chosen-folders.ts';
 import { startUpdateChecks } from './app-updates.ts';
 import { type Rect, deskAround, keptOnTheDesk } from './window-bounds.ts';
 
@@ -112,10 +112,14 @@ handle('app:openFolder', async (args) => {
 
 handle('app:chooseFolder', async (args) => {
   const chose = await dialog.showOpenDialog({
-    defaultPath: asString(args[0], 'from'),
+    // Not the wanted folder as it stands: it is spelled with forward slashes,
+    // which this dialog alone among Windows does not take, and it may not exist
+    // yet. Either one makes it open wherever it likes instead.
+    defaultPath: whereToOpen(asString(args[0], 'from')),
     properties: ['openDirectory', 'createDirectory'],
   });
-  return chose.canceled ? null : (chose.filePaths[0] ?? null);
+  // Back into the spelling the rest of the app uses.
+  return chose.canceled ? null : asPath(chose.filePaths[0] ?? '') || null;
 });
 
 handle('app:rememberFolders', async (args) => {

@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 /**
@@ -45,4 +45,34 @@ export function readChosenFolders(appFolder: string): ChosenFolders {
 export function writeChosenFolders(appFolder: string, folders: ChosenFolders): void {
   mkdirSync(appFolder, { recursive: true });
   writeFileSync(path.join(appFolder, FILE), JSON.stringify(folders, null, 2), 'utf8');
+}
+
+/**
+ * Where a folder picker should open, given where we would like it to open.
+ *
+ * Two things stop the wanted folder being usable as it stands. Paths are kept
+ * with forward slashes, which is what the filesystem contract expects and what
+ * Windows accepts everywhere except its own dialogs — handed one, the dialog
+ * does not recognise it and falls back to wherever it likes. And the folder may
+ * not be there at all: his writing folder comes into being on the first save,
+ * so on a new machine it is a name rather than a place.
+ *
+ * Both came out the same way — the picker opening at Documents however the app
+ * was configured — which made it look like the current folder was being ignored
+ * rather than not being found.
+ */
+export function whereToOpen(wanted: string): string {
+  let at = path.normalize(wanted);
+  for (;;) {
+    try {
+      if (statSync(at).isDirectory()) return at;
+    } catch {
+      // Not there is the expected answer on the way up, and the reason for the
+      // walk; anything else about it is the picker's problem, not ours.
+    }
+    const up = path.dirname(at);
+    // `dirname` of a root is the root, which is where the walk has to stop.
+    if (up === at) return at;
+    at = up;
+  }
 }
