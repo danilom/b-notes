@@ -22,11 +22,16 @@ export async function readSession(files: FileSystem, folder: string): Promise<Se
   try {
     text = await files.read(`${folder}/${FILE}`);
   } catch {
-    // Nothing remembered yet is the ordinary case on a first run, and a session
-    // we cannot read is worth exactly as much: he starts with nothing open.
-    return { openNoteId: null };
+    /*
+      Deliberately not logged, which is the exception rather than the habit.
+
+      There is no file here until he first opens a text, so on every fresh
+      machine this is the answer, and a warning at every first run is a warning
+      nobody will read by the time one matters. Losing it costs him which text
+      was open and nothing else — `DESIGN.md` calls this folder safe to delete.
+    */
+    return NOTHING_OPEN;
   }
-  if (text === null) return NOTHING_OPEN;
 
   try {
     const parsed: unknown = JSON.parse(text);

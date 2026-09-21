@@ -71,6 +71,9 @@ function asObject(text: string): Record<string, unknown> | null {
       ? (parsed as Record<string, unknown>)
       : null;
   } catch {
+    // Not logged, by the same reasoning as the read below: a settings file we
+    // cannot parse gives him the defaults, which is a working app, and the
+    // caller has no logger to tell about it anyway.
     return null;
   }
 }
@@ -86,8 +89,11 @@ async function readRaw(files: FileSystem, path: string): Promise<Record<string, 
   try {
     text = await files.read(path);
   } catch {
-    // No settings yet, or none we can read: either way he gets the defaults,
-    // which is a working app rather than a missing one.
+    /*
+      Deliberately not logged. There are no settings until he changes one, so
+      this is the answer on every fresh machine, and what it costs him is a
+      colour and a type size — this folder is documented as safe to delete.
+    */
     return {};
   }
   return asObject(text) ?? {};

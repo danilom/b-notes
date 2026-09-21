@@ -956,7 +956,7 @@ export async function startApp(runningOn: Host): Promise<void> {
     });
   };
 
-  store = createNoteStore(host.files, host.writingFolder);
+  store = createNoteStore(host.files, host.writingFolder, log);
   newNoteLabel.textContent = words.newNote;
   foundSteps = createStepper(
     { previous: words.foundPrevious, next: words.foundNext, close: words.clearSearch },

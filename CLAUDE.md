@@ -56,6 +56,16 @@ stack, how it's packaged and shipped, and what to log. This file stays general.
 - **Never turn an error into a default value without saying which error.** An
   empty array standing for both "not there yet" and "could not be read" is how a
   missing folder comes to be reported as a man having written nothing.
+- **A `catch` that returns a default must log.** `catch { return []; }` with
+  nothing else in it is a decision to discard evidence of a fault, taken at the
+  only moment the evidence exists. Log it and then return the default — the app
+  carries on either way, and the difference is whether anyone can ever find out
+  why. The one exception is a place where the failure is the expected answer and
+  happens constantly — a poll, a retry loop — where logging every occurrence
+  would bury the log rather than fill it. **Where you take that exception, say so
+  in a comment.** A silent `catch` is indistinguishable from a forgotten one, and
+  the next reader has no way to tell a considered decision from an oversight
+  without the line that says which it was.
 
 ## Dependencies & Imports
 

@@ -1,4 +1,5 @@
 import type { FileInfo, FileSystem } from '../platform/file-system.ts';
+import type { Log } from '../platform/logging.ts';
 import {
   baseOf,
   DELETED_FOLDER,
@@ -20,6 +21,11 @@ import { titleFrom } from './note-title.ts';
 import { type DeletedNote, type Note, type NoteStore, type NoteVersion, isEmptyText } from './note.ts';
 
 const nameOf = (path: string): string => path.split('/').at(-1) ?? path;
+
+/** Errors do not survive structured cloning to the log process intact. */
+function describeFailure(value: unknown): unknown {
+  return value instanceof Error ? { name: value.name, message: value.message } : value;
+}
 
 /**
  * His text as the app works with it, with Windows line endings taken out.
@@ -47,7 +53,7 @@ const asWritten = (text: string): string => text.replaceAll('\r\n', '\n');
  * path a note actually lives at is worked out here and nowhere else, so nothing
  * above this knows where his writing is kept.
  */
-export function createNoteStore(files: FileSystem, folder: string): NoteStore {
+export function createNoteStore(files: FileSystem, folder: string, log: Log): NoteStore {
   const at = (...parts: string[]): string => [folder, ...parts].join('/');
 
   /**
@@ -66,7 +72,12 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
   async function filesIn(folder: string): Promise<FileInfo[]> {
     try {
       return await files.list(folder);
-    } catch {
+    } catch (failure: unknown) {
+      // Said before it is thrown away. Carrying on with none of them is right
+      // either way — he keeps his text, and one unreadable folder of copies is
+      // not worth stopping him — but discarding the only evidence of a fault at
+      // the one moment it exists is how a disk quietly rotting stays invisible.
+      log.warn('Could not look in a folder', { folder, failure: describeFailure(failure) });
       return [];
     }
   }
@@ -75,7 +86,8 @@ export function createNoteStore(files: FileSystem, folder: string): NoteStore {
   async function textOf(path: string): Promise<string | null> {
     try {
       return await files.read(path);
-    } catch {
+    } catch (failure: unknown) {
+      log.warn('Could not read a file', { path, failure: describeFailure(failure) });
       return null;
     }
   }

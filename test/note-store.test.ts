@@ -8,6 +8,7 @@ import { describe, it } from 'node:test';
 import { createFileSystem } from '../src/hosts/electron/disk-file-system.ts';
 import type { FileSystem } from '../src/platform/file-system.ts';
 import { createNoteStore } from '../src/notes/note-store.ts';
+import { silentLog } from './silent-log.ts';
 import {
   DELETED_FOLDER,
   EXTENSION,
@@ -28,7 +29,8 @@ import { MAX_TITLE, titleFrom } from '../src/notes/note-title.ts';
  */
 async function emptyStore() {
   const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
-  return { dir, store: createNoteStore(createFileSystem(), dir.replaceAll("\\", "/")) };
+  const log = silentLog();
+  return { dir, log, store: createNoteStore(createFileSystem(), dir.replaceAll("\\", "/"), log) };
 }
 
 describe('isConflictedCopy', () => {
@@ -46,6 +48,34 @@ describe('isConflictedCopy', () => {
 
   it('does not match prose that merely uses the words', () => {
     assert.equal(isConflictedCopy('On the conflicted copy as a literary device.txt'), false);
+  });
+});
+
+describe('a disk that will not answer', () => {
+  it('says so rather than reporting that he has no copies', async () => {
+    // The bug this guards: an unreadable folder and a folder with nothing in it
+    // both came out as "no versions kept", so a disk quietly going wrong looked
+    // exactly like a text he had never edited.
+    const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
+    const real = createFileSystem();
+    const refuses: FileSystem = {
+      ...real,
+      list: async (folder: string) => {
+        if (folder.includes(VERSIONS_FOLDER)) throw new Error('EACCES: permission denied');
+        return real.list(folder);
+      },
+    };
+    const log = silentLog();
+    const store = createNoteStore(refuses, dir.replaceAll('\\', '/'), log);
+    const id = await store.save(null, 'O zimi\n\nTekst.');
+
+    const counted = await store.countVersions(id ?? '');
+
+    assert.equal(counted, 0, 'it carries on');
+    assert.ok(
+      log.said.some((line) => line.level === 'warn' && line.message.includes('folder')),
+      'and it reported the fault: ' + JSON.stringify(log.said),
+    );
   });
 });
 
@@ -289,7 +319,7 @@ describe('saving', () => {
       write: async (at, text) =>
         at.includes(VERSIONS_FOLDER) ? Promise.reject(new Error('disk full')) : real.write(at, text),
     };
-    const store = createNoteStore(refusesVersions, dir.replaceAll('\\', '/'));
+    const store = createNoteStore(refusesVersions, dir.replaceAll('\\', '/'), silentLog());
     const id = await store.save(null, 'O zimi\n\nTekst koji mora preživjeti.');
 
     await assert.rejects(() => store.save(id, ''));

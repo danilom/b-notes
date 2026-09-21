@@ -36,8 +36,14 @@ export async function readTextsLastSeen(
     if (typeof folder !== 'string' || typeof texts !== 'number') return null;
     return { folder, texts: Math.max(0, Math.trunc(texts)) };
   } catch {
-    // Missing on the first run, and unreadable means the same thing here: we
-    // have nothing to compare against, so nothing can be called a loss.
+    /*
+      Deliberately not logged, and this one is worth being sure about.
+
+      Missing on the first run, which is every machine once. Unreadable means
+      the same thing here — with nothing to compare against, nothing can be
+      called a loss — and the failure that matters is the one in front of it:
+      if his writing itself cannot be read, that throws and is reported.
+    */
     return null;
   }
 }
