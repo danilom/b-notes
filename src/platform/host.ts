@@ -59,6 +59,23 @@ export interface Host {
    * Takes effect on the next start. Nothing here moves a single file — pointing
    * the app somewhere else is not the same as taking his writing there, and the
    * one that silently moved six hundred files would be unforgivable.
+   *
+   * Looks out of place, and here is why it is not. The app could write this
+   * file itself: it knows `appFolder` and it has `files.write`, which is
+   * exactly how `session.json` and `settings.json` are kept. The difference is
+   * who reads it. This one is read by the main process *before a window
+   * exists*, because one of the things it decides is where the log goes — so
+   * the shape belongs to that process, and the interface cannot import it,
+   * since nothing in `ui/` may reach into `hosts/`. Written from both sides it
+   * would be one rule in two places, and the drift would be silent: the reader
+   * treats anything it does not recognise as "nothing chosen", so a renamed key
+   * would not fail, it would simply never take effect.
+   *
+   * There is a second reason, weaker but real. The host hands over folders
+   * already settled; the app never works them out. Asking for different ones is
+   * therefore asking the host to be configured differently rather than writing
+   * a file — which is why this comes paired with `restart` below, and why the
+   * logs folder cannot take effect without it.
    */
   readonly rememberFolders: (folders: { writing: string; logs: string }) => Promise<void>;
   /**
