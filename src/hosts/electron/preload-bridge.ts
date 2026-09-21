@@ -26,6 +26,7 @@ const openFolder = (path: string) => ipcRenderer.invoke('app:openFolder', path);
 const chooseFolder = (from: string) => ipcRenderer.invoke('app:chooseFolder', from);
 const rememberFolders = (next: { writing: string; logs: string }) =>
   ipcRenderer.invoke('app:rememberFolders', next);
+const restart = () => ipcRenderer.invoke('app:restart');
 
 const log = {
   info: (message: string, detail?: unknown) => ipcRenderer.send('log:write', 'info', message, detail),
@@ -57,4 +58,5 @@ contextBridge.exposeInMainWorld('folders', folders);
 contextBridge.exposeInMainWorld('openFolder', openFolder);
 contextBridge.exposeInMainWorld('chooseFolder', chooseFolder);
 contextBridge.exposeInMainWorld('rememberFolders', rememberFolders);
+contextBridge.exposeInMainWorld('restart', restart);
 contextBridge.exposeInMainWorld('log', log);

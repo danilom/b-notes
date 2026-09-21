@@ -15,9 +15,12 @@ import { icon } from './icons.ts';
  * because he reads Serbian; this has one reader and one shape, and a panel that
  * needed its wording tuned in two languages would be a panel nobody maintained.
  *
- * Nothing is applied until OK, and nothing takes effect until the app restarts.
- * Both are deliberate: the folders decide where his six hundred texts are read
- * from, and a half-applied change to that is not something to discover live.
+ * Nothing is applied until the one button at the bottom, which then starts the
+ * app again. Both halves are deliberate: the folders decide where his six
+ * hundred texts are read from, so a half-applied change is not a thing to
+ * discover live — and every piece of state the app is holding, from which text
+ * is open to what it has listed, belongs to the old folder the moment the new
+ * one is chosen. Starting again is cheaper than unpicking all of it correctly.
  */
 export interface AdvancedHandlers {
   onClose: () => void;
@@ -130,14 +133,13 @@ export function openAdvancedPanel(
 
     const note = document.createElement('p');
     note.className = 'advanced-note';
-    note.textContent =
-      'Nothing is moved or copied. These take effect when the app is next started.';
+    note.textContent = 'Nothing is moved or copied. The app starts again when you apply.';
 
     const footer = document.createElement('footer');
     const keep = document.createElement('button');
     keep.type = 'button';
     keep.className = 'keep';
-    keep.textContent = 'OK';
+    keep.textContent = 'Apply and restart';
     keep.addEventListener('click', () => handlers.onKeep({ writing, logs }));
 
     const cancel = document.createElement('button');

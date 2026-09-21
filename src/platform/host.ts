@@ -51,6 +51,15 @@ export interface Host {
    */
   readonly rememberFolders: (folders: { writing: string; logs: string }) => Promise<void>;
   /**
+   * Starts the app again, so everything is read from wherever it now lives.
+   *
+   * A reload of the page is not enough in the packaged app: the folders are
+   * settled in the main process before a window exists, so a refreshed renderer
+   * would be handed the old paths and the log would still be writing where it
+   * always was. Only the host knows what starting again means for it.
+   */
+  readonly restart: () => Promise<void>;
+  /**
    * Scales the whole window, exactly as Ctrl+ and Ctrl- do in a browser.
    *
    * A host capability because only the host knows how: the packaged app has

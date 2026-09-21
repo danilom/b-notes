@@ -82,6 +82,11 @@ ${path}`);
     rememberFolders: async (next: { writing: string; logs: string }) => {
       window.localStorage.setItem('b-notes:mock-folders', JSON.stringify(next));
     },
+    // The tab's own equivalent. Nothing is settled outside the page here, so
+    // reloading it really is starting again.
+    restart: async () => {
+      window.location.reload();
+    },
     setZoom,
   };
 

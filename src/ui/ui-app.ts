@@ -827,15 +827,21 @@ function showAdvanced(): void {
     },
     onKeep: (folders) => {
       close();
+      /*
+        Started again rather than applied in place. Everything the app is
+        holding — which text is open, what it has listed, the copies it has
+        counted — belongs to the folder it was read from, and in the packaged
+        app the folders are settled before a window exists, so a reload alone
+        would be handed the old ones anyway.
+      */
       void host
         .rememberFolders(folders)
-        .then(() => {
-          // English, like the panel it came from, and for the same reason: the
-          // only person who can have pressed that button reads English.
-          notice = 'Saved. Restart the app for this to take effect.';
-          showStatus();
-        })
+        .then(() => host.restart())
         .catch((error: unknown) => {
+          // English, like the panel it came from: the only person who can have
+          // pressed that button reads English.
+          notice = 'Could not save the folders. See the log.';
+          showStatus();
           log.error('Could not remember the folders', describeError(error));
         });
     },

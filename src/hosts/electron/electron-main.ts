@@ -126,6 +126,19 @@ handle('app:rememberFolders', async (args) => {
   });
   log.warn('The folders were pointed somewhere else', held);
 });
+
+/*
+  Everything again from the top, because the folders are settled here rather
+  than in the window: a reloaded renderer would be handed the paths this process
+  worked out at startup, and the log would carry on writing where it always
+  did. `exit` rather than `quit` so nothing can decline to close — there is
+  nothing unsaved to protect, the panel's own OK is what got us here.
+*/
+handle('app:restart', async () => {
+  log.warn('Starting again so the folders take effect');
+  app.relaunch();
+  app.exit(0);
+});
 handle('files:list', (args) => files.list(asString(args[0], 'folder')));
 handle('files:read', (args) => files.read(asString(args[0], 'path')));
 handle('files:write', (args) => files.write(asString(args[0], 'path'), asString(args[1], 'text')));
