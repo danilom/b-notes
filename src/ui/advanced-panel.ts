@@ -1,0 +1,158 @@
+import { type Shown, showAsModal } from './modal.ts';
+import { APP_VERSION, BUILD_STAMP } from '../platform/build-info.ts';
+import type { Host } from '../platform/host.ts';
+import { icon } from './icons.ts';
+
+/**
+ * The one surface in this app that is not written for him.
+ *
+ * Everywhere else, showing a filename, a path or a file dialog is on the list
+ * of things the app must never do. This shows three paths and opens a picker,
+ * because its reader is whoever set the machine up — probably years ago,
+ * probably standing in his living room, probably with no checkout to hand.
+ *
+ * So it is in English, and only English. The rest of the app is bilingual
+ * because he reads Serbian; this has one reader and one shape, and a panel that
+ * needed its wording tuned in two languages would be a panel nobody maintained.
+ *
+ * Nothing is applied until OK, and nothing takes effect until the app restarts.
+ * Both are deliberate: the folders decide where his six hundred texts are read
+ * from, and a half-applied change to that is not something to discover live.
+ */
+export interface AdvancedHandlers {
+  onClose: () => void;
+  onKeep: (folders: { writing: string; logs: string }) => void;
+}
+
+/** A path, and the way to look at it. */
+function folderRow(
+  label: string,
+  path: string,
+  host: Host,
+  change: ((to: string) => void) | null,
+): HTMLElement {
+  const row = document.createElement('div');
+  row.className = 'advanced-row';
+
+  const name = document.createElement('span');
+  name.className = 'advanced-label';
+  name.textContent = label;
+
+  // A link because it behaves like one: it opens the thing it names. Windows
+  // has the only folder window worth opening, so a browser tab says so instead.
+  const open = document.createElement('button');
+  open.type = 'button';
+  open.className = 'advanced-path';
+  open.title = 'Open in Explorer';
+  open.textContent = path;
+  open.addEventListener('click', () => {
+    void host.openFolder(path).catch((failure: unknown) => {
+      host.log.warn('Could not open a folder', { path, failure });
+    });
+  });
+
+  row.append(name, open);
+
+  if (change !== null) {
+    const pick = document.createElement('button');
+    pick.type = 'button';
+    pick.className = 'advanced-change';
+    pick.textContent = 'Change…';
+    pick.addEventListener('click', () => {
+      void (async () => {
+        const chose = await host.chooseFolder(path).catch(() => null);
+        if (chose !== null && chose.trim().length > 0) change(chose.trim());
+      })();
+    });
+    row.append(pick);
+  }
+
+  return row;
+}
+
+export function openAdvancedPanel(
+  container: HTMLDialogElement,
+  host: Host,
+  handlers: AdvancedHandlers,
+): () => void {
+  let writing = host.writingFolder;
+  let logs = host.logsFolder;
+
+  let modal: Shown | null = null;
+  const close = (): void => {
+    modal?.close();
+  };
+
+  const panel = document.createElement('div');
+  panel.className = 'panel advanced-panel';
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-modal', 'true');
+
+  function fill(): void {
+    const header = document.createElement('header');
+    const title = document.createElement('h2');
+    title.textContent = 'Advanced settings';
+
+    const dismiss = document.createElement('button');
+    dismiss.type = 'button';
+    dismiss.className = 'close';
+    dismiss.title = 'Close';
+    dismiss.setAttribute('aria-label', 'Close');
+    dismiss.append(icon('close'));
+    dismiss.addEventListener('click', handlers.onClose);
+    header.append(title, dismiss);
+
+    // Loud on purpose: it is the first thing anyone needs when he telephones,
+    // and until now it existed only inside the log file.
+    const build = document.createElement('div');
+    build.className = 'advanced-build';
+    const version = document.createElement('strong');
+    version.textContent = APP_VERSION;
+    const stamp = document.createElement('span');
+    stamp.textContent = BUILD_STAMP;
+    build.append(version, stamp);
+
+    const folders = document.createElement('div');
+    folders.className = 'advanced-folders';
+    folders.append(
+      folderRow('Writing', writing, host, (to) => {
+        writing = to;
+        fill();
+      }),
+      folderRow('Logs', logs, host, (to) => {
+        logs = to;
+        fill();
+      }),
+      // Not changeable: it is where the file naming these two lives, so it has
+      // to be somewhere the app can find without being told.
+      folderRow('Settings', host.appFolder, host, null),
+    );
+
+    const note = document.createElement('p');
+    note.className = 'advanced-note';
+    note.textContent =
+      'Nothing is moved or copied. These take effect when the app is next started.';
+
+    const footer = document.createElement('footer');
+    const keep = document.createElement('button');
+    keep.type = 'button';
+    keep.className = 'keep';
+    keep.textContent = 'OK';
+    keep.addEventListener('click', () => handlers.onKeep({ writing, logs }));
+
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.textContent = 'Cancel';
+    cancel.addEventListener('click', handlers.onClose);
+    footer.append(keep, cancel);
+
+    panel.replaceChildren(header, build, folders, note, footer);
+  }
+
+  fill();
+  modal = showAsModal(container, panel, handlers.onClose);
+  panel.tabIndex = -1;
+  panel.focus();
+
+  return close;
+}

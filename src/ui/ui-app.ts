@@ -13,6 +13,7 @@ import {
 } from './appearance.ts';
 import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
 import { openConfirmDialog } from './confirm-dialog.ts';
+import { openAdvancedPanel } from './advanced-panel.ts';
 import { openDeletedDialog } from './deleted-dialog.ts';
 import { openVersionsDialog } from './versions-dialog.ts';
 import { versionsWorthShowing } from './version-row.ts';
@@ -47,6 +48,12 @@ let remember: (openNoteId: string | null) => void;
 
 /** Both come from the host, and nothing here reaches past it for them. */
 let log: Log;
+
+/**
+ * Kept whole for the advanced panel, which needs the folders and the two things
+ * only a host can do with them. Nothing else here reaches for it.
+ */
+let host: Host;
 
 /** Errors don't survive structured cloning intact, so flatten before sending. */
 function describeError(value: unknown): unknown {
@@ -96,6 +103,7 @@ const deletedBlockLabel = element('deleted-block-label', HTMLSpanElement);
 const confirmPane = element('confirm', HTMLDialogElement);
 const deletedPane = element('deleted', HTMLDialogElement);
 const versionsPane = element('versions', HTMLDialogElement);
+const advancedPane = element('advanced', HTMLDialogElement);
 const seeVersions = element('see-versions', HTMLButtonElement);
 const seeVersionsLabel = element('see-versions-label', HTMLSpanElement);
 
@@ -774,6 +782,63 @@ function showAppearance(): void {
       showAppearanceOf(settings);
       hideAppearance();
     },
+
+    onAdvanced: askBeforeAdvanced,
+  });
+}
+
+/**
+ * The question in front of the settings that are not his.
+ *
+ * A word to type, the same barrier `Uništi zauvek` uses — the point is not
+ * that it is hard but that it cannot be walked through. In English, like
+ * everything behind it: it is addressed to whoever set the machine up.
+ */
+function askBeforeAdvanced(): void {
+  const close = openConfirmDialog(
+    confirmPane,
+    {
+      title: { mark: 'settings', label: 'Advanced settings' },
+      body:
+        'These decide where your writing is read from. Getting them wrong makes ' +
+        'every text disappear from the list.',
+      confirm: 'Continue',
+      cancel: 'Cancel',
+      phrase: { prompt: 'Type {} to continue.', words: ['advanced'] },
+      danger: true,
+      onConfirm: () => {
+        close();
+        showAdvanced();
+      },
+      onCancel: () => {
+        close();
+      },
+    },
+    language,
+  );
+}
+
+function showAdvanced(): void {
+  if (advancedPane.open) return;
+
+  const close = openAdvancedPanel(advancedPane, host, {
+    onClose: () => {
+      close();
+    },
+    onKeep: (folders) => {
+      close();
+      void host
+        .rememberFolders(folders)
+        .then(() => {
+          // English, like the panel it came from, and for the same reason: the
+          // only person who can have pressed that button reads English.
+          notice = 'Saved. Restart the app for this to take effect.';
+          showStatus();
+        })
+        .catch((error: unknown) => {
+          log.error('Could not remember the folders', describeError(error));
+        });
+    },
   });
 }
 
@@ -835,7 +900,8 @@ window.addEventListener('keydown', (event) => {
  * and nothing more. What a note is, and how one is named, saved or put away, is
  * decided here and in `notes/`, so every host behaves identically.
  */
-export async function startApp(host: Host): Promise<void> {
+export async function startApp(runningOn: Host): Promise<void> {
+  host = runningOn;
   log = host.log;
   reportUncaught();
 

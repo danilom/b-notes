@@ -815,6 +815,104 @@
         padding: 1.5rem;
       }
 
+      /* ---- the settings that are not his ---- */
+
+      /*
+        Not for him, and not hidden from him either. It sits at the end of the
+        last row of the panel he does use, in English and behind a word to type,
+        because whoever needs it will be at his machine years from now with no
+        checkout to hand — and a door you have to remember is a door you have
+        lost. Quiet rather than concealed: a gear is a mark he has no reason to
+        press and whoever is looking for it cannot miss.
+      */
+      .advanced-door {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-left: auto;
+        padding: 0.3rem 0.6rem;
+        border-color: transparent;
+        background: none;
+        color: var(--quiet);
+        font-size: 0.85em;
+      }
+
+      #advanced {
+        padding: 1.5rem;
+      }
+
+      .advanced-panel {
+        min-width: 34rem;
+        font-family: var(--ui-font);
+      }
+
+      /* The first thing anyone needs when he telephones, and until now it lived
+         only inside the log file. */
+      .advanced-build {
+        display: flex;
+        align-items: baseline;
+        gap: 0.8rem;
+        margin: 0.2rem 0 1.2rem;
+        font-family: Consolas, 'Courier New', monospace;
+      }
+
+      .advanced-build strong {
+        font-size: 1.5em;
+        color: var(--chosen-ink);
+      }
+
+      .advanced-build span {
+        color: var(--quiet);
+      }
+
+      .advanced-folders {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .advanced-row {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+      }
+
+      .advanced-label {
+        flex: none;
+        width: 5rem;
+        color: var(--quiet);
+        font-size: 0.9em;
+      }
+
+      /* A link because it behaves like one — it opens the thing it names. */
+      .advanced-path {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        padding: 0.35rem 0.5rem;
+        border-color: transparent;
+        background: none;
+        color: var(--chosen-ink);
+        font-family: Consolas, 'Courier New', monospace;
+        font-size: 0.9em;
+        text-align: left;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-decoration: underline;
+      }
+
+      .advanced-change {
+        flex: none;
+        padding: 0.25rem 0.6rem;
+        font-size: 0.85em;
+      }
+
+      .advanced-note {
+        margin: 1.2rem 0 0;
+        color: var(--quiet);
+        font-size: 0.9em;
+      }
+
       /* Almost the whole window: the list needs the width for a snippet, and a
          text needs the height to be read rather than peeked at. */
       #deleted,
@@ -2073,6 +2171,7 @@
     <dialog id="confirm"></dialog>
     <dialog id="deleted"></dialog>
     <dialog id="versions"></dialog>
+    <dialog id="advanced"></dialog>
 
     <script src="renderer.js"></script>
   </body>

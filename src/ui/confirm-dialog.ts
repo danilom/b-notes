@@ -19,6 +19,14 @@ export interface Confirmation {
   /** The affirmative, named for what it does. Never "U redu". */
   confirm: string;
   /**
+   * The way out, where it should not be his word for it.
+   *
+   * Only the advanced settings need this: that whole corner is in English
+   * because it has one reader and it is not him, and a dialog that asked in
+   * English and offered `Otkaži` would be speaking to two people at once.
+   */
+  cancel?: string;
+  /**
    * A word he has to write out before the affirmative will do anything.
    *
    * For the one action that cannot be undone. Compared folded, so case, stray
@@ -203,7 +211,7 @@ export function openConfirmDialog(
   const no = document.createElement('button');
   no.type = 'button';
   no.className = confirmation.danger === true ? 'keep' : '';
-  no.textContent = words.cancel;
+  no.textContent = confirmation.cancel ?? words.cancel;
   no.addEventListener('click', confirmation.onCancel);
   footer.append(yes, no);
 

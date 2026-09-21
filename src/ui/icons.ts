@@ -22,7 +22,8 @@ export type IconName =
   | 'delete'
   | 'versions'
   | 'previous'
-  | 'next';
+  | 'next'
+  | 'settings';
 
 const PATHS = {
   'new-text': [
@@ -46,6 +47,13 @@ const PATHS = {
     'M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2',
     'M10 11v6',
     'M14 11v6',
+  ],
+  // A cogwheel, for the one door in the app that is not for him. Lucide's, at
+  // the same weight as the rest: it is a developer's mark and only has to be
+  // spotted, not understood.
+  settings: [
+    'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+    'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z',
   ],
   // Up and down rather than left and right: his matches are ordered down the
   // page, and that is the direction he will actually travel.

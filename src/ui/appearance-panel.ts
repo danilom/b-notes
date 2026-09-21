@@ -28,6 +28,8 @@ import { icon } from './icons.ts';
  * where being able to back out is what makes experimenting safe.
  */
 export interface PanelHandlers {
+  /** The door to the settings that are not his. See `advanced-panel.ts`. */
+  onAdvanced: () => void;
   /** Put it on screen without keeping it. The panel applies nothing itself. */
   onPreview: (appearance: Appearance) => void;
   onKeep: (appearance: Appearance) => void;
@@ -135,6 +137,8 @@ function scaleGroup(
   factor: number,
   setTo: (next: number) => void,
   ceiling?: number,
+  /** Something to sit at the far end of the same row, if anything does. */
+  beside?: HTMLElement,
 ): HTMLElement {
   const group = document.createElement('section');
   group.className = 'choice-group';
@@ -170,6 +174,7 @@ function scaleGroup(
     reading,
     step(1, words.appearanceLarger, '+'),
   );
+  if (beside !== undefined) row.append(beside);
   group.append(title, row);
   return group;
 }
@@ -274,8 +279,31 @@ function fill(
     (writingFont) => change({ ...chosen, writingFont }),
   );
 
-  const writingSize = scaleGroup(words, words.appearanceTextSize, chosen.writingSize, (size) =>
-    change({ ...chosen, writingSize: size }),
+  /*
+    Not for him, and not hidden from him either.
+
+    It sits at the end of the last row of the panel he does use, labelled in
+    English and behind a question only someone who meant to come here can
+    answer. Hiding it behind a keystroke was considered and dropped: whoever
+    needs it will be standing at his machine years from now with no checkout to
+    hand, and a door you have to remember is a door you have lost.
+  */
+  const advanced = document.createElement('button');
+  advanced.type = 'button';
+  advanced.className = 'advanced-door';
+  advanced.append(icon('settings'));
+  const doorLabel = document.createElement('span');
+  doorLabel.textContent = 'Advanced settings';
+  advanced.append(doorLabel);
+  advanced.addEventListener('click', handlers.onAdvanced);
+
+  const writingSize = scaleGroup(
+    words,
+    words.appearanceTextSize,
+    chosen.writingSize,
+    (size) => change({ ...chosen, writingSize: size }),
+    undefined,
+    advanced,
   );
 
   const accents = optionGroup(
