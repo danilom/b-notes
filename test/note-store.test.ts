@@ -527,8 +527,16 @@ describe('converting to plain text', () => {
 
 describe('keeping a copy before writing over his work', () => {
   const ESSAY = `O zimi\n\n${'rec '.repeat(800)}`;
-  const versionsOf = async (dir: string, id: string): Promise<string[]> =>
-    readdir(path.join(dir, VERSIONS_FOLDER, id)).catch(() => []);
+  /** What is in a text's versions folder, or nothing where none was ever made. */
+  const versionsOf = async (dir: string, id: string): Promise<string[]> => {
+    try {
+      return await readdir(path.join(dir, VERSIONS_FOLDER, id));
+    } catch {
+      // Not logged, and this one really is the expected answer: half of these
+      // assert that no copy was kept, so the folder is absent by design.
+      return [];
+    }
+  };
 
   it('keeps nothing while he is writing', async () => {
     const { dir, store } = await emptyStore();

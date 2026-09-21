@@ -39,6 +39,10 @@ export async function readSession(files: FileSystem, folder: string): Promise<Se
     const open = (parsed as Record<string, unknown>)['openNoteId'];
     return typeof open === 'string' && isNoteId(open) ? { openNoteId: open } : NOTHING_OPEN;
   } catch {
+    // Deliberately not logged, for the same reason as the read above: this
+    // module has no logger, and what a half-written session costs him is which
+    // text was open. A truncated file is what an interrupted write leaves, and
+    // it is the ordinary way this one fails.
     return NOTHING_OPEN;
   }
 }
