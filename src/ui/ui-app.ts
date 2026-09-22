@@ -416,11 +416,6 @@ editor.addEventListener('scroll', () => {
   editorMarks.scrollTop = editor.scrollTop;
 });
 
-// The box changes with the window, and the marks have to be re-fitted to it.
-window.addEventListener('resize', () => {
-  markMatches();
-});
-
 editor.addEventListener('input', () => {
   // He can also start a new text simply by typing, without going near the
   // button. Either way it belongs in the list from the first keystroke.
@@ -983,6 +978,21 @@ export async function startApp(runningOn: Host): Promise<void> {
     },
   );
   foundPane.append(foundSteps.root);
+
+  /*
+    Registered here rather than beside the others at the top of the file.
+
+    The box changes with the window and the marks have to be re-fitted to it —
+    but re-fitting them draws the stepper, and the stepper cannot exist until
+    the language is known, which is a setting read off disk. Listening from the
+    moment this file loads meant a resize arriving first, which in a pane that
+    sizes itself as it opens is every single start: an uncaught TypeError before
+    the app had finished assembling, logged as an error on a machine where
+    nothing was wrong.
+  */
+  window.addEventListener('resize', () => {
+    markMatches();
+  });
   newNote.prepend(icon('new-text'));
   appearanceLabel.textContent = words.appearance;
   deleteNoteLabel.textContent = words.deleteNote;
