@@ -12,9 +12,12 @@ import {
   idOf,
   isConflictedCopy,
   isConvertibleNoteFile,
+  type Renaming,
   isNoteFile,
+  baseGroupOf,
   claimName,
   nextFreeId,
+  settleGroup,
   putAwayVersionsFolderFor,
   requireNoteId,
   VERSIONS_FOLDER,
@@ -242,6 +245,23 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
     await files.removeEmptyFolder(at(from.slice(0, from.lastIndexOf('/'))));
   }
 
+  /** A text and the copies kept of it move together, or neither moves. */
+  async function renameNote(from: string, to: string): Promise<void> {
+    await moveVersions(versionsFolderFor(from), versionsFolderFor(to));
+    await files.rename(at(`${from}${EXTENSION}`), at(`${to}${EXTENSION}`));
+  }
+
+  /** The same, for a text that has been put away. Obrisano numbers its own. */
+  async function renamePutAway(from: string, to: string): Promise<void> {
+    await moveVersions(putAwayVersionsFolderFor(from), putAwayVersionsFolderFor(to));
+    await files.rename(
+      at(DELETED_FOLDER, `${from}${EXTENSION}`),
+      at(DELETED_FOLDER, `${to}${EXTENSION}`),
+    );
+  }
+
+  type Move = (from: string, to: string) => Promise<void>;
+
   /**
    * Moves an older text out of the bare name, so that neither of two texts
    * reading the same is left unnumbered.
@@ -250,13 +270,13 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
    * asked for it. This is housekeeping on a second file — one he is not in and
    * did not touch — while the writing that prompted it is already on disk. A
    * failure leaves `Pismo` beside `Pismo (2)`, which costs a number in the list
-   * and loses nothing, so it is logged and the save stands.
+   * and loses nothing, so it is logged and the save stands. The next settle of
+   * that name puts it right.
    */
-  async function makeRoom(displaced: { from: string; to: string } | null | undefined): Promise<boolean> {
+  async function makeRoom(displaced: Renaming | null | undefined, move: Move = renameNote): Promise<boolean> {
     if (displaced === undefined || displaced === null) return false;
     try {
-      await moveVersions(versionsFolderFor(displaced.from), versionsFolderFor(displaced.to));
-      await files.rename(at(`${displaced.from}${EXTENSION}`), at(`${displaced.to}${EXTENSION}`));
+      await move(displaced.from, displaced.to);
       log.info('Numbered an older text so a new one of the same name could be told apart', displaced);
       return true;
     } catch (failure: unknown) {
@@ -265,6 +285,55 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
         failure: describeError(failure),
       });
       return false;
+    }
+  }
+
+  /**
+   * Puts one group of same-named texts back in order, wherever they live.
+   *
+   * Housekeeping, like `makeRoom`, and held to the same rule: it runs after
+   * whatever he asked for has already happened, and a failure is reported
+   * rather than thrown. Whoever calls this has finished their work.
+   */
+  async function settleIn(base: string, ids: () => Promise<ReadonlySet<string>>, move: Move): Promise<void> {
+    try {
+      const needed = settleGroup(base, await ids());
+      if (needed === null) return;
+      await move(needed.from, needed.to);
+      log.info('Settled the numbers on texts sharing a name', needed);
+    } catch (failure: unknown) {
+      log.warn('Could not settle the numbers on texts sharing a name', {
+        base,
+        failure: describeError(failure),
+      });
+    }
+  }
+
+  const liveIds = async (): Promise<ReadonlySet<string>> => new Set((await noteFiles()).keys());
+  const settle = (base: string): Promise<void> => settleIn(base, liveIds, renameNote);
+  const settlePutAway = (base: string): Promise<void> => settleIn(base, idsPutAway, renamePutAway);
+
+  /**
+   * Every group in one folder, from a single listing.
+   *
+   * One listing rather than one per group: at six hundred texts that is six
+   * hundred directory reads against one. Safe to plan from a snapshot because
+   * a group's rename only ever lands inside that same group, so no two of
+   * these can be planning the same name.
+   */
+  async function settleEvery(ids: ReadonlySet<string>, move: Move): Promise<void> {
+    for (const base of new Set([...ids].map(baseGroupOf))) {
+      const needed = settleGroup(base, ids);
+      if (needed === null) continue;
+      try {
+        await move(needed.from, needed.to);
+        log.info('Settled the numbers on texts sharing a name', needed);
+      } catch (failure: unknown) {
+        log.warn('Could not settle the numbers on texts sharing a name', {
+          base,
+          failure: describeError(failure),
+        });
+      }
     }
   }
 
@@ -330,6 +399,11 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
       }
 
       return { converted, refused };
+    },
+
+    async settleNames(): Promise<void> {
+      await settleEvery(await liveIds(), renameNote);
+      await settleEvery(await idsPutAway(), renamePutAway);
     },
 
     async list(): Promise<Note[]> {
@@ -407,9 +481,11 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
         where it stood and the next autosave plans the same rename and tries
         again.
       */
-      await moveVersions(versionsFolderFor(action.id), versionsFolderFor(action.to));
-      await files.rename(at(`${action.id}${EXTENSION}`), at(`${action.to}${EXTENSION}`));
+      await renameNote(action.id, action.to);
       await makeRoom(action.displaced);
+      // It has just left a group, which may now be down to its last text — and
+      // a lone text carries no number.
+      await settle(baseGroupOf(action.id));
       return action.to;
     },
 
@@ -440,7 +516,8 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
 
       const kept = text === null ? null : await lastKeptCopy(id, text);
 
-      const name = deletedIdFor(id, await idsPutAway());
+      const filing = deletedIdFor(id, await idsPutAway());
+      const name = filing.id;
       const putAway = at(DELETED_FOLDER, `${name}${EXTENSION}`);
       await files.rename(file.path, putAway);
 
@@ -465,6 +542,11 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
       // it was, the next note he happens to give the same title would inherit
       // a dead note's versions.
       await moveVersions(versionsFolderFor(id), putAwayVersionsFolderFor(name));
+
+      // Obrisano numbers its own by the same rule, and his list has one text
+      // fewer under the name this one was using.
+      await makeRoom(filing.displaced, renamePutAway);
+      await settle(baseGroupOf(id));
     },
 
     async destroy(id: string): Promise<void> {
@@ -484,6 +566,10 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
       }
       await files.removeEmptyFolder(at(folder));
       await files.removeEmptyFolder(at(DELETED_FOLDER, VERSIONS_FOLDER));
+
+      // Obrisano is one text lighter under this name, and may be down to its
+      // last — which carries no number.
+      await settlePutAway(baseGroupOf(id));
     },
 
     async keepCopy(id: string, text: string): Promise<string> {
@@ -538,6 +624,9 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
       // The copies come with it and are not spent: throwing away the only other
       // copy at the moment of recovery is the opposite of the point.
       await moveVersions(putAwayVersionsFolderFor(id), versionsFolderFor(back));
+
+      // And Obrisano is one text lighter under the name this one was filed as.
+      await settlePutAway(baseGroupOf(id));
       return back;
     },
   };

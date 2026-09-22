@@ -751,6 +751,19 @@ async function destroyNote(id: string, closeDeleted: () => void): Promise<void> 
 }
 
 async function restoreNote(id: string): Promise<void> {
+  /*
+    Anything still on its way to disk lands first, exactly as putting a text
+    away does. Bringing one back can rename the text he is *in* — it takes the
+    bare name, so the one already holding it is numbered — and a save that
+    fired afterwards would write his open text back under the name it no longer
+    has, leaving two copies of it in his list.
+  */
+  if (saveTimer !== undefined) {
+    clearTimeout(saveTimer);
+    saveTimer = undefined;
+    await saveNow();
+  }
+
   let back: string;
   try {
     back = await store.restore(id);
@@ -1035,6 +1048,12 @@ export async function startApp(runningOn: Host): Promise<void> {
         });
       }
     }
+    // After the conversion, since that hands out names of its own, and before
+    // anything is listed, so the numbers he reads are the ones on the files.
+    // His corpus arrived from Simplenote half-numbered and no save has ever
+    // had cause to look at it.
+    await store.settleNames();
+
     const [live, away] = await Promise.all([store.list(), store.listDeleted()]);
     return { notes: live, deleted: away };
   }

@@ -145,11 +145,21 @@ describe('texts that read the same in the list', () => {
     assert.deepEqual(marksIn(sectionsFor(view({ notes })), 'Svi tekstovi'), ['(1)', '(3)']);
   });
 
-  it('says nothing about a lone survivor, whatever its file is called', () => {
-    // Deleting its siblings renames nothing, so `Pismo (1).txt` outlives them.
-    // A number he cannot compare against anything is a question, not an answer.
+  it('shows a number on a lone text too, because the file still carries one', () => {
+    // Not a state the store leaves standing — the last of a group is renamed
+    // back to a plain name. Until that lands, the list says what the file says.
     const notes = [alike('Pismo (1)', 'Pismo', 3000), alike('Zima', 'Zima', 2000)];
-    assert.deepEqual(marksIn(sectionsFor(view({ notes })), 'Svi tekstovi'), [null, null]);
+    assert.deepEqual(marksIn(sectionsFor(view({ notes })), 'Svi tekstovi'), ['(1)', null]);
+  });
+
+  it('shows his own number and the one on the file, when his line ends in one', () => {
+    // `fileNameBase` strips his trailing (1), so the file is `Pismo (1).txt`
+    // and the row reads `Pismo (1) (1)`. Ugly, true, and not a regression:
+    // his words are his, and the number beside them is the file's.
+    const notes = [alike('Pismo (1)', 'Pismo (1)', 3000), alike('Pismo (2)', 'Pismo', 2000)];
+    const sections = sectionsFor(view({ notes }));
+    assert.deepEqual(titlesIn(sections, 'Svi tekstovi'), ['Pismo', 'Pismo (1)']);
+    assert.deepEqual(marksIn(sections, 'Svi tekstovi'), ['(2)', '(1)']);
   });
 
   it('invents no number for copies that arrived under unrelated names', () => {

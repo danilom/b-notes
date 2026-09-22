@@ -391,6 +391,104 @@ describe('saving', () => {
     assert.equal(await store.save(null, 'Ponovljeni\n\nTri.'), 'Ponovljeni (3)');
   });
 
+  it('takes the number off the last one left when its siblings are gone', async () => {
+    const { dir, store } = await emptyStore();
+    // The first save returns `O zimi`; the second numbers it, so by now it is
+    // `O zimi (1)`. An id held across a save is an id that may have moved.
+    await store.save(null, 'O zimi\n\nJedan.');
+    await store.save(null, 'O zimi\n\nDva.');
+
+    await store.moveToDeleted('O zimi (1)');
+
+    // (2) was never renumbered to (1) — numbers do not shuffle. It simply
+    // stops being one of several, so it stops carrying a number at all.
+    assert.deepEqual((await readdir(dir)).filter((n) => n.endsWith(EXTENSION)), ['O zimi.txt']);
+  });
+
+  it('leaves a gap alone while more than one is still there', async () => {
+    const { dir, store } = await emptyStore();
+    await store.save(null, 'O zimi\n\nJedan.');
+    const two = await store.save(null, 'O zimi\n\nDva.');
+    await store.save(null, 'O zimi\n\nTri.');
+
+    await store.moveToDeleted(two ?? '');
+
+    assert.deepEqual((await readdir(dir)).filter((n) => n.endsWith(EXTENSION)).sort(), [
+      'O zimi (1).txt',
+      'O zimi (3).txt',
+    ]);
+  });
+
+  it('carries the kept copies when the last one loses its number', async () => {
+    const { dir, store } = await emptyStore();
+    await store.save(null, 'O zimi\n\nJedan.');
+    const two = await store.save(null, 'O zimi\n\nDva.');
+    await store.keepCopy(two ?? '', 'O zimi\n\nNesto starije.');
+
+    await store.moveToDeleted('O zimi (1)');
+
+    assert.deepEqual(await readdir(path.join(dir, VERSIONS_FOLDER)), ['O zimi']);
+  });
+
+  it('settles his list when a text is renamed out of a shared name', async () => {
+    const { dir, store } = await emptyStore();
+    await store.save(null, 'O zimi\n\nJedan.');
+    const two = await store.save(null, 'O zimi\n\nDva.');
+
+    await store.save(two ?? '', 'O ljetu\n\nSad o necem drugom.');
+
+    assert.deepEqual((await readdir(dir)).filter((n) => n.endsWith(EXTENSION)).sort(), [
+      'O ljetu.txt',
+      'O zimi.txt',
+    ]);
+  });
+
+  it('settles Obrisano when one of them is destroyed for good', async () => {
+    const { dir, store } = await emptyStore();
+    await store.save(null, 'O zimi\n\nJedan.');
+    await store.save(null, 'O zimi\n\nDva.');
+    await store.moveToDeleted('O zimi (1)');
+    await store.moveToDeleted('O zimi');
+
+    await store.destroy('O zimi (1)');
+
+    assert.deepEqual(await readdir(path.join(dir, DELETED_FOLDER)), ['O zimi.txt']);
+  });
+
+  it('settles Obrisano when a text is brought back out of it', async () => {
+    const { dir, store } = await emptyStore();
+    await store.save(null, 'O zimi\n\nJedan.');
+    await store.save(null, 'O zimi\n\nDva.');
+    await store.moveToDeleted('O zimi (1)');
+    // Putting the first away left the second alone, so it is plain `O zimi`
+    // now. Deleting one text is what renamed the other.
+    await store.moveToDeleted('O zimi');
+
+    await store.restore('O zimi (1)');
+
+    assert.deepEqual(await readdir(path.join(dir, DELETED_FOLDER)), ['O zimi.txt']);
+  });
+
+  it('puts the whole folder in order at startup, both halves of it', async () => {
+    // His corpus arrived from Simplenote as a bare name beside numbered ones,
+    // and no save has ever had cause to look at it.
+    const { dir, store } = await emptyStore();
+    await mkdir(path.join(dir, DELETED_FOLDER), { recursive: true });
+    await writeFile(path.join(dir, 'Esej.txt'), 'Esej\n\nJedan.', 'utf8');
+    await writeFile(path.join(dir, 'Esej (1).txt'), 'Esej\n\nDva.', 'utf8');
+    await writeFile(path.join(dir, 'Sam (4).txt'), 'Sam\n\nJedini.', 'utf8');
+    await writeFile(path.join(dir, DELETED_FOLDER, 'Staro (2).txt'), 'Staro\n\nJedno.', 'utf8');
+
+    await store.settleNames();
+
+    assert.deepEqual((await readdir(dir)).filter((n) => n.endsWith(EXTENSION)).sort(), [
+      'Esej (1).txt',
+      'Esej (2).txt',
+      'Sam.txt',
+    ]);
+    assert.deepEqual(await readdir(path.join(dir, DELETED_FOLDER)), ['Staro.txt']);
+  });
+
   it('emptying an existing note keeps the file, since that is how he deletes', async () => {
     const { dir, store } = await emptyStore();
     const id = await store.save(null, 'O zimi\n\nTekst.');
@@ -543,7 +641,7 @@ describe('moving a note out of the way', () => {
 
     assert.deepEqual((await readdir(path.join(dir, DELETED_FOLDER))).sort(), [
       'Ponovljeni (1).txt',
-      'Ponovljeni.txt',
+      'Ponovljeni (2).txt',
     ]);
   });
 

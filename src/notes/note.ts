@@ -70,6 +70,15 @@ export interface NoteStore {
    */
   convertToPlainText(): Promise<Converted>;
   /**
+   * Puts every group of same-named texts back in order, in his folder and in
+   * Obrisano alike. Run once at startup, after `convertToPlainText`.
+   *
+   * Every other path settles the one or two groups it touched, so this is for
+   * what no path saw: the corpus as it arrived, and anything moved in the
+   * folder while the app was shut.
+   */
+  settleNames(): Promise<void>;
+  /**
    * Every note, text included. His whole corpus is under 3MB, so holding it in
    * memory makes searching instant and costs nothing worth measuring.
    */

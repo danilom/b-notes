@@ -1,4 +1,4 @@
-import { type ClaimedName, baseOf, claimName, fileNameBase, nextFreeId } from './note-naming.ts';
+import { type ClaimedName, baseOf, claimName, fileNameBase } from './note-naming.ts';
 import { isEmptyText, survivedTooLittle } from './note.ts';
 import { worthKeeping } from './text-change.ts';
 import { titleFrom } from './note-title.ts';
@@ -127,9 +127,14 @@ export async function planSave(
 }
 
 /**
- * The id a put-away note takes. Keeps the one it had — after an emptying that's
- * all that's left of it — and never overwrites a note already put away under it.
+ * The name a put-away note takes, and any older one there that has to move.
+ *
+ * Obrisano numbers within itself, by the same rule his list uses and with no
+ * memory of the number the text had before: a name is claimed at the folder it
+ * arrives in, never carried across. So `Pismo (3)` deleted into an empty
+ * Obrisano is simply `Pismo`, and the same text restored afterwards claims
+ * whatever is free in his list rather than asking for `(3)` back.
  */
-export function deletedIdFor(id: string, takenInDeleted: ReadonlySet<string>): string {
-  return nextFreeId(baseOf(id), null, takenInDeleted);
+export function deletedIdFor(id: string, takenInDeleted: ReadonlySet<string>): ClaimedName {
+  return claimName(baseOf(id), null, takenInDeleted);
 }

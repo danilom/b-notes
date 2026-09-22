@@ -231,6 +231,60 @@ export function copyNumberOf(id: string): number | null {
 }
 
 /**
+ * The group a name belongs to: everything that would collide on one title.
+ *
+ * One suffix, not all of them — the same reading `claimName` numbers by. A
+ * stacked `Pismo (1) (2)`, which nothing writes any more, is its own group and
+ * is settled back to `Pismo (1)` rather than being folded in beside a `Pismo`
+ * that may already hold the number it carries.
+ */
+export function baseGroupOf(id: string): string {
+  return splitCopySuffix(id)?.base ?? id;
+}
+
+/** One text renamed, and what it is renamed to. */
+export interface Renaming {
+  from: string;
+  to: string;
+}
+
+/**
+ * The rename a base-group needs, if any, for the invariant to hold:
+ *
+ *   a group of one is unnumbered; a group of more than one is entirely
+ *   numbered; numbers already given never change.
+ *
+ * At most one, because a group is either size one or it isn't, and only one
+ * text can be holding the bare name. One pass always settles it.
+ *
+ * Called wherever the set of names in a folder changes, and over every group
+ * once at startup. It is what makes a group that lost its last sibling drop
+ * its number — `Pismo (7)` alone becomes `Pismo` — and what repairs a group
+ * left half-numbered by a rename that failed.
+ */
+export function settleGroup(base: string, ids: ReadonlySet<string>): Renaming | null {
+  const members: string[] = [];
+  let highest = 0;
+  for (const id of ids) {
+    if (baseGroupOf(id) !== base) continue;
+    members.push(id);
+    highest = Math.max(highest, copyNumberOf(id) ?? 0);
+  }
+
+  const only = members.length === 1 ? members[0] : undefined;
+  if (only !== undefined) {
+    // `base` can only be taken by a text outside this group when the group's
+    // own name ends in a number — a stacked name nothing writes any more. The
+    // rename would overwrite a text, so the malformed name is left standing.
+    if (only === base || ids.has(base)) return null;
+    return { from: only, to: base };
+  }
+
+  if (members.length > 1 && ids.has(base)) return { from: base, to: `${base} (${highest + 1})` };
+  return null;
+}
+
+/**
  * A name for a text, and the older text that has to move aside for it.
  *
  * `displaced` is the one already holding the bare name. It is not a rename he

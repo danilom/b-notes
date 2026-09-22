@@ -170,10 +170,18 @@ describe('planSave', () => {
 
 describe('deletedIdFor', () => {
   it('keeps the name the note had', () => {
-    assert.equal(deletedIdFor('O zimi', new Set()), 'O zimi');
+    assert.deepEqual(deletedIdFor('O zimi', new Set()), { id: 'O zimi', displaced: null });
   });
 
-  it('never overwrites a note already put away under that name', () => {
-    assert.equal(deletedIdFor('O zimi', new Set(['O zimi'])), 'O zimi (1)');
+  it('forgets the number it had in his list, and claims one here', () => {
+    // A name is claimed at the folder it arrives in and never carried across.
+    assert.deepEqual(deletedIdFor('O zimi (3)', new Set()), { id: 'O zimi', displaced: null });
+  });
+
+  it('numbers both when a note is already put away under that name', () => {
+    assert.deepEqual(deletedIdFor('O zimi', new Set(['O zimi'])), {
+      id: 'O zimi (2)',
+      displaced: { from: 'O zimi', to: 'O zimi (1)' },
+    });
   });
 });

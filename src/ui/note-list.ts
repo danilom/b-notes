@@ -69,26 +69,7 @@ function titleOf(note: Note, words: ReturnType<typeof strings>): string {
 }
 
 /**
- * The titles that more than one text reads as.
- *
- * A number is worth showing only while there is something to tell apart. The
- * last survivor of a group keeps its `(1)` on disk — deleting its siblings
- * renames nothing — and a lone text carrying a number he cannot compare
- * against anything is a question, not an answer.
- */
-function sharedTitles(notes: readonly Note[], words: ReturnType<typeof strings>): Set<string> {
-  const seen = new Set<string>();
-  const shared = new Set<string>();
-  for (const note of notes) {
-    const title = titleOf(note, words);
-    if (seen.has(title)) shared.add(title);
-    seen.add(title);
-  }
-  return shared;
-}
-
-/**
- * Which of several texts reading the same this one is — read off its filename,
+ * Which of several texts sharing a name this one is — read off its filename,
  * never counted.
  *
  * `Pismo (2)` in the list is `Pismo (2).txt` in his folder, always. The one
@@ -97,34 +78,29 @@ function sharedTitles(notes: readonly Note[], words: ReturnType<typeof strings>)
  * Notepad. A number worked out from the rows on screen would be a different
  * number from the one on the file, and would say so with complete confidence.
  *
- * Which is why nothing here invents one. Two texts sharing a title under names
- * that don't share a base — copies that arrived from somewhere else — show no
- * number until one of them is saved and takes a name of its own.
+ * Which is why nothing here decides whether to show it either. A text alone in
+ * its name has no number to show, because the store takes it away — the last
+ * of a group is renamed back to a plain name. So there is nothing to test for:
+ * show what the file says, and the folder and the list cannot disagree.
  */
-function markOf(note: Note, shared: ReadonlySet<string>, words: ReturnType<typeof strings>): string | null {
-  if (!shared.has(titleOf(note, words))) return null;
+function markOf(note: Note): string | null {
   const number = copyNumberOf(note.id);
   return number === null ? null : `(${number})`;
 }
 
-function toRow(
-  note: Note,
-  words: ReturnType<typeof strings>,
-  shared: ReadonlySet<string>,
-): Row {
+function toRow(note: Note, words: ReturnType<typeof strings>): Row {
   return {
     id: note.id,
     title: titleOf(note, words),
     searchable: note.searchable,
     updatedAt: note.updatedAt,
-    mark: markOf(note, shared, words),
+    mark: markOf(note),
   };
 }
 
 function rowsFor(view: ListView): Row[] {
   const words = strings(view.language);
-  const shared = sharedTitles(view.notes, words);
-  return view.notes.map((note) => toRow(note, words, shared));
+  return view.notes.map((note) => toRow(note, words));
 }
 
 /**
