@@ -35,6 +35,12 @@ export interface Row {
   /** Folded, so `macka` finds `mačka` and `mačka` finds `macka`. */
   searchable: string;
   updatedAt: number;
+  /**
+   * `(2)` when other texts read the same in the list, null when this one is
+   * alone. Not part of his title and never searched — it is the list saying
+   * which of several it is talking about.
+   */
+  mark: string | null;
 }
 
 export interface Section {
@@ -57,18 +63,60 @@ export function matches(row: { searchable: string }, query: string): boolean {
   return row.searchable.includes(needle);
 }
 
-function toRow(note: Note, words: ReturnType<typeof strings>): Row {
+function titleOf(note: Note, words: ReturnType<typeof strings>): string {
+  return note.title.length > 0 ? note.title : words.untitled;
+}
+
+/**
+ * Which of several identical-looking rows each text is.
+ *
+ * Titles are read off his opening lines, so two texts that begin the same way
+ * are two rows that say the same thing, and the row has nothing else to tell
+ * them apart with — the filename that does is never shown. Three rows reading
+ * `4 klozeta` look like the list repeating itself rather than like three texts.
+ *
+ * Numbered over the group rather than taken from the `(1)` the filename may
+ * already carry. A file's own suffix is missing on the first of a group, and
+ * missing from all of them when the copies arrived under unrelated names —
+ * which is precisely the case this is for, an import bringing in another copy
+ * of something he already has.
+ *
+ * Ordered by id so a text keeps its number wherever it appears. Nedavni and
+ * Svi tekstovi show the same text twice, and one row calling it `(2)` while
+ * the other calls it `(3)` would be worse than not marking it at all.
+ */
+function marksFor(notes: readonly Note[], words: ReturnType<typeof strings>): Map<string, string> {
+  const idsByTitle = new Map<string, string[]>();
+  for (const note of notes) {
+    const title = titleOf(note, words);
+    const alike = idsByTitle.get(title);
+    if (alike === undefined) idsByTitle.set(title, [note.id]);
+    else alike.push(note.id);
+  }
+
+  const marks = new Map<string, string>();
+  for (const alike of idsByTitle.values()) {
+    if (alike.length < 2) continue;
+    alike.sort((a, b) => a.localeCompare(b, 'sr'));
+    alike.forEach((id, index) => marks.set(id, `(${index + 1})`));
+  }
+  return marks;
+}
+
+function toRow(note: Note, words: ReturnType<typeof strings>, marks: ReadonlyMap<string, string>): Row {
   return {
     id: note.id,
-    title: note.title.length > 0 ? note.title : words.untitled,
+    title: titleOf(note, words),
     searchable: note.searchable,
     updatedAt: note.updatedAt,
+    mark: marks.get(note.id) ?? null,
   };
 }
 
 function rowsFor(view: ListView): Row[] {
   const words = strings(view.language);
-  return view.notes.map((note) => toRow(note, words));
+  const marks = marksFor(view.notes, words);
+  return view.notes.map((note) => toRow(note, words, marks));
 }
 
 /**
@@ -89,7 +137,13 @@ function rowsFor(view: ListView): Row[] {
 export function openRowFor(view: ListView): Row | null {
   const words = strings(view.language);
   if (view.draft === null) return null;
-  return { id: null, title: words.untitledNew, searchable: '', updatedAt: view.draft.startedAt };
+  return {
+    id: null,
+    title: words.untitledNew,
+    searchable: '',
+    updatedAt: view.draft.startedAt,
+    mark: null,
+  };
 }
 
 /**
@@ -110,7 +164,13 @@ export function sectionsFor(view: ListView): Section[] {
   const words = strings(view.language);
   const rows = rowsFor(view);
   const byRecency = [...rows].sort((a, b) => b.updatedAt - a.updatedAt);
-  const all = [...rows].sort((a, b) => a.title.localeCompare(b.title, 'sr'));
+  // Texts reading the same fall back to their id, which is also what their
+  // marks are numbered by — so a run of them counts up rather than arriving in
+  // whatever order the folder was read in.
+  const all = [...rows].sort(
+    (a, b) =>
+      a.title.localeCompare(b.title, 'sr') || (a.id ?? '').localeCompare(b.id ?? '', 'sr'),
+  );
 
   if (view.query.trim().length === 0) {
     return [
@@ -143,7 +203,19 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
   when.className = 'note-when';
   when.textContent = describeWhen(row.updatedAt, view.language);
 
-  element.append(title, when);
+  if (row.mark === null) {
+    element.append(title, when);
+    return element;
+  }
+
+  // Its own element rather than part of the title, so a title long enough to
+  // be cut short doesn't take the mark with it — the longer the title, the
+  // more alike two of them read, and the more the mark is what he needs.
+  const mark = document.createElement('span');
+  mark.className = 'note-mark';
+  mark.textContent = row.mark;
+
+  element.append(title, mark, when);
   return element;
 }
 

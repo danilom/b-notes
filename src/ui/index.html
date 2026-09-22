@@ -566,6 +566,22 @@
         white-space: nowrap;
       }
 
+      /*
+        Coloured rather than grey, because it is the one part of the row that
+        isn't his writing: everything else on the line came from him, and this
+        came from the app noticing that two of his texts open the same way.
+
+        The auto margin is what keeps it against the title. The row is
+        space-between, so a third child would otherwise be pushed into the
+        middle and read as belonging to neither side.
+      */
+      .note-mark {
+        color: var(--chosen-ink);
+        font-size: 0.85em;
+        white-space: nowrap;
+        margin-right: auto;
+      }
+
       .note-when {
         font-size: 0.8em;
         color: var(--faint);

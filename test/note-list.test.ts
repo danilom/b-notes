@@ -113,3 +113,59 @@ describe('the list of texts', () => {
     assert.deepEqual(titlesIn(sections, 'Svi tekstovi'), ['Amsterdam', 'Ponta', 'Zima']);
   });
 });
+
+function alike(id: string, title: string, updatedAt: number): Note {
+  return { id, title, text: title, searchable: toSearchable(title), updatedAt, bytes: title.length };
+}
+
+const marksIn = (sections: ReturnType<typeof sectionsFor>, heading: string) =>
+  sections.find((section) => section.heading === heading)?.rows.map((row) => row.mark);
+
+describe('texts that read the same in the list', () => {
+  it('leaves a text alone when no other reads like it', () => {
+    const sections = sectionsFor(view());
+    assert.deepEqual(marksIn(sections, 'Svi tekstovi'), [null, null, null]);
+  });
+
+  it('numbers every one of a group, the first included', () => {
+    const notes = [
+      alike('4 klozeta', '4 klozeta', 3000),
+      alike('4 klozeta (1)', '4 klozeta', 2000),
+      alike('4 klozeta (2)', '4 klozeta', 1000),
+    ];
+    assert.deepEqual(marksIn(sectionsFor(view({ notes })), 'Svi tekstovi'), ['(1)', '(2)', '(3)']);
+  });
+
+  it('numbers copies that arrived under unrelated names', () => {
+    const notes = [
+      alike('4 klozeta', '4 klozeta', 3000),
+      alike('klozeti-stari-laptop', '4 klozeta', 2000),
+    ];
+    assert.deepEqual(marksIn(sectionsFor(view({ notes })), 'Svi tekstovi'), ['(1)', '(2)']);
+  });
+
+  it('gives a text the same number in Nedavni as in Svi tekstovi', () => {
+    const notes = [
+      alike('Pismo (1)', 'Pismo', 1000),
+      alike('Pismo', 'Pismo', 3000),
+      alike('Zima', 'Zima', 2000),
+    ];
+    const sections = sectionsFor(view({ notes }));
+    // Recent puts the newer Pismo first, all-texts the lower id. Same text,
+    // same mark, whichever order the section happens to be in.
+    assert.deepEqual(marksIn(sections, 'Nedavni'), ['(1)', null, '(2)']);
+    assert.deepEqual(marksIn(sections, 'Svi tekstovi'), ['(1)', '(2)', null]);
+  });
+
+  it('marks texts he has emptied, which all read as Bez naslova', () => {
+    const notes = [alike('Prazan', '', 2000), alike('Prazan (1)', '', 1000)];
+    const sections = sectionsFor(view({ notes }));
+    assert.deepEqual(titlesIn(sections, 'Svi tekstovi'), ['Bez naslova', 'Bez naslova']);
+    assert.deepEqual(marksIn(sections, 'Svi tekstovi'), ['(1)', '(2)']);
+  });
+
+  it('leaves the text he has just started unmarked', () => {
+    const notes = [alike('Pismo', 'Pismo', 2000), alike('Pismo (1)', 'Pismo', 1000)];
+    assert.equal(openRowFor(view({ notes, draft: { startedAt: 9000 } }))?.mark, null);
+  });
+});
