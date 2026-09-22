@@ -197,10 +197,84 @@ export function baseOf(id: string): string {
  *
  * `taken` holds ids, not filenames, so an existing `Esej.md` stops a new note
  * from claiming `Esej` — the two would otherwise be one id over two files.
+ *
+ * For names that are not his — the timestamp a kept copy is filed under, the
+ * name a text takes on its way into `Obrisano` — where the only question is
+ * that nothing is overwritten. Texts in his list are named by `claimName`,
+ * which has the rest of the rule.
  */
 export function nextFreeId(base: string, own: string | null, taken: ReadonlySet<string>): string {
   for (let attempt = 0; ; attempt += 1) {
     const candidate = attempt === 0 ? base : `${base} (${attempt})`;
     if (candidate === own || !taken.has(candidate)) return candidate;
   }
+}
+
+/** Our suffix taken off a name: `Pismo (2)` is `Pismo` and 2. */
+function splitCopySuffix(name: string): { base: string; number: number } | null {
+  const match = / \((\d+)\)$/.exec(name);
+  const digits = match?.[1];
+  if (match === null || digits === undefined) return null;
+  return { base: name.slice(0, match.index), number: Number(digits) };
+}
+
+/**
+ * The number a text carries, or null if it carries none.
+ *
+ * What the list shows beside a title, which is why it is read off the name
+ * rather than counted: the number he reads has to be the number on the file, or
+ * the one time it matters — him in the folder without the app, on the phone —
+ * the app has sent him to the wrong file.
+ */
+export function copyNumberOf(id: string): number | null {
+  return splitCopySuffix(id)?.number ?? null;
+}
+
+/**
+ * A name for a text, and the older text that has to move aside for it.
+ *
+ * `displaced` is the one already holding the bare name. It is not a rename he
+ * asked for, which is why it is handed back rather than done here: whoever
+ * carries it out has to move that text's kept copies with it, and has to do it
+ * where a failure can be reported.
+ */
+export interface ClaimedName {
+  id: string;
+  displaced: { from: string; to: string } | null;
+}
+
+/**
+ * The name a text takes, given everything already in his folder.
+ *
+ * A text alone in its name stays plain — `Pismo`. The moment a second one
+ * wants that name, *both* are numbered: `Pismo (1)` and `Pismo (2)`, and no
+ * member of a group is left bare. Half the group would otherwise have to be
+ * numbered by counting rows at the time the list is drawn, and a count says
+ * `(2)` about a file called `Pismo (1).txt` — which breaks the one promise the
+ * plain-text format was chosen to keep, that he can find his own writing in
+ * the folder without this app.
+ *
+ * Numbers only ever go up. Deleting `Pismo (2)` leaves `(1)` and `(3)` behind
+ * and the next one is `(4)`, rather than filling the hole: a number that gets
+ * reused is a number that means two different texts a month apart, and the
+ * gap costs nothing but a gap.
+ */
+export function claimName(base: string, own: string | null, taken: ReadonlySet<string>): ClaimedName {
+  let highest = 0;
+  for (const id of taken) {
+    if (id === own) continue;
+    const split = splitCopySuffix(id);
+    if (split !== null && split.base === base) highest = Math.max(highest, split.number);
+  }
+
+  const bareTaken = base !== own && taken.has(base);
+  if (!bareTaken && highest === 0) return { id: base, displaced: null };
+
+  let next = highest + 1;
+  let displaced: ClaimedName['displaced'] = null;
+  if (bareTaken) {
+    displaced = { from: base, to: `${base} (${next})` };
+    next += 1;
+  }
+  return { id: `${base} (${next})`, displaced };
 }

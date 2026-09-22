@@ -13,6 +13,7 @@ import {
   isConflictedCopy,
   isConvertibleNoteFile,
   isNoteFile,
+  claimName,
   nextFreeId,
   putAwayVersionsFolderFor,
   requireNoteId,
@@ -241,6 +242,32 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
     await files.removeEmptyFolder(at(from.slice(0, from.lastIndexOf('/'))));
   }
 
+  /**
+   * Moves an older text out of the bare name, so that neither of two texts
+   * reading the same is left unnumbered.
+   *
+   * Always after his own text has landed, and never able to fail the save that
+   * asked for it. This is housekeeping on a second file — one he is not in and
+   * did not touch — while the writing that prompted it is already on disk. A
+   * failure leaves `Pismo` beside `Pismo (2)`, which costs a number in the list
+   * and loses nothing, so it is logged and the save stands.
+   */
+  async function makeRoom(displaced: { from: string; to: string } | null | undefined): Promise<boolean> {
+    if (displaced === undefined || displaced === null) return false;
+    try {
+      await moveVersions(versionsFolderFor(displaced.from), versionsFolderFor(displaced.to));
+      await files.rename(at(`${displaced.from}${EXTENSION}`), at(`${displaced.to}${EXTENSION}`));
+      log.info('Numbered an older text so a new one of the same name could be told apart', displaced);
+      return true;
+    } catch (failure: unknown) {
+      log.warn('Could not number an older text of the same name', {
+        ...displaced,
+        failure: describeError(failure),
+      });
+      return false;
+    }
+  }
+
   async function idsPutAway(): Promise<Set<string>> {
     const found = await filesIn(at(DELETED_FOLDER));
     return new Set(found.map((file) => idOf(nameOf(file.path))));
@@ -280,11 +307,19 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
         // `baseOf` rather than `idOf`: a file that arrives already carrying
         // our suffix — and about twenty of his do, from Simplenote — would
         // otherwise be the base for another one on the next clash.
-        const id = nextFreeId(baseOf(name), null, taken);
+        const taking = claimName(baseOf(name), null, taken);
+        const id = taking.id;
         try {
           await files.rename(file.path, at(`${id}${EXTENSION}`));
           taken.add(id);
           converted += 1;
+          // Only once it has actually moved. A name still on disk that this
+          // believed was free would be displaced a second time by the next
+          // file, against a file that is no longer there.
+          if (taking.displaced !== null && (await makeRoom(taking.displaced))) {
+            taken.delete(taking.displaced.from);
+            taken.add(taking.displaced.to);
+          }
         } catch (failure: unknown) {
           // One file held open elsewhere shouldn't stop the rest converting —
           // but why it was refused goes with it. Held open by Dropbox, already
@@ -354,7 +389,10 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
       if (action.snapshot !== undefined) await keepVersion(action.id, action.snapshot);
 
       await files.write(at(`${action.id}${EXTENSION}`), text);
-      if (action.kind === 'write') return action.id;
+      if (action.kind === 'write') {
+        await makeRoom(action.displaced);
+        return action.id;
+      }
 
       /*
         His copies move with the text they are copies of. `Verzije/` is named
@@ -371,6 +409,7 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
       */
       await moveVersions(versionsFolderFor(action.id), versionsFolderFor(action.to));
       await files.rename(at(`${action.id}${EXTENSION}`), at(`${action.to}${EXTENSION}`));
+      await makeRoom(action.displaced);
       return action.to;
     },
 
@@ -481,8 +520,12 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
       // He may have written something new under the same opening words while
       // this one was away. It comes back as "Naslov (1)" rather than refusing,
       // because a text he asked for and did not get is the worse surprise.
-      const back = nextFreeId(baseOf(id), null, new Set((await noteFiles()).keys()));
+      const taking = claimName(baseOf(id), null, new Set((await noteFiles()).keys()));
+      const back = taking.id;
       await files.rename(file.path, at(`${back}${EXTENSION}`));
+      // After it is back, for the same reason a save displaces after its write:
+      // the text he asked for must not depend on a second file being tidied.
+      await makeRoom(taking.displaced);
 
       // Touched on the way back, for the same reason it was touched on the way
       // out. Its old time is the moment he deleted it, which would be a strange

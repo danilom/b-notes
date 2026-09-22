@@ -54,13 +54,14 @@ describe('isConflictedCopy', () => {
 describe('the disambiguating suffix, which is ours and not his', () => {
   it('never stacks one on another', async () => {
     // It did: a first line ending in (1) became part of the name, so the next
-    // clash put another on top and `Pismo (1) (1)` was born.
+    // clash put another on top and `Pismo (1) (1)` was born. His own suffix is
+    // stripped, so both of these are the base `Pismo` and get a number each.
     const { dir, store } = await emptyStore();
 
     await store.save(null, 'Pismo (1)\n\nPrvi.');
     await store.save(null, 'Pismo (1)\n\nDrugi.');
 
-    assert.deepEqual((await readdir(dir)).sort(), ['Pismo (1).txt', 'Pismo.txt']);
+    assert.deepEqual((await readdir(dir)).sort(), ['Pismo (1).txt', 'Pismo (2).txt']);
   });
 
   it('leaves the title he wrote alone', async () => {
@@ -81,7 +82,7 @@ describe('the disambiguating suffix, which is ours and not his', () => {
 
     await store.convertToPlainText();
 
-    assert.deepEqual((await readdir(dir)).sort(), ['Esej (1).txt', 'Esej (2).txt', 'Esej.txt']);
+    assert.deepEqual((await readdir(dir)).sort(), ['Esej (1).txt', 'Esej (2).txt', 'Esej (3).txt']);
   });
 
   it('takes every suffix off, so a doubled name heals', () => {
@@ -325,7 +326,51 @@ describe('saving', () => {
     const { store } = await emptyStore();
 
     assert.equal(await store.save(null, 'O zimi\n\nJedan.'), 'O zimi');
-    assert.equal(await store.save(null, 'O zimi\n\nDva.'), 'O zimi (1)');
+    assert.equal(await store.save(null, 'O zimi\n\nDva.'), 'O zimi (2)');
+  });
+
+  it('numbers the text already there rather than leaving one of two bare', async () => {
+    // What he reads in the list is the number on the file. Leaving the first
+    // one plain would mean the list numbering it by counting rows, and saying
+    // `(1)` about a file called `O zimi.txt`.
+    const { dir, store } = await emptyStore();
+    await store.save(null, 'O zimi\n\nJedan.');
+
+    await store.save(null, 'O zimi\n\nDva.');
+
+    assert.deepEqual((await readdir(dir)).sort(), ['O zimi (1).txt', 'O zimi (2).txt']);
+  });
+
+  it('takes the older text kept copies with it when it is numbered', async () => {
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nJedan.');
+    await store.keepCopy(id ?? '', 'O zimi\n\nNesto starije.');
+
+    await store.save(null, 'O zimi\n\nDva.');
+
+    assert.deepEqual(await readdir(path.join(dir, 'Verzije')), ['O zimi (1)']);
+  });
+
+  it('still saves his text when the older one cannot be numbered', async () => {
+    // Numbering the other file is housekeeping, and housekeeping is never
+    // allowed to cost him the writing that prompted it. A Dropbox sync holding
+    // that file open is the everyday version of this.
+    const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
+    const log = silentLog();
+    const disk = createFileSystem();
+    const refusing: FileSystem = {
+      ...disk,
+      rename: async (from, to) => {
+        if (to.endsWith('O zimi (1).txt')) throw new Error('held open elsewhere');
+        return disk.rename(from, to);
+      },
+    };
+    const store = createNoteStore(refusing, dir.replaceAll(String.fromCharCode(92), '/'), log);
+    await store.save(null, 'O zimi\n\nJedan.');
+
+    assert.equal(await store.save(null, 'O zimi\n\nDva.'), 'O zimi (2)');
+    assert.deepEqual((await readdir(dir)).sort(), ['O zimi (2).txt', 'O zimi.txt']);
+    assert.ok(log.said.some((line) => line.level === 'warn' && line.message.includes('number')));
   });
 
   it('does not let the suffix accumulate when a duplicate is edited', async () => {
@@ -335,7 +380,7 @@ describe('saving', () => {
     let id = await store.save(null, 'O zimi\n\nDva.');
     for (let round = 0; round < 5; round += 1) id = await store.save(id, `O zimi\n\nDva. ${round}`);
 
-    assert.equal(id, 'O zimi (1)');
+    assert.equal(id, 'O zimi (2)');
   });
 
   it('numbers a third duplicate without reusing the second name', async () => {
@@ -343,7 +388,7 @@ describe('saving', () => {
     await store.save(null, 'Ponovljeni\n\nJedan.');
     await store.save(null, 'Ponovljeni\n\nDva.');
 
-    assert.equal(await store.save(null, 'Ponovljeni\n\nTri.'), 'Ponovljeni (2)');
+    assert.equal(await store.save(null, 'Ponovljeni\n\nTri.'), 'Ponovljeni (3)');
   });
 
   it('emptying an existing note keeps the file, since that is how he deletes', async () => {
@@ -559,7 +604,7 @@ describe('converting to plain text', () => {
 
     await store.convertToPlainText();
 
-    assert.deepEqual((await readdir(dir)).sort(), ['Esej o zimi (1).txt', 'Esej o zimi.txt']);
+    assert.deepEqual((await readdir(dir)).sort(), ['Esej o zimi (1).txt', 'Esej o zimi (2).txt']);
   });
 
   it('keeps both texts when it has to rename around a clash', async () => {
@@ -1060,8 +1105,10 @@ describe('bringing a text back', () => {
 
     const back = await store.restore(first ?? '');
 
-    assert.equal(back, 'O zimi (1)');
-    assert.equal(await store.read('O zimi'), 'O zimi\n\nNovi tekst.');
+    // The one he wrote while this was away is numbered too, rather than left
+    // as the only bare `O zimi` beside a `(1)` he never asked for.
+    assert.equal(back, 'O zimi (2)');
+    assert.equal(await store.read('O zimi (1)'), 'O zimi\n\nNovi tekst.');
     assert.equal(await store.read(back), 'O zimi\n\nStari tekst.');
   });
 

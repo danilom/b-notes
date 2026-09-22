@@ -1,4 +1,4 @@
-import { baseOf, fileNameBase, nextFreeId } from './note-naming.ts';
+import { type ClaimedName, baseOf, claimName, fileNameBase, nextFreeId } from './note-naming.ts';
 import { isEmptyText, survivedTooLittle } from './note.ts';
 import { worthKeeping } from './text-change.ts';
 import { titleFrom } from './note-title.ts';
@@ -24,6 +24,12 @@ interface Written {
   id: string;
   /** Text that must be kept somewhere before this write lands. */
   snapshot?: string;
+  /**
+   * An older text that has to give up the bare name, so that neither of two
+   * texts reading the same is left unnumbered. Absent on the saves that claim
+   * a name nobody else wants, which is nearly all of them.
+   */
+  displaced?: { from: string; to: string };
 }
 
 export type SaveAction =
@@ -51,6 +57,15 @@ export interface SaveContext {
   lastKept: () => Promise<string | null>;
 }
 
+/**
+ * Spread rather than assigned, so a save with nothing to displace carries no
+ * key at all. `displaced: null` on every ordinary save would read as a decision
+ * taken about a second file each time one is written.
+ */
+function displacing(taking: ClaimedName): { displaced?: { from: string; to: string } } {
+  return taking.displaced === null ? {} : { displaced: taking.displaced };
+}
+
 export async function planSave(
   id: string | null,
   text: string,
@@ -62,7 +77,10 @@ export async function planSave(
 
   const base = fileNameBase(titleFrom(text));
 
-  if (id === null) return { kind: 'write', id: nextFreeId(base, null, await context.takenIds()) };
+  if (id === null) {
+    const taking = claimName(base, null, await context.takenIds());
+    return { kind: 'write', id: taking.id, ...displacing(taking) };
+  }
 
   /*
     Emptying is how he deletes — he never found Resoph's delete command — and it
@@ -104,7 +122,8 @@ export async function planSave(
   // then the last evidence of what the note was.
   if (survivedTooLittle(previous, text)) return { kind: 'write', id, ...kept };
 
-  return { kind: 'writeAndRename', id, to: nextFreeId(base, id, await context.takenIds()), ...kept };
+  const taking = claimName(base, id, await context.takenIds());
+  return { kind: 'writeAndRename', id, to: taking.id, ...displacing(taking), ...kept };
 }
 
 /**

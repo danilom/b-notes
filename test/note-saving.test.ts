@@ -32,10 +32,25 @@ describe('planSave', () => {
     });
   });
 
-  it('gives a new note a free id when that one is taken', async () => {
+  it('numbers both texts when a second one wants a name the first holds', async () => {
     assert.deepEqual(await planSave(null, 'O zimi\n\nDrugi.', context(['O zimi'])), {
       kind: 'write',
-      id: 'O zimi (1)',
+      id: 'O zimi (2)',
+      displaced: { from: 'O zimi', to: 'O zimi (1)' },
+    });
+  });
+
+  it('leaves the others alone once the name is already numbered', async () => {
+    assert.deepEqual(
+      await planSave(null, 'O zimi\n\nDrugi.', context(['O zimi (1)', 'O zimi (2)'])),
+      { kind: 'write', id: 'O zimi (3)' },
+    );
+  });
+
+  it('counts on from the highest rather than filling a gap he made', async () => {
+    assert.deepEqual(await planSave(null, 'O zimi\n\nDrugi.', context(['O zimi (3)'])), {
+      kind: 'write',
+      id: 'O zimi (4)',
     });
   });
 
@@ -44,7 +59,8 @@ describe('planSave', () => {
     // new note opening the same way has to take the next one.
     assert.deepEqual(await planSave(null, 'Esej o zimi\n\nDrugi.', context(['Esej o zimi'])), {
       kind: 'write',
-      id: 'Esej o zimi (1)',
+      id: 'Esej o zimi (2)',
+      displaced: { from: 'Esej o zimi', to: 'Esej o zimi (1)' },
     });
   });
 

@@ -1,4 +1,5 @@
 import type { Note } from '../notes/note.ts';
+import { copyNumberOf } from '../notes/note-naming.ts';
 import { toSearchable } from '../language/diacritics.ts';
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 
@@ -68,55 +69,62 @@ function titleOf(note: Note, words: ReturnType<typeof strings>): string {
 }
 
 /**
- * Which of several identical-looking rows each text is.
+ * The titles that more than one text reads as.
  *
- * Titles are read off his opening lines, so two texts that begin the same way
- * are two rows that say the same thing, and the row has nothing else to tell
- * them apart with — the filename that does is never shown. Three rows reading
- * `4 klozeta` look like the list repeating itself rather than like three texts.
- *
- * Numbered over the group rather than taken from the `(1)` the filename may
- * already carry. A file's own suffix is missing on the first of a group, and
- * missing from all of them when the copies arrived under unrelated names —
- * which is precisely the case this is for, an import bringing in another copy
- * of something he already has.
- *
- * Ordered by id so a text keeps its number wherever it appears. Nedavni and
- * Svi tekstovi show the same text twice, and one row calling it `(2)` while
- * the other calls it `(3)` would be worse than not marking it at all.
+ * A number is worth showing only while there is something to tell apart. The
+ * last survivor of a group keeps its `(1)` on disk — deleting its siblings
+ * renames nothing — and a lone text carrying a number he cannot compare
+ * against anything is a question, not an answer.
  */
-function marksFor(notes: readonly Note[], words: ReturnType<typeof strings>): Map<string, string> {
-  const idsByTitle = new Map<string, string[]>();
+function sharedTitles(notes: readonly Note[], words: ReturnType<typeof strings>): Set<string> {
+  const seen = new Set<string>();
+  const shared = new Set<string>();
   for (const note of notes) {
     const title = titleOf(note, words);
-    const alike = idsByTitle.get(title);
-    if (alike === undefined) idsByTitle.set(title, [note.id]);
-    else alike.push(note.id);
+    if (seen.has(title)) shared.add(title);
+    seen.add(title);
   }
-
-  const marks = new Map<string, string>();
-  for (const alike of idsByTitle.values()) {
-    if (alike.length < 2) continue;
-    alike.sort((a, b) => a.localeCompare(b, 'sr'));
-    alike.forEach((id, index) => marks.set(id, `(${index + 1})`));
-  }
-  return marks;
+  return shared;
 }
 
-function toRow(note: Note, words: ReturnType<typeof strings>, marks: ReadonlyMap<string, string>): Row {
+/**
+ * Which of several texts reading the same this one is — read off its filename,
+ * never counted.
+ *
+ * `Pismo (2)` in the list is `Pismo (2).txt` in his folder, always. The one
+ * moment the number has to be right is the one where the app is not there to
+ * explain itself: him in the folder, on the phone, opening his writing in
+ * Notepad. A number worked out from the rows on screen would be a different
+ * number from the one on the file, and would say so with complete confidence.
+ *
+ * Which is why nothing here invents one. Two texts sharing a title under names
+ * that don't share a base — copies that arrived from somewhere else — show no
+ * number until one of them is saved and takes a name of its own.
+ */
+function markOf(note: Note, shared: ReadonlySet<string>, words: ReturnType<typeof strings>): string | null {
+  if (!shared.has(titleOf(note, words))) return null;
+  const number = copyNumberOf(note.id);
+  return number === null ? null : `(${number})`;
+}
+
+function toRow(
+  note: Note,
+  words: ReturnType<typeof strings>,
+  shared: ReadonlySet<string>,
+): Row {
   return {
     id: note.id,
     title: titleOf(note, words),
     searchable: note.searchable,
     updatedAt: note.updatedAt,
-    mark: marks.get(note.id) ?? null,
+    mark: markOf(note, shared, words),
   };
 }
 
 function rowsFor(view: ListView): Row[] {
   const words = strings(view.language);
-  const marks = marksFor(view.notes, words);
-  return view.notes.map((note) => toRow(note, words, marks));
+  const shared = sharedTitles(view.notes, words);
+  return view.notes.map((note) => toRow(note, words, shared));
 }
 
 /**
@@ -164,12 +172,13 @@ export function sectionsFor(view: ListView): Section[] {
   const words = strings(view.language);
   const rows = rowsFor(view);
   const byRecency = [...rows].sort((a, b) => b.updatedAt - a.updatedAt);
-  // Texts reading the same fall back to their id, which is also what their
-  // marks are numbered by — so a run of them counts up rather than arriving in
-  // whatever order the folder was read in.
+  // Texts reading the same fall back to their id, which is what their number
+  // is read from — so a run of them counts up rather than arriving in whatever
+  // order the folder was read in. Numerically, or `(10)` would sort above `(2)`.
   const all = [...rows].sort(
     (a, b) =>
-      a.title.localeCompare(b.title, 'sr') || (a.id ?? '').localeCompare(b.id ?? '', 'sr'),
+      a.title.localeCompare(b.title, 'sr') ||
+      (a.id ?? '').localeCompare(b.id ?? '', 'sr', { numeric: true }),
   );
 
   if (view.query.trim().length === 0) {
