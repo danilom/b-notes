@@ -15,6 +15,7 @@
  */
 import { mkdir, readFile, rm, utimes, writeFile } from 'node:fs/promises';
 
+import { BORROWED_COUNT, archiveSample } from '../src/hosts/mockup/mock-archive-sample.ts';
 import { MOCK_WRITING_FOLDER } from '../src/hosts/mockup/mock-file-system.ts';
 import { longDiffSample } from '../src/hosts/mockup/mock-long-diff-sample.ts';
 import { versionsSample } from '../src/hosts/mockup/mock-versions-sample.ts';
@@ -301,9 +302,26 @@ for (const [name, note] of written) {
   reading as months old.
 */
 const now = Date.now();
+
+/*
+  What the archives borrow from his list, so most of what is in them is an
+  older copy of something he already has — which is what an import actually
+  looks like. Taken from the longest texts, because a copy cut back to an
+  earlier state needs paragraphs to have lost.
+
+  Picked here rather than in the sample module: titles are his first lines, and
+  that module is in the repository.
+*/
+const lendable = [...written.entries()]
+  .sort(([, a], [, b]) => b.content.length - a.content.length)
+  .slice(LONG_SAMPLES, LONG_SAMPLES + BORROWED_COUNT)
+  .map(([name, note]) => ({ name, text: note.content }));
+if (lendable.length < BORROWED_COUNT) throw new Error('not enough texts to lend to the archives');
+
 for (const file of [
   ...versionsSample(now, MOCK_WRITING_FOLDER),
   ...longDiffSample(now, MOCK_WRITING_FOLDER),
+  ...archiveSample(now, MOCK_WRITING_FOLDER, lendable),
 ]) {
   browser.push({
     id: file.path.slice(MOCK_WRITING_FOLDER.length + 1),
@@ -322,6 +340,12 @@ console.log(`  empty ${empties}, title-only ${stubs}, deduped names ${duplicates
 console.log(
   `  pinned ${notes.filter((n) => n.pinned).length}, dated onto today ${freshened.length}` +
     ` (top of Nedavni: ${freshened.slice(0, LONG_ON_TOP).map((n) => `${(n.bytes / 1024).toFixed(0)}KB`).join(', ')})`,
+);
+const archived = browser.filter((note) => note.id.startsWith('Arhiva/'));
+console.log(
+  `  archives ${new Set(archived.map((note) => note.id.split('/')[1])).size},` +
+    ` ${archived.filter((note) => !note.id.includes('/Verzije/')).length} texts in them,` +
+    ` ${archived.filter((note) => note.id.includes('/Verzije/')).length} kept copies`,
 );
 console.log(
   `  browser copy ${(browserChars / 1000).toFixed(0)}k chars ` +

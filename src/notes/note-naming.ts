@@ -76,6 +76,35 @@ export const DELETED_FOLDER = 'Obrisano';
 export const VERSIONS_FOLDER = 'Verzije';
 
 /**
+ * Where writing brought in from somewhere else is kept, one folder per source.
+ *
+ * Beside his texts rather than among them: an import is mostly older copies of
+ * things he already has, and dropping six hundred of those into his list would
+ * bury the writing he is actually working on. Each source keeps its own folder
+ * under here — `Arhiva/Stari laptop 2021/` — so what came from where stays
+ * answerable, and every file in it is plain text that opens in Notepad.
+ *
+ * Nothing reads these yet. The name is settled and the sample corpus is built
+ * with it, so that the paths exist in one place when the dialog is written.
+ */
+export const ARCHIVE_FOLDER = 'Arhiva';
+
+/** One source's folder. `name` is the folder he or the importer chose. */
+export function archiveFolderFor(name: string): string {
+  return `${ARCHIVE_FOLDER}/${name}`;
+}
+
+/**
+ * Where an archived text's earlier versions sit.
+ *
+ * The same rule as everywhere else — a `Verzije` folder beside the text — so
+ * one archive holds a whole text's history and can be moved or deleted whole.
+ */
+export function archivedVersionsFolderFor(archive: string, id: string): string {
+  return `${archiveFolderFor(archive)}/${VERSIONS_FOLDER}/${id}`;
+}
+
+/**
  * The folder holding one note's earlier versions.
  *
  * One rule, applied wherever the note happens to live: versions sit in a
