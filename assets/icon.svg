@@ -1,4 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <rect width="256" height="256" rx="48" fill="#295D99"/>
-  <text x="128" y="187" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="160" fill="#FFFFFF">B</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 96 96">
+  <!--
+    Drawn in a 96 grid because that is the size every choice here was judged at,
+    and scaled by the width and height above. scripts/make-icon.mjs rewrites
+    those two and leaves the grid alone.
+
+    The letter is Cyrillic be, italic. Upright it is a short flag on a round
+    bowl, which is a six; the italic replaces the flag with a long swash that no
+    digit has. Times because its swash is the longest of the faces on hand.
+
+    It stops working somewhere under 24 pixels — the swash is one or two lit
+    pixels by then and what survives is the bowl. On the taskbar what he is
+    finding is a blue tile, and nothing else of his is one.
+  -->
+  <rect width="96" height="96" rx="18" fill="#295D99"/>
+  <text x="48" y="74" text-anchor="middle" font-family="'Times New Roman', serif" font-style="italic" font-size="84" fill="#FFFFFF">&#1073;</text>
 </svg>
