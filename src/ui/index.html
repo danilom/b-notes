@@ -399,9 +399,38 @@
         text-overflow: ellipsis;
       }
 
-      #status-actions button {
+      /*
+        One shape for every button down here, rather than a list of ids that a
+        new one falls outside of. That is precisely what happened when Kopiraj
+        ceo tekst arrived: it missed the list, fell back on the plain button
+        rule, and came out half again as tall as its neighbours with a larger
+        face and no row to lay its icon out in.
+
+        A class, because it is the only weight that works. `#status-actions
+        button` carries an id and beat `#appearance-button`, which is how
+        Izgled quietly lost the tighter padding it was given on purpose.
+        Wrapping that in `:where` costs all its specificity and it then loses
+        to plain `button` above, which is where the 0.6rem padding comes from.
+        A class sits between the two: over the element, under the id.
+
+        It does have to be put on, which is the same thing that went wrong
+        here — so the four of them are four adjacent lines of markup, where a
+        fifth without it is visible at a glance.
+
+        And they look like buttons, the way Novi tekst does. They blended into
+        the strip while they were the rarest things on screen, but his old
+        archive says he deletes about ten times a year and goes looking for the
+        command when he does — and something he goes looking for should not be
+        the quietest thing in front of him.
+      */
+      .status-action {
         flex: none;
         white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.3rem 0.7rem;
+        font-size: 0.92em;
       }
 
       #status-actions {
@@ -424,22 +453,6 @@
         margin-left: 1.8rem;
       }
 
-      /*
-        A button that looks like one, the way Novi tekst does. It blended into
-        the strip beside Izgled while it was the rarer pair of the two, but his
-        old archive says he deletes about ten times a year and goes looking for
-        the command when he does — and something he goes looking for should not
-        be the quietest thing on screen.
-      */
-      #delete-note,
-      #see-versions {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.45rem;
-        padding: 0.3rem 0.7rem;
-        font-size: 0.92em;
-      }
-
       /* Greyed rather than gone when the text in front of him has no copies,
          which for most of them is never. A button that comes and goes cannot be
          learned, and he writes his own instructions for this app: what he wrote
@@ -449,15 +462,15 @@
          colour: the accent is his to choose and could be anything, and this
          has to read as emphasis in his own writing rather than as a mark the
          app has painted on. */
+      /* The one down here that is not a button to look at: it opens a panel
+         about the app rather than doing anything to his text. Only what
+         differs from the shape above. */
       #appearance-button {
-        display: inline-flex;
-        align-items: center;
         gap: 0.4rem;
         padding: 0.3rem 0.6rem;
         border-color: transparent;
         background: none;
         color: var(--quiet);
-        font-size: 0.92em;
       }
 
       #appearance-button:hover:not(:disabled) {
@@ -2481,16 +2494,16 @@
           <!-- Furthest from Obriši tekst, which is the one adjacency worth
                avoiding: this is a button he may press often and that one is a
                safety hatch he should almost never reach. -->
-          <button id="copy-all" type="button" disabled>
+          <button id="copy-all" class="status-action" type="button" disabled>
             <span id="copy-all-label"></span>
           </button>
-          <button id="see-versions" type="button" disabled>
+          <button id="see-versions" class="status-action" type="button" disabled>
             <span id="see-versions-label"></span>
           </button>
-          <button id="delete-note" type="button" disabled>
+          <button id="delete-note" class="status-action" type="button" disabled>
             <span id="delete-note-label"></span>
           </button>
-          <button id="appearance-button" type="button">
+          <button id="appearance-button" class="status-action" type="button">
             <span id="appearance-label"></span>
           </button>
         </div>
