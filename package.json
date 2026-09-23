@@ -12,10 +12,12 @@
     "ui": "node scripts/build.mjs && node scripts/serve.mjs",
     "typecheck": "tsc",
     "test": "node --test",
+    "test:gui": "node scripts/build.mjs && playwright test",
     "dist": "node scripts/clean.mjs && node scripts/build.mjs && electron-builder",
     "release": "node scripts/clean.mjs && node scripts/build.mjs && electron-builder --publish always"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.1",
     "electron": "^44.4.2",
     "electron-builder": "^26.15.3",
