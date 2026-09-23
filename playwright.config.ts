@@ -32,6 +32,20 @@ export default defineConfig({
   */
   timeout: 60_000,
   fullyParallel: false,
+  /*
+    One at a time, and this is not a preference.
+
+    `fullyParallel: false` only makes the tests inside one file serial — the
+    files still go to a worker each, and Playwright starts as many as it
+    thinks the machine will take. Every test here begins by seeding six
+    hundred texts into a fresh browser, so five of those at once starved each
+    other and half the suite failed on the clock with nothing wrong in it.
+
+    It costs about four minutes for twenty tests. That is what they are worth:
+    each one drives the real app against a real corpus, and the whole point is
+    that they are believable.
+  */
+  workers: 1,
   forbidOnly: true,
   retries: 0,
   reporter: [['list']],
