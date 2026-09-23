@@ -706,10 +706,18 @@
         What is left here is undoing the browser's own box. The app draws its
         own panel inside, so this element is only the room around it.
       */
-      #appearance,
-      #confirm,
-      #deleted,
-      #versions {
+      /*
+        Every dialog but the admin one, rather than a list of ids.
+
+        It was a list, and a new dialog added to the app simply fell outside it
+        — landing in the browser's own box, a black two-pixel frame on white,
+        which is nothing this app draws anywhere. The advanced panel had been
+        wearing it for weeks and read as a deliberate admin style. A rule that
+        has to be edited every time something is added is a rule that will be
+        wrong every time something is added, so the default is now right and
+        the one exception says so on the element.
+      */
+      dialog:not(.admin) {
         width: 100%;
         height: 100%;
         max-width: none;
@@ -722,20 +730,36 @@
 
       /* Only when open, or the author rule would beat the browser's own
          `dialog:not([open]) { display: none }` and show a closed one. */
-      #appearance[open],
-      #confirm[open],
-      #deleted[open],
-      #versions[open] {
+      dialog:not(.admin)[open] {
         display: flex;
         align-items: center;
         justify-content: center;
       }
 
-      #appearance::backdrop,
-      #confirm::backdrop,
-      #deleted::backdrop,
-      #versions::backdrop {
+      /* The room behind is the same whoever the dialog is for. */
+      dialog::backdrop {
         background: hsl(var(--grey-h) var(--surface) var(--l-shadow) / 0.42);
+      }
+
+      /*
+        The developer's door, and the only thing in the app that wears a frame.
+        Not for him: he never opens this, and if he somehow did, a window that
+        looks nothing like the rest of the app is the clearest possible way of
+        saying he is somewhere he did not mean to be.
+
+        It began as the browser's default box showing through a rule that
+        listed ids. Kept because it earns its place here, and written out in
+        the app's own colours rather than left to the browser, which draws a
+        different frame in every engine and a white one in the dark.
+      */
+      .admin {
+        max-width: calc(100% - 3rem);
+        max-height: calc(100% - 3rem);
+        margin: auto;
+        border: 2px solid var(--ink);
+        background: var(--panel);
+        color: var(--ink);
+        overflow: auto;
       }
 
       #appearance {
@@ -1053,6 +1077,7 @@
 
       /* Almost the whole window: the list needs the width for a snippet, and a
          text needs the height to be read rather than peeked at. */
+      #archive,
       #deleted,
       #versions {
         padding: 0.9rem;
@@ -2314,7 +2339,8 @@
     <dialog id="deleted"></dialog>
     <dialog id="archive"></dialog>
     <dialog id="versions"></dialog>
-    <dialog id="advanced"></dialog>
+    <!-- The one dialog that is not for him; `admin` is what gives it its frame. -->
+    <dialog id="advanced" class="admin"></dialog>
 
     <script src="renderer.js"></script>
   </body>
