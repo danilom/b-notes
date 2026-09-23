@@ -4,6 +4,7 @@ import path from 'node:path';
 import { BUILD_STAMP } from '../../platform/build-info.ts';
 import { LOG_LEVELS, createFileLogger } from './log-file.ts';
 import { createFileSystem } from './disk-file-system.ts';
+import { markAbsence } from '../../platform/file-system.ts';
 import { readChosenFolders, whereToOpen, writeChosenFolders } from './chosen-folders.ts';
 import { startUpdateChecks } from './app-updates.ts';
 import { type Rect, deskAround, keptOnTheDesk } from './window-bounds.ts';
@@ -67,8 +68,20 @@ function asString(value: unknown, name: string): string {
   return value;
 }
 
-/** A file that isn't there yet. Ordinary, and not the same thing as a failure. */
+/**
+ * A file that isn't there yet. Ordinary, and not the same thing as a failure.
+ *
+ * Both shapes it arrives in. A raw `ENOENT` is what Node hands back from
+ * something the filesystem does not name itself; `FolderMissing` and
+ * `FileMissing` are what it raises where the absence is a real answer, and
+ * those carry no `code` — so for as long as this only asked about `code`, every
+ * versions folder that had never been made was written down as a failure.
+ *
+ * Twenty-one of them in one clean startup, which is precisely the pile this
+ * softening exists to prevent.
+ */
 function isMissingFile(error: unknown): boolean {
+  if (markAbsence(error) !== null) return true;
   return (
     typeof error === 'object' &&
     error !== null &&
@@ -88,7 +101,19 @@ function handle(channel: string, handler: (args: unknown[]) => Promise<unknown>)
       // to show them.
       if (isMissingFile(error)) log.info(`${channel}: nothing there yet`, { args });
       else log.error(`${channel} failed`, error);
-      throw error;
+
+      /*
+        An absence goes back as a marker rather than as itself. Electron keeps
+        the words of a rejection and throws the class away, and the store tells
+        an absence from a failure with `instanceof` — so across this boundary
+        every one of those tests answered false and every "this is ordinary"
+        catch rethrew. `withAbsences` on the far side puts the class back.
+
+        Everything else is rethrown untouched: a disk that has gone must not be
+        made to look like an empty one.
+      */
+      const absence = markAbsence(error);
+      throw absence === null ? error : new Error(absence);
     }
   });
 }
@@ -146,6 +171,7 @@ handle('app:restart', async () => {
   app.exit(0);
 });
 handle('files:list', (args) => files.list(asString(args[0], 'folder')));
+handle('files:listFolders', (args) => files.listFolders(asString(args[0], 'folder')));
 handle('files:folderExists', (args) => files.folderExists(asString(args[0], 'folder')));
 handle('files:read', (args) => files.read(asString(args[0], 'path')));
 handle('files:write', (args) => files.write(asString(args[0], 'path'), asString(args[1], 'text')));

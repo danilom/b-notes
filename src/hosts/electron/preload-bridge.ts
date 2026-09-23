@@ -1,5 +1,7 @@
 import { clipboard, contextBridge, ipcRenderer, webFrame } from 'electron';
 
+import type { FileSystem } from '../../platform/file-system.ts';
+
 /**
  * Everything the packaged app hands the interface: somewhere to keep files, and
  * somewhere to log.
@@ -8,8 +10,19 @@ import { clipboard, contextBridge, ipcRenderer, webFrame } from 'electron';
  * runs the same code whether it's sitting on this bridge or on a pretend
  * filesystem in a browser tab.
  */
-const files = {
+/*
+  Annotated, which is the whole of what stops this drifting.
+
+  It was a bare object literal, so nothing ever compared it to the interface it
+  is standing in for — and when `listFolders` was added for Arhiva, the disk and
+  the mock both grew it and this did not. The browser build worked, the
+  installed app said `files.listFolders is not a function`, and because that
+  lands inside the startup read it came out as "Ne mogu da naći tvoje tekstove",
+  which is a sentence about his writing for a fault in ours.
+*/
+const files: FileSystem = {
   list: (folder: string) => ipcRenderer.invoke('files:list', folder),
+  listFolders: (folder: string) => ipcRenderer.invoke('files:listFolders', folder),
   read: (path: string) => ipcRenderer.invoke('files:read', path),
   write: (path: string, text: string) => ipcRenderer.invoke('files:write', path, text),
   folderExists: (folder: string) => ipcRenderer.invoke('files:folderExists', folder),

@@ -2,6 +2,7 @@ import type { FileSystem } from '../../platform/file-system.ts';
 import type { Host, RunMode } from '../../platform/host.ts';
 import type { Log } from '../../platform/logging.ts';
 import { startApp } from '../../ui/ui-app.ts';
+import { withAbsences } from './ipc-file-system.ts';
 
 declare global {
   interface Window {
@@ -56,7 +57,10 @@ async function main(): Promise<void> {
 
   const host: Host = {
     runMode: where.mode,
-    files,
+    // Wrapped, or an absence crossing back from the other process arrives as
+    // an ordinary failure and every catch built on telling the two apart lets
+    // it through. See `withAbsences`.
+    files: withAbsences(files),
     writingFolder: where.writing,
     appFolder: where.app,
     logsFolder: where.logs,

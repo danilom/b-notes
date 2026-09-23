@@ -49,6 +49,44 @@ export class FileMissing extends Error {
   }
 }
 
+/**
+ * How an absence survives a trip between two processes.
+ *
+ * `instanceof` does not. Electron flattens a rejection into a plain `Error`
+ * with the class name folded into the message, so `failure instanceof
+ * FolderMissing` — which is what every "absence is ordinary" catch in the
+ * store is built on — answers false in the app he installs and true in the
+ * browser the interface is developed in. Every one of those catches therefore
+ * rethrew, and a versions folder that had never been made took down a rename,
+ * a count, and finally the whole startup read.
+ *
+ * So the two absences are carried across as a string nobody writes by accident
+ * and rebuilt on the far side. Found with `indexOf` rather than at the front,
+ * because Electron puts a sentence of its own in front of it.
+ *
+ * The bars are safe as separators: Windows refuses one in a filename, and
+ * `withoutUnusableCharacters` takes them out of anything he types.
+ */
+const ABSENCE = 'b-notes-absent|';
+
+/** The marker for an absence, or null for anything else — which must not be flattened. */
+export function markAbsence(error: unknown): string | null {
+  if (error instanceof FolderMissing) return `${ABSENCE}folder|${error.folder}`;
+  if (error instanceof FileMissing) return `${ABSENCE}file|${error.path}`;
+  return null;
+}
+
+/** The absence a message carries, or null if it carries none. */
+export function absenceFrom(message: string): FolderMissing | FileMissing | null {
+  const at = message.indexOf(ABSENCE);
+  if (at === -1) return null;
+  const [kind, ...rest] = message.slice(at + ABSENCE.length).split('|');
+  const where = rest.join('|');
+  if (kind === 'folder') return new FolderMissing(where);
+  if (kind === 'file') return new FileMissing(where);
+  return null;
+}
+
 export interface FileInfo {
   path: string;
   updatedAt: number;
