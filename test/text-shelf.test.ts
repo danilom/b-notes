@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { snippetOf } from '../src/ui/deleted-dialog.ts';
+import { snippetOf } from '../src/ui/text-shelf.ts';
 import { mustWriteItOut } from '../src/ui/note-confirmations.ts';
 
 const noteOf = (text: string, title: string, versions = 0) => ({
@@ -14,7 +14,7 @@ const noteOf = (text: string, title: string, versions = 0) => ({
   versions,
 });
 
-describe('the line under a deleted text', () => {
+describe('the line under a text on a shelf', () => {
   it('leaves out the title, which is already on the row above it', () => {
     const note = noteOf('O zimi\n\nPada sneg nad gradom.', 'O zimi');
 

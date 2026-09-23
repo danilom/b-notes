@@ -1799,6 +1799,14 @@
         display: none;
       }
 
+      /* Later in the sheet than .review-already, so it has to say so itself or
+         the quiet colour above wins on source order and the one line that is
+         meant to stand out reads exactly like the two that are not. */
+      .review-note-aside.review-already {
+        color: var(--chosen-ink);
+        font-style: normal;
+      }
+
       .confirm-word:focus {
         outline: 2px solid var(--chosen);
         outline-offset: 1px;

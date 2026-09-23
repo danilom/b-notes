@@ -390,6 +390,36 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
       renameArchived(archive),
     );
 
+  /**
+   * Which texts in a folder have copies kept beside them, and how many.
+   *
+   * One listing of `Verzije/` rather than one probe per text. Probing asked
+   * the disk about a folder once for every text in the archive, and for nearly
+   * all of them the answer was that it is not there — 572 failed calls out of
+   * 592, for a number shown on one line of one preview. The folder itself
+   * names every text that has any, so the whole answer is two listings deep.
+   *
+   * Absence is ordinary in both directions: no `Verzije` at all, and no folder
+   * for a text that has never had a copy kept.
+   */
+  async function copiesKeptIn(versionsFolder: string): Promise<Map<string, number>> {
+    let ids: string[];
+    try {
+      ids = await files.listFolders(at(versionsFolder));
+    } catch (failure: unknown) {
+      if (!(failure instanceof FolderMissing)) throw failure;
+      return new Map();
+    }
+
+    const counted = await Promise.all(
+      ids.map(async (id): Promise<[string, number]> => [
+        id,
+        (await filesIn(at(versionsFolder, id))).length,
+      ]),
+    );
+    return new Map(counted);
+  }
+
   async function idsPutAway(): Promise<Set<string>> {
     const found = await filesIn(at(DELETED_FOLDER));
     return new Set(found.map((file) => idOf(nameOf(file.path))));
@@ -477,24 +507,33 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
     },
 
     async listArchived(liveTitles: ReadonlySet<string>): Promise<ArchivedNote[]> {
-      const found: ArchivedNote[] = [];
-      for (const archive of await archiveNames()) {
-        for (const [id, file] of await archivedFiles(archive)) {
-          const note = await noteFrom(id, file);
-          const kept = await filesIn(at(archivedVersionsFolderFor(archive, id)));
-          found.push({
-            ...note,
-            archive,
-            versions: kept.length,
-            // By title, which is conservative: it misses a text he rewrote the
-            // opening of, and it never claims two texts are the same, only
-            // that two of them start alike. That is the whole of what he needs
-            // to decide whether to bring one in.
-            alsoLive: liveTitles.has(note.title),
-          });
-        }
-      }
-      return found.sort(newestFirst);
+      /*
+        All at once, the way `list` and `listDeleted` read. Written as a
+        nested loop with an await in it first, which read six hundred files one
+        after another: measured against this, 1950ms to 450. A button that does
+        nothing for two seconds is a button he presses again.
+      */
+      const byArchive = await Promise.all(
+        (await archiveNames()).map(async (archive): Promise<ArchivedNote[]> => {
+          const kept = await copiesKeptIn(`${archiveFolderFor(archive)}/${VERSIONS_FOLDER}`);
+          return Promise.all(
+            [...(await archivedFiles(archive))].map(async ([id, file]): Promise<ArchivedNote> => {
+              const note = await noteFrom(id, file);
+              return {
+                ...note,
+                archive,
+                versions: kept.get(id) ?? 0,
+                // By title, which is conservative: it misses a text he rewrote
+                // the opening of, and it never claims two texts are the same,
+                // only that two of them start alike. That is the whole of what
+                // he needs to decide whether to bring one in.
+                alsoLive: liveTitles.has(note.title),
+              };
+            }),
+          );
+        }),
+      );
+      return byArchive.flat().sort(newestFirst);
     },
 
     async bringBack(archive: string, id: string): Promise<string> {
@@ -528,12 +567,12 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
     },
 
     async listDeleted(): Promise<DeletedNote[]> {
+      // Counted, not read: how many there are decides how hard it should be to
+      // destroy this, and that question does not need their contents.
+      const kept = await copiesKeptIn(`${DELETED_FOLDER}/${VERSIONS_FOLDER}`);
       const notes = await Promise.all(
         [...(await putAwayFiles())].map(async ([id, file]): Promise<DeletedNote> => {
-          // Counted, not read: how many there are decides how hard it should be
-          // to destroy this, and that question does not need their contents.
-          const kept = await filesIn(at(putAwayVersionsFolderFor(id)));
-          return { ...(await noteFrom(id, file)), versions: kept.length };
+          return { ...(await noteFrom(id, file)), versions: kept.get(id) ?? 0 };
         }),
       );
       // By when he last worked on them, not when he put them away — nothing
