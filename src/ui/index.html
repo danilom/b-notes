@@ -849,36 +849,18 @@
         text-overflow: ellipsis;
       }
 
-      #deleted-see,
-      #archive-see {
+      #deleted-see {
         flex: none;
         margin-left: auto;
         padding: 0.25rem 0.7rem;
         font-size: inherit;
       }
 
-      /*
-        Plainly the lesser of the two ways in.
-
-        He fills Obrisani tekstovi himself and will come back to it; the
-        archive is somebody else's folder that he may open twice in his life.
-        Two identical buttons said the two were the same kind of thing.
-
-        Still a control and not a label, which is the whole of what the border
-        was doing: it underlines under the pointer, along with the strip behind
-        it going dark, so there is nothing about it left to explain.
-      */
-      #archive-see {
-        padding: 0.25rem 0.2rem;
-        border-color: transparent;
-        background: none;
-        color: var(--quiet);
-      }
-
-      #archive-block:hover #archive-see,
-      #archive-see:focus-visible {
-        color: var(--ink);
-        text-decoration: underline;
+      /* The strip is the control now, so the ring that a button would have
+         worn belongs on it. Keyboard only, like every other one. */
+      #archive-block:focus-visible {
+        outline: 2px solid var(--chosen);
+        outline-offset: -2px;
       }
 
       /*
@@ -2372,9 +2354,17 @@
         <span id="deleted-block-label"></span>
         <button id="deleted-see" type="button"></button>
       </div>
-      <div id="archive-block" hidden>
+      <!--
+        No button inside it, unlike the strip above. The whole strip has always
+        been the target and the button only said so; here the trash row
+        directly above says it instead, and one word fewer is one thing fewer
+        for him to read past on a screen he is trying to write on.
+
+        Which makes the strip itself the control, so it carries the role and
+        can be reached and pressed from the keyboard like one.
+      -->
+      <div id="archive-block" role="button" tabindex="0" hidden>
         <span id="archive-block-label"></span>
-        <button id="archive-see" type="button"></button>
       </div>
     </div>
 

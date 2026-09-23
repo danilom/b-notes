@@ -125,7 +125,6 @@ const TEXT = {
       never make work is worse than no control.
     */
     archive: 'Arhiva',
-    archiveSee: 'Vidi',
     archiveSearch: 'Traži po arhivi',
     /*
       Preneseš, not vratiš. Vratiti is what the deleted dialog does — give back
@@ -371,7 +370,6 @@ const TEXT = {
     deletedBack: 'Back to deleted texts',
 
     archive: 'Archive',
-    archiveSee: 'View',
     archiveSearch: 'Search the archive',
     archiveIntro:
       'This is writing brought in from elsewhere. It is not among your texts until you bring it in.',

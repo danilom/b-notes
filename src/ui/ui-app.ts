@@ -102,7 +102,6 @@ const deletedBlock = element('deleted-block', HTMLDivElement);
 const deletedSee = element('deleted-see', HTMLButtonElement);
 const deletedBlockLabel = element('deleted-block-label', HTMLSpanElement);
 const archiveBlock = element('archive-block', HTMLDivElement);
-const archiveSee = element('archive-see', HTMLButtonElement);
 const archiveBlockLabel = element('archive-block-label', HTMLSpanElement);
 const archivePane = element('archive', HTMLDialogElement);
 const confirmPane = element('confirm', HTMLDialogElement);
@@ -148,6 +147,14 @@ let deleted: DeletedNote[] = [];
  * he asks, which is what `listArchived` is for.
  */
 let archives: Archive[] = [];
+/**
+ * Whether the archive is being read right now.
+ *
+ * A flag rather than a disabled button, because the strip has no button to
+ * disable any more. Reading six hundred texts takes long enough that he can
+ * press again before the dialog arrives, and twice would read them twice.
+ */
+let readingArchive = false;
 
 /**
  * How many copies are kept, and which text they were counted for.
@@ -746,9 +753,9 @@ function showDeleted(): void {
  * nothing for a second is a button he presses again.
  */
 async function showArchive(): Promise<void> {
-  if (archivePane.open || archiveSee.disabled) return;
+  if (archivePane.open || readingArchive) return;
 
-  archiveSee.disabled = true;
+  readingArchive = true;
   let found: ArchivedNote[];
   try {
     found = await store.listArchived(new Set(notes.map((note) => note.title)));
@@ -760,14 +767,15 @@ async function showArchive(): Promise<void> {
     log.error('Could not read the archive', describeError(error));
     return;
   } finally {
-    archiveSee.disabled = false;
+    readingArchive = false;
   }
 
   log.info('Looked at the archive', { count: found.length, archives: archives.length });
   const close = openArchiveDialog(archivePane, { archived: found, query: search.value }, language, {
     onClose: () => {
       close();
-      archiveSee.focus();
+      // Back to the strip he came in by, which is the control now.
+      archiveBlock.focus();
     },
     onBringBack: (note: ArchivedNote) => {
       close();
@@ -1008,6 +1016,13 @@ deletedBlock.addEventListener('click', () => {
 archiveBlock.addEventListener('click', () => {
   void showArchive();
 });
+// A real button answers both of these on its own. This one is a strip wearing
+// the role, so it has to answer them itself or the archive is mouse-only.
+archiveBlock.addEventListener('keydown', (event: KeyboardEvent) => {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  event.preventDefault();
+  void showArchive();
+});
 seeVersions.addEventListener('click', showVersions);
 
 /**
@@ -1124,7 +1139,6 @@ export async function startApp(runningOn: Host): Promise<void> {
   appearanceLabel.textContent = words.appearance;
   deleteNoteLabel.textContent = words.deleteNote;
   deletedSee.textContent = words.deletedSee;
-  archiveSee.textContent = words.archiveSee;
   // The same box as on the strip's own dialog, for the same reason the bin is
   // on both: one mark for one place.
   archiveBlock.prepend(icon('archive'));
