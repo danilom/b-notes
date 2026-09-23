@@ -52,6 +52,9 @@ function shelfFor(language: Language, handlers: ArchiveHandlers): Shelf<Archived
       note.versions === 0 ? '' : words.archiveVersions(note.versions),
     ],
     matching: words.archiveMatching,
+    // Nothing outside this dialog can search the archive, because it is not
+    // read until he asks for it. So the box is in here, and it starts empty.
+    ownSearch: { placeholder: words.archiveSearch },
     actionsFor: (note) => [
       { label: words.archiveBring, strength: 'main', act: () => handlers.onBringBack(note) },
     ],

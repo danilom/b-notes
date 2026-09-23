@@ -84,8 +84,21 @@ export interface Shelf<T extends ShelvedText> {
   markedFor?: (note: T) => string | null;
   /** Lines above the text in the preview. Empty ones are left out. */
   notesFor?: (note: T) => string[];
-  /** How the filter line counts what a search matched. */
+  /** How the heading over the matches counts them, and names what he asked for. */
   matching: (found: number, query: string) => string;
+  /**
+   * A search box of its own, and what stands in it while it is empty.
+   *
+   * Only for a shelf that nothing outside can search. Obrisano is held in
+   * memory, so the strip under his list searches it and this dialog arrives
+   * already filtered by the same words — a box there would be a second place
+   * to do what he has just done. Arhiva is read only when he asks for it, so
+   * the strip cannot say anything about it and the box has to be in here.
+   *
+   * A shelf with its own box does not inherit what he typed outside. It would
+   * open showing two texts of ten with nothing on screen saying why.
+   */
+  ownSearch?: { placeholder: string };
   /** What the footer offers. `main` first; at most one `grave`. */
   actionsFor: (note: T) => ShelfAction[];
   /** The word on the button back to the list. */
@@ -113,6 +126,52 @@ export interface ShelfHandlers {
  * Without the title, which is already on the row above it: repeating it would
  * spend the one line that exists to tell three similar texts apart.
  */
+/** What a search put on top, and what it left underneath. */
+export interface ShelfGroups<T extends ShelvedText> {
+  found: readonly T[];
+  /**
+   * What the search missed — not everything, as the list's own Svi tekstovi
+   * is. A dialog he opened to answer one question is not the place to show him
+   * the same text twice.
+   */
+  rest: readonly T[];
+}
+
+/**
+ * The two groups, newest first in each, with nothing left out of both.
+ *
+ * Whoever hands the texts over has sorted them already; sorting here is what
+ * makes the order a property of this screen rather than a habit of theirs.
+ *
+ * An empty search is not a search: everything is `found`, and there is no
+ * remainder to push down.
+ */
+export function groupsFor<T extends ShelvedText>(
+  texts: readonly T[],
+  filter: string,
+): ShelfGroups<T> {
+  const ordered = [...texts].sort((first, second) => second.updatedAt - first.updatedAt);
+  const looking = filter.trim();
+  if (looking.length === 0) return { found: ordered, rest: [] };
+  return {
+    found: ordered.filter((note) => matches(note, looking)),
+    rest: ordered.filter((note) => !matches(note, looking)),
+  };
+}
+
+/**
+ * What the dialog is filtered by the moment it opens.
+ *
+ * A shelf with a box of its own opens showing everything, whatever he had
+ * typed outside: the strip that sent him here could say nothing about what is
+ * in this shelf, so arriving at two rows of ten would look like eight of them
+ * missing. A shelf without one was searched from outside before he arrived,
+ * and the strip has already told him the number he is about to see.
+ */
+export function openingFilter(hasOwnSearch: boolean, query: string): string {
+  return hasOwnSearch ? '' : query.trim();
+}
+
 export function snippetOf(note: ShelvedText): string {
   const flat = note.text.replace(/\s+/g, ' ').trim();
   const rest = flat.startsWith(note.title) ? flat.slice(note.title.length).trim() : flat;
@@ -124,10 +183,14 @@ function rowFor<T extends ShelvedText>(
   shelf: Shelf<T>,
   words: ReturnType<typeof strings>,
   show: (note: T) => void,
+  aside = false,
 ): HTMLElement {
   const row = document.createElement('button');
   row.type = 'button';
-  row.className = 'review-row';
+  // Pushed down and dimmed, never removed. The list itself stopped hiding what
+  // a search missed for this reason: a row that goes when he types reads as a
+  // text that has gone, and here it would read as the archive being incomplete.
+  row.className = aside ? 'review-row aside' : 'review-row';
 
   const title = document.createElement('span');
   title.className = 'review-title';
@@ -177,8 +240,13 @@ export function openTextShelf<T extends ShelvedText>(
   handlers: ShelfHandlers,
 ): () => void {
   const words = strings(language);
-  let filter = query.trim();
+  let filter = openingFilter(shelf.ownSearch !== undefined, query);
   let showing: T | null = null;
+
+  /** The list's own element, so typing in the box refills it and nothing else. */
+  let rows: HTMLElement | null = null;
+  /** The shelf's own search box, while the list is what is on screen. */
+  let searchBox: HTMLInputElement | null = null;
 
   /**
    * One step back, not all the way out. Escape costs him nothing here — it
@@ -221,8 +289,48 @@ export function openTextShelf<T extends ShelvedText>(
     return dismiss;
   }
 
-  const shown = (): readonly T[] =>
-    filter.length === 0 ? texts : texts.filter((note) => matches(note, filter));
+  function headingOf(said: string): HTMLElement {
+    const heading = document.createElement('div');
+    heading.className = 'review-group';
+    heading.textContent = said;
+    return heading;
+  }
+
+  /**
+   * Everything, every time — promoted rather than filtered.
+   *
+   * What he asked for on top, the rest under it and dimmed, and nothing taken
+   * away. Answering "is it in here?" with a shorter list leaves him to work
+   * out whether the missing ones failed to match or were never there.
+   */
+  function renderRows(): void {
+    if (rows === null) return;
+    const list: HTMLElement[] = [];
+
+    const { found, rest } = groupsFor(texts, filter);
+
+    if (filter.length === 0) {
+      for (const note of found) list.push(rowFor(note, shelf, words, show));
+      rows.replaceChildren(...list);
+      return;
+    }
+
+    list.push(headingOf(shelf.matching(found.length, filter)));
+    if (found.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = words.nothingFound;
+      list.push(empty);
+    }
+    for (const note of found) list.push(rowFor(note, shelf, words, show));
+
+    if (rest.length > 0) {
+      list.push(headingOf(`${words.shelfRest} · ${words.noteCount(rest.length)}`));
+      for (const note of rest) list.push(rowFor(note, shelf, words, show, true));
+    }
+
+    rows.replaceChildren(...list);
+  }
 
   function show(note: T): void {
     showing = note;
@@ -245,29 +353,11 @@ export function openTextShelf<T extends ShelvedText>(
     return header;
   }
 
-  /** What he put here, with whatever search brought him here. */
+  /** What is on this shelf, and a way to look through it where there is one. */
   function fillList(): void {
-    const list = document.createElement('div');
-    list.className = 'review-list';
-
-    if (filter.length > 0) {
-      const line = document.createElement('div');
-      line.className = 'review-filter';
-      const count = document.createElement('span');
-      count.textContent = shelf.matching(shown().length, filter);
-      const all = document.createElement('button');
-      all.type = 'button';
-      all.className = 'quiet';
-      all.textContent = words.showAll;
-      all.addEventListener('click', () => {
-        filter = '';
-        fill();
-      });
-      line.append(count, all);
-      list.append(line);
-    }
-
-    for (const note of shown()) list.append(rowFor(note, shelf, words, show));
+    rows = document.createElement('div');
+    rows.className = 'review-list';
+    renderRows();
 
     const footer = document.createElement('footer');
     const done = document.createElement('button');
@@ -277,8 +367,42 @@ export function openTextShelf<T extends ShelvedText>(
     done.addEventListener('click', handlers.onClose);
     footer.append(done);
 
-    panel.replaceChildren(headerFor(shelf.heading, shelf.intro), list, footer);
-    if (!container.hidden) done.focus();
+    const parts: HTMLElement[] = [headerFor(shelf.heading, shelf.intro)];
+
+    searchBox = null;
+    if (shelf.ownSearch !== undefined) {
+      const box = document.createElement('input');
+      box.type = 'search';
+      box.className = 'shelf-search';
+      box.autocomplete = 'off';
+      box.placeholder = shelf.ownSearch.placeholder;
+      box.value = filter;
+      // Only the rows are rebuilt, so the box he is typing into is never
+      // replaced under him and keeps both the focus and the caret.
+      box.addEventListener('input', () => {
+        filter = box.value.trim();
+        renderRows();
+      });
+      searchBox = box;
+      parts.push(box);
+    }
+
+    parts.push(rows, footer);
+    panel.replaceChildren(...parts);
+    if (!container.hidden) takeFocus();
+  }
+
+  /**
+   * The box rather than the panel, where there is one.
+   *
+   * He can start typing at once, and Enter in a search field does nothing —
+   * where Enter on a button is a reflex that would answer for him. Called
+   * after the panel has taken the focus off the editor, never before: doing it
+   * first is simply undone.
+   */
+  function takeFocus(): void {
+    if (searchBox !== null) searchBox.focus();
+    else panel.focus();
   }
 
   /** One text, to read but not to touch. */
@@ -371,6 +495,7 @@ export function openTextShelf<T extends ShelvedText>(
   */
   panel.tabIndex = -1;
   panel.focus();
+  takeFocus();
 
   return close;
 }

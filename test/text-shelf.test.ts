@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { snippetOf } from '../src/ui/text-shelf.ts';
+import { groupsFor, openingFilter, snippetOf } from '../src/ui/text-shelf.ts';
 import { mustWriteItOut } from '../src/ui/note-confirmations.ts';
+import { toSearchable } from '../src/language/diacritics.ts';
 
 const noteOf = (text: string, title: string, versions = 0) => ({
   id: title,
@@ -67,5 +68,72 @@ describe('how hard it should be to destroy one', () => {
 
   it('asks a plain question for an empty one that never had a copy', () => {
     assert.equal(mustWriteItOut(noteOf('', '')), false);
+  });
+});
+
+
+const shelved = (title: string, text: string, updatedAt: number) => ({
+  id: title,
+  title,
+  text,
+  searchable: toSearchable(text),
+  updatedAt,
+});
+
+const SOME = [
+  shelved('Zima', 'Zima' + '\n\n' + 'Pada sneg nad gradom.', 1000),
+  shelved('More', 'More' + '\n\n' + 'Kamen i so.', 3000),
+  shelved('Sneg', 'Sneg' + '\n\n' + 'Opet sneg.', 2000),
+];
+
+describe('what a search does to a shelf', () => {
+  it('puts everything in one group while he has typed nothing', () => {
+    const { found, rest } = groupsFor(SOME, '');
+    assert.deepEqual(found.map((n) => n.title), ['More', 'Sneg', 'Zima']);
+    assert.deepEqual(rest, []);
+  });
+
+  it('orders both groups newest first, whatever order it was handed', () => {
+    const { found, rest } = groupsFor(SOME, 'sneg');
+    assert.deepEqual(found.map((n) => n.title), ['Sneg', 'Zima']);
+    assert.deepEqual(rest.map((n) => n.title), ['More']);
+  });
+
+  it('keeps every text in one group or the other, never in neither', () => {
+    // Nothing is taken away: a row that goes when he types reads as a text
+    // that has gone, which in a shelf reads as the shelf being incomplete.
+    const { found, rest } = groupsFor(SOME, 'sneg');
+    assert.equal(found.length + rest.length, SOME.length);
+  });
+
+  it('never shows a text in both groups', () => {
+    const { found, rest } = groupsFor(SOME, 'sneg');
+    const twice = found.filter((note) => rest.includes(note));
+    assert.deepEqual(twice, []);
+  });
+
+  it('pushes everything down when nothing matches at all', () => {
+    const { found, rest } = groupsFor(SOME, 'nepostojeće');
+    assert.deepEqual(found, []);
+    assert.equal(rest.length, SOME.length);
+  });
+
+  it('finds his writing whether or not either side has the accents', () => {
+    const accented = [shelved('Mačka', 'Mačka je na krovu', 1)];
+    assert.equal(groupsFor(accented, 'macka').found.length, 1);
+  });
+});
+
+describe('what a shelf is filtered by when it opens', () => {
+  it('keeps what the strip outside already searched for', () => {
+    // Obrisani tekstovi is in memory, so the strip said how many match before
+    // he clicked. Arriving unfiltered would make him type it again.
+    assert.equal(openingFilter(false, 'zima'), 'zima');
+  });
+
+  it('shows all of a shelf that has its own box, whatever he typed outside', () => {
+    // Nothing outside could search the archive, so two rows of ten with no
+    // explanation would read as eight of them missing.
+    assert.equal(openingFilter(true, 'zima'), '');
   });
 });

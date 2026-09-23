@@ -104,7 +104,12 @@ const TEXT = {
       `${plural(n, 'ranija verzija', 'ranije verzije', 'ranijih verzija')} ovog teksta.`,
     deletedMatching: (n: number, query: string) =>
       `${n} ${plural(n, 'obrisan tekst sadrži', 'obrisana teksta sadrže', 'obrisanih tekstova sadrži')} „${query}“`,
-    showAll: 'Prikaži sve',
+    /*
+      What a search did not match, under what it did. Never taken away — a row
+      that goes when he types reads as a text that has gone, which in a shelf
+      would read as the shelf being incomplete.
+    */
+    shelfRest: 'Ostali tekstovi',
     restore: 'Vrati među tekstove',
     deletedBack: 'Nazad na obrisane',
 
@@ -121,6 +126,7 @@ const TEXT = {
     */
     archive: 'Arhiva',
     archiveSee: 'Vidi',
+    archiveSearch: 'Traži po arhivi',
     /*
       Preneseš, not vratiš. Vratiti is what the deleted dialog does — give back
       something that was his and went away. Nothing in here was ever in his
@@ -360,12 +366,13 @@ const TEXT = {
       `There ${n === 1 ? 'is' : 'are'} ${n} earlier version${n === 1 ? '' : 's'} of this text.`,
     deletedMatching: (n: number, query: string) =>
       `${n} deleted text${n === 1 ? '' : 's'} contain${n === 1 ? 's' : ''} “${query}”`,
-    showAll: 'Show all',
+    shelfRest: 'The rest',
     restore: 'Bring this text back',
     deletedBack: 'Back to deleted texts',
 
     archive: 'Archive',
     archiveSee: 'View',
+    archiveSearch: 'Search the archive',
     archiveIntro:
       'This is writing brought in from elsewhere. It is not among your texts until you bring it in.',
     archivePreview: 'Archived text preview',
