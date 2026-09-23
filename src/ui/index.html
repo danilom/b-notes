@@ -4,6 +4,10 @@
     <meta charset="utf-8" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'" />
     <title>b-notes</title>
+    <!-- Its own file rather than a data URI, so the CSP above does not have to
+         be loosened for it. Only the browser build ever shows this: the
+         packaged app's window and taskbar icon come from the exe. -->
+    <link rel="icon" href="icon.svg" />
     <style>
       /*
         These five are the only values set directly, and `applyAppearance` in

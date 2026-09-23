@@ -12,6 +12,9 @@ files:
 
 win:
   target: nsis
+  # Built from assets/icon.svg by scripts/make-icon.mjs, and committed: a
+  # release must not depend on a browser being installed to draw it.
+  icon: build/icon.ico
 
 # Electron ships 55 locale files at ~49MB. These are Chromium's own strings —
 # context menus, form validation — not our UI text. Keeping only what could be

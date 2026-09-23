@@ -246,6 +246,10 @@ async function createWindow(): Promise<BrowserWindow> {
     minWidth: smallest.width,
     minHeight: smallest.height,
     show: false,
+    // Only a dev run reads this. What he installs takes its icon from the exe,
+    // where electron-builder has already put it — but `electron .` would
+    // otherwise show Electron's own, which is the wrong app on his taskbar.
+    icon: path.join(import.meta.dirname, 'icon.png'),
     webPreferences: {
       preload: path.join(import.meta.dirname, 'preload.cjs'),
     },
