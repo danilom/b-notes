@@ -763,21 +763,40 @@
           on — a pairing that appears nowhere else here, which is exactly why
           it read as something another program had put on the screen.
         */
-        border: 1px solid var(--line);
-        border-radius: 8px;
         background: var(--panel);
         color: var(--ink);
-        box-shadow: 0 12px 44px hsl(var(--grey-h) var(--surface) var(--l-shadow) / var(--shadow-alpha));
         font-family: var(--ui-font);
         text-align: center;
+        /*
+          The stepper's box, because they are the same kind of thing: something
+          that floats over his writing for as long as it is useful and then is
+          not there. Same surface, same corner, same halo — spread rather than
+          offset, so it lifts off the text on every side and not only below.
+
+          The one difference is the edge, in the accent rather than the plain
+          line. The stepper waits to be used; this one has something to say and
+          then goes, and it has a couple of seconds to be noticed.
+        */
+        border: 1px solid var(--chosen);
+        border-radius: 6px;
+        box-shadow:
+          0 2px 16px 2px var(--halo),
+          0 1px 4px var(--halo-near);
       }
 
       #toast[hidden] {
         display: none;
       }
 
+      /*
+        Still `strong`, because it is the important line — but importance said
+        in the accent rather than in weight. Bold made it shout, and the thing
+        it is reporting is ordinary: a copy that worked.
+      */
       #toast strong {
         display: block;
+        font-weight: normal;
+        color: var(--chosen-ink);
       }
 
       /* What to do with it, for the first few times. Quieter than the line
