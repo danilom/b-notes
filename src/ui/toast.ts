@@ -20,6 +20,15 @@
 const STAYS = 6000;
 
 /**
+ * How the one on screen is taken down, if there is one.
+ *
+ * Module-wide rather than held inside each call, because two of them must
+ * never be running at once: the second message would be carried off by the
+ * first one's timer, part way through its own few seconds.
+ */
+let takeDown: (() => void) | null = null;
+
+/**
  * Says something once, over whatever he is looking at.
  *
  * It goes on its own after a while, and sooner if he does anything at all:
@@ -27,27 +36,33 @@ const STAYS = 6000;
  * about what he did before is in the way rather than in hand.
  */
 export function flashToast(element: HTMLElement, said: string, how: string): void {
+  takeDown?.();
+
   const loud = document.createElement('strong');
   loud.textContent = said;
   const quiet = document.createElement('span');
   quiet.textContent = how;
   element.replaceChildren(loud, quiet);
+
   element.hidden = false;
+  /*
+    Asking for a measurement, purely so the browser settles the element where
+    it is before the class lands. Without it both changes are dealt with in one
+    go, there is no state to fade from, and the block simply appears.
+  */
+  void element.offsetHeight;
+  element.classList.add('up');
 
-  let hide = (): void => {};
-  const timer = setTimeout(() => {
-    hide();
-  }, STAYS);
-
-  hide = (): void => {
+  const hide = (): void => {
     clearTimeout(timer);
+    element.classList.remove('up');
     element.hidden = true;
     document.removeEventListener('pointerdown', hide, true);
     document.removeEventListener('keydown', hide, true);
-    // Nothing left to do on a second call, and there will be one: the timer
-    // and his next keystroke both end up here.
-    hide = (): void => {};
+    if (takeDown === hide) takeDown = null;
   };
+  const timer = setTimeout(hide, STAYS);
+  takeDown = hide;
 
   // Captured, so a click on something that stops the event still puts this
   // away. It is a message, not a control, and it never swallows the click.
