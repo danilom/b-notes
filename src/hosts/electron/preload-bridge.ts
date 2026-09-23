@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, webFrame } from 'electron';
+import { clipboard, contextBridge, ipcRenderer, webFrame } from 'electron';
 
 /**
  * Everything the packaged app hands the interface: somewhere to keep files, and
@@ -29,6 +29,19 @@ const rememberFolders = (next: { writing: string; logs: string }) =>
   ipcRenderer.invoke('app:rememberFolders', next);
 const restart = () => ipcRenderer.invoke('app:restart');
 
+/**
+ * Here rather than over IPC, the way `setZoom` is: Electron's clipboard works
+ * in this process, and a round trip to the main process to reach the same
+ * object would only be a second thing to go wrong.
+ *
+ * `navigator.clipboard` is deliberately not used. It wants a secure context,
+ * which the packaged app loading its page off disk is not, and it would work
+ * in the browser build and fail in the one he runs.
+ */
+const copyToClipboard = async (text: string): Promise<void> => {
+  clipboard.writeText(text);
+};
+
 const log = {
   info: (message: string, detail?: unknown) => ipcRenderer.send('log:write', 'info', message, detail),
   warn: (message: string, detail?: unknown) => ipcRenderer.send('log:write', 'warn', message, detail),
@@ -57,6 +70,7 @@ contextBridge.exposeInMainWorld('files', files);
 contextBridge.exposeInMainWorld('setZoom', setZoom);
 contextBridge.exposeInMainWorld('folders', folders);
 contextBridge.exposeInMainWorld('openFolder', openFolder);
+contextBridge.exposeInMainWorld('copyToClipboard', copyToClipboard);
 contextBridge.exposeInMainWorld('chooseFolder', chooseFolder);
 contextBridge.exposeInMainWorld('rememberFolders', rememberFolders);
 contextBridge.exposeInMainWorld('restart', restart);

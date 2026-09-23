@@ -36,6 +36,7 @@ import {
 import { icon } from './icons.ts';
 import { type Draft, renderList } from './note-list.ts';
 import { deletedStripFor } from './deleted-strip.ts';
+import { flashToast } from './toast.ts';
 import { archiveStripFor } from './archive-strip.ts';
 import {
   type KeptCopies,
@@ -95,6 +96,9 @@ const newNoteLabel = element('new-note-label', HTMLSpanElement);
 const appearanceButton = element('appearance-button', HTMLButtonElement);
 const appearanceLabel = element('appearance-label', HTMLSpanElement);
 const appearancePane = element('appearance', HTMLDialogElement);
+const copyAll = element('copy-all', HTMLButtonElement);
+const copyAllLabel = element('copy-all-label', HTMLSpanElement);
+const toast = element('toast', HTMLDivElement);
 const deleteNote = element('delete-note', HTMLButtonElement);
 const emptyHint = element('empty-hint', HTMLDivElement);
 const deleteNoteLabel = element('delete-note-label', HTMLSpanElement);
@@ -329,6 +333,9 @@ function showStatus(): void {
   const now = whatIsHappening();
 
   deleteNote.disabled = !canDelete(now);
+  // Nothing to put on the clipboard, which he reaches regularly: emptying a
+  // text is how he deletes, and the copies he keeps are what recover it.
+  copyAll.disabled = editor.value.trim().length === 0;
   showVersionsButton();
   emptyHint.textContent = words.emptiedHint;
   emptyHint.hidden = !emptyHintShows(now);
@@ -548,6 +555,39 @@ function askToDelete(): void {
     },
     language,
   );
+}
+
+/**
+ * Puts everything he has written onto the clipboard.
+ *
+ * What he does now is select it all by hand and copy, which on a 145KB essay
+ * is a drag he has to get exactly right, and a stray keystroke during it
+ * replaces the lot.
+ *
+ * The editor rather than the file: what is in front of him is what he means,
+ * and it may be a second or two ahead of the last save.
+ */
+async function copyWholeText(): Promise<void> {
+  const text = editor.value;
+  if (text.trim().length === 0) return;
+
+  try {
+    await host.copyToClipboard(text);
+  } catch (error: unknown) {
+    /*
+      Said in the status line and not in the toast. A failed copy leaves the
+      clipboard holding whatever it held before, so he would go to Gmail and
+      paste something else entirely — and a warning that floats away is one he
+      may never have been looking at.
+    */
+    notice = words.notCopied;
+    showStatus();
+    log.error('Could not copy the text to the clipboard', describeError(error));
+    return;
+  }
+
+  log.info('Copied the whole text to the clipboard', { id: openId, bytes: text.length });
+  flashToast(toast, words.copied, words.copiedHow);
 }
 
 async function deleteOpenNote(id: string): Promise<void> {
@@ -1007,6 +1047,9 @@ function hideAppearance(): void {
 }
 
 appearanceButton.addEventListener('click', showAppearance);
+copyAll.addEventListener('click', () => {
+  void copyWholeText();
+});
 deleteNote.addEventListener('click', askToDelete);
 // On the strip, not the button: a press on the button bubbles up to here, so
 // there is one way in rather than two that have to agree.
@@ -1137,6 +1180,8 @@ export async function startApp(runningOn: Host): Promise<void> {
   });
   newNote.prepend(icon('new-text'));
   appearanceLabel.textContent = words.appearance;
+  copyAllLabel.textContent = words.copyAll;
+  copyAll.prepend(icon('copy'));
   deleteNoteLabel.textContent = words.deleteNote;
   deletedSee.textContent = words.deletedSee;
   // The same box as on the strip's own dialog, for the same reason the bin is

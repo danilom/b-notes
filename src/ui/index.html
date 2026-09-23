@@ -414,6 +414,10 @@
         */
         gap: 0.6rem;
         margin-left: auto;
+        /* And again inside the group, for the largest text size, where even on
+           his own screen four of these will not sit on one line. */
+        flex-wrap: wrap;
+        justify-content: flex-end;
       }
 
       #appearance-button {
@@ -687,6 +691,70 @@
         background: var(--panel);
         color: var(--quiet);
         min-height: 2.6rem;
+        /* What the toast hangs off. */
+        position: relative;
+        /*
+          Four buttons do not fit beside the line of text on a narrow window,
+          and without this the row simply grew past the edge and gave the whole
+          app a horizontal scrollbar — with Izgled off the side of the screen.
+
+          He runs it full screen, where there is room to spare; what makes this
+          reachable is the text size, since everything here is in `em` and the
+          largest setting is most of the way to it. So the group drops to its
+          own line rather than the window growing a bar he has never seen.
+        */
+        flex-wrap: wrap;
+      }
+
+      /* Shrinks and is cut rather than shoving the buttons off: what it says
+         is worth less than the way to do something about it. */
+      #status-text {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+
+      /*
+        Over his writing, just above the strip, and over on the right where the
+        button he pressed is — so it appears where his eye already was rather
+        than somewhere he has to find.
+
+        Loud on purpose, unlike everything else down here. Copying is the one
+        thing the app does that changes nothing on screen, so this is all the
+        evidence there is that it worked; a grey line in the corner is what he
+        would miss and then press the button four more times.
+      */
+      #toast {
+        position: absolute;
+        right: 0.9rem;
+        bottom: calc(100% + 0.6rem);
+        z-index: 2;
+        max-width: min(32rem, calc(100% - 1.8rem));
+        padding: 0.7rem 1rem;
+        border: 1px solid var(--chosen);
+        border-radius: 6px;
+        background: var(--chosen-soft);
+        color: var(--ink);
+        box-shadow: 0 6px 20px var(--halo);
+      }
+
+      #toast[hidden] {
+        display: none;
+      }
+
+      #toast strong {
+        display: block;
+      }
+
+      /* What to do with it, for the first few times. Quieter than the line
+         above, which is the part he needs every time and only once. */
+      #toast span {
+        display: block;
+        margin-top: 0.2rem;
+        color: var(--quiet);
+        font-size: 0.9em;
       }
 
       /* ---- letters and colours ---- */
@@ -2405,8 +2473,17 @@
         <div id="found" hidden></div>
       </div>
       <div id="status">
+        <!-- Above the strip rather than in it: what it reports is not a state,
+             and it is over his writing because that is where his eye is. -->
+        <div id="toast" hidden></div>
         <span id="status-text"></span>
         <div id="status-actions">
+          <!-- Furthest from Obriši tekst, which is the one adjacency worth
+               avoiding: this is a button he may press often and that one is a
+               safety hatch he should almost never reach. -->
+          <button id="copy-all" type="button" disabled>
+            <span id="copy-all-label"></span>
+          </button>
           <button id="see-versions" type="button" disabled>
             <span id="see-versions-label"></span>
           </button>

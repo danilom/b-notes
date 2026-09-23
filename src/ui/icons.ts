@@ -20,6 +20,7 @@ export type IconName =
   | 'appearance'
   | 'close'
   | 'delete'
+  | 'copy'
   | 'archive'
   | 'versions'
   | 'previous'
@@ -37,6 +38,12 @@ const PATHS = {
     'M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z',
   ],
   close: ['M18 6 6 18', 'm6 6 12 12'],
+  // Two sheets, one behind the other: Lucide's copy. The front one is drawn
+  // as a <rect>, written out as a path because this only draws paths.
+  copy: [
+    'M10 8h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+    'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2',
+  ],
   // A box with its lid on, for writing that is kept rather than in use.
   // Lucide draws the lid as a <rect>; written out as a path because this only
   // draws paths, and the rounded corners are the rect's own rx of 1.

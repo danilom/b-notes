@@ -66,6 +66,25 @@ const TEXT = {
     year: (date: Date) => String(date.getFullYear()),
     noteCount: (n: number) => `${n} ${plural(n, 'tekst', 'teksta', 'tekstova')}`,
 
+    copyAll: 'Kopiraj ceo tekst',
+    /*
+      Two lines, because they answer two questions. The first says it worked,
+      which is the whole job — nothing on screen changes when a copy lands, so
+      without this he has no way to tell. The second says what to do with it,
+      which he needs the first few times and never again.
+
+      Klipbord rather than privremena memorija, which is what Serbian Windows
+      calls it and what nobody says. The point of naming it at all is that he
+      and whoever set the app up have the same word on the telephone.
+
+      The English paste in brackets is there because the menu he is about to
+      use says that, not Nalepi.
+    */
+    copied: 'Ceo tekst je kopiran na klipbord.',
+    copiedHow: 'Zalepi ga u Gmail ili drugi program (paste, Ctrl+V).',
+    /* Not a toast. A copy that did not happen leaves the clipboard holding
+       whatever it held before, so he would paste something else entirely. */
+    notCopied: 'Tekst nije kopiran. Pokušaj ponovo.',
     deleteNote: 'Obriši tekst',
     deleteTitle: 'Obriši tekst',
     deleteBody: 'Ovaj tekst se sklanja među obrisane. Možeš ga vratiti kad god hoćeš.',
@@ -345,6 +364,10 @@ const TEXT = {
     year: (date: Date) => String(date.getFullYear()),
     noteCount: (n: number) => `${n} text${n === 1 ? '' : 's'}`,
 
+    copyAll: 'Copy the whole text',
+    copied: 'The whole text is on the clipboard.',
+    copiedHow: 'Paste it into Gmail or another program (Ctrl+V).',
+    notCopied: 'The text was not copied. Try again.',
     deleteNote: 'Delete text',
     deleteTitle: 'Delete text',
     deleteBody: 'This text is moved to the deleted ones. You can bring it back whenever you want.',

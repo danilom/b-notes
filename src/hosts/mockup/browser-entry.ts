@@ -67,6 +67,13 @@ async function main(): Promise<void> {
     writingFolder: MOCK_WRITING_FOLDER,
     appFolder: MOCK_APP_FOLDER,
     log: consoleLog,
+    /*
+      The page's own clipboard, which is all a tab has. It needs a secure page
+      and a gesture behind it, so it works from localhost and from a click and
+      would not from a file opened off disk — which is why the packaged app
+      uses Electron's instead of this.
+    */
+    copyToClipboard: (text: string) => navigator.clipboard.writeText(text),
     logsFolder: `${MOCK_APP_FOLDER}/logs`,
     /*
       Nothing here can show a folder or ask for one: a browser tab has no

@@ -8,6 +8,7 @@ declare global {
     files?: FileSystem;
     folders?: () => Promise<{ writing: string; app: string; logs: string; mode: RunMode }>;
     openFolder?: (path: string) => Promise<void>;
+    copyToClipboard?: (text: string) => Promise<void>;
     chooseFolder?: (from: string) => Promise<string | null>;
     rememberFolders?: (next: { writing: string; logs: string }) => Promise<void>;
     restart?: () => Promise<void>;
@@ -24,12 +25,22 @@ declare global {
  * the mock out of what he installs.
  */
 async function main(): Promise<void> {
-  const { files, folders, openFolder, chooseFolder, rememberFolders, restart, log, setZoom } =
-    window;
+  const {
+    files,
+    folders,
+    openFolder,
+    copyToClipboard,
+    chooseFolder,
+    rememberFolders,
+    restart,
+    log,
+    setZoom,
+  } = window;
   if (
     files === undefined ||
     folders === undefined ||
     openFolder === undefined ||
+    copyToClipboard === undefined ||
     chooseFolder === undefined ||
     rememberFolders === undefined ||
     restart === undefined ||
@@ -50,6 +61,7 @@ async function main(): Promise<void> {
     appFolder: where.app,
     logsFolder: where.logs,
     openFolder,
+    copyToClipboard,
     chooseFolder,
     rememberFolders,
     restart,

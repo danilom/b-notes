@@ -43,6 +43,20 @@ export interface Host {
    */
   readonly openFolder: (path: string) => Promise<void>;
   /**
+   * Puts text on the clipboard.
+   *
+   * The host's job because only a host has one: Electron hands the renderer
+   * the real system clipboard, and a browser tab has the one the page is
+   * allowed to touch, which needs a gesture behind it and a secure page.
+   * Neither is anything `ui/` should know about.
+   *
+   * Rejects rather than reporting false. Nothing on screen changes when a copy
+   * works, so nothing changes when it fails either — which makes this the one
+   * operation in the app where a silent failure is completely invisible, and
+   * the caller has to be made to deal with it.
+   */
+  readonly copyToClipboard: (text: string) => Promise<void>;
+  /**
    * Asks for a folder, starting from `from`. Null when nothing was chosen.
    *
    * The host's job because only it has a picker: Electron has the real one, and
