@@ -14,6 +14,21 @@ import { type Rect, deskAround, keptOnTheDesk } from './window-bounds.ts';
 app.disableHardwareAcceleration();
 
 /**
+ * Who this app is, as far as the Windows taskbar is concerned.
+ *
+ * The installer writes this same string onto the shortcut it creates, and
+ * Windows groups a taskbar button with a pinned shortcut only when the two
+ * agree. Without it the running window carries an id derived from the path to
+ * the executable, so pinning the app and then opening it can leave him with
+ * two buttons for one program — the pinned one and a live one beside it.
+ *
+ * Kept next to a test that reads `electron-builder.yml`, because the string
+ * has to be the same in both places and nothing else would ever say so.
+ */
+export const APP_ID = 'com.b-notes.app';
+app.setAppUserModelId(APP_ID);
+
+/**
  * No menu bar.
  *
  * Electron installs a default one when we don't, and it is a row of things he
