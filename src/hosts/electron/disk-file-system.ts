@@ -48,6 +48,17 @@ export function createFileSystem(): FileSystem {
       );
     },
 
+    async listFolders(folder: string): Promise<string[]> {
+      let entries: Dirent[];
+      try {
+        entries = await readdir(folder, { withFileTypes: true });
+      } catch (error: unknown) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+        throw new FolderMissing(folder);
+      }
+      return entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+    },
+
     async folderExists(folder: string): Promise<boolean> {
       try {
         return (await stat(folder)).isDirectory();

@@ -1449,3 +1449,140 @@ describe('keeping a copy because the caller says so', () => {
     );
   });
 });
+
+describe('writing brought in from somewhere else', () => {
+  const ARCHIVE = 'Arhiva/Stari laptop 2021';
+
+  async function storeWithArchive() {
+    const made = await emptyStore();
+    await mkdir(path.join(made.dir, ARCHIVE), { recursive: true });
+    return made;
+  }
+
+  const archived = async (dir: string, name: string, text: string): Promise<void> => {
+    await writeFile(path.join(dir, ARCHIVE, `${name}${EXTENSION}`), text, 'utf8');
+  };
+
+  it('reports no archives when there is no Arhiva folder', async () => {
+    // The ordinary case: only whoever set the app up ever puts one there.
+    const { store } = await emptyStore();
+    assert.deepEqual(await store.listArchives(), []);
+  });
+
+  it('names each archive and counts what is in it', async () => {
+    const { dir, store } = await storeWithArchive();
+    await archived(dir, 'Pismo', 'Pismo' + '\n\n' + 'Jedno.');
+    await archived(dir, 'Drugo', 'Drugo' + '\n\n' + 'Dva.');
+
+    assert.deepEqual(await store.listArchives(), [{ name: 'Stari laptop 2021', texts: 2 }]);
+  });
+
+  it('leaves out an archive folder with nothing in it', async () => {
+    // A row that opens onto nothing is worse than no row. The folder stays on
+    // disk, because whoever made it meant to.
+    const { dir, store } = await storeWithArchive();
+    await mkdir(path.join(dir, 'Arhiva', 'Prazna'), { recursive: true });
+    await archived(dir, 'Pismo', 'Pismo' + '\n\n' + 'Jedno.');
+
+    assert.deepEqual((await store.listArchives()).map((a) => a.name), ['Stari laptop 2021']);
+  });
+
+  it('says which archive each text came from, since that is all it has', async () => {
+    const { dir, store } = await storeWithArchive();
+    await archived(dir, 'Pismo', 'Pismo' + '\n\n' + 'Jedno.');
+
+    const found = await store.listArchived(new Set());
+    assert.deepEqual(found.map((note) => [note.archive, note.title]), [['Stari laptop 2021', 'Pismo']]);
+  });
+
+  it('marks an archived text he already has one of, by title', async () => {
+    const { dir, store } = await storeWithArchive();
+    await archived(dir, 'Pismo', 'Pismo' + '\n\n' + 'Staro.');
+    await archived(dir, 'Samo ovde', 'Samo ovde' + '\n\n' + 'Nigde drugde.');
+    await store.save(null, 'Pismo' + '\n\n' + 'Novo.');
+
+    const live = new Set((await store.list()).map((note) => note.title));
+    const found = await store.listArchived(live);
+
+    assert.deepEqual(
+      found.map((note) => [note.title, note.alsoLive]).sort(),
+      [['Pismo', true], ['Samo ovde', false]],
+    );
+  });
+
+  it('counts what is kept beside an archived text without reading it', async () => {
+    const { dir, store } = await storeWithArchive();
+    await archived(dir, 'Pismo', 'Pismo' + '\n\n' + 'Jedno.');
+    await mkdir(path.join(dir, ARCHIVE, VERSIONS_FOLDER, 'Pismo'), { recursive: true });
+    await writeFile(path.join(dir, ARCHIVE, VERSIONS_FOLDER, 'Pismo', '2021-01-01 10-00-00.txt'), 'Staro', 'utf8');
+
+    assert.equal((await store.listArchived(new Set()))[0]?.versions, 1);
+  });
+
+  it('moves a text out of its archive rather than copying it', async () => {
+    const { dir, store } = await storeWithArchive();
+    await archived(dir, 'Pismo', 'Pismo' + '\n\n' + 'Jedno.');
+
+    assert.equal(await store.bringBack('Stari laptop 2021', 'Pismo'), 'Pismo');
+
+    assert.deepEqual((await readdir(dir)).filter((n) => n.endsWith(EXTENSION)), ['Pismo.txt']);
+    assert.deepEqual(await readdir(path.join(dir, ARCHIVE)), []);
+  });
+
+  it('numbers both when he already has a text of that name', async () => {
+    const { dir, store } = await storeWithArchive();
+    await archived(dir, 'Pismo', 'Pismo' + '\n\n' + 'Staro.');
+    await store.save(null, 'Pismo' + '\n\n' + 'Novo.');
+
+    assert.equal(await store.bringBack('Stari laptop 2021', 'Pismo'), 'Pismo (2)');
+
+    assert.deepEqual((await readdir(dir)).filter((n) => n.endsWith(EXTENSION)).sort(), [
+      'Pismo (1).txt',
+      'Pismo (2).txt',
+    ]);
+  });
+
+  it('brings the copies kept in the archive with it', async () => {
+    const { dir, store } = await storeWithArchive();
+    await archived(dir, 'Pismo', 'Pismo' + '\n\n' + 'Jedno.');
+    await mkdir(path.join(dir, ARCHIVE, VERSIONS_FOLDER, 'Pismo'), { recursive: true });
+    await writeFile(path.join(dir, ARCHIVE, VERSIONS_FOLDER, 'Pismo', '2021-01-01 10-00-00.txt'), 'Staro', 'utf8');
+
+    await store.bringBack('Stari laptop 2021', 'Pismo');
+
+    assert.deepEqual(await readdir(path.join(dir, VERSIONS_FOLDER, 'Pismo')), ['2021-01-01 10-00-00.txt']);
+    assert.equal(await store.countVersions('Pismo'), 1);
+  });
+
+  it('settles the archive it left, so a lone survivor loses its number', async () => {
+    const { dir, store } = await storeWithArchive();
+    await archived(dir, 'Pismo (1)', 'Pismo' + '\n\n' + 'Jedno.');
+    await archived(dir, 'Pismo (2)', 'Pismo' + '\n\n' + 'Dva.');
+
+    await store.bringBack('Stari laptop 2021', 'Pismo (1)');
+
+    assert.deepEqual(await readdir(path.join(dir, ARCHIVE)), ['Pismo.txt']);
+  });
+
+  it('puts it at the top of his list, where a text he just asked for belongs', async () => {
+    const { dir, store } = await storeWithArchive();
+    await store.save(null, 'Raniji' + '\n\n' + 'Pisan juce.');
+    // Aged by a day, or the two land in the same millisecond and the order
+    // this is about is decided by whichever the folder listed first.
+    const yesterday = new Date(Date.now() - 86_400_000);
+    await utimes(path.join(dir, `Raniji${EXTENSION}`), yesterday, yesterday);
+
+    await archived(dir, 'Staro', 'Staro' + '\n\n' + 'Iz 2019.');
+    const long_ago = new Date(2019, 0, 1);
+    await utimes(path.join(dir, ARCHIVE, `Staro${EXTENSION}`), long_ago, long_ago);
+
+    await store.bringBack('Stari laptop 2021', 'Staro');
+
+    assert.equal((await store.list())[0]?.title, 'Staro');
+  });
+
+  it('refuses a text that is not in that archive', async () => {
+    const { store } = await storeWithArchive();
+    await assert.rejects(() => store.bringBack('Stari laptop 2021', 'Nema me'), /No such archived note/);
+  });
+});

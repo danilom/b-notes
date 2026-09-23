@@ -72,6 +72,23 @@ export function createMockFileSystem(): FileSystem {
       return wanted;
     },
 
+    async listFolders(folder: string): Promise<string[]> {
+      const under = `${folder}/`;
+      const names = new Set<string>();
+      let anyUnder = false;
+      for (const at of load().keys()) {
+        if (!at.startsWith(under)) continue;
+        anyUnder = true;
+        // A folder is real here exactly when a key has a further slash past
+        // this one. The segment between the two is what it is called.
+        const rest = at.slice(under.length);
+        const slash = rest.indexOf('/');
+        if (slash > 0) names.add(rest.slice(0, slash));
+      }
+      if (!anyUnder) throw new FolderMissing(folder);
+      return [...names];
+    },
+
     /**
      * Folders here exist only because keys contain slashes, so one is real
      * exactly when something lives in it. Close enough to the real answer for

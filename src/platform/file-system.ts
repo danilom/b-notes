@@ -67,6 +67,18 @@ export interface FileSystem {
    */
   list(folder: string): Promise<FileInfo[]>;
   /**
+   * The names of the folders directly inside `folder`, and nothing else.
+   *
+   * For the one place the app keeps writing in folders it did not name:
+   * `Arhiva/`, where each import gets a folder of its own. Names rather than
+   * paths, because what is wanted is what the folder is called — it is the
+   * only label an archive has.
+   *
+   * Throws `FolderMissing` on the same terms as `list`, for the same reason:
+   * an archive folder that has gone is not an archive folder that is empty.
+   */
+  listFolders(folder: string): Promise<string[]>;
+  /**
    * Whether a folder is there and can be looked in.
    *
    * `list` deliberately cannot answer this — a folder that isn't there is empty

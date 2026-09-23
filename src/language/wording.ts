@@ -107,6 +107,49 @@ const TEXT = {
     showAll: 'Prikaži sve',
     restore: 'Vrati među tekstove',
     deletedBack: 'Nazad na obrisane',
+
+    /*
+      Arhiva rather than Rezervne kopije, which would promise a backup this app
+      does not make, and rather than Stari tekstovi, which says time and would
+      read against Nedavni directly above it.
+
+      The strip is only there when a folder of imported writing exists, and one
+      only exists because somebody put it there. Unlike Obrisani tekstovi,
+      which he fills himself simply by using the app, an empty Arhiva is not
+      empty for now — it is not a thing on this machine, and a control he can
+      never make work is worse than no control.
+    */
+    archive: 'Arhiva',
+    archiveSee: 'Vidi',
+    /*
+      Preneseš, not vratiš. Vratiti is what the deleted dialog does — give back
+      something that was his and went away. Nothing in here was ever in his
+      list, so the word for it is carrying it in, and the button below says the
+      same thing.
+    */
+    archiveIntro:
+      'Ovo su tekstovi doneseni sa drugih mesta. Nisu među tvojim tekstovima dok ih ne preneseš.',
+    archivePreview: 'Pregled iz arhive',
+    archivePreviewCheck: 'Proveri da li je ovo tekst koji želiš da preneseš među svoje.',
+    archiveEmpty: 'U ovom tekstu nema ništa.',
+    /** Where it came from and when it was last written, on one line. */
+    archiveFrom: (archive: string, when: string) => `${archive} · ${when}`,
+    /*
+      Said plainly and without alarm. It is not a claim that the two are the
+      same text — nothing can know that — only that one of his own opens the
+      same way, which is what decides whether he wants another.
+    */
+    archiveAlsoLive: 'Već imaš tekst koji ovako počinje.',
+    archiveVersions: (n: number) =>
+      `${plural(n, 'Uz njega dolazi', 'Uz njega dolaze', 'Uz njega dolazi')} ${n} ` +
+      `${plural(n, 'ranija verzija', 'ranije verzije', 'ranijih verzija')}.`,
+    archiveBring: 'Prenesi među moje tekstove',
+    archiveBack: 'Nazad na arhivu',
+    archiveMatching: (n: number, query: string) =>
+      `${n} ${plural(n, 'tekst iz arhive sadrži', 'teksta iz arhive sadrže', 'tekstova iz arhive sadrži')} „${query}“`,
+    archiveBrought: 'Tekst je prenet među tvoje tekstove.',
+    archiveNotBrought: 'Tekst nije prenet. Pokušaj ponovo.',
+    archiveUnreadable: 'Arhiva se ne može otvoriti.',
     destroy: 'Uništi zauvek',
     destroyTitle: 'Uništi zauvek',
     destroyBody: 'Ovaj tekst se uništava zauvek. Ne može se vratiti.',
@@ -308,6 +351,25 @@ const TEXT = {
     showAll: 'Show all',
     restore: 'Bring this text back',
     deletedBack: 'Back to deleted texts',
+
+    archive: 'Archive',
+    archiveSee: 'View',
+    archiveIntro:
+      'This is writing brought in from elsewhere. It is not among your texts until you bring it in.',
+    archivePreview: 'Archived text preview',
+    archivePreviewCheck: 'Check whether this is the text you want among your own.',
+    archiveEmpty: 'There is nothing in this text.',
+    archiveFrom: (archive: string, when: string) => `${archive} · ${when}`,
+    archiveAlsoLive: 'You already have a text that starts this way.',
+    archiveVersions: (n: number) =>
+      `${n} earlier version${n === 1 ? '' : 's'} come${n === 1 ? 's' : ''} with it.`,
+    archiveBring: 'Bring this into my texts',
+    archiveBack: 'Back to the archive',
+    archiveMatching: (n: number, query: string) =>
+      `${n} archived text${n === 1 ? '' : 's'} contain${n === 1 ? 's' : ''} "${query}"`,
+    archiveBrought: 'The text is now among your texts.',
+    archiveNotBrought: 'The text was not brought in. Try again.',
+    archiveUnreadable: 'The archive cannot be opened.',
     destroy: 'Destroy forever',
     destroyTitle: 'Destroy forever',
     destroyBody: 'This text is destroyed for good. It cannot be brought back.',

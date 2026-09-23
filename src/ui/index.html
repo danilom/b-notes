@@ -756,7 +756,8 @@
         both with one control meant the sentence had to read as an instruction,
         which it cannot in the searching case.
       */
-      #deleted-block {
+      #deleted-block,
+      #archive-block {
         display: flex;
         align-items: center;
         gap: 0.5rem;
@@ -780,12 +781,14 @@
         of it. That is how the rows in the review lists came to need their
         selected state excluded from their own hover by hand.
       */
-      #deleted-block:hover {
+      #deleted-block:hover,
+      #archive-block:hover {
         background-image: linear-gradient(var(--wash), var(--wash));
         color: var(--ink);
       }
 
-      #deleted-block:active {
+      #deleted-block:active,
+      #archive-block:active {
         background-image: linear-gradient(var(--wash-firm), var(--wash-firm));
       }
 
@@ -804,7 +807,8 @@
         color: var(--quiet);
       }
 
-      #deleted-block svg {
+      #deleted-block svg,
+      #archive-block svg {
         flex: none;
         width: 1em;
         height: 1em;
@@ -813,14 +817,16 @@
 
       /* Shrinks and cuts rather than pushing the button off the edge: the count
          of what matches is worth less than the way to go and look at it. */
-      #deleted-block-label {
+      #deleted-block-label,
+      #archive-block-label {
         min-width: 0;
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
       }
 
-      #deleted-see {
+      #deleted-see,
+      #archive-see {
         flex: none;
         margin-left: auto;
         padding: 0.25rem 0.7rem;
@@ -835,8 +841,23 @@
         cascade and an id selector beats it every time.
       */
       #side[hidden],
-      #main[hidden] {
+      #main[hidden],
+      /* No archive on this machine, and no way for him to make one — so no
+         strip, rather than a strip that can never come to life. `hidden` alone
+         loses to the flex above, as it does for the two panes. */
+      #archive-block[hidden] {
         display: none;
+      }
+
+      /*
+        Said quietly. It is a fact worth having before he brings in a fourth
+        copy of an essay he already has, and it is not a warning: nothing here
+        knows the two are the same text, only that they start alike.
+      */
+      .review-already {
+        grid-column: 1 / -1;
+        color: var(--chosen-ink);
+        font-size: 0.92em;
       }
 
       /*
@@ -2252,6 +2273,10 @@
         <span id="deleted-block-label"></span>
         <button id="deleted-see" type="button"></button>
       </div>
+      <div id="archive-block" hidden>
+        <span id="archive-block-label"></span>
+        <button id="archive-see" type="button"></button>
+      </div>
     </div>
 
     <div id="main">
@@ -2287,6 +2312,7 @@
     <dialog id="appearance"></dialog>
     <dialog id="confirm"></dialog>
     <dialog id="deleted"></dialog>
+    <dialog id="archive"></dialog>
     <dialog id="versions"></dialog>
     <dialog id="advanced"></dialog>
 

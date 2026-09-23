@@ -13,6 +13,9 @@ import {
   isConflictedCopy,
   isConvertibleNoteFile,
   type Renaming,
+  ARCHIVE_FOLDER,
+  archiveFolderFor,
+  archivedVersionsFolderFor,
   isNoteFile,
   baseGroupOf,
   claimName,
@@ -28,6 +31,8 @@ import { deletedIdFor, planSave } from './note-saving.ts';
 import { toSearchable } from '../language/diacritics.ts';
 import { titleFrom } from './note-title.ts';
 import {
+  type Archive,
+  type ArchivedNote,
   type Converted,
   type DeletedNote,
   type Note,
@@ -337,6 +342,54 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
     }
   }
 
+  /** Files in one archive folder, by id. Absence is ordinary: most folders have none. */
+  async function archivedFiles(archive: string): Promise<Map<string, FileInfo>> {
+    try {
+      return await noteFiles(at(archiveFolderFor(archive)));
+    } catch (failure: unknown) {
+      if (!(failure instanceof FolderMissing)) throw failure;
+      return new Map();
+    }
+  }
+
+  /**
+   * The names of the archive folders.
+   *
+   * No archives at all is the ordinary case — only whoever set the app up puts
+   * one there — so a missing `Arhiva` is an empty answer rather than a fault.
+   * Anything else is a folder that exists and will not open, which is a fault
+   * and goes up.
+   */
+  async function archiveNames(): Promise<string[]> {
+    try {
+      return (await files.listFolders(at(ARCHIVE_FOLDER))).filter((name) => name !== VERSIONS_FOLDER);
+    } catch (failure: unknown) {
+      if (!(failure instanceof FolderMissing)) throw failure;
+      return [];
+    }
+  }
+
+  /** The same rename, for a text in one archive. */
+  const renameArchived =
+    (archive: string) =>
+    async (from: string, to: string): Promise<void> => {
+      await moveVersions(
+        archivedVersionsFolderFor(archive, from),
+        archivedVersionsFolderFor(archive, to),
+      );
+      await files.rename(
+        at(archiveFolderFor(archive), `${from}${EXTENSION}`),
+        at(archiveFolderFor(archive), `${to}${EXTENSION}`),
+      );
+    };
+
+  const settleArchived = (archive: string, base: string): Promise<void> =>
+    settleIn(
+      base,
+      async () => new Set((await archivedFiles(archive)).keys()),
+      renameArchived(archive),
+    );
+
   async function idsPutAway(): Promise<Set<string>> {
     const found = await filesIn(at(DELETED_FOLDER));
     return new Set(found.map((file) => idOf(nameOf(file.path))));
@@ -409,6 +462,69 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
     async list(): Promise<Note[]> {
       const notes = await Promise.all([...(await noteFiles())].map(([id, file]) => noteFrom(id, file)));
       return notes.sort(newestFirst);
+    },
+
+    async listArchives(): Promise<Archive[]> {
+      const archives: Archive[] = [];
+      for (const name of await archiveNames()) {
+        const held = await archivedFiles(name);
+        // An archive with nothing in it is a folder, not an archive. Left on
+        // disk, because whoever put it there meant to, and left out of here,
+        // because a row that opens onto nothing is worse than no row.
+        if (held.size > 0) archives.push({ name, texts: held.size });
+      }
+      return archives.sort((first, second) => first.name.localeCompare(second.name, 'sr'));
+    },
+
+    async listArchived(liveTitles: ReadonlySet<string>): Promise<ArchivedNote[]> {
+      const found: ArchivedNote[] = [];
+      for (const archive of await archiveNames()) {
+        for (const [id, file] of await archivedFiles(archive)) {
+          const note = await noteFrom(id, file);
+          const kept = await filesIn(at(archivedVersionsFolderFor(archive, id)));
+          found.push({
+            ...note,
+            archive,
+            versions: kept.length,
+            // By title, which is conservative: it misses a text he rewrote the
+            // opening of, and it never claims two texts are the same, only
+            // that two of them start alike. That is the whole of what he needs
+            // to decide whether to bring one in.
+            alsoLive: liveTitles.has(note.title),
+          });
+        }
+      }
+      return found.sort(newestFirst);
+    },
+
+    async bringBack(archive: string, id: string): Promise<string> {
+      const file = (await archivedFiles(archive)).get(requireNoteId(id));
+      if (file === undefined) throw new Error(`No such archived note: ${archive}/${id}`);
+
+      // Claimed in his list, by the rule everything there is named by — which
+      // may mean numbering a text already holding the name.
+      const taking = claimName(baseOf(id), null, new Set((await noteFiles()).keys()));
+      const back = taking.id;
+      await files.rename(file.path, at(`${back}${EXTENSION}`));
+
+      /*
+        Touched on the way in, exactly as a restored text is. Its old time is
+        when it was last written on a machine he no longer uses, which would
+        file a text he asked for this minute among his 2019s — and the list he
+        would go looking in is ordered by time. Now is the honest answer to
+        "when did this last change", because bringing it in is a change to it.
+      */
+      const text = await textOf(at(`${back}${EXTENSION}`));
+      if (text !== null) await files.write(at(`${back}${EXTENSION}`), text);
+
+      // Its history comes with it. An archived text is often the only place an
+      // early draft survives, and that is the reason to keep archives at all.
+      await moveVersions(archivedVersionsFolderFor(archive, id), versionsFolderFor(back));
+
+      await makeRoom(taking.displaced);
+      // The archive is one text lighter under that name.
+      await settleArchived(archive, baseGroupOf(id));
+      return back;
     },
 
     async listDeleted(): Promise<DeletedNote[]> {

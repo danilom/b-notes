@@ -1,6 +1,12 @@
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 import { createNoteStore } from '../notes/note-store.ts';
-import { type DeletedNote, type Note, isEmptyText } from '../notes/note.ts';
+import {
+  type Archive,
+  type ArchivedNote,
+  type DeletedNote,
+  type Note,
+  isEmptyText,
+} from '../notes/note.ts';
 import { BUILD_STAMP } from '../platform/build-info.ts';
 import type { Host } from '../platform/host.ts';
 import { type Log, describeError } from '../platform/logging.ts';
@@ -16,6 +22,7 @@ import { openConfirmDialog } from './confirm-dialog.ts';
 import { openAdvancedPanel } from './advanced-panel.ts';
 import { showLostTexts } from './lost-texts.ts';
 import { openDeletedDialog } from './deleted-dialog.ts';
+import { openArchiveDialog } from './archive-dialog.ts';
 import { openVersionsDialog } from './versions-dialog.ts';
 import { versionsWorthShowing } from './version-row.ts';
 import { confirmationForDeleting, confirmationForDestroying } from './note-confirmations.ts';
@@ -29,6 +36,7 @@ import {
 import { icon } from './icons.ts';
 import { type Draft, renderList } from './note-list.ts';
 import { deletedStripFor } from './deleted-strip.ts';
+import { archiveStripFor } from './archive-strip.ts';
 import {
   type KeptCopies,
   type WhatIsHappening,
@@ -93,6 +101,10 @@ const deleteNoteLabel = element('delete-note-label', HTMLSpanElement);
 const deletedBlock = element('deleted-block', HTMLDivElement);
 const deletedSee = element('deleted-see', HTMLButtonElement);
 const deletedBlockLabel = element('deleted-block-label', HTMLSpanElement);
+const archiveBlock = element('archive-block', HTMLDivElement);
+const archiveSee = element('archive-see', HTMLButtonElement);
+const archiveBlockLabel = element('archive-block-label', HTMLSpanElement);
+const archivePane = element('archive', HTMLDialogElement);
 const confirmPane = element('confirm', HTMLDialogElement);
 const deletedPane = element('deleted', HTMLDialogElement);
 const versionsPane = element('versions', HTMLDialogElement);
@@ -128,6 +140,14 @@ let restored: { note: string; version: string } | null = null;
 let notes: Note[] = [];
 /** Everything he has put away. Held like `notes`, and for the same reason. */
 let deleted: DeletedNote[] = [];
+/**
+ * The archive folders and their counts — names and sizes, never their texts.
+ *
+ * Read at startup because it decides whether the strip exists at all, and it
+ * costs one directory listing per folder. What is *in* them is read only when
+ * he asks, which is what `listArchived` is for.
+ */
+let archives: Archive[] = [];
 
 /**
  * How many copies are kept, and which text they were counted for.
@@ -162,6 +182,7 @@ let saveTimer: ReturnType<typeof setTimeout> | undefined;
 function draw(): void {
   renderList(listPane, { notes, query: search.value, openId, draft, language });
   drawDeletedBlock();
+  drawArchiveBlock();
 }
 
 /**
@@ -319,6 +340,20 @@ function drawDeletedBlock(): void {
   // The whole strip is the target, so the whole strip has to go quiet with the
   // button: the cursor and the hover are what promise there is something here.
   deletedBlock.classList.toggle('dead', !strip.canOpen);
+}
+
+/**
+ * The strip is there or it is not — there is no disabled state for it.
+ *
+ * Nothing he can do makes an archive, so an empty one is not a place he has
+ * not been to yet. The label does not move when he searches either: these
+ * texts are not in memory, and a count of matches here would be claiming to
+ * have looked.
+ */
+function drawArchiveBlock(): void {
+  const strip = archiveStripFor(archives, language);
+  archiveBlockLabel.textContent = strip.label;
+  archiveBlock.hidden = !strip.present;
 }
 
 async function saveNow(): Promise<void> {
@@ -704,6 +739,82 @@ function showDeleted(): void {
 }
 
 /**
+ * Opens the archive, reading it first.
+ *
+ * The one place in the app that goes to disk because he pressed something, so
+ * it says so: an import can be six hundred texts, and a button that does
+ * nothing for a second is a button he presses again.
+ */
+async function showArchive(): Promise<void> {
+  if (archivePane.open || archiveSee.disabled) return;
+
+  archiveSee.disabled = true;
+  let found: ArchivedNote[];
+  try {
+    found = await store.listArchived(new Set(notes.map((note) => note.title)));
+  } catch (error: unknown) {
+    // A folder that is there and will not open. He gets a line he can read
+    // over the telephone; the reason goes where it can be looked at.
+    notice = words.archiveUnreadable;
+    showStatus();
+    log.error('Could not read the archive', describeError(error));
+    return;
+  } finally {
+    archiveSee.disabled = false;
+  }
+
+  log.info('Looked at the archive', { count: found.length, archives: archives.length });
+  const close = openArchiveDialog(archivePane, { archived: found, query: search.value }, language, {
+    onClose: () => {
+      close();
+      archiveSee.focus();
+    },
+    onBringBack: (note: ArchivedNote) => {
+      close();
+      void bringBackNote(note);
+    },
+  });
+}
+
+/**
+ * Moves one text out of an archive and into his list, then opens it.
+ *
+ * Opened rather than merely listed, for the same reason a restored text is: he
+ * asked for this text, and leaving him to find it in six hundred others would
+ * be answering a question with a question.
+ */
+async function bringBackNote(note: ArchivedNote): Promise<void> {
+  // Anything still on its way to disk lands first. Bringing a text in can
+  // rename the one he is in — it claims a name in his list — and a save
+  // landing afterwards would write his open text back under the old name.
+  if (saveTimer !== undefined) {
+    clearTimeout(saveTimer);
+    saveTimer = undefined;
+    await saveNow();
+  }
+
+  let back: string;
+  try {
+    back = await store.bringBack(note.archive, note.id);
+    archives = await store.listArchives();
+    await reload();
+  } catch (error: unknown) {
+    notice = words.archiveNotBrought;
+    showStatus();
+    log.error('Could not bring a text in from the archive', {
+      archive: note.archive,
+      id: note.id,
+      failure: describeError(error),
+    });
+    return;
+  }
+
+  log.info('Brought a text in from the archive', { archive: note.archive, from: note.id, id: back });
+  notice = words.archiveBrought;
+  await open(back);
+}
+
+/**
  * Asks before destroying, and asks harder the more there is to lose.
  *
  * The barrier is a word written out rather than a second button, because a
@@ -894,6 +1005,9 @@ deleteNote.addEventListener('click', askToDelete);
 deletedBlock.addEventListener('click', () => {
   if (!deletedSee.disabled) showDeleted();
 });
+archiveBlock.addEventListener('click', () => {
+  void showArchive();
+});
 seeVersions.addEventListener('click', showVersions);
 
 /**
@@ -1010,6 +1124,10 @@ export async function startApp(runningOn: Host): Promise<void> {
   appearanceLabel.textContent = words.appearance;
   deleteNoteLabel.textContent = words.deleteNote;
   deletedSee.textContent = words.deletedSee;
+  archiveSee.textContent = words.archiveSee;
+  // The same box as on the strip's own dialog, for the same reason the bin is
+  // on both: one mark for one place.
+  archiveBlock.prepend(icon('archive'));
   // The same bin as on the button he pressed to put a text here. One mark for
   // one idea is the only thing tying the action to the place it sends things.
   deletedBlock.prepend(icon('delete'));
@@ -1030,7 +1148,11 @@ export async function startApp(runningOn: Host): Promise<void> {
    * instead, and used to take the whole startup down as an unhandled rejection:
    * he was left looking at the frame of an app that never filled in.
    */
-  async function readEverything(): Promise<{ notes: Note[]; deleted: DeletedNote[] }> {
+  async function readEverything(): Promise<{
+    notes: Note[];
+    deleted: DeletedNote[];
+    archives: Archive[];
+  }> {
     // Before anything is listed: a note still in another format is one he can't
     // open without this app, which is the guarantee .txt was chosen for.
     const converted = await store.convertToPlainText();
@@ -1054,8 +1176,21 @@ export async function startApp(runningOn: Host): Promise<void> {
     // had cause to look at it.
     await store.settleNames();
 
-    const [live, away] = await Promise.all([store.list(), store.listDeleted()]);
-    return { notes: live, deleted: away };
+    /*
+      The archives are counted, not read. What is in them is six hundred texts
+      he mostly already has, and reading that at startup would spend the second
+      before his writing appears on the one thing he did not ask for.
+
+      Counted at all because the strip under his list is there or is not, and
+      that answer has to be right from the first paint rather than arriving a
+      moment later and pushing the list up under him.
+    */
+    const [live, away, kept] = await Promise.all([
+      store.list(),
+      store.listDeleted(),
+      store.listArchives(),
+    ]);
+    return { notes: live, deleted: away, archives: kept };
   }
 
   function cannotReachHisWriting(because?: string): void {
@@ -1087,7 +1222,7 @@ export async function startApp(runningOn: Host): Promise<void> {
   }
 
   try {
-    ({ notes, deleted } = await readEverything());
+    ({ notes, deleted, archives } = await readEverything());
   } catch (error: unknown) {
     log.error('Could not read his writing at all', describeError(error));
     // Verbatim. It is the only thing that tells a disconnected drive from a

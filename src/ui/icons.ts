@@ -20,6 +20,7 @@ export type IconName =
   | 'appearance'
   | 'close'
   | 'delete'
+  | 'archive'
   | 'versions'
   | 'previous'
   | 'next'
@@ -36,6 +37,14 @@ const PATHS = {
     'M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z',
   ],
   close: ['M18 6 6 18', 'm6 6 12 12'],
+  // A box with its lid on, for writing that is kept rather than in use.
+  // Lucide draws the lid as a <rect>; written out as a path because this only
+  // draws paths, and the rounded corners are the rect's own rx of 1.
+  archive: [
+    'M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z',
+    'M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8',
+    'M10 12h4',
+  ],
   versions: [
     'M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8',
     'M3 3v5h5',

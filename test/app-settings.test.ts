@@ -21,6 +21,7 @@ function slowFiles() {
   const files: FileSystem = {
     list: async () => [...stored.keys()].map((path) => ({ path, updatedAt: 0, bytes: 0 })),
     folderExists: async () => true,
+    listFolders: async () => [],
     read: async (path) => {
       const text = stored.get(path);
       if (text === undefined) throw new Error(`no such file: ${path}`);
@@ -167,6 +168,7 @@ describe('saving how he likes the app set up', () => {
     const failing: FileSystem = {
       list: async () => [],
       folderExists: async () => true,
+      listFolders: async () => [],
       read: async () => {
         throw new Error('nothing here');
       },

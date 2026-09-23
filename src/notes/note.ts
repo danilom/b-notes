@@ -58,6 +58,30 @@ export interface NoteVersion {
  * and held open by Dropbox, gone, and refused by Windows all want different
  * answers from whoever reads the log.
  */
+/**
+ * A text sitting in an archive, and where it sits.
+ *
+ * `archive` is the folder's name, which is the only label an archive has and
+ * the only thing that says where a row came from. `versions` counts what is
+ * kept beside it — as with a deleted text, counted rather than read.
+ *
+ * `alsoLive` is whether something in his list already opens the same way. Not
+ * a judgement that they are the same text, which nothing here can make: it is
+ * the one fact that stops him bringing in a fourth copy of an essay he has,
+ * and it is computed from titles alone.
+ */
+export interface ArchivedNote extends Note {
+  archive: string;
+  versions: number;
+  alsoLive: boolean;
+}
+
+/** One folder of imported writing, and how much is in it. */
+export interface Archive {
+  name: string;
+  texts: number;
+}
+
 export interface Converted {
   converted: number;
   refused: { name: string; failure: unknown }[];
@@ -92,6 +116,32 @@ export interface NoteStore {
   save(id: string | null, text: string): Promise<string | null>;
   /** Puts a note out of the way without destroying it. */
   moveToDeleted(id: string): Promise<void>;
+  /**
+   * The archive folders and how many texts each holds. Names and counts only —
+   * nothing is read, so this is cheap enough to ask at startup, which is what
+   * decides whether the strip under his list is there at all.
+   */
+  listArchives(): Promise<Archive[]>;
+  /**
+   * Every archived text, from every archive, with its text.
+   *
+   * Only when he asks. An import is mostly older copies of what he already
+   * has, so searching them by default would answer nearly every search with a
+   * pile of near-duplicates — and they are set aside for a reason.
+   *
+   * @param liveTitles what is already in his list, for `alsoLive`. Passed in
+   * rather than read here: the caller is holding the whole corpus in memory
+   * already, and reading six hundred files again to learn their first lines
+   * would double what this costs to answer a question the caller can answer.
+   */
+  listArchived(liveTitles: ReadonlySet<string>): Promise<ArchivedNote[]>;
+  /**
+   * Moves one out of its archive and into his list, with its kept copies, and
+   * returns the name it arrived under.
+   *
+   * A move, not a copy: two of a text is what the archive exists to avoid.
+   */
+  bringBack(archive: string, id: string): Promise<string>;
   /**
    * Everything he has put away, newest first. Text included, same as `list`:
    * the dialog shows him what a deleted text said before he decides.
