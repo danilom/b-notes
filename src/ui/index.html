@@ -741,16 +741,35 @@
       */
       #toast {
         position: absolute;
-        right: 0.9rem;
+        /*
+          Between the same two gutters his writing is set in, and centred in
+          what they leave — so it arrives over the column he was reading
+          rather than over in the corner where the buttons are. The measure
+          leans left of centre, and this leans with it.
+        */
+        left: var(--gutter-left);
+        right: var(--gutter-right);
         bottom: calc(100% + 0.6rem);
         z-index: 2;
-        max-width: min(32rem, calc(100% - 1.8rem));
-        padding: 0.7rem 1rem;
-        border: 1px solid var(--chosen);
-        border-radius: 6px;
-        background: var(--chosen-soft);
+        width: fit-content;
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 0.7rem 1.1rem;
+        /*
+          Made of the same parts as every other thing in this app that floats:
+          the panel's border, radius, surface and shadow.
+
+          It had an accent border over the tint the list uses for the row he is
+          on — a pairing that appears nowhere else here, which is exactly why
+          it read as something another program had put on the screen.
+        */
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
         color: var(--ink);
-        box-shadow: 0 6px 20px var(--halo);
+        box-shadow: 0 12px 44px hsl(var(--grey-h) var(--surface) var(--l-shadow) / var(--shadow-alpha));
+        font-family: var(--ui-font);
+        text-align: center;
       }
 
       #toast[hidden] {
