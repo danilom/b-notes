@@ -289,9 +289,9 @@ export function openTextShelf<T extends ShelvedText>(
     return dismiss;
   }
 
-  function headingOf(said: string): HTMLElement {
+  function headingOf(said: string, found = false): HTMLElement {
     const heading = document.createElement('div');
-    heading.className = 'review-group';
+    heading.className = found ? 'review-group found' : 'review-group';
     heading.textContent = said;
     return heading;
   }
@@ -315,7 +315,7 @@ export function openTextShelf<T extends ShelvedText>(
       return;
     }
 
-    list.push(headingOf(shelf.matching(found.length, filter)));
+    list.push(headingOf(shelf.matching(found.length, filter), true));
     if (found.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'empty';

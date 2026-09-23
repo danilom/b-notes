@@ -1383,6 +1383,13 @@
 
       /* Pushed down and dimmed, never taken away — the same rule the list
          itself follows, and for the same reason. */
+      /* The one he asked for, in the colour the app uses when it is pointing
+         at something. The remainder underneath stays quiet, which is the whole
+         difference between the two groups said in a second way. */
+      .review-group.found {
+        color: var(--chosen-ink);
+      }
+
       .review-row.aside {
         opacity: 0.45;
       }
@@ -1394,7 +1401,10 @@
       */
       .shelf-search {
         font: inherit;
+        /* Wide enough for the few words he will type and no wider. A box the
+           width of the dialog promises a sentence, and he writes one word. */
         width: 100%;
+        max-width: 20rem;
         margin: 0.2rem 0 0.6rem;
         padding: 0.55rem 0.6rem;
         border: 1px solid var(--line);
