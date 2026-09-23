@@ -24,8 +24,7 @@ export interface ArchivedTexts {
 
 function shelfFor(language: Language, handlers: ArchiveHandlers): Shelf<ArchivedNote> {
   const words = strings(language);
-  const from = (note: ArchivedNote): string =>
-    words.archiveFrom(note.archive, describeWhen(note.updatedAt, language));
+  const when = (note: ArchivedNote): string => describeWhen(note.updatedAt, language);
 
   return {
     mark: 'archive',
@@ -41,7 +40,7 @@ function shelfFor(language: Language, handlers: ArchiveHandlers): Shelf<Archived
       text is not touched until it is brought in, so it still says when it was
       last written on whatever machine it came off.
     */
-    whenFor: from,
+    whenFor: (note) => words.archiveFrom(note.archive, when(note)),
     // Said on the row rather than only in the preview, because the whole
     // reason to look at the list is to find the few that are not copies of
     // what he already has.
@@ -49,7 +48,7 @@ function shelfFor(language: Language, handlers: ArchiveHandlers): Shelf<Archived
     // `markedFor` already puts the already-have-one line at the top of the
     // preview, so it is not repeated here.
     notesFor: (note) => [
-      from(note),
+      words.archiveOrigin(note.archive, when(note)),
       note.versions === 0 ? '' : words.archiveVersions(note.versions),
     ],
     matching: words.archiveMatching,

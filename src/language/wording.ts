@@ -132,8 +132,20 @@ const TEXT = {
     archivePreview: 'Pregled iz arhive',
     archivePreviewCheck: 'Proveri da li je ovo tekst koji želiš da preneseš među svoje.',
     archiveEmpty: 'U ovom tekstu nema ništa.',
-    /** Where it came from and when it was last written, on one line. */
+    /*
+      Two forms of the same fact, because the row and the preview have
+      different room. On a row it shares the line with his title, so it is the
+      folder and the year and nothing else. In the preview it has a line of its
+      own and is the first thing he reads about the text, so it says what the
+      folder is — `Stari laptop 2021` on its own could be a title.
+
+      Sačuvano rather than pisano: the date is the file's, and a file's date
+      is the moment it was last written down. He knows that word from every
+      other program.
+    */
     archiveFrom: (archive: string, when: string) => `${archive} · ${when}`,
+    archiveOrigin: (archive: string, when: string) =>
+      `Iz arhive „${archive}“ · sačuvano ${when}`,
     /*
       Said plainly and without alarm. It is not a claim that the two are the
       same text — nothing can know that — only that one of his own opens the
@@ -360,6 +372,8 @@ const TEXT = {
     archivePreviewCheck: 'Check whether this is the text you want among your own.',
     archiveEmpty: 'There is nothing in this text.',
     archiveFrom: (archive: string, when: string) => `${archive} · ${when}`,
+    archiveOrigin: (archive: string, when: string) =>
+      `From the archive “${archive}” · saved ${when}`,
     archiveAlsoLive: 'You already have a text that starts this way.',
     archiveVersions: (n: number) =>
       `${n} earlier version${n === 1 ? '' : 's'} come${n === 1 ? 's' : ''} with it.`,
