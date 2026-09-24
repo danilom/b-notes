@@ -1,0 +1,2495 @@
+/*
+  These five are the only values set directly, and `applyAppearance` in
+  appearance.ts overwrites them on this element from what he has chosen.
+  Everything below them is derived, so a colour or a size is changed in
+  one place and the whole interface follows.
+*/
+:root {
+  /* Native parts we don't draw ourselves — the search box's own clear
+     button, focus rings, any default scrollbar we miss — follow this. */
+  color-scheme: light;
+
+  --accent-h: 212;
+  --accent-s: 58%;
+  --ui-font: Tahoma, 'Segoe UI', sans-serif;
+  --ui-size: 16.5px;
+  --text-size: 21.6px;
+
+  /* Serif for his writing, and not his to change: it is the one thing on
+     screen that should look the same to him everywhere. */
+  --writing-font: Georgia, 'Times New Roman', serif;
+
+  /*
+    How wide a line of his writing may get, in characters. `ch` resolves
+    against whichever face and size he has chosen, so this tracks both by
+    itself and never binds on a narrow window. 62.5ch is about 90 letters
+    in Georgia — wider than a book, which is deliberate: a screen is not a
+    page, and at book measure the column reads as a poem.
+  */
+  --measure: 62.5ch;
+  --writing-leading: 1.65;
+  --gutter-left: max(2rem, calc((100% - var(--measure)) * 0.4));
+  --gutter-right: max(2rem, calc((100% - var(--measure)) * 0.6));
+  --scrollbar: 17px;
+
+  /*
+    Grey chrome, and the colour spent all in one place.
+
+    Tinting the surfaces was tried twice and is a trap. There is no good
+    amount: enough to read as the hue is too loud for something he stares
+    at all day, and less than that is worse — a near-neutral beside a
+    saturated accent doesn't look neutral, it looks warm, so the green
+    theme comes out faintly orange and the eye keeps asking why. The
+    middle ground is the whole problem, so there isn't one any more.
+
+    The accent is not weaker for this. It is stronger: with nothing else
+    coloured, the text he has open and the choices he has made are the
+    only colour on screen, which is exactly what they should be.
+  */
+  --strong: var(--accent-s);
+  --surface: 6%;
+  --muted: 4%;
+
+  /*
+    Lightness is the only thing light and dark disagree about, so it is
+    the only thing the mode below swaps. Every colour is still one hue at
+    one of three saturations — which is why dark mode needed no second
+    palette, just this ladder turned over.
+
+    --faint is the number that has moved most, and always downwards. 53%
+    looked right and gave the date column 2.8:1; 44% still left the paler
+    themes short; 42% passed until it was checked through a warm screen,
+    which drops everything a further tenth. Where the eye and the
+    measurement disagree the measurement wins — his eyes are not mine,
+    and nor is his screen.
+  */
+  --l-ink: 15%;
+  --l-quiet: 38%;
+  --l-faint: 40%;
+  /* Dimmer than anything the app states, because it is not a
+     statement: it is the box describing itself until he types. */
+  --l-hint: 48%;
+  --l-line: 86%;
+  --l-toolbar: 93%;
+  --l-panel: 96.5%;
+  --l-page: 100%;
+  --l-chosen: 38%;
+  /* The accent as text rather than as a surface. Four points darker,
+     which is what it takes: at 38% the teal, green and gold accents come
+     in under 4.5:1 on white, and this heading is 15.68px — bold, but not
+     the 18.66px that would let it off at 3:1. At 34% the worst of the six
+     is 5.29. */
+  --l-chosen-ink: 34%;
+  --l-chosen-soft: 91%;
+  --l-found: 82%;
+  --l-on-chosen: 99%;
+  /* The diff's two colours. The hue is the meaning and never moves; only
+     the lightness turns over between modes, the way --danger already
+     does. A fixed pair would put near-white ink on a pale wash the
+     moment the app went dark. */
+  --added: hsl(142 44% 91%);
+  --added-ink: hsl(142 55% 26%);
+  --missing: hsl(4 58% 94%);
+  --missing-ink: hsl(4 58% 38%);
+  /* The third case. Blue because it is neither of the other two and
+     must not read as half of one; the same hue the app's own default
+     accent uses, so it belongs to the family rather than arriving
+     from outside it. */
+  --changed: hsl(212 48% 93%);
+  --changed-ink: hsl(212 62% 32%);
+  /* A word marked as the new wording. On a pale page the natural
+     highlight is behind the word, since the word itself is already
+     dark. See the dark mode below, where it is the other way up. */
+  --word-new-fill: var(--added);
+  --word-new-ink: var(--ink);
+  --l-thumb: 82%;
+  --l-thumb-hover: 68%;
+  --l-shadow: 12%;
+  --shadow-alpha: 0.3;
+  --swatch-edge: rgb(0 0 0 / 0.15);
+
+  /* Not the accent's hue: the chrome is the same grey whichever colour
+     he picks, so nothing can be the wrong shade of it. */
+  --grey-h: 220;
+
+  --ink: hsl(var(--grey-h) var(--muted) var(--l-ink));
+  --quiet: hsl(var(--grey-h) var(--muted) var(--l-quiet));
+  --faint: hsl(var(--grey-h) var(--muted) var(--l-faint));
+  --hint: hsl(var(--grey-h) var(--muted) var(--l-hint));
+  --line: hsl(var(--grey-h) var(--surface) var(--l-line));
+  --toolbar: hsl(var(--grey-h) var(--surface) var(--l-toolbar));
+  /*
+    Hover and press are a wash laid over whatever is underneath, not
+    colours of their own.
+
+    A fixed lightness only works against one background. The same
+    --hover that dropped six points against the dialog's white rose half
+    a point against the toolbar, which is to say it vanished exactly
+    where a button most needed to answer him. Darkening by a proportion
+    reads the same on every surface the app has.
+  */
+  --wash: rgb(0 0 0 / 0.055);
+  --wash-firm: rgb(0 0 0 / 0.12);
+
+  /*
+    The one colour in the app that does not come from his accent, because
+    it does not mean "this is the app's colour" — it means stop. He can
+    choose a red accent (hue 12, saturation 52); this sits at a purer hue
+    and a higher saturation, and it is worn as an outline where the accent
+    is worn as a fill, so nothing in the interface can be mistaken for it.
+  */
+  --danger: hsl(2 72% 42%);
+  --danger-wash: hsl(2 72% 42% / 0.09);
+
+  /* What floats above his text casts a shadow onto it. Dark here, and
+     light in the dark mode below — the room it is lit from changes. */
+  --halo: rgb(0 0 0 / 0.2);
+  --halo-near: rgb(0 0 0 / 0.14);
+  --panel: hsl(var(--grey-h) var(--surface) var(--l-panel));
+
+  /* The one surface that stays out of it. He reads essays off this for
+     hours, and a tinted page is tiring in a way a tinted frame is not. */
+  --page: hsl(var(--grey-h) var(--muted) var(--l-page));
+
+  /* Full strength, and only where something must be pointed at. */
+  --chosen: hsl(var(--accent-h) var(--strong) var(--l-chosen));
+  --chosen-ink: hsl(var(--accent-h) var(--strong) var(--l-chosen-ink));
+  --chosen-soft: hsl(var(--accent-h) var(--strong) var(--l-chosen-soft));
+  /* Stronger than a selected row: this has to carry his own text on top. */
+  --found: hsl(var(--accent-h) var(--strong) var(--l-found));
+  /* Whatever can be read on top of a solid accent, either way up. */
+  --on-chosen: hsl(var(--grey-h) var(--muted) var(--l-on-chosen));
+}
+
+/*
+  Not for him — he would not know why the app had turned black, and
+  "it looks different today" is the same alarm as "it disappeared". It is
+  for whoever is working on the app, which is why the choice is kept on
+  the machine rather than synced across his.
+
+  Saturation comes down as well as lightness turning over: the same
+  percentage that reads as a tint at 93% reads as mud at 15%.
+*/
+:root[data-mode='dark'] {
+  color-scheme: dark;
+
+  --surface: 8%;
+  --muted: 6%;
+
+  --l-ink: 88%;
+  --l-quiet: 68%;
+  --l-faint: 68%;
+  --l-hint: 54%;
+  --l-line: 27%;
+  --l-toolbar: 20%;
+  --l-panel: 18%;
+  --l-page: 14%;
+  /* Light over dark, for the same reason. */
+  --wash: rgb(255 255 255 / 0.07);
+  --wash-firm: rgb(255 255 255 / 0.16);
+
+  /* Lifted off the dark page rather than darkened into it, so it still
+     reads as a warning instead of as a hole. */
+  --danger: hsl(4 70% 65%);
+  --danger-wash: hsl(4 70% 65% / 0.14);
+
+  --halo: rgb(255 255 255 / 0.11);
+  --halo-near: rgb(255 255 255 / 0.09);
+
+  --l-chosen: 70%;
+  --l-chosen-ink: 70%;
+  --l-chosen-soft: 31%;
+  --l-found: 38%;
+  --l-on-chosen: 10%;
+  --added: hsl(142 24% 20%);
+  --added-ink: hsl(142 40% 66%);
+  --missing: hsl(4 26% 22%);
+  --missing-ink: hsl(4 50% 70%);
+  --changed: hsl(212 26% 22%);
+  --changed-ink: hsl(212 52% 70%);
+  /* The other way up. A tint behind a word barely registers against a
+     dark page, and two dark patches an inch apart at the same
+     lightness read as staining rather than as marking — the green
+     wash sat at 1.06 against the blue block it lived in. What is
+     bright here is the text, so the mark goes on the text. */
+  --word-new-fill: transparent;
+  --word-new-ink: var(--added-ink);
+  --l-thumb: 34%;
+  --l-thumb-hover: 48%;
+  --l-shadow: 2%;
+  --shadow-alpha: 0.6;
+  --swatch-edge: rgb(255 255 255 / 0.25);
+}
+
+/* Carries the same tenth into every padding, gap and width below. */
+html {
+  font-size: 110%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  display: flex;
+  font-family: var(--ui-font);
+  font-size: var(--ui-size);
+  color: var(--ink);
+  background: var(--page);
+}
+
+/* ---- left: finding things ---- */
+
+#side {
+  width: 22rem;
+  min-width: 16rem;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+}
+
+/*
+  Two regions, not one. The toolbar is the app's own strip; the search box
+  belongs with the list, because searching is how the list changes. Having
+  them share a box read as though search and the button were a pair, which
+  they are not.
+*/
+#toolbar {
+  display: flex;
+  align-items: center;
+  padding: 0.55rem 0.9rem;
+  background: var(--toolbar);
+  border-bottom: 1px solid var(--line);
+}
+
+#finder {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-top: 0.8rem;
+}
+
+/*
+  Chromium's own scrollbars ignore all of the above and stay grey, which
+  in dark mode reads as a strip of somebody else's window down the side of
+  ours. Safe to style with the -webkit- pseudo-elements because Chromium
+  is the only engine this will ever run in.
+
+  Wide rather than fashionable: the whole 17px is the target even though
+  only 11px of it is painted, and he is aiming with an unsteady hand on a
+  trackpad. Thin scrollbars are a young person's affordance.
+
+  Wider, but no darker: the thumb sits at about 1.5:1 against the page,
+  under what a control is usually asked to hold. Darkening it to clear
+  3:1 was tried and turned down, and so were arrows at the ends of the
+  track. Width is the part of this he can use; the rest was noise beside
+  his writing.
+*/
+::-webkit-scrollbar {
+  width: var(--scrollbar);
+  height: var(--scrollbar);
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  /* Painted inside a transparent border so the thumb floats clear of the
+     edge instead of being welded to it. */
+  border: 3px solid transparent;
+  border-radius: 8px;
+  background: hsl(var(--grey-h) var(--surface) var(--l-thumb));
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--grey-h) var(--surface) var(--l-thumb-hover));
+  background-clip: padding-box;
+}
+
+button {
+  font: inherit;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--page);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+/*
+  Three states, because a button that only changes its border when the
+  pointer arrives, and does nothing at all when clicked, leaves him
+  wondering whether he hit it. He clicks twice when nothing appears to
+  happen — that is the behaviour the single-instance lock exists for.
+
+  Pressed both darkens and drops a pixel: colour alone is easy to miss on
+  an old washed-out laptop panel, and movement is not.
+*/
+button:hover:not(:disabled) {
+  background-image: linear-gradient(var(--wash), var(--wash));
+  border-color: var(--quiet);
+}
+
+button:active:not(:disabled) {
+  background-image: linear-gradient(var(--wash-firm), var(--wash-firm));
+  border-color: var(--quiet);
+  transform: translateY(1px);
+}
+
+/* Only for the keyboard: `:focus-visible` stays quiet for a mouse click,
+   so he never sees a ring he did not ask for. */
+button:focus-visible {
+  outline: 2px solid var(--chosen);
+  outline-offset: 2px;
+}
+
+button:active:not(:disabled) svg,
+button:hover:not(:disabled) svg {
+  color: var(--quiet);
+}
+
+/*
+  Top left, where Windows has put "new" for thirty years — he has seen
+  plenty of Windows apps, and the convention is worth more than any
+  arrangement we might invent. Sized to its own words rather than stretched
+  across the pane: starting a text is a common action, but he returns to
+  existing writing far more often, and the loudest thing on screen
+  shouldn't be the rarer one.
+*/
+#new-note {
+  padding: 0.45rem 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+/*
+  Down in the status bar rather than up in the toolbar: it belongs with
+  the things the app says about itself, not with the one action he takes
+  all day. Quiet until he reaches for it.
+*/
+/*
+  The words give, the buttons do not. Three controls and a sentence do not
+  fit a narrow window, and letting the buttons take the squeeze breaks
+  their labels across two lines and makes the whole strip taller — so the
+  line that reports the save is the one that shortens.
+*/
+#status-text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/*
+  One shape for every button down here, rather than a list of ids that a
+  new one falls outside of. That is precisely what happened when Kopiraj
+  ceo tekst arrived: it missed the list, fell back on the plain button
+  rule, and came out half again as tall as its neighbours with a larger
+  face and no row to lay its icon out in.
+
+  A class, because it is the only weight that works. `#status-actions
+  button` carries an id and beat `#appearance-button`, which is how
+  Izgled quietly lost the tighter padding it was given on purpose.
+  Wrapping that in `:where` costs all its specificity and it then loses
+  to plain `button` above, which is where the 0.6rem padding comes from.
+  A class sits between the two: over the element, under the id.
+
+  It does have to be put on, which is the same thing that went wrong
+  here — so the four of them are four adjacent lines of markup, where a
+  fifth without it is visible at a glance.
+
+  And they look like buttons, the way Novi tekst does. They blended into
+  the strip while they were the rarest things on screen, but his old
+  archive says he deletes about ten times a year and goes looking for the
+  command when he does — and something he goes looking for should not be
+  the quietest thing in front of him.
+*/
+.status-action {
+  flex: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.92em;
+}
+
+#status-actions {
+  display: flex;
+  align-items: center;
+  /*
+    A gap far wider than the strip's own. Obriši tekst is pressed a few
+    times a year and Izgled rarely, but a miss between them costs him a
+    dialog he did not ask for — so they are not neighbours.
+  */
+  gap: 0.6rem;
+  margin-left: auto;
+  /* And again inside the group, for the largest text size, where even on
+     his own screen four of these will not sit on one line. */
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+#appearance-button {
+  margin-left: 1.8rem;
+}
+
+/* Greyed rather than gone when the text in front of him has no copies,
+   which for most of them is never. A button that comes and goes cannot be
+   learned, and he writes his own instructions for this app: what he wrote
+   down has to still be where he wrote that it is. */
+
+/* What the copy has that his text no longer does. Weight rather than
+   colour: the accent is his to choose and could be anything, and this
+   has to read as emphasis in his own writing rather than as a mark the
+   app has painted on. */
+/* The one down here that is not a button to look at: it opens a panel
+   about the app rather than doing anything to his text. Only what
+   differs from the shape above. */
+#appearance-button {
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem;
+  border-color: transparent;
+  background: none;
+  color: var(--quiet);
+}
+
+#appearance-button:hover:not(:disabled) {
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+/*
+  Sized in em so they grow with the text, including when he zooms, and
+  greyed so an icon stays a mark beside the words rather than competing
+  with them.
+*/
+button svg {
+  width: 1.15em;
+  height: 1.15em;
+  flex: none;
+  color: var(--faint);
+}
+
+#search-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0 0.9rem 0.5rem;
+}
+
+/*
+  Left to itself this is Chromium's own grey, which belongs to no theme
+  and sits badly beside the section headings a few pixels below it.
+
+  Dimmer than the app's own quiet text, and italic: at the strength it had
+  it read as something already typed into the box rather than as the box
+  saying what it is for. Not dimmer than it can be read, though — there is
+  no label anywhere else, so this line is the only thing that says what
+  the box does.
+*/
+::placeholder {
+  color: var(--hint);
+  opacity: 1;
+  font-style: italic;
+}
+
+#search {
+  font: inherit;
+  flex: 1;
+  min-width: 0;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--page);
+  color: var(--ink);
+}
+
+#list {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 2rem;
+}
+
+/*
+  Each heading holds at the top of the list while its own texts scroll
+  under it, and is pushed off by the next one.
+
+  Five hundred and eighty rows is a long way down, and by the middle of
+  them the heading that said which part of the list this is has been gone
+  for a while. He would be looking at a wall of titles with nothing saying
+  whether he is among the recent ones, the found ones, or the rest.
+
+  Opaque, because rows pass beneath it — `--panel` is the pane's own
+  colour, so it reads as the list holding still rather than as a bar.
+*/
+.section {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 1rem 0.9rem 0.3rem;
+  background: var(--panel);
+  font-size: 0.75em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--quiet);
+}
+
+.note {
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  border-left: 4px solid transparent;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+.note:hover {
+  background-image: linear-gradient(var(--wash), var(--wash));
+}
+
+.note:active {
+  background-image: linear-gradient(var(--wash-firm), var(--wash-firm));
+}
+
+.note[aria-current='true'] {
+  background-color: var(--chosen-soft);
+  border-left-color: var(--chosen);
+}
+
+.note-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+  Coloured rather than grey, because it is the one part of the row that
+  isn't his writing: everything else on the line came from him, and this
+  came from the app noticing that two of his texts open the same way.
+
+  The auto margin is what keeps it against the title. The row is
+  space-between, so a third child would otherwise be pushed into the
+  middle and read as belonging to neither side.
+*/
+.note-mark {
+  color: var(--chosen-ink);
+  font-size: 0.85em;
+  white-space: nowrap;
+  margin-right: auto;
+}
+
+.note-when {
+  font-size: 0.8em;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+/* Never removed from the list, only pushed down and dimmed. */
+.note.aside {
+  opacity: 0.45;
+}
+
+/* Except the one he is in. Dimming that would be the list hiding his own
+   text from him, which is the thing the search must never do — and it is
+   the whole reason the open text used to be lifted out to the top. It can
+   stay where it is and simply not go quiet. */
+.note.aside[aria-current='true'] {
+  opacity: 1;
+}
+
+/* Italic because it is not a title yet — it is the app describing what he
+   is looking at until his own first line takes over. */
+.note.draft .note-title {
+  font-style: italic;
+}
+
+.empty {
+  padding: 1rem 0.9rem;
+  color: var(--quiet);
+  font-style: italic;
+}
+
+/* ---- right: writing ---- */
+
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/*
+  Said out loud rather than in the status line, because the one time he
+  needs to read it is the one time the page is blank — there is nothing
+  for it to talk over, and nothing else on screen to compete with.
+
+  It points at the button it is talking about. A sentence about a button
+  he then has to go and find is half an answer.
+*/
+#empty-hint {
+  position: absolute;
+  right: 1rem;
+  bottom: 0.7rem;
+  z-index: 2;
+  max-width: 22rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 0.95em;
+  line-height: 1.45;
+  box-shadow: 0 6px 20px hsl(var(--grey-h) var(--surface) var(--l-shadow) / var(--shadow-alpha));
+}
+
+#empty-hint[hidden] {
+  display: none;
+}
+
+/*
+  The tail, drawn twice: the outer triangle is the border's colour and the
+  inner one sits a pixel above it in the bubble's own, so the point has an
+  outline like the rest of it rather than a bitten-off edge.
+*/
+#empty-hint::before,
+#empty-hint::after {
+  content: '';
+  position: absolute;
+  /* Measured, not guessed: the button moves with his zoom and with how
+     long the words are in whichever language he is reading. Shifted by
+     half its own width so the figure above names the point of the tail
+     rather than its right-hand corner. */
+  right: var(--tail-right, 3.2rem);
+  border: 9px solid transparent;
+  transform: translateX(50%);
+}
+
+#empty-hint::before {
+  bottom: -18px;
+  border-top-color: var(--line);
+}
+
+#empty-hint::after {
+  bottom: -17px;
+  border-top-color: var(--panel);
+}
+
+#status {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.45rem 0.9rem 0.45rem 1.4rem;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--quiet);
+  min-height: 2.6rem;
+  /* What the toast hangs off. */
+  position: relative;
+  /*
+    Four buttons do not fit beside the line of text on a narrow window,
+    and without this the row simply grew past the edge and gave the whole
+    app a horizontal scrollbar — with Izgled off the side of the screen.
+
+    He runs it full screen, where there is room to spare; what makes this
+    reachable is the text size, since everything here is in `em` and the
+    largest setting is most of the way to it. So the group drops to its
+    own line rather than the window growing a bar he has never seen.
+  */
+  flex-wrap: wrap;
+}
+
+/* Shrinks and is cut rather than shoving the buttons off: what it says
+   is worth less than the way to do something about it. */
+#status-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/*
+  Over his writing, just above the strip, and over on the right where the
+  button he pressed is — so it appears where his eye already was rather
+  than somewhere he has to find.
+
+  Loud on purpose, unlike everything else down here. Copying is the one
+  thing the app does that changes nothing on screen, so this is all the
+  evidence there is that it worked; a grey line in the corner is what he
+  would miss and then press the button four more times.
+*/
+#toast {
+  position: absolute;
+  /*
+    Between the same two gutters his writing is set in, and centred in
+    what they leave — so it arrives over the column he was reading
+    rather than over in the corner where the buttons are. The measure
+    leans left of centre, and this leans with it.
+  */
+  left: var(--gutter-left);
+  right: var(--gutter-right);
+  bottom: calc(100% + 0.6rem);
+  z-index: 2;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0.75rem 1.3rem;
+  /*
+    Made of the same parts as every other thing in this app that floats:
+    the panel's border, radius, surface and shadow.
+
+    It had an accent border over the tint the list uses for the row he is
+    on — a pairing that appears nowhere else here, which is exactly why
+    it read as something another program had put on the screen.
+  */
+  font-family: var(--ui-font);
+  text-align: center;
+  /*
+    Turned over: his page's ink for the ground and its paper for the
+    letters. Which inverts itself — `--ink` is near-black in the light
+    mode and near-white in the dark one, `--page` the other way — so
+    there is no second rule anywhere for the dark mode to get wrong.
+
+    Not the accent, though it was the other candidate. A solid accent
+    block already says something here: it is what marks the chosen button
+    in the appearance panel, and the accent throughout this app means
+    *where you are* — the row he is on, the match he is at, the thing
+    with focus. It should not also mean *what just happened*.
+
+    It reads at 15:1 against his page in the light mode and 12:1 in the
+    dark, whichever of the six accents he has picked, which the accent
+    version could not promise.
+  */
+  border-radius: 14px;
+  background: var(--ink);
+  color: var(--page);
+  /*
+    Still haloed. Contrast alone would separate it from the page, but a
+    solid block with no shadow reads as pasted onto the screen rather
+    than floating above it.
+  */
+  box-shadow:
+    0 2px 16px 2px var(--halo),
+    0 1px 4px var(--halo-near);
+  /*
+    Faded in, which is the first animation in this app. A black block
+    arriving between two frames is a flinch; over a tenth of a second it
+    is something appearing. Short enough that nobody waits for it.
+  */
+  opacity: 0;
+}
+
+#toast.up {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #toast {
+    transition: opacity 120ms ease-out;
+  }
+}
+
+#toast[hidden] {
+  display: none;
+}
+
+/*
+  Still `strong`, because it is the important line — but importance said
+  by everything around it rather than by weight. Bold made it shout, and
+  the thing it reports is ordinary: a copy that worked. On this ground
+  there is no colour left to say it with either, so the two lines are
+  told apart by size and by how far each is turned down.
+*/
+#toast strong {
+  display: block;
+  font-weight: normal;
+}
+
+/* What to do with it, for the first few times. Quieter than the line
+   above, which is the part he needs every time and only once.
+
+   Turned down from the same colour rather than given a grey of its own:
+   the greys are all mixed for a pale page and none of them can be read
+   on this. At 0.75 it stands at 9:1 against the ground. */
+#toast span {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.9em;
+  opacity: 0.75;
+}
+
+/* ---- letters and colours ---- */
+
+/*
+  The four dialogs, as real modal dialogs rather than divs made to look
+  like them. showModal is what puts focus inside, keeps it from tabbing
+  out, stops everything behind answering the keyboard, and hands focus
+  back when the dialog goes — the set a hand-rolled overlay has to
+  remember, and this one did not.
+
+  It also takes the stacking off our hands. The confirm dialog is asked
+  from the deleted one and has to sit above it; in the top layer the one
+  opened later is the one on top, so the z-index that used to say so is
+  gone.
+
+  What is left here is undoing the browser's own box. The app draws its
+  own panel inside, so this element is only the room around it.
+*/
+/*
+  Every dialog but the admin one, rather than a list of ids.
+
+  It was a list, and a new dialog added to the app simply fell outside it
+  — landing in the browser's own box, a black two-pixel frame on white,
+  which is nothing this app draws anywhere. The advanced panel had been
+  wearing it for weeks and read as a deliberate admin style. A rule that
+  has to be edited every time something is added is a rule that will be
+  wrong every time something is added, so the default is now right and
+  the one exception says so on the element.
+*/
+dialog:not(.admin) {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  background: none;
+  overflow: hidden;
+}
+
+/* Only when open, or the author rule would beat the browser's own
+   `dialog:not([open]) { display: none }` and show a closed one. */
+dialog:not(.admin)[open] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* The room behind is the same whoever the dialog is for. */
+dialog::backdrop {
+  background: hsl(var(--grey-h) var(--surface) var(--l-shadow) / 0.42);
+}
+
+/*
+  The developer's door, and the only thing in the app that wears a frame.
+  Not for him: he never opens this, and if he somehow did, a window that
+  looks nothing like the rest of the app is the clearest possible way of
+  saying he is somewhere he did not mean to be.
+
+  It began as the browser's default box showing through a rule that
+  listed ids. Kept because it earns its place here, and written out in
+  the app's own colours rather than left to the browser, which draws a
+  different frame in every engine and a white one in the dark.
+*/
+.admin {
+  max-width: calc(100% - 3rem);
+  max-height: calc(100% - 3rem);
+  margin: auto;
+  border: 2px solid var(--ink);
+  background: var(--panel);
+  color: var(--ink);
+  overflow: auto;
+}
+
+#appearance {
+  padding: 1.5rem;
+}
+
+/* ---- what he has put away ---- */
+
+/*
+  Pinned under the list rather than scrolled with it: it is the answer to
+  "where did my text go", and an answer six hundred rows down is no
+  answer — so it is always here, empty or not, and says which it is.
+*/
+/*
+  Two jobs, two elements. The line says what is there — and while he is
+  searching, how much of it matches — which is a statement and not
+  something to press. The button beside it is the thing to press. Saying
+  both with one control meant the sentence had to read as an instruction,
+  which it cannot in the searching case.
+*/
+#deleted-block,
+#archive-block {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.7rem 0.55rem 1rem;
+  border-top: 1px solid var(--line);
+  color: var(--quiet);
+  font-size: 0.92em;
+  /* The whole strip is the target, as every row above it is; the button
+     is what says so. A fifty-pixel button is a poor thing to ask an old
+     hand to hit when there is a three-hundred-pixel row behind it. */
+  cursor: pointer;
+}
+
+/*
+  Laid over whatever is behind it, the way every other hover in the app
+  is, rather than set as a background colour.
+
+  The two read the same here, because nothing under this strip is
+  coloured. They stop reading the same the moment something is: a
+  background shorthand replaces what was there, where a layer sits on top
+  of it. That is how the rows in the review lists came to need their
+  selected state excluded from their own hover by hand.
+*/
+#deleted-block:hover,
+#archive-block:hover {
+  background-image: linear-gradient(var(--wash), var(--wash));
+  color: var(--ink);
+}
+
+#deleted-block:active,
+#archive-block:active {
+  background-image: linear-gradient(var(--wash-firm), var(--wash-firm));
+}
+
+/*
+  Nothing thrown away yet. Still a strip, still saying what this place is
+  — only with nothing to press, and saying that with the cursor and the
+  dead hover before he presses anything.
+*/
+#deleted-block.dead {
+  cursor: default;
+}
+
+#deleted-block.dead:hover,
+#deleted-block.dead:active {
+  background-image: none;
+  color: var(--quiet);
+}
+
+#deleted-block svg,
+#archive-block svg {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  opacity: 0.8;
+}
+
+/* Shrinks and cuts rather than pushing the button off the edge: the count
+   of what matches is worth less than the way to go and look at it. */
+#deleted-block-label,
+#archive-block-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#deleted-see {
+  flex: none;
+  margin-left: auto;
+  padding: 0.25rem 0.7rem;
+  font-size: inherit;
+}
+
+/*
+  A footnote rather than a feature.
+
+  It is somebody else's folder, opened perhaps twice in his life, and it
+  sits under the one place down here he will actually use. So it takes a
+  thinner band and smaller type than the strip above it, and its mark
+  goes quieter — three small differences rather than one loud one.
+
+  In `em`, so it still grows with the text size he has set. Smaller than
+  its neighbour is the point; small in absolute terms is not, and he is
+  the reason the size control exists.
+*/
+#archive-block {
+  padding-top: 0.3rem;
+  padding-bottom: 0.4rem;
+  font-size: 0.82em;
+}
+
+#archive-block svg {
+  opacity: 0.6;
+}
+
+/* The strip is the control now, so the ring that a button would have
+   worn belongs on it. Keyboard only, like every other one. */
+#archive-block:focus-visible {
+  outline: 2px solid var(--chosen);
+  outline-offset: -2px;
+}
+
+/*
+  Both halves of the app, put away while it has nothing to show him.
+
+  `hidden` alone loses to their own `display`, the same way it does for
+  the strip under the list — the attribute is a hint at the bottom of the
+  cascade and an id selector beats it every time.
+*/
+#side[hidden],
+#main[hidden],
+/* No archive on this machine, and no way for him to make one — so no
+   strip, rather than a strip that can never come to life. `hidden` alone
+   loses to the flex above, as it does for the two panes. */
+#archive-block[hidden] {
+  display: none;
+}
+
+/*
+  Said quietly. It is a fact worth having before he brings in a fourth
+  copy of an essay he already has, and it is not a warning: nothing here
+  knows the two are the same text, only that they start alike.
+*/
+.review-already {
+  grid-column: 1 / -1;
+  color: var(--chosen-ink);
+  font-size: 0.92em;
+}
+
+/*
+  The whole window, because there is nothing behind it worth looking at
+  and nothing here for him to dismiss his way past.
+*/
+.lost {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  max-width: 34rem;
+  margin: 12vh auto 0;
+  padding: 0 2rem;
+}
+
+.lost h1 {
+  margin: 0;
+  font-size: 1.5em;
+  color: var(--danger);
+}
+
+.lost p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.lost-advice {
+  font-weight: 500;
+}
+
+/* One block, read aloud down a telephone. Selectable, and wide enough
+   that a path does not wrap in the middle of a folder name. */
+.lost-said {
+  align-self: stretch;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.95em;
+  white-space: pre-wrap;
+  word-break: break-all;
+  user-select: text;
+}
+
+.lost button svg {
+  width: 1em;
+  height: 1em;
+}
+
+#confirm {
+  padding: 1.5rem;
+}
+
+/* ---- the settings that are not his ---- */
+
+/*
+  Not for him, and not hidden from him either. It sits at the end of the
+  last row of the panel he does use, in English and behind a word to type,
+  because whoever needs it will be at his machine years from now with no
+  checkout to hand — and a door you have to remember is a door you have
+  lost. Quiet rather than concealed: a gear is a mark he has no reason to
+  press and whoever is looking for it cannot miss.
+*/
+.advanced-door {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+  /* Sitting on the same line as the size buttons rather than floating at
+     their middle. It is shorter than they are, and centred it read as
+     adrift between two rows instead of belonging to this one. */
+  align-self: flex-end;
+  padding: 0.3rem 0.6rem;
+  border-color: transparent;
+  background: none;
+  color: var(--quiet);
+  font-size: 0.85em;
+}
+
+#advanced {
+  padding: 1.5rem;
+}
+
+.advanced-panel {
+  min-width: 34rem;
+  font-family: var(--ui-font);
+}
+
+/* The first thing anyone needs when he telephones, and until now it lived
+   only inside the log file. */
+.advanced-build {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  margin: 0.2rem 0 1.2rem;
+  font-family: Consolas, 'Courier New', monospace;
+}
+
+.advanced-build strong {
+  font-size: 1.5em;
+  color: var(--chosen-ink);
+}
+
+.advanced-build span {
+  color: var(--quiet);
+}
+
+/*
+  Loud for the browser and quiet for a dev build, because they are
+  different warnings. One says nothing here is real; the other says
+  everything here is real and the app around it is being changed.
+*/
+.advanced-warning {
+  margin: 0 0 1.2rem;
+  padding: 0.6rem 0.8rem;
+  border: 2px solid var(--danger);
+  background: var(--danger-wash);
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.advanced-warning.mild {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--quiet);
+  font-weight: 400;
+}
+
+.advanced-folders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.advanced-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.advanced-label {
+  flex: none;
+  width: 5rem;
+  color: var(--quiet);
+  font-size: 0.9em;
+}
+
+/* A link because it behaves like one — it opens the thing it names. */
+.advanced-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0.35rem 0.5rem;
+  border-color: transparent;
+  background: none;
+  color: var(--chosen-ink);
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.9em;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: underline;
+}
+
+/* Beside the path rather than under it: what is wrong is this one line,
+   and a line of its own would push the three folders apart. */
+.advanced-missing {
+  flex: none;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.advanced-missing[hidden] {
+  display: none;
+}
+
+.advanced-change {
+  flex: none;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.85em;
+}
+
+.advanced-note {
+  margin: 1.2rem 0 0;
+  color: var(--quiet);
+  font-size: 0.9em;
+}
+
+/* Almost the whole window: the list needs the width for a snippet, and a
+   text needs the height to be read rather than peeked at. */
+#archive,
+#deleted,
+#versions {
+  padding: 0.9rem;
+}
+
+/*
+  No rules across it. The appearance panel earns those lines because its
+  choices scroll between them; here there is one sentence, and two
+  horizontal rules around it read as furniture left behind by mistake.
+*/
+#confirm .panel header {
+  border-bottom: 0;
+}
+
+/*
+  One line, cut if it has to be. The title carries the name of the text,
+  and a name that wraps pushes the X out of the corner it belongs in.
+*/
+/* The name of his text can be a whole opening paragraph. It is cut with
+   an ellipsis rather than wrapped: this header sits above one sentence
+   and two buttons, and a title three lines deep would push the question
+   out of the way of the thing it is asking about. */
+#confirm .panel h1 .heading-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#confirm .panel footer {
+  border-top: 0;
+}
+
+.confirm-body {
+  margin: 0;
+  padding: 0.4rem 0 1.2rem;
+  line-height: 1.5;
+}
+
+/*
+  As wide as what is in it, and no wider.
+
+  The body caps at the measure plus 3rem and the panel adds its own 1.4rem
+  sides, which comes to about 53rem. The nine rem it used to have beyond
+  that did not vanish into margins — it went into the gap between a row's
+  title and its date, two things that belong to each other and were being
+  held apart by it.
+*/
+.panel.review-panel {
+  width: min(53rem, 100%);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  /* The panel's own scrolling is off: the list and the text each scroll
+     inside it, so the header and footer never leave. */
+  overflow: hidden;
+}
+
+/* The X stays level with the top of the title, whether the heading beside
+   it is one line or two. */
+/* The same, plus the index column and the gap beside it. Wider rather than
+   narrower: this one has a second thing to hold, and without the room its
+   diff never reaches the measure it is written for. */
+.panel.versions-panel {
+  width: min(67rem, 100%);
+}
+
+.panel.review-panel header {
+  align-items: flex-start;
+}
+
+/* The title and the sentence under it stack, and share the row with the X. */
+.review-heading {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* What he is here to do, at the size the note beside the button is: it
+   is an instruction, not fine print under a title. */
+.review-note {
+  margin: 0.2rem 0 0;
+  color: var(--quiet);
+  font-weight: normal;
+}
+
+/* The list of deleted texts, which keeps its one screen: those rows carry
+   a title and an opening line of their own, so they can be read. */
+.review-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.6rem 0 1rem;
+}
+
+/*
+  One row in either of the two lists he picks from: the texts he has put
+  away, and the copies of one text. They are the same act in two places,
+  so they are the same row — a bar down the side for the one he is on, a
+  rule under it to tell it from the next, and nothing else.
+
+  The bar is an inset shadow rather than a left border, and that is not a
+  detail. These rows are buttons, and the app's button hover paints
+  border-color grey — so a border kept transparent to reserve the bar's
+  place turned grey under the pointer, giving every row a little bar it
+  had no business having. The list of his texts escaped it only by being
+  made of divs. With no border at all there is nothing for that rule to
+  colour, and the shadow sits inside the padding without reserving
+  anything.
+*/
+.review-row,
+.index-row {
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  text-align: left;
+}
+
+/* Between rows, and not after the last one. */
+.review-row:not(:last-child),
+.index-row:not(:last-child) {
+  border-bottom: 1px solid var(--line);
+}
+
+/*
+  A row is a place in a list, not a key to press. The app's buttons dip a
+  pixel when pressed, which is right for a thing that does something and
+  wrong for a thing that takes him somewhere.
+*/
+.review-row:active,
+.index-row:active {
+  transform: none;
+}
+
+/*
+  The one he is on, marked the way the list of his texts marks the text he
+  has open.
+
+  Only the versions index has one. Picking a deleted text opens a screen
+  of its own rather than filling a pane beside the list, so there is no
+  moment where a row is the chosen one and visible at the same time.
+*/
+.row-open {
+  box-shadow: inset 3px 0 0 var(--chosen);
+  background: var(--chosen-soft);
+}
+
+.review-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 1rem;
+  /* Vertical only. This list can hold everything he has ever put away, so
+     room between rows is room paid for by the hundred; the inset at the
+     sides is what keeps the text off the hover edge. */
+  padding: 0.3rem 0.6rem;
+}
+
+.review-title {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.review-when {
+  color: var(--quiet);
+  font-size: 0.92em;
+}
+
+
+/*
+  Two panes, not two screens.
+
+  Versions are browsed rather than recognised: every copy of a text opens
+  the same way, so no row can say which one he wants — he finds out by
+  looking at the diff. That makes going back and forth the ordinary case
+  rather than the exception, and the cheapest way to make going back cost
+  nothing is for the place he would go back to never to leave the screen.
+
+  The deleted texts keep their one screen, where the workflow is the other
+  way round: those rows carry a title and an opening line of their own, so
+  the list can be read.
+*/
+.review-panes {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 1rem;
+}
+
+/*
+  Deliberately thin. What it costs in what a row can say, it buys back in
+  what the diff beside it has room to show — and the row had nothing
+  worth saying anyway.
+*/
+.review-index {
+  flex: none;
+  /* Wide enough for the longest line it can be asked to hold: a number,
+     a five-figure word count and "23. septembra", which is the longest
+     date his language makes. Narrower and the rows wrap, which at this
+     size reads as damage rather than as a second line. */
+  width: 13rem;
+  overflow-y: auto;
+  padding: 0.4rem 0 1rem;
+  border-right: 1px solid var(--line);
+}
+
+.review-preview {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.index-row {
+  display: block;
+  padding: 0.5rem 0.6rem;
+}
+
+/*
+  The head of the list: his text as it stands, which the copies under it
+  all measure themselves against.
+
+  Its two halves go to the two ends rather than sitting together on the
+  left, and it carries no number — so it reads as the thing the list is
+  about before he has read a word of it, rather than as the first of the
+  copies.
+*/
+.index-row-active .index-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.index-row-active .index-when {
+  margin-left: 0;
+}
+
+.index-line {
+  display: block;
+  color: var(--ink);
+}
+
+/* Which row of the list this is. A fixed width so the counts beside them
+   start on one line down the column. */
+.row-number {
+  display: inline-block;
+  min-width: 1.9em;
+  color: var(--quiet);
+  font-variant-numeric: tabular-nums;
+  font-weight: 400;
+}
+
+.index-size {
+  font-weight: 600;
+}
+
+.index-when {
+  margin-left: 0.4rem;
+  color: var(--quiet);
+  white-space: nowrap;
+}
+
+/*
+  Above the rest of the row, and in the accent.
+
+  He restored something, decided it was wrong, and came back for what he
+  had — this is the only row that can give it to him, and the numbers
+  beside it cannot say so. It is worth more than they are, so it is drawn
+  before them and in the one colour the list otherwise spends only on the
+  row he is standing on.
+*/
+.index-was-active {
+  display: block;
+  margin-bottom: 0.1rem;
+  color: var(--chosen-ink);
+  font-size: 0.92em;
+  font-weight: 600;
+}
+
+.index-note {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--quiet);
+  font-size: 0.92em;
+}
+
+/*
+  What a search matched, and what it did not, named the way the headings
+  in his list are named. Sticky for the same reason those are: six
+  hundred rows is a long way down, and by the middle of them the line
+  saying which part of the list this is would be long gone.
+*/
+.review-group {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 1rem 0.2rem 0.3rem;
+  background: var(--panel);
+  font-size: 0.75em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--quiet);
+}
+
+/* Pushed down and dimmed, never taken away — the same rule the list
+   itself follows, and for the same reason. */
+/* The one he asked for, in the colour the app uses when it is pointing
+   at something. The remainder underneath stays quiet, which is the whole
+   difference between the two groups said in a second way. */
+.review-group.found {
+  color: var(--chosen-ink);
+}
+
+.review-row.aside {
+  opacity: 0.45;
+}
+
+/*
+  The archive's own search. Nothing outside the dialog can look in there,
+  because it is not read until he asks — so the one box that can is in
+  here, and it is the box he already knows from above his list.
+*/
+.shelf-search {
+  font: inherit;
+  /* Wide enough for the few words he will type and no wider. A box the
+     width of the dialog promises a sentence, and he writes one word. */
+  width: 100%;
+  max-width: 20rem;
+  margin: 0.2rem 0 0.6rem;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--page);
+  color: var(--ink);
+}
+
+/*
+  Up to two lines, and fewer where there are fewer.
+
+  Not two reserved: most of what he has put away is short or empty, so a
+  second line held open would be white space on nearly every row. Clamped
+  instead, which grows only the rows with something to put there — and
+  those are the rows that needed it.
+
+  These rows carry the decision, unlike the versions index beside a diff:
+  a deleted text has a title and an opening of its own, so this is where
+  he works out which one it is.
+*/
+.review-snippet {
+  grid-column: 1 / -1;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  color: var(--quiet);
+}
+
+/* Nothing in it, which is a fact about his text and not a gap here. */
+.review-snippet-none {
+  font-style: italic;
+}
+
+/*
+  His text in his own face, so he recognises it — but on a surface that is
+  plainly not the page he writes on. The typeface is the part that makes a
+  text his, so the cues are everything around it: a tint, an edge, a
+  slightly smaller size, and no I-beam, which is the strongest "type here"
+  signal an interface has and was the one thing most wrong about this
+  before.
+
+  Wide panel, narrow column: the width is for the list, not for his lines.
+*/
+/*
+  The column both of them sit in, and the only thing that sets the width.
+
+  It carries his writing font on purpose: --measure is in ch, which is the
+  width of a nought in whatever font the element itself is set in. Left to
+  size themselves, the text in Georgia and a line of interface sans came
+  out two different widths, and the narrower one drifted to the middle.
+*/
+.review-body {
+  /* What the stepper in the corner is placed against: the box around the
+     text, not the text, which scrolls out from under it. */
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: calc(var(--measure) + 3rem);
+  /* No bottom margin of its own: the footer below carries the gap, and
+     in a flex column the two do not collapse into one — they added up,
+     and the space under the box came out twice what it looked like. */
+  margin: 0.4rem auto 0;
+  font-family: var(--writing-font);
+  font-size: var(--text-size);
+}
+
+.review-text {
+  /* How far the marked blocks reach past the text, in both directions. */
+  --run-inset: 0.9rem;
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.2rem 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--wash);
+  color: var(--ink);
+  cursor: default;
+  font-family: var(--writing-font);
+  font-size: calc(var(--text-size) * 0.9);
+  line-height: var(--writing-leading);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+/* Not his writing, so not in his typeface: a note from the app about a
+   text that has nothing in it, which is otherwise indistinguishable from
+   the dialog having failed to load one. */
+/*
+  One block per run of paragraphs that changed, tagged once.
+
+  The tag borrows the list headings' voice — small, uppercase, letter-
+  spaced — because it is doing their job: naming what the things under it
+  are, quietly enough that they stay the thing being read.
+*/
+.review-run {
+  /* The edge is the part that carries at a glance: the fill is pale
+     enough to read his writing on, which is pale enough to miss when
+     scrolling past. Square on that side so it reads as a bar rather than
+     as the corner of a box. */
+  --run-edge: 3px;
+  /* Out by its own padding, and by the edge on top of that, so the text
+     inside lands on the same left margin as the paragraphs above and
+     below. A box that shifts his lines sideways reads as a different
+     column rather than the same page. */
+  margin: 1em calc(-1 * var(--run-inset)) 1em calc(-1 * (var(--run-inset) + var(--run-edge)));
+  padding: 0.7rem var(--run-inset);
+  border-left: var(--run-edge) solid transparent;
+  border-radius: 0 6px 6px 0;
+}
+
+/* Which way round this block is, spelt out beside the word for it. Grey,
+   because the word is the label and this is the footnote to it. */
+.review-tag-why {
+  color: var(--quiet);
+  font-weight: 400;
+}
+
+.review-tag {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-family: var(--ui-font);
+  font-size: 0.72em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.review-run-added {
+  border-left-color: var(--added-ink);
+  background: var(--added);
+}
+
+.review-run-added .review-tag {
+  color: var(--added-ink);
+}
+
+.review-run-missing {
+  border-left-color: var(--missing-ink);
+  background: var(--missing);
+}
+
+.review-run-changed {
+  border-left-color: var(--changed-ink);
+  background: var(--changed);
+}
+
+.review-run-changed .review-tag {
+  color: var(--changed-ink);
+}
+
+/*
+  Inside a changed paragraph, the two marks mean what they already mean
+  four inches up the same page. Struck through says plainly that this is
+  not text to read, which is the one of the two that has to be
+  unmistakable; the wash behind the new words is the green of the block
+  above, at the size of a word.
+*/
+.word-gone {
+  color: var(--missing-ink);
+  text-decoration: line-through;
+}
+
+.word-new {
+  border-radius: 3px;
+  background: var(--word-new-fill);
+  box-shadow: 0 0 0 2px var(--word-new-fill);
+  color: var(--word-new-ink);
+}
+
+.review-run-missing .review-tag {
+  color: var(--missing-ink);
+}
+
+/* Shortened, so it reads as a reference to a paragraph rather than as
+   one of his that has been cut off. */
+.review-run-missing p {
+  color: var(--quiet);
+}
+
+/* Where the middle of a paragraph was taken out. In the block's own
+   colour and letterspaced, so it cannot be read as his own writing
+   trailing off. */
+.review-cut {
+  color: var(--missing-ink);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+/*
+  One rhythm for every paragraph in here, boxed or not. They are all his
+  writing read at the same size, and a marked one that sat on a tighter
+  gap than the rest would look like a different kind of thing.
+*/
+.review-text p {
+  margin: 0 0 1em;
+}
+
+.review-text p:last-child {
+  margin-bottom: 0;
+}
+
+/* What the stepper is placed against: the box, not the column, which has
+   a varying number of lines above the box in it. */
+.review-framed {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.review-steps {
+  position: absolute;
+  top: 0.7rem;
+  right: calc(var(--scrollbar) + 0.5rem);
+  z-index: 2;
+}
+
+.review-steps[hidden] {
+  display: none;
+}
+
+.review-text-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* No tint and no edge either: drawing a large empty box to say a text
+     is empty makes it look as though something failed to load into it.
+     The space says it; the sentence names it. */
+  border-color: transparent;
+  background: none;
+  color: var(--quiet);
+  font-family: inherit;
+  /* Bigger than the dialog talks in elsewhere: at this moment it is the
+     whole content of the panel, not a note in the margin. The face, the
+     slant and the middle of the space already say it is not his writing,
+     so the size is free to say it matters. */
+  font-size: 1.3em;
+  font-style: italic;
+}
+
+
+
+/*
+  Every dialog's surface. It takes the face he chose for the app, like
+  everything else does, and sits a little under it in size — the
+  0.85 being the same step the counters over his writing take.
+
+  Expressed through --ui-size rather than a flat 14px so that the
+  correction inside it comes along: --ui-size is the base times a scale
+  per font, because Calibri and Corbel render small at the same nominal
+  pixel. At his default font this works out to 14.025px, which is what
+  was written here by hand before.
+*/
+.panel {
+  font-family: var(--ui-font);
+  font-size: calc(var(--ui-size) * 0.85);
+  width: min(32rem, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  /* No vertical padding of its own: the pinned header and footer carry
+     it, so nothing scrolls out from under them. */
+  padding: 0 1.4rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--page);
+  box-shadow: 0 12px 44px hsl(var(--grey-h) var(--surface) var(--l-shadow) / var(--shadow-alpha));
+}
+
+/*
+  Pinned to the top and bottom of the panel, not scrolled with it.
+
+  At 200% on a small window the choices are taller than the panel, and a
+  way out that has scrolled off the screen is not a way out. The X and
+  Vrati na početno stay where they are whatever is happening between them.
+*/
+.panel header,
+.panel footer {
+  position: sticky;
+  z-index: 1;
+  background: var(--page);
+}
+
+.panel header {
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 0 0.6rem;
+  border-bottom: 1px solid var(--line);
+}
+
+/*
+  Pulled out into the panel's own side padding so it sits the same
+  distance from the top edge as from the right one. Without this the
+  panel's 1.4rem sides push it further in than the header's 0.9rem top,
+  and the corner looks like nobody measured it.
+*/
+.close {
+  display: inline-flex;
+  margin-right: -0.5rem;
+  padding: 0.4rem;
+  border-color: transparent;
+  background: none;
+}
+
+.close:hover:not(:disabled) {
+  border-color: var(--line);
+}
+
+.panel footer {
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.7rem 0 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+/*
+  What the button beside it is about to do, against the button rather than
+  away across the footer. Right-aligned, so its two lines end where the
+  button begins and there is nothing between them to read it as belonging
+  to instead. On a narrow panel it wraps above the buttons rather than
+  squeezing them.
+*/
+.footer-note {
+  margin: 0 0.4rem 0 0;
+  color: var(--quiet);
+  line-height: 1.45;
+  text-align: right;
+}
+
+.footer-note span {
+  display: block;
+}
+
+/*
+  A real button, not a ghost.
+
+  It was drawn faintly to keep it out of the way, and went too far: a
+  borderless grey label among two bordered buttons reads as disabled, and
+  the one control whose whole job is rescuing him from a mess he can't
+  undo must not look like the one control that isn't working. Distance
+  keeps it clear of U redu; it doesn't need to be dim as well.
+*/
+.reset,
+.destroy {
+  margin-right: auto;
+  white-space: nowrap;
+}
+
+/*
+  Outlined, never filled: a filled red button would be the loudest thing
+  in the app, and this is the one button that should not draw the eye.
+  Bordered rather than bare, because a borderless label among bordered
+  buttons was already found to read as disabled.
+*/
+.danger {
+  border-color: var(--danger);
+  background: none;
+  color: var(--danger);
+}
+
+.danger:hover:not(:disabled) {
+  background-image: linear-gradient(var(--danger-wash), var(--danger-wash));
+}
+
+.danger:active:not(:disabled) {
+  background-image: linear-gradient(var(--danger-wash), var(--danger-wash)),
+    linear-gradient(var(--wash), var(--wash));
+}
+
+.confirm-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-bottom: 1.2rem;
+  color: var(--quiet);
+}
+
+/* The thing to copy, marked out rather than quoted: quotation marks
+   around a word he is meant to type are two more characters he might
+   think belong in the box. */
+.confirm-key {
+  color: var(--chosen);
+  font-weight: 600;
+}
+
+.confirm-word {
+  width: 11rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--page);
+  color: var(--ink);
+  font: inherit;
+}
+
+/* Matching the spellings offered above it: what he has typed is now the
+   word he was asked for. */
+.confirm-word.written {
+  color: var(--chosen);
+  font-weight: 600;
+}
+
+/* Indented to where the writing starts, not to the edge of the box it
+   sits over: it is a line about the text, so it lines up with the text. */
+/*
+  The quiet lines above a box: what it is, when it was taken, what is not
+  in it.
+
+  They name a font because they sit inside .review-body, which is set in
+  his writing face — and these are the app talking, not him. The face is
+  the one he chose for the app, which is what .panel takes now.
+*/
+.review-note-aside {
+  margin: 0 0 0.45rem;
+  padding-left: 1.5rem;
+  color: var(--quiet);
+  font-family: var(--ui-font);
+  font-size: calc(var(--ui-size) * 0.85);
+  font-style: italic;
+}
+
+.review-note-aside[hidden] {
+  display: none;
+}
+
+/* Later in the sheet than .review-already, so it has to say so itself or
+   the quiet colour above wins on source order and the one line that is
+   meant to stand out reads exactly like the two that are not. */
+.review-note-aside.review-already {
+  color: var(--chosen-ink);
+  font-style: normal;
+}
+
+.confirm-word:focus {
+  outline: 2px solid var(--chosen);
+  outline-offset: 1px;
+}
+
+.panel footer button {
+  min-width: 6.5rem;
+  padding: 0.5rem 1rem;
+}
+
+
+
+/* The one the eye should land on, and the one Enter already triggers. */
+.keep {
+  border-color: var(--chosen);
+  box-shadow: inset 0 0 0 1px var(--chosen);
+}
+
+.panel h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 1.12em;
+}
+
+/* The same mark as on the control he pressed to get here, so the dialog
+   is visibly the far end of that press. Quiet, because it is a signpost
+   and the two things beside it are what he reads. */
+.panel h1 svg {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  color: var(--quiet);
+}
+
+/* Lets the text shrink inside the flex row, which is what an ellipsis
+   needs before it can happen at all. */
+.heading-text {
+  min-width: 0;
+}
+
+/* The name of the text, inside a heading that also names the action. He
+   is looking for one of these two things and never the other. */
+.heading-name {
+  color: var(--chosen-ink);
+}
+
+/*
+  Except this one. Izgled is the instrument, not the thing being measured:
+  it keeps one face at one size whatever he picks, because a sample judged
+  through a lens that changes with it tells him nothing. The app behind it
+  is the preview. Colour still reaches it, since colour is not what it is
+  measuring.
+
+  This rule was on .panel itself, written when Izgled was the only dialog
+  there was. The three that came after reused the class and inherited an
+  argument about a panel they are not.
+*/
+.panel.appearance-panel {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+}
+
+/* The two halves: his writing, and the app around it. */
+.panel h2 {
+  margin: 1rem 0 0;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.95em;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.panel-half:first-of-type h2 {
+  margin-top: 0.8rem;
+}
+
+.panel h3 {
+  margin: 0.7rem 0 0.35rem;
+  font-size: 0.78em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--quiet);
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.choices:has(.writing-choice) {
+  flex-direction: column;
+}
+
+/*
+  One height for everything in here, the same as U redu at the foot. They
+  were a third taller, which cost the panel more room than his hands ever
+  gained — and this is a dialog he visits once, not a control he hunts for
+  daily while writing.
+*/
+.choice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+}
+
+.zoom-row {
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+/*
+  Two groups that stay on one line at every size.
+
+  They used to wrap apart at some zooms and not others, which looks like
+  a fault rather than a layout: past a certain zoom the panel stops being
+  32rem wide and becomes as wide as the window allows, so its contents
+  narrow while the buttons inside do not. Rather than let the groups
+  break apart, the swatches wrap within their own group — six across, or
+  three and three, but always beside the size rather than beneath it.
+*/
+.group-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0 1.3rem;
+  align-items: flex-start;
+}
+
+.group-row > * {
+  min-width: 0;
+}
+
+/* The size control is nowrap, so it keeps its width and the colours give. */
+.group-row > *:first-child {
+  flex: 0 0 auto;
+}
+
+.group-row > *:last-child {
+  flex: 1 1 0;
+}
+
+/*
+  Stacked and full width: a line of prose has to be seen as a line, and
+  all three the same height, which means all three on exactly one line.
+  The sample is longer than the panel, so it trails off rather than
+  wrapping — he is judging the letters, and he can see enough of them.
+*/
+.writing-choice {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  line-height: 1.3;
+  overflow: hidden;
+}
+
+.writing-choice span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  /*
+    Fixed rather than proportional, so the three buttons are the same
+    height. Matching x-heights means the three faces are set at three
+    different pixel sizes, and a line box that followed each of them
+    would leave Verdana's button visibly shorter than the other two.
+  */
+  line-height: 21px;
+}
+
+/* Square, and the same square as a colour swatch beside it. */
+.zoom-step {
+  min-width: 2.6rem;
+  padding: 0.4rem;
+  font-size: 1.1em;
+  /* Matching the line box of every other choice, so a larger glyph
+     doesn't make the button shorter than the swatch beside it. */
+  line-height: 1.2;
+}
+
+/*
+  Spent, and saying so. Every button in the app that can be disabled was
+  being greyed by hand where it sat — three rules, three near-identical
+  numbers, and one of them had already drifted to 0.45. It belongs here,
+  once, because "this one will not move" is one idea.
+
+  Faded rather than hidden: a button that is not there cannot be
+  understood, and one that is there but visibly quiet says where the end
+  of a run is before he reaches for it.
+*/
+button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+/* The only part of how the app looks that can be read out over a phone.
+   Tabular figures so it doesn't jog sideways between 90% and 100%. */
+.zoom-reading {
+  min-width: 2.9rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--quiet);
+}
+
+/* No name beside it. He has known what these colours are called for
+   eighty years, and six words would only crowd six obvious dots. */
+.colour-choice {
+  padding: 0.4rem;
+  min-width: 2.6rem;
+}
+
+.colour-choice .swatch {
+  width: 1.4em;
+  height: 1.4em;
+}
+
+/*
+  What he has chosen is filled, not tinted.
+
+  A pale wash of the accent sat two points of lightness from the hover
+  colour — near enough to read as the same thing, different enough to
+  read as a mistake, and pale fills look disabled rather than chosen
+  anyway. Solid is what Windows has meant by "selected" for thirty years
+  and cannot be mistaken for "your pointer is here".
+*/
+.choice[aria-pressed='true'] {
+  border-color: var(--chosen);
+  background-color: var(--chosen);
+  color: var(--on-chosen);
+  box-shadow: none;
+}
+
+/* Except here: the swatch is the sample, and filling the button behind it
+   would paint over the very thing he is choosing. A ring instead. */
+.colour-choice[aria-pressed='true'] {
+  background-color: var(--page);
+  border-color: var(--chosen);
+  box-shadow: inset 0 0 0 2px var(--chosen);
+}
+
+.swatch {
+  width: 1.05em;
+  height: 1.05em;
+  flex: none;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--swatch-edge);
+}
+
+.done {
+  padding: 0.45rem 1rem;
+}
+
+/*
+  The measure: how wide a line of his writing is allowed to get.
+
+  Past about ninety characters the eye starts missing the next line on
+  the way back, and on his screen the editor was running to a hundred and
+  twenty. In `ch` rather than pixels because it is then relative to the
+  face and the size he has chosen — 50ch lands every font we offer
+  between 64 and 72 characters, and on a narrow window it simply never
+  binds. That is why this is a fixed rule and not another thing for him
+  to set: there is one right answer and it follows him about by itself.
+*/
+#editor {
+  font-family: var(--writing-font);
+  font-size: var(--text-size);
+  flex: 1;
+  width: 100%;
+  padding-top: 1.6rem;
+  padding-bottom: 1.6rem;
+  /*
+    The margins make the measure, rather than the element being narrowed
+    and centred. Narrowing it took the scrollbar along with it, leaving
+    the bar floating beside his text instead of sitting at the edge of
+    the window where every other scrollbar he has ever used lives.
+
+    Split 40/60 rather than evenly: the window is read as a whole, and
+    with all that weight in the left pane a column centred in what's left
+    sits right of where the eye expects the middle. Leaning it back
+    toward the list also shortens the trip from choosing a text to
+    reading it.
+  */
+  padding-left: var(--gutter-left);
+  padding-right: var(--gutter-right);
+  border: 0;
+  outline: 0;
+  resize: none;
+  line-height: var(--writing-leading);
+  color: var(--ink);
+  /* See below: the marks show through from behind. */
+  background: none;
+  /*
+    Always a scrollbar, never sometimes. It stops the text reflowing the
+    first time an essay grows past one screen — and, more to the point,
+    the layer behind gets one too, so both give up exactly the same
+    fraction of a pixel to it and wrap on the same words.
+  */
+  overflow-y: scroll;
+}
+
+/*
+  The matches, painted behind his writing.
+
+  Text inside a textarea cannot be styled — there are no elements in there
+  to colour. So the same text is laid out again underneath in a plain div,
+  with the matches wrapped in `mark` and everything else made invisible,
+  and the textarea floats on top with no background of its own. He sees
+  his own text, over our highlighting, and the textarea he is typing in is
+  untouched: native editing, native undo, still plain text.
+
+  This layer is also how the scrolling works. A textarea cannot say where
+  a character sits on screen; the div can, so the first match's position
+  here is what the textarea is scrolled to.
+
+  Everything that decides where a line breaks is shared with the textarea
+  above — font, size, leading, gutters, width — because if the two wrap
+  differently the marks land on the wrong words.
+*/
+#writing {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: var(--page);
+}
+
+#editor,
+#editor-marks {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  font-family: var(--writing-font);
+  font-size: var(--text-size);
+  line-height: var(--writing-leading);
+  padding-top: 1.6rem;
+  padding-bottom: 1.6rem;
+}
+
+#editor-marks {
+  /*
+    The same gutters as the textarea, and a scrollbar of its own.
+
+    Declaring the gutters plus a nominal scrollbar width was close but not
+    exact — of eighteen combinations of font, size and zoom, thirteen
+    wrapped a line differently, which walks the marks off the words
+    further down a long essay. Copying the textarea's measured width was
+    worse: the width it reports is a whole number and the width it has is
+    not, and a third of a pixel is enough to move a word. Giving this
+    layer a real scrollbar too, and then hiding it, makes the two boxes
+    identical by construction rather than by arithmetic.
+  */
+  padding-left: var(--gutter-left);
+  padding-right: var(--gutter-right);
+  overflow-y: scroll;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  color: transparent;
+  user-select: none;
+}
+
+/* Present, so it takes up its width; invisible, because it is not his. */
+#editor-marks::-webkit-scrollbar-thumb,
+#editor-marks::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#editor-marks mark {
+  color: transparent;
+  background: var(--found);
+  border-radius: 2px;
+}
+
+/*
+  The one he is standing on: the same highlight as the rest, framed.
+
+  A frame rather than a second colour, so the marks all read as one kind
+  of thing and the frame says which of them is current. Drawn as a shadow
+  because a shadow takes no space — a border would widen the mark, the
+  line would wrap a word earlier here than in the textarea above, and
+  every mark below it would slide off the words it belongs to.
+*/
+#editor-marks mark.now {
+  box-shadow: 0 0 0 2px var(--chosen);
+}
+
+/*
+  In the margin, not over the words. The measure leaves a wide gutter on
+  the right, so on any ordinary window this covers nothing at all; on a
+  narrow one it tucks into the corner over the first line, which is the
+  least of his text to sit on.
+*/
+/*
+  The box that counts a run of things and steps through them: search
+  matches over his writing, and the places a copy differs over a diff.
+  One look for both, because they are one control met in two places.
+*/
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  /*
+    A halo all the way round, so it reads as floating above his writing
+    rather than sitting in a slot cut for it.
+
+    Dark in the light mode and light in the dark one: it is a shadow, and
+    which way a shadow falls depends on the room. Spread rather than
+    offset, so it separates the panel from the text on every side and not
+    only below — and kept faint, because a bright ring would read as the
+    panel being highlighted rather than merely lifted.
+  */
+  box-shadow:
+    0 2px 16px 2px var(--halo),
+    0 1px 4px var(--halo-near);
+  font-family: var(--ui-font);
+  font-size: calc(var(--ui-size) * 0.85);
+  color: var(--quiet);
+}
+
+.stepper-at {
+  padding: 0 0.3rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.stepper button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: inherit;
+  white-space: nowrap;
+}
+
+.stepper svg {
+  width: 14px;
+  height: 14px;
+}
+
+/*
+  Its own way out, which the diff has no use for: there is nothing there
+  to clear, and the dialog already has an X of its own.
+*/
+.stepper-close {
+  margin-left: 0.15rem;
+  padding: 0.25rem;
+  border-color: transparent;
+  background: none;
+}
+
+.stepper-close:hover:not(:disabled) {
+  border-color: var(--line);
+}
+
+/* Where each of the two sits. Nothing else differs between them. */
+#found {
+  position: absolute;
+  top: 0.7rem;
+  right: calc(var(--scrollbar) + 0.4rem);
+  z-index: 2;
+}
+
+#found[hidden] {
+  display: none;
+}

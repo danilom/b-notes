@@ -83,6 +83,8 @@ await mkdir('dist', { recursive: true });
 await mkdir('dist-browser', { recursive: true });
 await cp('src/ui/index.html', 'dist/index.html');
 await cp('src/ui/index.html', 'dist-browser/index.html');
+await cp('src/ui/interface.css', 'dist/interface.css');
+await cp('src/ui/interface.css', 'dist-browser/interface.css');
 
 /*
   The mark, to both. The SVG is what the page asks for as its favicon, which is
