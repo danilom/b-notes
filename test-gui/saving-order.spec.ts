@@ -41,6 +41,9 @@ async function write(page: Page, text: string): Promise<void> {
 test.beforeEach(async ({ page }) => {
   // Before the page, so nothing is scheduled against a clock we do not hold.
   await page.clock.install();
+  // `install` alone does not stop the clock — timers go on firing in real
+  // time, so anything relying on a save still being pending was racing it.
+  await page.clock.pauseAt(Date.now());
   await page.goto('/');
   await expect(page.locator('#list .note').first()).toBeVisible();
 });

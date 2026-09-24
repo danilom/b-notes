@@ -45,6 +45,9 @@ async function openCopyOf(page: Page, title: string): Promise<void> {
 
 test.beforeEach(async ({ page }) => {
   await page.clock.install();
+  // `install` alone does not stop the clock — timers go on firing in real
+  // time, so anything relying on a save still being pending was racing it.
+  await page.clock.pauseAt(Date.now());
   await page.goto('/');
   await expect(page.locator('#list .note').first()).toBeVisible();
 });
