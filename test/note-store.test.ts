@@ -30,7 +30,7 @@ import { MAX_TITLE, titleFrom } from '../src/notes/note-title.ts';
 async function emptyStore() {
   const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
   const log = silentLog();
-  return { dir, log, store: createNoteStore(createFileSystem(), dir.replaceAll("\\", "/"), log) };
+  return { dir, log, store: createNoteStore(createFileSystem(path.join(tmpdir(), 'b-notes-staging')), dir.replaceAll("\\", "/"), log) };
 }
 
 describe('isConflictedCopy', () => {
@@ -106,7 +106,7 @@ describe('a text that will not convert', () => {
     // different problems. The name alone makes them one, and the reason is
     // there for the taking at exactly the moment it is thrown away.
     const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
-    const real = createFileSystem();
+    const real = createFileSystem(path.join(tmpdir(), 'b-notes-staging'));
     const refuses: FileSystem = {
       ...real,
       rename: async () => {
@@ -135,7 +135,7 @@ describe('a disk that will not answer', () => {
     // both came out as "no versions kept", so a disk quietly going wrong looked
     // exactly like a text he had never edited.
     const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
-    const real = createFileSystem();
+    const real = createFileSystem(path.join(tmpdir(), 'b-notes-staging'));
     const refuses: FileSystem = {
       ...real,
       list: async (folder: string) => {
@@ -357,7 +357,7 @@ describe('saving', () => {
     // that file open is the everyday version of this.
     const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
     const log = silentLog();
-    const disk = createFileSystem();
+    const disk = createFileSystem(path.join(tmpdir(), 'b-notes-staging'));
     const refusing: FileSystem = {
       ...disk,
       rename: async (from, to) => {
@@ -529,7 +529,7 @@ describe('saving', () => {
     // cannot be kept, it does not happen — he sees "not saved" and the text
     // is still on disk for the next attempt.
     const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
-    const real = createFileSystem();
+    const real = createFileSystem(path.join(tmpdir(), 'b-notes-staging'));
     const refusesVersions: FileSystem = {
       ...real,
       write: async (at, text) =>

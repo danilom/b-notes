@@ -76,7 +76,7 @@ const folders = {
   app: asPath(appFolder),
   logs: chosen.logs ?? asPath(path.join(appFolder, 'logs')),
 };
-const files = createFileSystem();
+const files = createFileSystem(path.join(appFolder, 'saving'));
 
 function asString(value: unknown, name: string): string {
   if (typeof value !== 'string') throw new TypeError(`${name} must be a string`);
