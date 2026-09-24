@@ -28,13 +28,20 @@ export interface WhatIsHappening {
  * silence, while there is nothing to report — the line is for reporting, not
  * for telling him to get on with it. Then the save, which is what it says for
  * the rest of the day.
+ *
+ * Silence again while a save is still waiting to run, and that is the whole
+ * point of it. `Sačuvano` is read as *everything you have typed is on the
+ * disk*, whatever tense it is written in, so saying it over keystrokes that
+ * have not been written yet tells him his work is safe at the one moment it
+ * is not. `Čuvam…` was worse: a promise about the future dressed as a report.
+ * Nothing said claims nothing, and it is never wrong.
  */
 export function statusFor(now: WhatIsHappening, language: Language): string {
   const words = strings(language);
 
   if (now.notice !== null) return now.notice;
   if (now.openId === null && isEmptyText(now.text)) return '';
-  if (now.saving) return words.saving;
+  if (now.saving) return '';
   return now.savedAt === null ? words.notSaved : words.savedAgo(describeWhen(now.savedAt, language));
 }
 

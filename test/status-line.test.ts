@@ -38,8 +38,13 @@ describe('the line along the bottom', () => {
     assert.equal(statusFor(at({ openId: null, text: '   \n\n ', savedAt: null }), 'sr'), '');
   });
 
-  it('reports the save it is in the middle of', () => {
-    assert.equal(statusFor(at({ saving: true }), 'sr'), 'Čuvam…');
+  it('says nothing while a save is still waiting to run', () => {
+    assert.equal(statusFor(at({ saving: true, savedAt: Date.now() }), 'sr'), '');
+  });
+
+  it('does not report the last save over keystrokes that have not reached disk', () => {
+    const typedSince = at({ saving: true, savedAt: Date.now() - 120_000 });
+    assert.notEqual(statusFor(typedSince, 'sr'), 'Sačuvano pre 2 minuta');
   });
 
   it('says so when a text has never reached disk', () => {
