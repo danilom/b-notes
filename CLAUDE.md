@@ -80,6 +80,11 @@ What does: code whose wrong answer still looks like an answer.
 
 - Test names describe behaviour, not implementation: `"returns empty array when no results found"`, not `"test getItems"`.
 - This project's test commands and layers are in `DESIGN.md`.
+- **Run the unit suite freely; ask before running the GUI suite.** `npm test`
+  takes ten seconds and needs no permission. `npm run test:gui` takes three to
+  five minutes, which is a long time to lose in the middle of iterating — so
+  say what you'd run it for and wait to be told yes, rather than starting it
+  and reporting afterwards. Offer the targeted form where one fits.
 
 ## Git
 

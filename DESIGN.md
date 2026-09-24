@@ -243,5 +243,15 @@ what you're seeing doesn't match what the app should be doing.
 ## Testing
 
 - Logic tests: `npm test` runs `node --test` directly against the TypeScript sources — Node strips the types itself, so there's no build step and no test framework. This is why `erasableSyntaxOnly` is on in `tsconfig.json`: enums and parameter properties would break it. Covers the storage layer and pure logic; keep these runnable without Electron.
-- End-to-end: Playwright's Electron support (`_electron.launch()`) drives the real app window and can screenshot it. Keep this suite small — the critical path is "type → it persists → reopen → the text is still there". Spectron is archived; don't use it.
+- GUI tests: `npm run test:gui` builds, then runs Playwright over the browser build in `test-gui/`. It drives the real interface against the mock filesystem, so it is the only layer that catches a stylesheet that never loaded, a dialog that never opened, or a button that does nothing. Keep the suite small — the critical path is "type → it persists → reopen → the text is still there".
+- **It costs three to five minutes. Ask before running it.** `npm test` is ten seconds and needs no permission; this does not. Say what it would catch and wait to be told yes. When one area changed, offer the targeted form, which is about thirty seconds:
+
+  ```
+  node scripts/build.mjs && npx playwright test status-bar
+  ```
+
+  The build is not optional there. `npx playwright test` on its own skips it and tests whatever was last built, which has already produced two false greens — a suite passing against code that had been deliberately broken.
+- What it does not cover: the Electron main process. Nothing in `src/hosts/electron/` outside the preload is exercised by any suite, so a change to `electron-main.ts` gains nothing from running either one, and has to be checked by hand in a dev run.
+- `page.clock.install()` does **not** stop time. It must be followed by `pauseAt`, or every test that depends on a save still being pending is racing a real 800ms timer.
+- Playwright's Electron support (`_electron.launch()`) could drive the packaged window instead, and would close the gap above. Spectron is archived; don't use it.
 - Day-to-day UI iteration happens in a browser against the mock storage backend (`npm run ui`), not in a test suite.
