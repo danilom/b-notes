@@ -29,6 +29,29 @@ function setZoom(factor: number): void {
   document.documentElement.style.zoom = String(factor);
 }
 
+/** What the interface asked to have run before the window goes. */
+let finishBeforeClose: (() => Promise<void>) | null = null;
+
+/**
+ * Closing the window, as the packaged app does it.
+ *
+ * Electron holds the real window open, asks the interface to finish what it
+ * was doing, and closes once it answers. This is that sequence with the window
+ * left out: the same call, awaited the same way, so the half of it that lives
+ * in shared code is exercised here rather than only on his machine.
+ *
+ * On `window` rather than behind `?test`, like `showFiles` beside it: it draws
+ * nothing and this host is never built into what he installs.
+ */
+function offerTheCloseSequence(): void {
+  Object.defineProperty(window, 'closeWindow', {
+    value: async (): Promise<void> => {
+      await finishBeforeClose?.();
+    },
+    writable: true,
+  });
+}
+
 /**
  * Puts the pretend filesystem where it can be looked at, given `?test`.
  *
@@ -94,11 +117,29 @@ ${path}`);
     restart: async () => {
       window.location.reload();
     },
+    /*
+      Kept rather than hung off `pagehide`.
+
+      A tab cannot be held open while a promise settles, so wiring this to a
+      real browser close would do the polite thing at the moment nobody is
+      watching — and would leave the sequence that matters untested. What this
+      host is for is standing in for the packaged app, and the packaged app
+      asks the window to finish and waits for the answer before it goes.
+
+      So the callback is kept, and `closeWindow` below runs the same sequence
+      on demand. What cannot be had here either way is Electron's half: that
+      the close event is really intercepted and the window really shuts
+      afterwards.
+    */
+    onBeforeClose: (finish: () => Promise<void>) => {
+      finishBeforeClose = finish;
+    },
     setZoom,
   };
 
   await startApp(host);
   offerTheFileList();
+  offerTheCloseSequence();
 }
 
 void main();

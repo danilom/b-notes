@@ -93,6 +93,21 @@ export interface Host {
    */
   readonly rememberFolders: (folders: { writing: string; logs: string }) => Promise<void>;
   /**
+   * Says what to do before the window goes, and is given the chance to finish.
+   *
+   * Autosave runs 800ms after he stops typing, so anything typed since his last
+   * pause that long exists only in the editor — and closing the window was the
+   * one way out of the app that threw it away. Not a small amount: the timer is
+   * pushed back by every keystroke, so a sentence typed without a gap is a
+   * sentence at risk.
+   *
+   * The host's job because only a host knows what closing means. Electron holds
+   * the window open until this settles; a browser tab has `pagehide` and no way
+   * to wait, which is why the interface must ask for the flush rather than be
+   * told the answer afterwards.
+   */
+  readonly onBeforeClose: (finish: () => Promise<void>) => void;
+  /**
    * Starts the app again, so everything is read from wherever it now lives.
    *
    * A reload of the page is not enough in the packaged app: the folders are

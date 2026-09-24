@@ -370,6 +370,24 @@ function drawArchiveBlock(): void {
   archiveBlock.hidden = !strip.present;
 }
 
+/**
+ * Anything still on its way to disk, landed now.
+ *
+ * Called wherever something is about to happen that his open text cannot be in
+ * the middle of being saved through: opening another text, putting this one
+ * away, bringing one back from Obrisano or Arhiva, and closing the window.
+ *
+ * One function rather than the four copies of it there were. The fourth was
+ * added late and to only three of them, which is how a restore came to rename
+ * the file out from under a save that had not run yet, leaving two of his text.
+ */
+async function flushPendingSave(): Promise<void> {
+  if (saveTimer === undefined) return;
+  clearTimeout(saveTimer);
+  saveTimer = undefined;
+  await saveNow();
+}
+
 async function saveNow(): Promise<void> {
   const text = editor.value;
   const was = openId;
@@ -417,11 +435,7 @@ function scheduleSave(): void {
 }
 
 async function open(id: string): Promise<void> {
-  if (saveTimer !== undefined) {
-    clearTimeout(saveTimer);
-    saveTimer = undefined;
-    await saveNow();
-  }
+  await flushPendingSave();
 
   const note = notes.find((candidate) => candidate.id === id);
   if (note === undefined) return;
@@ -594,11 +608,7 @@ async function deleteOpenNote(id: string): Promise<void> {
   try {
     // Anything still on its way to disk lands first. Putting away a file while
     // a save is in flight would write the text back where it no longer lives.
-    if (saveTimer !== undefined) {
-      clearTimeout(saveTimer);
-      saveTimer = undefined;
-      await saveNow();
-    }
+    await flushPendingSave();
     await store.moveToDeleted(id);
   } catch (error: unknown) {
     /*
@@ -835,11 +845,7 @@ async function bringBackNote(note: ArchivedNote): Promise<void> {
   // Anything still on its way to disk lands first. Bringing a text in can
   // rename the one he is in — it claims a name in his list — and a save
   // landing afterwards would write his open text back under the old name.
-  if (saveTimer !== undefined) {
-    clearTimeout(saveTimer);
-    saveTimer = undefined;
-    await saveNow();
-  }
+  await flushPendingSave();
 
   let back: string;
   try {
@@ -917,11 +923,7 @@ async function restoreNote(id: string): Promise<void> {
     fired afterwards would write his open text back under the name it no longer
     has, leaving two copies of it in his list.
   */
-  if (saveTimer !== undefined) {
-    clearTimeout(saveTimer);
-    saveTimer = undefined;
-    await saveNow();
-  }
+  await flushPendingSave();
 
   let back: string;
   try {
@@ -1115,6 +1117,24 @@ export async function startApp(runningOn: Host): Promise<void> {
   host = runningOn;
   log = host.log;
   reportUncaught();
+
+  /*
+    Everything still on its way to disk lands before the window goes. The host
+    decides what closing means and whether it can be waited for.
+
+    Registered here rather than beside the other listeners, because those run
+    when this module is first evaluated and there is no host until now.
+  */
+  host.onBeforeClose(async () => {
+    try {
+      await flushPendingSave();
+    } catch (error: unknown) {
+      // Said here and nowhere else: the status line he would read it in is
+      // leaving with the window. What should happen instead is the rescue
+      // write, which does not exist yet.
+      log.error('Could not save before closing', describeError(error));
+    }
+  });
 
   const folders: SettingsFolders = {
     writingFolder: host.writingFolder,
