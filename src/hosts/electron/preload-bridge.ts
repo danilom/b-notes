@@ -43,6 +43,22 @@ const rememberFolders = (next: { writing: string; logs: string }) =>
 const restart = () => ipcRenderer.invoke('app:restart');
 
 /**
+ * The one thing the main process asks the window for, rather than the other
+ * way round.
+ *
+ * It holds the window open while this runs, so the reply is what lets it
+ * close. Sent whatever happens — a save that failed must not leave him with a
+ * window that will not shut.
+ */
+const onBeforeClose = (finish: () => Promise<void>): void => {
+  ipcRenderer.on('app:beforeClose', () => {
+    void finish().finally(() => {
+      ipcRenderer.send('app:closeReady');
+    });
+  });
+};
+
+/**
  * Here rather than over IPC, the way `setZoom` is: Electron's clipboard works
  * in this process, and a round trip to the main process to reach the same
  * object would only be a second thing to go wrong.
@@ -84,6 +100,7 @@ contextBridge.exposeInMainWorld('setZoom', setZoom);
 contextBridge.exposeInMainWorld('folders', folders);
 contextBridge.exposeInMainWorld('openFolder', openFolder);
 contextBridge.exposeInMainWorld('copyToClipboard', copyToClipboard);
+contextBridge.exposeInMainWorld('onBeforeClose', onBeforeClose);
 contextBridge.exposeInMainWorld('chooseFolder', chooseFolder);
 contextBridge.exposeInMainWorld('rememberFolders', rememberFolders);
 contextBridge.exposeInMainWorld('restart', restart);

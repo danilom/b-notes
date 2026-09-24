@@ -84,10 +84,25 @@ describe('what the two processes say to each other', () => {
     );
   });
 
+  // `once` as well as `on`: the reply that lets a held-open window finally
+  // close is wanted one time and then never again.
   it('tells it nothing it is not listening for', async () => {
     assert.deepEqual(
       await channelsIn(PRELOAD, /ipcRenderer\.send\('([^']+)'/g),
-      await channelsIn(MAIN, /ipcMain\.on\('([^']+)'/g),
+      await channelsIn(MAIN, /ipcMain\.(?:on|once)\('([^']+)'/g),
+    );
+  });
+
+  /*
+    And the other way, which until the close flush did not exist: every channel
+    here ran window to main. A `webContents.send` nobody is listening for is
+    silence — and the one that matters holds the window open waiting for a
+    reply that would never come.
+  */
+  it('is heard when it speaks to the window', async () => {
+    assert.deepEqual(
+      await channelsIn(MAIN, /webContents\.send\('([^']+)'/g),
+      await channelsIn(PRELOAD, /ipcRenderer\.(?:on|once)\('([^']+)'/g),
     );
   });
 });

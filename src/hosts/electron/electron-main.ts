@@ -328,6 +328,61 @@ async function createWindow(): Promise<BrowserWindow> {
     log.error('Renderer process gone', details);
   });
 
+  /*
+    Nothing typed in the last moment is thrown away by closing.
+
+    Autosave lands 800ms after he stops, and the timer is pushed back by every
+    keystroke — so what is at risk is everything since his last pause that
+    long, which can be a whole sentence. Until now `window-all-closed` was the
+    only close this app knew about, and that fires once the window is already
+    gone.
+
+    Held open rather than hurried: a save is one file write, and the only time
+    it is slow is when the disk is in trouble, which is exactly when giving up
+    on it would be worst. Windows allows several seconds before it takes a
+    shutdown out of our hands, and this needs milliseconds of them.
+
+    Held, but never held hostage. `closing` lets through the close this asks
+    for once the window has answered; `asked` lets through a second click of
+    the X, because a man who clicks it twice means it and must not be argued
+    with by a window that has decided it knows better.
+  */
+  let closing = false;
+  let asked = false;
+  window.on('close', (event) => {
+    if (closing) return;
+
+    if (asked) {
+      // No preventDefault: this one goes through.
+      log.info('Closing before the save finished: asked again');
+      return;
+    }
+
+    event.preventDefault();
+    asked = true;
+    // Monotonic: the wall clock has been seen to step sideways mid-run, and
+    // how long the window was held is the one number worth trusting here.
+    const heldFrom = performance.now();
+    log.info('Holding the window open to finish saving');
+
+    const go = (): void => {
+      closing = true;
+      window.close();
+    };
+    // Whatever the answer, and whatever happens on the way to it. A save that
+    // failed must not leave him with a window that will not shut.
+    ipcMain.once('app:closeReady', () => {
+      log.info('Window finished saving, closing', { heldMs: Math.round(performance.now() - heldFrom) });
+      go();
+    });
+    try {
+      window.webContents.send('app:beforeClose');
+    } catch (error: unknown) {
+      log.error('Could not ask the window to finish saving', error);
+      go();
+    }
+  });
+
   await window.loadFile(path.join(import.meta.dirname, 'index.html'));
   return window;
 }

@@ -10,6 +10,7 @@ declare global {
     folders?: () => Promise<{ writing: string; app: string; logs: string; mode: RunMode }>;
     openFolder?: (path: string) => Promise<void>;
     copyToClipboard?: (text: string) => Promise<void>;
+    onBeforeClose?: (finish: () => Promise<void>) => void;
     chooseFolder?: (from: string) => Promise<string | null>;
     rememberFolders?: (next: { writing: string; logs: string }) => Promise<void>;
     restart?: () => Promise<void>;
@@ -31,6 +32,7 @@ async function main(): Promise<void> {
     folders,
     openFolder,
     copyToClipboard,
+    onBeforeClose,
     chooseFolder,
     rememberFolders,
     restart,
@@ -42,6 +44,7 @@ async function main(): Promise<void> {
     folders === undefined ||
     openFolder === undefined ||
     copyToClipboard === undefined ||
+    onBeforeClose === undefined ||
     chooseFolder === undefined ||
     rememberFolders === undefined ||
     restart === undefined ||
@@ -66,6 +69,7 @@ async function main(): Promise<void> {
     logsFolder: where.logs,
     openFolder,
     copyToClipboard,
+    onBeforeClose,
     chooseFolder,
     rememberFolders,
     restart,
