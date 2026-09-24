@@ -732,37 +732,6 @@
         white-space: nowrap;
       }
 
-      /*
-        Arrives rather than appears, and leaves without ceremony.
-
-        The line goes quiet on his first keystroke and comes back once the save
-        has landed, so over a session it does that many times. Going is no
-        distraction — he is typing, things are happening. Coming back is, and
-        for the same reason the toast fades: a sentence that is simply there
-        between two frames is a flinch at the edge of his eye while he writes.
-
-        Only one way round, which is why this is two rules rather than one.
-        Emptying carries `transition: none`, so the leaving is instant.
-
-        `:empty` and not a class, because it needs nothing kept in sync: the
-        line is blank exactly when `statusFor` returns an empty string, which
-        leaves the element with no child nodes at all. A single space put there
-        instead would silently stop matching.
-      */
-      #status-text:empty {
-        opacity: 0;
-      }
-
-      @media (prefers-reduced-motion: no-preference) {
-        #status-text {
-          transition: opacity 120ms ease-out;
-        }
-
-        #status-text:empty {
-          transition: none;
-        }
-      }
-
 
       /*
         Over his writing, just above the strip, and over on the right where the
