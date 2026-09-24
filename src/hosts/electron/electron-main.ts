@@ -4,7 +4,7 @@ import path from 'node:path';
 import { BUILD_STAMP } from '../../platform/build-info.ts';
 import { LOG_LEVELS, createFileLogger } from './log-file.ts';
 import { createFileSystem } from './disk-file-system.ts';
-import { markAbsence } from '../../platform/file-system.ts';
+import { absenceReply } from '../../platform/file-system.ts';
 import { readChosenFolders, whereToOpen, writeChosenFolders } from './chosen-folders.ts';
 import { startUpdateChecks } from './app-updates.ts';
 import { type Rect, deskAround, keptOnTheDesk } from './window-bounds.ts';
@@ -96,7 +96,7 @@ function asString(value: unknown, name: string): string {
  * softening exists to prevent.
  */
 function isMissingFile(error: unknown): boolean {
-  if (markAbsence(error) !== null) return true;
+  if (absenceReply(error) !== null) return true;
   return (
     typeof error === 'object' &&
     error !== null &&
@@ -118,17 +118,24 @@ function handle(channel: string, handler: (args: unknown[]) => Promise<unknown>)
       else log.error(`${channel} failed`, error);
 
       /*
-        An absence goes back as a marker rather than as itself. Electron keeps
-        the words of a rejection and throws the class away, and the store tells
-        an absence from a failure with `instanceof` — so across this boundary
-        every one of those tests answered false and every "this is ordinary"
-        catch rethrew. `withAbsences` on the far side puts the class back.
+        An absence goes back as an answer rather than as a rejection. Electron
+        keeps the words of a rejection and throws the class away, and the store
+        tells an absence from a failure with `instanceof` — so across this
+        boundary every one of those tests answered false and every "this is
+        ordinary" catch rethrew. `withAbsences` on the far side puts the class
+        back before anything above sees it.
+
+        Answered rather than rejected because Electron prints every rejected
+        handler to stderr, and a folder nobody has needed yet was announced as
+        an error several times on every start.
 
         Everything else is rethrown untouched: a disk that has gone must not be
-        made to look like an empty one.
+        made to look like an empty one, and a real failure should be exactly as
+        loud as Electron makes it.
       */
-      const absence = markAbsence(error);
-      throw absence === null ? error : new Error(absence);
+      const absence = absenceReply(error);
+      if (absence !== null) return absence;
+      throw error;
     }
   });
 }

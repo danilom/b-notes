@@ -67,20 +67,42 @@ export class FileMissing extends Error {
  * The bars are safe as separators: Windows refuses one in a filename, and
  * `withoutUnusableCharacters` takes them out of anything he types.
  */
-const ABSENCE = 'b-notes-absent|';
+const ABSENCE = 'b-notes-absent' as const;
 
-/** The marker for an absence, or null for anything else — which must not be flattened. */
-export function markAbsence(error: unknown): string | null {
-  if (error instanceof FolderMissing) return `${ABSENCE}folder|${error.folder}`;
-  if (error instanceof FileMissing) return `${ABSENCE}file|${error.path}`;
+/**
+ * What an absence looks like on its way back from the other process.
+ *
+ * An answer, not a rejection. It used to be a rejection carrying the marker in
+ * its message, which worked — but Electron prints every rejected handler to
+ * stderr, so a versions folder that had simply never been made was announced
+ * as `Error occurred in handler for 'files:list'` several times on every
+ * start. A folder nobody has needed yet is the most ordinary thing this app
+ * has, and an error line that appears every time teaches whoever reads the
+ * output to skim past the line that matters.
+ */
+export interface AbsenceReply {
+  readonly [ABSENCE]: string;
+}
+
+/** An absence as something that can be returned, or null for anything else —
+ *  which must not be flattened into one. */
+export function absenceReply(error: unknown): AbsenceReply | null {
+  if (error instanceof FolderMissing) return { [ABSENCE]: `folder|${error.folder}` };
+  if (error instanceof FileMissing) return { [ABSENCE]: `file|${error.path}` };
   return null;
 }
 
-/** The absence a message carries, or null if it carries none. */
-export function absenceFrom(message: string): FolderMissing | FileMissing | null {
-  const at = message.indexOf(ABSENCE);
-  if (at === -1) return null;
-  const [kind, ...rest] = message.slice(at + ABSENCE.length).split('|');
+/**
+ * The absence an answer carries, or null if it is an ordinary answer.
+ *
+ * Every real answer from the bridge is an array, a string, a boolean or
+ * nothing, so an object carrying this one key cannot be mistaken for one.
+ */
+export function absenceIn(answer: unknown): FolderMissing | FileMissing | null {
+  if (typeof answer !== 'object' || answer === null) return null;
+  const carried = (answer as Record<string, unknown>)[ABSENCE];
+  if (typeof carried !== 'string') return null;
+  const [kind, ...rest] = carried.split('|');
   const where = rest.join('|');
   if (kind === 'folder') return new FolderMissing(where);
   if (kind === 'file') return new FileMissing(where);

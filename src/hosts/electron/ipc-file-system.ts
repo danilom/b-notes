@@ -1,14 +1,12 @@
-import {
-  type FileSystem,
-  absenceFrom,
-} from '../../platform/file-system.ts';
+import { type FileSystem, absenceIn } from '../../platform/file-system.ts';
 
 /**
  * The filesystem as the window sees it, with the absences put back.
  *
  * Everything the renderer does to a file happens in the other process, and a
  * rejection crossing back arrives as a plain `Error`: Electron keeps the words
- * and throws the class away. The store is built on telling one absence from
+ * and throws the class away. So the other side answers with an absence instead
+ * of rejecting, and this is where that answer becomes an absence again. The store is built on telling one absence from
  * every other kind of failure — `filesIn` returns nothing for a versions
  * folder that was never made, and rethrows anything else — and that test is
  * `instanceof`, which a flattened error cannot pass.
@@ -23,14 +21,13 @@ import {
  */
 export function withAbsences(files: FileSystem): FileSystem {
   const rebuilt = async <T>(work: () => Promise<T>): Promise<T> => {
-    try {
-      return await work();
-    } catch (failure: unknown) {
-      const absence = failure instanceof Error ? absenceFrom(failure.message) : null;
-      // Anything that is not one of the two absences goes up exactly as it
-      // came. A disk that has gone must not be made to look like an empty one.
-      throw absence ?? failure;
-    }
+    // Nothing is caught here. A real failure rejects and goes up exactly as it
+    // came — a disk that has gone must not be made to look like an empty one.
+    // Only an absence arrives as an answer, and only it is turned back.
+    const answer = await work();
+    const absence = absenceIn(answer);
+    if (absence !== null) throw absence;
+    return answer;
   };
 
   return {
