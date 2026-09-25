@@ -317,3 +317,27 @@ describe('a save that will not go through', () => {
     assert.equal(writing.stateOf(handle).waiting, true);
   });
 });
+
+describe('the promise closing waits on', () => {
+  it('does not fail because something went wrong reacting to a save', async () => {
+    /*
+      `changed` is the caller's own code, and it runs where closing is waiting.
+      A window that would not shut because the strip could not be redrawn is
+      the worst trade in the app: his words are already on disk by then.
+    */
+    const folder = (await mkdtemp(path.join(tmpdir(), 'b-notes-writing-'))).replaceAll(
+      String.fromCharCode(92),
+      '/',
+    );
+    const files = refusable(createFileSystem(path.join(tmpdir(), 'b-notes-writing-staging')));
+    const writing = createWriting(files, folder, silentLog(), () => {
+      throw new Error('the interface fell over');
+    });
+    const handle = writing.begin();
+
+    writing.save(handle, 'Pismo\n\nPrva.');
+
+    await assert.doesNotReject(() => writing.flush());
+    assert.equal((await writing.list()).length, 1);
+  });
+});

@@ -271,7 +271,17 @@ export function createWriting(
         }
       }
     } finally {
-      changed(wrote);
+      /*
+        Held apart from the writing, because it is the caller's code and a
+        throw in it must not come back as a failed save. Closing waits on this
+        promise, and a window that will not shut because the strip could not be
+        redrawn would be the worst trade in the app.
+      */
+      try {
+        changed(wrote);
+      } catch (error: unknown) {
+        log.error('Something went wrong reacting to a save', describeError(error));
+      }
     }
   }
 
