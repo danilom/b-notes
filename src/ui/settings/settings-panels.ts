@@ -5,7 +5,7 @@ import { openAdvancedPanel } from './advanced-panel.ts';
 import type { Appearance } from './appearance.ts';
 import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
 import type { Settings } from './app-settings.ts';
-import { openConfirmDialog } from '../parts/confirm-dialog.ts';
+import { openConfirmDialog } from '../dialogs/confirm-dialog.ts';
 
 export interface SettingsPanelsParts {
   appearancePane: HTMLDialogElement;

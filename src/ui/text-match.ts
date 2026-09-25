@@ -1,5 +1,5 @@
-import { toSearchable } from '../../language/diacritics.ts';
-import { type Language, strings } from '../../language/wording.ts';
+import { toSearchable } from '../language/diacritics.ts';
+import { type Language, strings } from '../language/wording.ts';
 
 /** Where in his text a search found something. */
 export interface TextMatch {

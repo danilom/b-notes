@@ -1,9 +1,9 @@
 import { type Language, strings } from '../../language/wording.ts';
-import { type Shown, showAsModal } from '../parts/modal.ts';
-import { type IconName, icon } from '../parts/icons.ts';
+import { type Shown, showAsModal } from '../dialogs/modal.ts';
+import { type IconName, icon } from '../icons.ts';
 import { matches } from '../note-list.ts';
-import { titleOf } from '../parts/dialog-heading.ts';
-import { onOneLine } from '../parts/text-snippet.ts';
+import { titleOf } from '../dialogs/dialog-heading.ts';
+import { onOneLine } from './text-snippet.ts';
 
 /**
  * Picking one text off a shelf his list is not.

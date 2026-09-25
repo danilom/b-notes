@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import { SAMPLE_ID, SAMPLE_TEXT, versionsSample } from '../src/hosts/mockup/mock-versions-sample.ts';
 import { diffParagraphs } from '../src/notes/paragraph-diff.ts';
-import { describeVersion, versionsWorthShowing } from '../src/ui/elsewhere/version-row.ts';
+import { describeVersion, versionsWorthShowing } from '../src/ui/versions/version-row.ts';
 
 /*
   A fixture that has quietly stopped showing what it was built to show is worse

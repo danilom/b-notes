@@ -1,4 +1,4 @@
-import { type Shown, showAsModal } from '../parts/modal.ts';
+import { type Shown, showAsModal } from '../dialogs/modal.ts';
 import { type Language, strings } from '../../language/wording.ts';
 import {
   ACCENTS,
@@ -13,8 +13,8 @@ import {
   stepScale,
   writingSampleFor,
 } from './appearance.ts';
-import { titleOf } from '../parts/dialog-heading.ts';
-import { icon } from '../parts/icons.ts';
+import { titleOf } from '../dialogs/dialog-heading.ts';
+import { icon } from '../icons.ts';
 
 /**
  * The one place he is asked to make a choice about the app rather than about

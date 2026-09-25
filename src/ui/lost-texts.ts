@@ -1,6 +1,6 @@
 import { APP_VERSION, BUILD_STAMP } from '../platform/build-info.ts';
 import { type Language, strings } from '../language/wording.ts';
-import { icon } from './parts/icons.ts';
+import { icon } from './icons.ts';
 
 /**
  * What the app says when his writing is not where it was.

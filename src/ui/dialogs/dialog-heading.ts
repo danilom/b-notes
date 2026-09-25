@@ -1,4 +1,4 @@
-import { type IconName, icon } from './icons.ts';
+import { type IconName, icon } from '../icons.ts';
 
 /**
  * A dialog's title: what this screen is, and which text it is about.

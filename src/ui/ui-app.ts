@@ -23,15 +23,15 @@ import {
   applyAppearance,
   stepScale,
 } from './settings/appearance.ts';
-import { type ArchivedTexts, createArchivedTexts } from './elsewhere/archived-texts.ts';
-import { openConfirmDialog } from './parts/confirm-dialog.ts';
+import { type ArchivedTexts, createArchivedTexts } from './deleted-and-archived/archived-texts.ts';
+import { openConfirmDialog } from './dialogs/confirm-dialog.ts';
 import { type FindInText, createFindInText } from './find-in-text.ts';
-import { icon } from './parts/icons.ts';
-import { type KeptCopiesView, createKeptCopies } from './elsewhere/kept-copies.ts';
+import { icon } from './icons.ts';
+import { type KeptCopiesView, createKeptCopies } from './versions/kept-copies.ts';
 import { showLostTexts } from './lost-texts.ts';
-import { confirmationForDeleting } from './elsewhere/note-confirmations.ts';
+import { confirmationForDeleting } from './deleted-and-archived/note-confirmations.ts';
 import { type Draft, renderList } from './note-list.ts';
-import { type PutAwayTexts, createPutAwayTexts } from './elsewhere/put-away-texts.ts';
+import { type PutAwayTexts, createPutAwayTexts } from './deleted-and-archived/put-away-texts.ts';
 import { type SettingsPanels, createSettingsPanels } from './settings/settings-panels.ts';
 import {
   type WhatIsHappening,
@@ -39,7 +39,7 @@ import {
   emptyHintShows,
   statusFor,
 } from './status-line.ts';
-import { flashToast } from './parts/toast.ts';
+import { flashToast } from './toast.ts';
 
 let language: Language;
 let words: ReturnType<typeof strings>;

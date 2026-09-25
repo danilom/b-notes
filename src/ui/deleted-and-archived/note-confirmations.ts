@@ -1,6 +1,6 @@
 import { type Language, strings } from '../../language/wording.ts';
 import { type DeletedNote, type Note, isEmptyText } from '../../notes/note.ts';
-import type { Confirmation } from '../parts/confirm-dialog.ts';
+import type { Confirmation } from '../dialogs/confirm-dialog.ts';
 
 /**
  * A confirmation with the answers left out, which the caller wires up.

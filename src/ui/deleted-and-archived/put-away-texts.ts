@@ -3,7 +3,7 @@ import type { NoteHandle } from '../../notes/note-handle.ts';
 import type { DeletedNote } from '../../notes/note.ts';
 import type { Writing } from '../../notes/writing.ts';
 import { type Log, describeError } from '../../platform/logging.ts';
-import { openConfirmDialog } from '../parts/confirm-dialog.ts';
+import { openConfirmDialog } from '../dialogs/confirm-dialog.ts';
 import { openDeletedDialog } from './deleted-dialog.ts';
 import { deletedStripFor } from './deleted-strip.ts';
 import { confirmationForDestroying } from './note-confirmations.ts';

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { foundPanelFor, matchesIn } from '../src/ui/parts/text-match.ts';
+import { foundPanelFor, matchesIn } from '../src/ui/text-match.ts';
 
 const found = (text: string, query: string) =>
   matchesIn(text, query).map(({ start, end }) => text.slice(start, end));

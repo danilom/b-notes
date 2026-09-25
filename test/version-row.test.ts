@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { countWords } from '../src/notes/word-count.ts';
-import { beginningAndEnd, onOneLine } from '../src/ui/parts/text-snippet.ts';
-import { describeVersion, versionsWorthShowing } from '../src/ui/elsewhere/version-row.ts';
+import { beginningAndEnd, onOneLine } from '../src/ui/deleted-and-archived/text-snippet.ts';
+import { describeVersion, versionsWorthShowing } from '../src/ui/versions/version-row.ts';
 
 const versionOf = (text: string, takenAt = 0) => ({ id: String(takenAt), takenAt, text });
 
