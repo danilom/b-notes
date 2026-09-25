@@ -78,6 +78,18 @@ function refusable(
   };
 }
 
+async function watched() {
+  const folder = (await mkdtemp(path.join(tmpdir(), 'b-notes-watched-'))).replaceAll(
+    String.fromCharCode(92),
+    '/',
+  );
+  const files = refusable(createFileSystem(path.join(tmpdir(), 'b-notes-writing-staging')));
+  const timers = fakeTimers();
+  const told: NoteHandle[][] = [];
+  const writing = createWriting(files, folder, silentLog(), (written) => told.push(written), timers);
+  return { writing, files, timers, told };
+}
+
 async function writingIn() {
   const folder = (await mkdtemp(path.join(tmpdir(), 'b-notes-writing-'))).replaceAll(
     String.fromCharCode(92),
@@ -339,5 +351,52 @@ describe('the promise closing waits on', () => {
 
     await assert.doesNotReject(() => writing.flush());
     assert.equal((await writing.list()).length, 1);
+  });
+});
+
+
+describe('what the interface is told', () => {
+  /*
+    It is told after every pass of the worker, not only after a write. A
+    failure changes what the strip along the bottom should say, and nothing
+    else would ever tell it — which is exactly what happened: the warning was
+    built, tested in the browser, and never appeared, because the one thing
+    that would have made it appear was never called.
+  */
+  it('is told when words land, and which text they belonged to', async () => {
+    const { writing, timers, told } = await watched();
+    const handle = writing.begin();
+
+    writing.save(handle, 'Pismo\n\nPrva.');
+    await timers.tick(900);
+    await writing.idle();
+
+    assert.deepEqual(told, [[handle]]);
+  });
+
+  it('is told when a save failed, with nothing written', async () => {
+    const { writing, files, timers, told } = await watched();
+    const handle = writing.begin();
+    files.refuse(1);
+
+    writing.save(handle, 'Pismo\n\nPrva.');
+    await timers.tick(900);
+    await writing.idle();
+
+    assert.deepEqual(told, [[]]);
+  });
+
+  it('is told again when a later attempt gets through', async () => {
+    const { writing, files, timers, told } = await watched();
+    const handle = writing.begin();
+    files.refuse(1);
+
+    writing.save(handle, 'Pismo\n\nPrva.');
+    await timers.tick(900);
+    await writing.idle();
+    await timers.tick(1100);
+    await writing.idle();
+
+    assert.deepEqual(told, [[], [handle]]);
   });
 });

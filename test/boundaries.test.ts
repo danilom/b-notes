@@ -123,6 +123,39 @@ describe('where code is allowed to reach', () => {
     assert.deepEqual(await offenders('hosts/mockup', /hosts\/electron|\.\.\/electron/), []);
   });
 
+  /*
+    A filename here is built from his opening line, so it moves the moment he
+    rewrites his first sentence, and again when another text of the same name
+    arrives and takes the bare one. Everything that went wrong with saving came
+    from somewhere outside these files holding one of those names as if it were
+    a name for the text: a failure remembered under a filename, a count guarded
+    by comparing a handle against one, a list read past `writing` so no text
+    had a handle at all.
+
+    So the interface is allowed `writing`, the handle, and what a note is. The
+    naming, the numbering of same-named texts, the store and the planning of a
+    save are not its business, and the compiler cannot say so.
+  */
+  const NAMING = /note-store|note-naming|note-saving/;
+
+  /*
+    One exception, and it is the seam itself. `session.json` is the only place
+    a name outlives a run, so reading it back is the one moment the interface
+    holds a filename that came from outside — and a value read off disk is
+    checked before it is believed. `note-title` is not on the list: a title
+    made from his own text is what the interface shows him, not where a file
+    lives.
+  */
+  const ALLOWED = 'app-session.ts';
+
+  it('keeps how a text is named out of the interface', async () => {
+    const reaching = (await offenders('ui', NAMING)).filter(
+      (offence) => !offence.includes(ALLOWED),
+    );
+
+    assert.deepEqual(reaching, []);
+  });
+
   it('keeps the interface out of everything that is not the interface', async () => {
     for (const folder of ['notes', 'platform', 'language']) {
       assert.deepEqual(await offenders(folder, /\/ui\//), [], folder);
