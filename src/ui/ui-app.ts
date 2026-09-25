@@ -1,7 +1,12 @@
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 import { fileNameBase } from '../notes/note-naming.ts';
 import type { Handle } from '../notes/note-handle.ts';
-import { SPEAK_AFTER_FAILURES, type Writing, createWriting } from '../notes/writing.ts';
+import {
+  SPEAK_AFTER_FAILURES,
+  type LiveNote,
+  type Writing,
+  createWriting,
+} from '../notes/writing.ts';
 import { titleFrom } from '../notes/note-title.ts';
 import {
   type Archive,
@@ -145,7 +150,14 @@ let showAppearanceOf: (appearance: Appearance) => void;
  */
 let restored: { note: string; version: string } | null = null;
 
-let notes: Note[] = [];
+/**
+ * His whole corpus, each text carrying the name it keeps for this run.
+ *
+ * `LiveNote` and not `Note`: a row he clicks already knows which text it is,
+ * so opening one never has to ask by filename — the one question that can be
+ * answered with "there is no such text" about a text that is right there.
+ */
+let notes: LiveNote[] = [];
 /** Everything he has put away. Held like `notes`, and for the same reason. */
 let deleted: DeletedNote[] = [];
 /**
@@ -478,7 +490,15 @@ async function open(id: string): Promise<void> {
   const note = notes.find((candidate) => candidate.id === id);
   if (note === undefined) return;
 
-  openHandle = writing.handleFor(id);
+  /*
+    Off the row he clicked, not looked up by name.
+ 
+    Every row already carries the name its text keeps for the run, so asking
+    for it again by filename is both a second lookup and a second chance to be
+    told there is no such text — which is exactly what happened when the list
+    was read without minting handles at all, and every text opened as nothing.
+  */
+  openHandle = note.handle;
   editor.value = note.text;
   savedAt = note.updatedAt;
   draft = null;
@@ -1270,7 +1290,7 @@ export async function startApp(runningOn: Host): Promise<void> {
    * he was left looking at the frame of an app that never filled in.
    */
   async function readEverything(): Promise<{
-    notes: Note[];
+    notes: LiveNote[];
     deleted: DeletedNote[];
     archives: Archive[];
   }> {

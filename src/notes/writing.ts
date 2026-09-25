@@ -69,7 +69,14 @@ export interface Writing {
   stateOf(handle: Handle): WritingState;
   /** The name a text lives under, for the one place that has to write it down. */
   tokenOf(handle: Handle): string | null;
-  /** That name read back, once `load` has minted the handles. */
+  /**
+   * That name read back, once `load` has minted the handles.
+   *
+   * Nothing in the app asks yet — a row he clicks already carries its handle,
+   * which is both quicker and incapable of answering "no such text" about a
+   * text sitting in front of him. This is for `session.json`, the one place
+   * that has to write a name down and read it back next time.
+   */
   handleFor(token: string): Handle | null;
   /** The store underneath, while the rest of the app still speaks to it directly. */
   readonly store: NoteStore;
