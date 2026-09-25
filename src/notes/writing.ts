@@ -1,6 +1,6 @@
 import type { FileSystem } from '../platform/file-system.ts';
 import { type Log, describeError } from '../platform/logging.ts';
-import type { Handle } from './note-handle.ts';
+import type { NoteHandle } from './note-handle.ts';
 import { createHandles } from './note-handle.ts';
 import type {
   Archive,
@@ -14,7 +14,7 @@ import { createNoteStore } from './note-store.ts';
 
 /** A text of his, and what it is called while the app runs. */
 export interface LiveNote extends Note {
-  handle: Handle;
+  handle: NoteHandle;
 }
 
 /** What the strip along the bottom needs to know about one text. */
@@ -72,15 +72,15 @@ export interface Writing {
   /** Read again, keeping the handle each text already had. */
   list(): Promise<LiveNote[]>;
   /** A text he has begun that has no file yet. */
-  begin(): Handle;
+  begin(): NoteHandle;
   /** He typed. Nothing reaches disk for 800ms, and the newest words win. */
-  save(handle: Handle, text: string): void;
+  save(handle: NoteHandle, text: string): void;
   /** Write what is waiting now — one text, or every one. Never rejects. */
-  flush(handle?: Handle): Promise<void>;
+  flush(handle?: NoteHandle): Promise<void>;
   /** What the strip reads. */
-  stateOf(handle: Handle): WritingState;
+  stateOf(handle: NoteHandle): WritingState;
   /** The name a text lives under, for the one place that has to write it down. */
-  tokenOf(handle: Handle): string | null;
+  tokenOf(handle: NoteHandle): string | null;
   /**
    * That name read back, once `load` has minted the handles.
    *
@@ -89,7 +89,7 @@ export interface Writing {
    * text sitting in front of him. This is for `session.json`, the one place
    * that has to write a name down and read it back next time.
    */
-  handleFor(token: string): Handle | null;
+  handleFor(token: string): NoteHandle | null;
   /** Everything he has put away, newest first. */
   putAway(): Promise<DeletedNote[]>;
   /** The archive folders and how many texts each holds. Counted, not read. */
@@ -103,19 +103,19 @@ export interface Writing {
    * there is missing his last sentence — and nothing is attempted for it
    * afterwards, or the write would put back the file he just removed.
    */
-  discard(handle: Handle): Promise<void>;
+  discard(handle: NoteHandle): Promise<void>;
   /** Back from Obrisano, under whatever name is free, as a text he can edit. */
-  restore(token: string): Promise<Handle>;
+  restore(token: string): Promise<NoteHandle>;
   /** Out of an archive and into his list, with its kept copies. */
-  bringBack(archive: string, token: string): Promise<Handle>;
+  bringBack(archive: string, token: string): Promise<NoteHandle>;
   /** Destroyed, along with every copy that went with it. Never from his list. */
   destroy(token: string): Promise<void>;
   /** A copy kept now, whatever the ordinary rule would say. */
-  keepCopy(handle: Handle, text: string): Promise<string>;
+  keepCopy(handle: NoteHandle, text: string): Promise<string>;
   /** How many copies are kept of a text. Counted without reading any. */
-  countVersions(handle: Handle): Promise<number>;
+  countVersions(handle: NoteHandle): Promise<number>;
   /** Every copy kept of a text, newest first. */
-  versionsOf(handle: Handle): Promise<NoteVersion[]>;
+  versionsOf(handle: NoteHandle): Promise<NoteVersion[]>;
   /** Resolves once nothing is being written. Waiting, unstarted work stays waiting. */
   idle(): Promise<void>;
   /** Timers down, nothing further attempted. */
@@ -145,14 +145,14 @@ export function createWriting(
   files: FileSystem,
   folder: string,
   log: Log,
-  changed: (written: Handle[]) => void = () => undefined,
+  changed: (written: NoteHandle[]) => void = () => undefined,
   timers: Timers = realTimers,
 ): Writing {
   const nextHandle = createHandles();
   /** Where each text lives now. Null for one he has begun and not yet saved. */
-  const livesAt = new Map<Handle, string | null>();
-  const byToken = new Map<string, Handle>();
-  const waiting = new Map<Handle, Waiting>();
+  const livesAt = new Map<NoteHandle, string | null>();
+  const byToken = new Map<string, NoteHandle>();
+  const waiting = new Map<NoteHandle, Waiting>();
 
   /** The write in progress, or null. A promise so anything can wait for it. */
   let running: Promise<void> | null = null;
@@ -175,7 +175,7 @@ export function createWriting(
 
   const store = createNoteStore(files, folder, log, renamed);
 
-  function remember(id: string): Handle {
+  function remember(id: string): NoteHandle {
     const known = byToken.get(id);
     if (known !== undefined) return known;
     const handle = nextHandle();
@@ -216,7 +216,7 @@ export function createWriting(
   }
 
   async function run(): Promise<void> {
-    const wrote: Handle[] = [];
+    const wrote: NoteHandle[] = [];
     try {
       for (;;) {
         const next = [...waiting].find(([, entry]) => entry.due);
@@ -264,7 +264,7 @@ export function createWriting(
   }
 
   /** A token for something still on disk, or a failure he can be told about. */
-  function nameOf(handle: Handle): string {
+  function nameOf(handle: NoteHandle): string {
     const id = livesAt.get(handle) ?? null;
     if (id === null) throw new Error('That text has not been written yet');
     return id;
@@ -289,7 +289,7 @@ export function createWriting(
     archived: (liveTitles) => store.listArchived(liveTitles),
     destroy: (token) => store.destroy(token),
 
-    async discard(handle: Handle): Promise<void> {
+    async discard(handle: NoteHandle): Promise<void> {
       // His last sentence first, or the copy that lands in Obrisano is missing
       // it. Then nothing more is attempted for this text: a write afterwards
       // would put back the file he has just put away.
@@ -301,11 +301,11 @@ export function createWriting(
       livesAt.delete(handle);
     },
 
-    async restore(token: string): Promise<Handle> {
+    async restore(token: string): Promise<NoteHandle> {
       return remember(await store.restore(token));
     },
 
-    async bringBack(archive: string, token: string): Promise<Handle> {
+    async bringBack(archive: string, token: string): Promise<NoteHandle> {
       return remember(await store.bringBack(archive, token));
     },
 
@@ -318,13 +318,13 @@ export function createWriting(
       return notes.map((note) => ({ ...note, handle: remember(note.id) }));
     },
 
-    begin(): Handle {
+    begin(): NoteHandle {
       const handle = nextHandle();
       livesAt.set(handle, null);
       return handle;
     },
 
-    save(handle: Handle, text: string): void {
+    save(handle: NoteHandle, text: string): void {
       const already = waiting.get(handle);
       if (already !== undefined) timers.clear(already.timer);
       /*
@@ -340,7 +340,7 @@ export function createWriting(
       waiting.set(handle, entry);
     },
 
-    async flush(handle?: Handle): Promise<void> {
+    async flush(handle?: NoteHandle): Promise<void> {
       for (const [each, entry] of waiting) {
         if (handle !== undefined && each !== handle) continue;
         timers.clear(entry.timer);
@@ -353,16 +353,16 @@ export function createWriting(
       await work();
     },
 
-    stateOf(handle: Handle): WritingState {
+    stateOf(handle: NoteHandle): WritingState {
       const entry = waiting.get(handle);
       return { waiting: entry !== undefined, failures: entry?.failures ?? 0 };
     },
 
-    tokenOf(handle: Handle): string | null {
+    tokenOf(handle: NoteHandle): string | null {
       return livesAt.get(handle) ?? null;
     },
 
-    handleFor(token: string): Handle | null {
+    handleFor(token: string): NoteHandle | null {
       return byToken.get(token) ?? null;
     },
 

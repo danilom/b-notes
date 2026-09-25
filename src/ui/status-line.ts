@@ -1,5 +1,5 @@
 import { type Language, describeWhen, strings } from '../language/wording.ts';
-import type { Handle } from '../notes/note-handle.ts';
+import type { NoteHandle } from '../notes/note-handle.ts';
 import { isEmptyText } from '../notes/note.ts';
 
 /**
@@ -88,7 +88,7 @@ export function canDelete(now: WhatIsHappening): boolean {
 /** A count of the copies kept of one text, and which text it was counted for. */
 export interface KeptCopies {
   /** The text the count belongs to. Null before anything has been counted. */
-  note: Handle | null;
+  note: NoteHandle | null;
   count: number;
 }
 
@@ -102,6 +102,6 @@ export interface KeptCopies {
  * delete leaves behind. Tying the count to its text makes forgetting impossible
  * rather than making it a thing to remember.
  */
-export function keptOf(open: Handle | null, kept: KeptCopies): number {
+export function keptOf(open: NoteHandle | null, kept: KeptCopies): number {
   return open !== null && kept.note === open ? kept.count : 0;
 }

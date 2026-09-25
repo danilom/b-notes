@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import type { Handle } from '../src/notes/note-handle.ts';
+import type { NoteHandle } from '../src/notes/note-handle.ts';
 import { describe, it } from 'node:test';
 
 import {
@@ -101,8 +101,8 @@ describe('whether there is anything to put away', () => {
 describe('how many copies the open text has', () => {
   // Handles, not names: the count belongs to a text, and a text keeps the same
   // handle when the file under it is renamed.
-  const zima = 1 as Handle;
-  const jesen = 2 as Handle;
+  const zima = 1 as NoteHandle;
+  const jesen = 2 as NoteHandle;
 
   it('counts the ones taken for the text he is in', () => {
     assert.equal(keptOf(zima, { note: zima, count: 4 }), 4);

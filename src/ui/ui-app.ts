@@ -1,6 +1,6 @@
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 import { fileNameBase } from '../notes/note-naming.ts';
-import type { Handle } from '../notes/note-handle.ts';
+import type { NoteHandle } from '../notes/note-handle.ts';
 import {
   SPEAK_AFTER_FAILURES,
   type LiveNote,
@@ -193,7 +193,7 @@ let kept: KeptCopies = { note: null, count: 0 };
  * sentence, and again when another text of the same name arrived and took the
  * bare one. `openName()` asks where it lives at this moment.
  */
-let openHandle: Handle | null = null;
+let openHandle: NoteHandle | null = null;
 
 /** Where the open text lives now, or null before it has a file. */
 function openName(): string | null {
@@ -393,7 +393,7 @@ function typedSomething(): void {
  * Words reached disk. Reload rather than patch: a save can rename a text,
  * which moves it in the list, and a stale row is exactly what reads as loss.
  */
-function afterWriting(written: Handle[]): void {
+function afterWriting(written: NoteHandle[]): void {
   if (openHandle !== null && written.includes(openHandle)) {
     savedAt = Date.now();
     draft = null;
@@ -482,7 +482,7 @@ async function flushPendingSave(): Promise<void> {
 
 
 
-async function open(handle: Handle): Promise<void> {
+async function open(handle: NoteHandle): Promise<void> {
   await flushPendingSave();
 
   const note = notes.find((candidate) => candidate.handle === handle);
@@ -662,7 +662,7 @@ async function copyWholeText(): Promise<void> {
   flashToast(toast, words.copied, words.copiedHow);
 }
 
-async function deleteOpenNote(id: string, handle: Handle): Promise<void> {
+async function deleteOpenNote(id: string, handle: NoteHandle): Promise<void> {
   try {
     // `discard` writes anything still on its way first, and attempts nothing
     // for the text afterwards: a save landing later would put back the file he
@@ -915,7 +915,7 @@ async function bringBackNote(note: ArchivedNote): Promise<void> {
   // landing afterwards would write his open text back under the old name.
   await flushPendingSave();
 
-  let back: Handle;
+  let back: NoteHandle;
   try {
     back = await writing.bringBack(note.archive, note.id);
     archives = await writing.archives();
@@ -993,7 +993,7 @@ async function restoreNote(id: string): Promise<void> {
   */
   await flushPendingSave();
 
-  let back: Handle;
+  let back: NoteHandle;
   try {
     back = await writing.restore(id);
     await reload();

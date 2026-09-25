@@ -21,7 +21,7 @@ declare const handle: unique symbol;
  * uses — so a name that no longer finds anything is an error to be reported
  * and never a near miss to be acted on.
  */
-export type Handle = number & { readonly [handle]: true };
+export type NoteHandle = number & { readonly [handle]: true };
 
 /**
  * Handles in the order they were minted, which is the order they were read.
@@ -30,10 +30,10 @@ export type Handle = number & { readonly [handle]: true };
  * old one act on a text that has taken its place, which is the whole class of
  * fault this type exists to end.
  */
-export function createHandles(): () => Handle {
+export function createHandles(): () => NoteHandle {
   let last = 0;
   return () => {
     last += 1;
-    return last as Handle;
+    return last as NoteHandle;
   };
 }
