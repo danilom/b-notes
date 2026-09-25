@@ -1586,3 +1586,50 @@ describe('writing brought in from somewhere else', () => {
     await assert.rejects(() => store.bringBack('Stari laptop 2021', 'Nema me'), /No such archived note/);
   });
 });
+
+describe('saying when a text changes its name', () => {
+  /*
+    Saving one text renames others: a second `Pismo` makes the first `Pismo (1)`,
+    and a group down to its last takes the number off what is left. Anything
+    above holding a text by name has to hear about those, or it goes on pointing
+    at a file that is no longer there — which is where every save bug in this
+    app has come from.
+  */
+  async function watchedStore() {
+    const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
+    const log = silentLog();
+    const renames: { from: string; to: string }[] = [];
+    const store = createNoteStore(
+      createFileSystem(path.join(tmpdir(), 'b-notes-staging')),
+      dir.replaceAll(String.fromCharCode(92), '/'),
+      log,
+      (from, to) => renames.push({ from, to }),
+    );
+    return { store, renames };
+  }
+
+  it('says so when his own first line changed', async () => {
+    const { store, renames } = await watchedStore();
+    const id = await store.save(null, 'Pismo\n\nDragi brate');
+    renames.length = 0;
+
+    // Against what the save itself reports, rather than a guess at the
+    // naming rule: the title is built from the start of his text, not from
+    // the first line alone.
+    const to = await store.save(id, 'Esej\n\nDragi brate');
+
+    assert.deepEqual(renames, [{ from: id, to }]);
+  });
+
+  it('says so about the other text, when a second one takes its name', async () => {
+    // The one that was silent: nothing was told that `Pismo` had become
+    // `Pismo (1)`, because the save that caused it was about another text.
+    const { store, renames } = await watchedStore();
+    await store.save(null, 'Pismo\n\nPrvi');
+    renames.length = 0;
+
+    await store.save(null, 'Pismo\n\nDrugi');
+
+    assert.deepEqual(renames, [{ from: 'Pismo', to: 'Pismo (1)' }]);
+  });
+});

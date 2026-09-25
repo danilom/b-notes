@@ -70,7 +70,24 @@ const asWritten = (text: string): string => text.replaceAll('\r\n', '\n');
  * path a note actually lives at is worked out here and nowhere else, so nothing
  * above this knows where his writing is kept.
  */
-export function createNoteStore(files: FileSystem, folder: string, log: Log): NoteStore {
+/**
+ * Told whenever a text he can edit changes its name.
+ *
+ * Saving one text renames others: a second `Pismo` makes the first `Pismo (1)`,
+ * and a group dropping to one takes the number off what is left. Those renames
+ * are the point of the rule, but until now only the saved text's new name came
+ * back — so anything above holding the *other* text by name was quietly wrong
+ * from that moment. Announcing them costs one line at the single place a live
+ * text is ever renamed.
+ */
+export type NoteRenamed = (from: string, to: string) => void;
+
+export function createNoteStore(
+  files: FileSystem,
+  folder: string,
+  log: Log,
+  renamed: NoteRenamed = () => undefined,
+): NoteStore {
   const at = (...parts: string[]): string => [folder, ...parts].join('/');
 
   /**
@@ -254,6 +271,8 @@ export function createNoteStore(files: FileSystem, folder: string, log: Log): No
   async function renameNote(from: string, to: string): Promise<void> {
     await moveVersions(versionsFolderFor(from), versionsFolderFor(to));
     await files.rename(at(`${from}${EXTENSION}`), at(`${to}${EXTENSION}`));
+    // After the move, so nothing is told about a rename that did not happen.
+    renamed(from, to);
   }
 
   /** The same, for a text that has been put away. Obrisano numbers its own. */
