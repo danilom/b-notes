@@ -7,6 +7,7 @@ import {
   MOCK_WRITING_FOLDER,
   createMockFileSystem,
   everyFile,
+  refuseTheNextWrites,
   seedIfEmpty,
 } from './mock-file-system.ts';
 
@@ -63,6 +64,17 @@ function offerTheCloseSequence(): void {
  */
 function offerTheFileList(): void {
   if (!new URLSearchParams(window.location.search).has('test')) return;
+
+  /*
+    A failed save, on demand. Dropbox holding a file for a second is the
+    ordinary failure this app has to survive, and until there was a way to
+    cause one, what the interface did about it could only be reasoned about.
+    Beside `showFiles`, behind the same `?test`, and in this host alone.
+  */
+  Object.defineProperty(window, 'refuseTheNextWrites', {
+    value: (count: number): void => refuseTheNextWrites(count),
+    writable: true,
+  });
 
   Object.defineProperty(window, 'showFiles', {
     value: (): { path: string; bytes: number }[] => {

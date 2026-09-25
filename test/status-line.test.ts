@@ -14,6 +14,7 @@ const AT_REST: WhatIsHappening = {
   text: 'O zimi\n\nTekst.',
   savedAt: Date.now(),
   saving: false,
+  couldNotSave: false,
   notice: null,
 };
 
@@ -117,5 +118,37 @@ describe('how many copies the open text has', () => {
 
   it('counts none before anything has been counted at all', () => {
     assert.equal(keptOf('O zimi', { note: null, count: 0 }), 0);
+  });
+});
+
+describe('writing that has not reached disk', () => {
+  it('says so, rather than reporting the save before it', () => {
+    // The misleading case: a text saved five minutes ago whose latest
+    // sentences failed to be written. "Sačuvano pre 5 minuta" is true about
+    // the file and false about what he has typed, and he reads the second.
+    const failing = at({ couldNotSave: true, savedAt: Date.now() - 300_000 });
+
+    assert.equal(statusFor(failing, 'sr'), 'Poslednje izmene nisu sačuvane');
+  });
+
+  it('says so even while another attempt is waiting to run', () => {
+    // A failing save is a pending save, and the silence kept for one would
+    // otherwise be kept by every attempt that goes on failing.
+    assert.equal(
+      statusFor(at({ couldNotSave: true, saving: true }), 'sr'),
+      'Poslednje izmene nisu sačuvane',
+    );
+  });
+
+  it('outranks a thing that has just happened', () => {
+    assert.equal(
+      statusFor(at({ couldNotSave: true, notice: 'Tekst je vraćen' }), 'sr'),
+      'Poslednje izmene nisu sačuvane',
+    );
+  });
+
+  it('is not said for a text that has simply never been written', () => {
+    // Different sentence, different situation: nothing has failed here.
+    assert.equal(statusFor(at({ savedAt: null }), 'sr'), 'Nije sačuvano');
   });
 });

@@ -190,6 +190,28 @@ let draft: Draft | null = null;
 let savedAt: number | null = null;
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
+/**
+ * Words that have not reached disk, and how many attempts in a row have failed.
+ *
+ * Carried rather than read back from the editor when the attempt runs: by then
+ * he may have opened another text, and what has to be written is what he typed,
+ * not what happens to be in front of him.
+ */
+let unsaved: { id: string | null; text: string; attempts: number } | null = null;
+let retryTimer: ReturnType<typeof setTimeout> | undefined;
+
+/**
+ * Said on the second failure in a row, not the first.
+ *
+ * Dropbox holds a file for about a second while it uploads it and Windows
+ * refuses to touch one that is held, so a single failure is the ordinary case
+ * and the attempt after it succeeds.
+ */
+const SPEAK_AFTER_FAILURES = 2;
+
+/** Slow, and forever. A save that stopped being attempted is one he was never told about. */
+const RETRY_AFTER_MS = [1_000, 3_000, 10_000, 30_000] as const;
+
 function draw(): void {
   renderList(listPane, { notes, query: search.value, openId, draft, language });
   drawDeletedBlock();
@@ -326,7 +348,18 @@ window.addEventListener('resize', () => {
 
 /** Everything the strip along the bottom is decided from. */
 function whatIsHappening(): WhatIsHappening {
-  return { openId, text: editor.value, savedAt, saving: saveTimer !== undefined, notice };
+  return {
+    openId,
+    text: editor.value,
+    savedAt,
+    // Another attempt at a save that failed is a save still on its way, and
+    // the line stays silent for it the same way. Without this, the one failure
+    // that Dropbox causes weekly left the report of the *previous* save on
+    // screen — true about the file, false about what he had just typed.
+    saving: saveTimer !== undefined || retryTimer !== undefined,
+    couldNotSave: (unsaved?.attempts ?? 0) >= SPEAK_AFTER_FAILURES,
+    notice,
+  };
 }
 
 function showStatus(): void {
@@ -397,6 +430,16 @@ async function saveNow(): Promise<void> {
   const wasNew = was === null;
   openId = id;
   savedAt = Date.now();
+  /*
+    Nothing is waiting any more, and this is the line that stops the older words
+    being written over the newer ones. A failed save leaves its text waiting; if
+    he goes on typing, the save that follows succeeds with what he has now — and
+    the attempt still scheduled would otherwise wake a second later and put back
+    what he had then.
+  */
+  unsaved = null;
+  clearTimeout(retryTimer);
+  retryTimer = undefined;
   draft = null;
   remember(id);
 
@@ -427,11 +470,62 @@ function scheduleSave(): void {
   saveTimer = setTimeout(() => {
     saveTimer = undefined;
     saveNow().catch((error: unknown) => {
-      statusText.textContent = words.notSaved;
-      log.error('Could not save', describeError(error));
+      keepTrying(openId, editor.value, error);
     });
   }, AUTOSAVE_IDLE_MS);
   showStatus();
+}
+
+/**
+ * What a failed write leads to: another attempt, and eventually a word to him.
+ *
+ * Through `statusFor` rather than written into the element. It was written into
+ * the element, and `showStatus` put the ordinary line back over it twelve lines
+ * below — so the one sentence that mattered survived until his next keystroke.
+ */
+function keepTrying(id: string | null, text: string, error: unknown): void {
+  const attempts = (unsaved?.attempts ?? 0) + 1;
+  unsaved = { id, text, attempts };
+  log.error('Could not save', { attempts, error: describeError(error) });
+
+  clearTimeout(retryTimer);
+  const wait = RETRY_AFTER_MS[Math.min(attempts, RETRY_AFTER_MS.length) - 1] ?? 30_000;
+  retryTimer = setTimeout(() => {
+    void tryAgain();
+  }, wait);
+  showStatus();
+}
+
+/**
+ * One more attempt at what did not reach disk.
+ *
+ * Superseded rather than repeated when he has gone on typing: a save is already
+ * scheduled for the newer words, and writing the older ones over them is the
+ * one thing worse than not writing at all.
+ */
+async function tryAgain(): Promise<void> {
+  // Spent the moment it fires. Left set, it would stand for an attempt that is
+  // waiting when none is, and the line would keep the silence it keeps for one.
+  retryTimer = undefined;
+  const waiting = unsaved;
+  if (waiting === null) return;
+  if (saveTimer !== undefined) {
+    unsaved = null;
+    showStatus();
+    return;
+  }
+
+  try {
+    const id = await store.save(waiting.id, waiting.text);
+    unsaved = null;
+    if (id !== null && id === openId) savedAt = Date.now();
+    notes = await store.list();
+    draw();
+    showStatus();
+    log.info('Saved after all', { attempts: waiting.attempts });
+  } catch (error: unknown) {
+    keepTrying(waiting.id, waiting.text, error);
+  }
 }
 
 async function open(id: string): Promise<void> {

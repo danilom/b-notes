@@ -14,8 +14,17 @@ export interface WhatIsHappening {
   text: string;
   /** When it last reached disk, or null if it never has. */
   savedAt: number | null;
-  /** Whether a save is waiting to run. */
+  /** Whether a save is waiting to run, including another attempt at one that failed. */
   saving: boolean;
+  /**
+   * Whether writing what he has typed has failed, and gone on failing.
+   *
+   * Not the first failure: Dropbox holds a file for about a second while it
+   * uploads, and the attempt after that succeeds. A warning that appears and
+   * clears itself weekly is one he learns to pass over, and then passes over
+   * the once it is real.
+   */
+  couldNotSave: boolean;
   /** Something to tell him once, which outranks everything else here. */
   notice: string | null;
 }
@@ -23,7 +32,13 @@ export interface WhatIsHappening {
 /**
  * The line along the bottom, in the order the answers take precedence.
  *
- * A notice first: it reports a thing that has just happened, and a thing that
+ * Writing that has not reached disk first, over even a notice: everything else
+ * this line says is about what has already happened safely, and this is the one
+ * thing he would act on. It outranks the pending save below it too, or the
+ * silence kept for a save still on its way would go on being kept by the
+ * attempts that keep failing.
+ *
+ * Then a notice: it reports a thing that has just happened, and a thing that
  * has just happened is worth more than how long ago he last saved. Then
  * silence, while there is nothing to report — the line is for reporting, not
  * for telling him to get on with it. Then the save, which is what it says for
@@ -39,6 +54,7 @@ export interface WhatIsHappening {
 export function statusFor(now: WhatIsHappening, language: Language): string {
   const words = strings(language);
 
+  if (now.couldNotSave) return words.changesNotSaved;
   if (now.notice !== null) return now.notice;
   if (now.openId === null && isEmptyText(now.text)) return '';
   if (now.saving) return '';

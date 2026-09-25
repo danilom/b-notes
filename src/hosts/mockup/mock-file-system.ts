@@ -50,6 +50,20 @@ const folderOf = (at: string): string => at.slice(0, at.lastIndexOf('/'));
  * Paths are keys. Folders exist only because keys contain slashes, which is
  * enough to behave like the real thing from the app's side.
  */
+/**
+ * How many of the next writes refuse, for driving a failure from a test.
+ *
+ * A transient failure is the ordinary case rather than a freak — Dropbox holds
+ * a file open while it uploads it and Windows refuses to touch one that is
+ * held — and the only way to see what the interface does about it is to be able
+ * to cause one. Never set outside a test: nothing in the app touches it.
+ */
+let refusals = 0;
+
+export function refuseTheNextWrites(count: number): void {
+  refusals = count;
+}
+
 export function createMockFileSystem(): FileSystem {
   return {
     async list(folder: string): Promise<FileInfo[]> {
@@ -106,6 +120,13 @@ export function createMockFileSystem(): FileSystem {
     },
 
     async write(at: string, text: string): Promise<void> {
+      if (refusals > 0) {
+        refusals -= 1;
+        // What Windows gives when Dropbox is holding the file it is uploading.
+        throw Object.assign(new Error(`EPERM: operation not permitted, rename '${at}'`), {
+          code: 'EPERM',
+        });
+      }
       const files = load();
       files.set(at, { text, updatedAt: Date.now() });
       store(files);
