@@ -29,8 +29,6 @@ import { openAdvancedPanel } from './advanced-panel.ts';
 import { showLostTexts } from './lost-texts.ts';
 import { openDeletedDialog } from './deleted-dialog.ts';
 import { openArchiveDialog } from './archive-dialog.ts';
-import { openVersionsDialog } from './versions-dialog.ts';
-import { versionsWorthShowing } from './version-row.ts';
 import { confirmationForDeleting, confirmationForDestroying } from './note-confirmations.ts';
 import { readSession, writeSession } from './app-session.ts';
 import {
@@ -45,14 +43,13 @@ import { deletedStripFor } from './deleted-strip.ts';
 import { flashToast } from './toast.ts';
 import { archiveStripFor } from './archive-strip.ts';
 import {
-  type KeptCopies,
   type WhatIsHappening,
   canDelete,
   emptyHintShows,
-  keptOf,
   statusFor,
 } from './status-line.ts';
 import { type FindInText, createFindInText } from './find-in-text.ts';
+import { type KeptCopiesView, createKeptCopies } from './kept-copies.ts';
 
 /** Long enough that he isn't saved mid-word, short enough to never lose a thought. */
 const AUTOSAVE_IDLE_MS = 800;
@@ -135,15 +132,7 @@ let appearancePanel: OpenPanel | null = null;
  */
 let showAppearanceOf: (appearance: Appearance) => void;
 
-/**
- * The copy a restore made of what he had, and which text it belongs to.
- *
- * Kept for as long as the app runs and no longer. It answers "where was I
- * before I pressed that", which is a question about this sitting rather than
- * about the file — so it lives here instead of on disk, where it would be one
- * more thing to write, read back, validate and keep true.
- */
-let restored: { note: string; version: string } | null = null;
+
 
 /**
  * His whole corpus, each text carrying the name it keeps for this run.
@@ -172,16 +161,7 @@ let archives: Archive[] = [];
  */
 let readingArchive = false;
 
-/**
- * How many copies are kept, and which text they were counted for.
- *
- * Counted rather than read: it decides only what the way to them says and
- * whether it is live, and for most of his texts the answer is none.
- *
- * Carried with its text rather than on its own, so that a count taken for one
- * can never be shown against another. See `keptOf`.
- */
-let kept: KeptCopies = { note: NO_NOTE, count: 0 };
+
 /**
  * Which text is open, as a thing and not as a filename.
  *
@@ -229,6 +209,7 @@ function draw(): void {
 }
 
 let findInText: FindInText;
+let keptCopies: KeptCopiesView;
 
 
 /**
@@ -327,7 +308,7 @@ async function reloadAfterWriting(): Promise<void> {
   showStatus();
   // A save may have kept a copy before it landed, which is when the way to
   // them first appears.
-  void countKeptOfOpen();
+  void keptCopies.count();
 }
 
 function showStatus(): void {
@@ -337,7 +318,7 @@ function showStatus(): void {
   // Nothing to put on the clipboard, which he reaches regularly: emptying a
   // text is how he deletes, and the copies he keeps are what recover it.
   copyAll.disabled = editor.value.trim().length === 0;
-  showVersionsButton();
+  keptCopies.showButton();
   emptyHint.textContent = words.emptiedHint;
   emptyHint.hidden = !emptyHintShows(now);
   if (!emptyHint.hidden) pointHintAtDeleteButton();
@@ -406,7 +387,7 @@ async function open(handle: NoteHandle): Promise<void> {
   findInText.scrollToCurrent();
   draw();
   showStatus();
-  void countKeptOfOpen();
+  void keptCopies.count();
   log.info('Opened a text', { id: note.id });
 }
 
@@ -602,150 +583,9 @@ async function deleteOpenNote(id: string, handle: NoteHandle): Promise<void> {
   log.info('Put a text away', { id });
 }
 
-/**
- * Puts the way to his copies within reach, or visibly out of it.
- *
- * Never taken off the strip. Set on its own rather than through the status
- * line, because the count arrives from the disk a moment after everything else
- * and redrawing the whole strip for it would swallow whatever the line had just
- * been given to tell him.
- */
-function showVersionsButton(): void {
-  /*
-    The count, not merely the way in. Whether a text has copies kept of it is
-    something he otherwise cannot find out without opening the thing that shows
-    them, and the number belongs where that question gets asked.
 
-    Zero is written out like any other. A figure that appears only once it is
-    above zero is one he has to have seen before to know what its absence means
-    — and the first thing he needs to learn here is that the app keeps copies
-    at all.
-  */
-  const count = keptOf(openHandle, kept);
-  seeVersionsLabel.textContent = `${words.versions} (${count})`;
-  seeVersions.disabled = count === 0;
-}
 
-/** Asks the store how many copies the open text has, and shows the way to them. */
-async function countKeptOfOpen(): Promise<void> {
-  const asking = openHandle;
-  let count = 0;
-  if (asking !== NO_NOTE) {
-    try {
-      count = await writing.countVersions(asking);
-    } catch (error: unknown) {
-      // The number on a button is not worth failing a startup over, but it is
-      // worth saying so: a text whose copies cannot be counted has something
-      // wrong with it.
-      log.warn('Could not count the copies kept of a text', {
-        id: asking,
-        failure: describeError(error),
-      });
-    }
-  }
-  /*
-    He may have moved on while the disk was answering, in which case this
-    answer is about a text he is no longer in and would displace a fresher one.
 
-    Against the handle and not the name. Compared against `openName()` this was
-    a number against a string: always unequal, so it always returned here and
-    the count was never set. The compiler allowed it because both sides can be
-    null, which is overlap enough for it and no use at all.
-  */
-  if (asking !== openHandle) return;
-  kept = { note: asking, count };
-  showVersionsButton();
-}
-
-function showVersions(): void {
-  // Read once and narrowed: it is a question now, not a variable.
-  const id = openName();
-  const handle = openHandle;
-  if (versionsPane.open || id === null || handle === NO_NOTE) return;
-
-  void (async () => {
-    // A copy that matches his text exactly is not worth offering, and the
-    // count on the button cannot know that without reading every file, so the
-    // button can be there with nothing behind it. Saying so is better than a
-    // press that does nothing.
-    const versions = versionsWorthShowing(await writing.versionsOf(handle), editor.value);
-    if (versions.length === 0) {
-      notice = words.versionsAllSame;
-      showStatus();
-      return;
-    }
-
-    log.info('Looked at the copies kept of a text', { id, copies: versions.length });
-    const close = openVersionsDialog(
-      versionsPane,
-      {
-        title: notes.find((note) => note.id === id)?.title ?? words.untitled,
-        versions,
-        current: editor.value,
-        previouslyActive: restored?.note === id ? restored.version : null,
-      },
-      language,
-      {
-        onClose: () => {
-          close();
-          seeVersions.focus();
-        },
-        onRestore: (version) => {
-          close();
-          void bringBackVersion(version.text);
-        },
-      },
-    );
-  })();
-}
-
-/**
- * Puts an old copy back in front of him.
- *
- * Through the editor rather than straight to disk, so the ordinary save carries
- * it out.
- *
- * Not undoable with Ctrl+Z, and deliberately. Setting the value clears the
- * textarea's undo history, which this comment used to claim it did not — but
- * the behaviour is the one we want anyway: bringing a version back is a
- * deliberate act with its own way back, the copy kept below, and not an edit to
- * be reversed by a keystroke he may never have used.
- *
- * The copy of what he has now is taken here rather than left to that save. The
- * save applies the rule built for him editing, which declines when little
- * enough is going and declines again when the newest copy already holds most
- * of it — and measured against the samples it declined on five restores out of
- * eleven, twice on texts where two hundred characters were going. Neither
- * reading fits a whole text replaced on purpose, and the dialog has just
- * promised him in so many words that what is there now will be kept.
- *
- * Nothing is replaced if that copy cannot be written. A restore he was told is
- * safe, carried out unprotected, is the one outcome here worth refusing over.
- */
-async function bringBackVersion(text: string): Promise<void> {
-  const id = openName();
-  const handle = openHandle;
-  if (id === null || handle === NO_NOTE) return;
-
-  try {
-    restored = { note: id, version: await writing.keepCopy(handle, editor.value) };
-  } catch (failure) {
-    log.error('Could not keep a copy before bringing a version back', { id, failure });
-    notice = words.notRestored;
-    showStatus();
-    return;
-  }
-
-  editor.value = text;
-  editor.setSelectionRange(0, 0);
-  editor.scrollTop = 0;
-  findInText.fromTheTop();
-  findInText.again(search.value);
-  notice = words.restored;
-  typedSomething();
-  editor.focus();
-  log.info('Brought an earlier version back', { id: openName() });
-}
 
 function showDeleted(): void {
   if (deletedPane.open) return;
@@ -1039,7 +879,7 @@ archiveBlock.addEventListener('keydown', (event: KeyboardEvent) => {
   event.preventDefault();
   void showArchive();
 });
-seeVersions.addEventListener('click', showVersions);
+seeVersions.addEventListener('click', () => keptCopies.show());
 
 /**
  * The shortcut every browser has taught him, pointed at our own setting.
@@ -1141,6 +981,39 @@ export async function startApp(runningOn: Host): Promise<void> {
 
   writing = createWriting(host.files, host.writingFolder, log, afterWriting);
   newNoteLabel.textContent = words.newNote;
+  keptCopies = createKeptCopies({
+    pane: versionsPane,
+    button: seeVersions,
+    label: seeVersionsLabel,
+    editor,
+    writing,
+    log,
+    languageNow: () => language,
+    openTextNow: () => ({
+      handle: openHandle,
+      name: openName(),
+      title: notes.find((note) => note.id === openName())?.title ?? words.untitled,
+    }),
+    say: (said) => {
+      notice = said;
+      showStatus();
+    },
+    /*
+      What replacing his text means, which is more than putting it in the box:
+      the caret goes to the top, the marks behind it are repainted for what is
+      there now, and the save that follows is an ordinary one.
+    */
+    putInEditor: (text) => {
+      editor.value = text;
+      editor.setSelectionRange(0, 0);
+      editor.scrollTop = 0;
+      findInText.fromTheTop();
+      findInText.again(search.value);
+      typedSomething();
+      editor.focus();
+    },
+  });
+
   findInText = createFindInText({
     editor,
     marks: editorMarks,
