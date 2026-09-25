@@ -20,9 +20,7 @@ import {
   applyAppearance,
   stepScale,
 } from './appearance.ts';
-import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
 import { openConfirmDialog } from './confirm-dialog.ts';
-import { openAdvancedPanel } from './advanced-panel.ts';
 import { showLostTexts } from './lost-texts.ts';
 import { confirmationForDeleting } from './note-confirmations.ts';
 import { readSession, writeSession } from './app-session.ts';
@@ -45,6 +43,7 @@ import { type FindInText, createFindInText } from './find-in-text.ts';
 import { type KeptCopiesView, createKeptCopies } from './kept-copies.ts';
 import { type PutAwayTexts, createPutAwayTexts } from './put-away-texts.ts';
 import { type ArchivedTexts, createArchivedTexts } from './archived-texts.ts';
+import { type SettingsPanels, createSettingsPanels } from './settings-panels.ts';
 
 /** Long enough that he isn't saved mid-word, short enough to never lose a thought. */
 const AUTOSAVE_IDLE_MS = 800;
@@ -117,7 +116,6 @@ let writing: Writing;
 
 let settings: Settings;
 let saveSettings: (settings: Settings) => void;
-let appearancePanel: OpenPanel | null = null;
 
 /**
  * Puts an appearance on screen, both halves of it.
@@ -192,6 +190,7 @@ let findInText: FindInText;
 let keptCopies: KeptCopiesView;
 let putAway: PutAwayTexts;
 let archived: ArchivedTexts;
+let panels: SettingsPanels;
 
 
 /**
@@ -564,100 +563,11 @@ async function reload(): Promise<void> {
   draw();
 }
 
-function showAppearance(): void {
-  if (appearancePanel !== null) return;
 
-  log.info('Opened the appearance panel');
-  appearancePanel = openAppearancePanel(appearancePane, settings, language, {
-    // Shown, not kept. Nothing reaches the disk until he says so.
-    onPreview: showAppearanceOf,
 
-    onKeep: (appearance: Appearance) => {
-      settings = { ...settings, ...appearance };
-      saveSettings(settings);
-      log.info('Changed how the app looks', appearance);
-      hideAppearance();
-    },
 
-    onCancel: () => {
-      // Whatever he was trying out goes back to what he walked in with. It was
-      // never saved, so putting it back on screen is the whole of the undo.
-      showAppearanceOf(settings);
-      hideAppearance();
-    },
 
-    onAdvanced: askBeforeAdvanced,
-  });
-}
-
-/**
- * The question in front of the settings that are not his.
- *
- * A word to type, the same barrier `Uništi zauvek` uses — the point is not
- * that it is hard but that it cannot be walked through. In English, like
- * everything behind it: it is addressed to whoever set the machine up.
- */
-function askBeforeAdvanced(): void {
-  const close = openConfirmDialog(
-    confirmPane,
-    {
-      title: { mark: 'settings', label: 'Advanced settings' },
-      body:
-        'These decide where your writing is read from. Getting them wrong makes ' +
-        'every text disappear from the list.',
-      confirm: 'Continue',
-      cancel: 'Cancel',
-      phrase: { prompt: 'Type {} to continue.', words: ['advanced'] },
-      danger: true,
-      onConfirm: () => {
-        close();
-        showAdvanced();
-      },
-      onCancel: () => {
-        close();
-      },
-    },
-    language,
-  );
-}
-
-function showAdvanced(): void {
-  if (advancedPane.open) return;
-
-  const close = openAdvancedPanel(advancedPane, host, {
-    onClose: () => {
-      close();
-    },
-    onKeep: (folders) => {
-      close();
-      /*
-        Started again rather than applied in place. Everything the app is
-        holding — which text is open, what it has listed, the copies it has
-        counted — belongs to the folder it was read from, and in the packaged
-        app the folders are settled before a window exists, so a reload alone
-        would be handed the old ones anyway.
-      */
-      void host
-        .rememberFolders(folders)
-        .then(() => host.restart())
-        .catch((error: unknown) => {
-          // English, like the panel it came from: the only person who can have
-          // pressed that button reads English.
-          notice = 'Could not save the folders. See the log.';
-          showStatus();
-          log.error('Could not remember the folders', describeError(error));
-        });
-    },
-  });
-}
-
-function hideAppearance(): void {
-  appearancePanel?.close();
-  appearancePanel = null;
-  appearanceButton.focus();
-}
-
-appearanceButton.addEventListener('click', showAppearance);
+appearanceButton.addEventListener('click', () => panels.showAppearance());
 copyAll.addEventListener('click', () => {
   void copyWholeText();
 });
@@ -693,7 +603,7 @@ window.addEventListener('keydown', (event) => {
   // Stepped from whatever is on screen, which is the panel's working copy while
   // it is open and the saved settings otherwise. Reading the wrong one leaves
   // the panel showing a size the app is no longer at.
-  const showing = appearancePanel?.current() ?? settings;
+  const showing = panels.working() ?? settings;
   const zoom =
     event.key === '+' || event.key === '=' ? stepScale(showing.zoom, 1, MAX_ZOOM)
     : event.key === '-' ? stepScale(showing.zoom, -1, MAX_ZOOM)
@@ -706,10 +616,7 @@ window.addEventListener('keydown', (event) => {
   // With the panel open this is one more thing he is trying out, undone by
   // Otkaži like any other. With it closed there is nothing to undo it later,
   // so it is kept there and then.
-  if (appearancePanel !== null) {
-    appearancePanel.change({ ...showing, zoom });
-    return;
-  }
+  if (panels.change({ ...showing, zoom })) return;
   settings = { ...settings, zoom };
   showAppearanceOf(settings);
   saveSettings(settings);
@@ -779,6 +686,26 @@ export async function startApp(runningOn: Host): Promise<void> {
 
   writing = createWriting(host.files, host.writingFolder, log, afterWriting);
   newNoteLabel.textContent = words.newNote;
+  panels = createSettingsPanels({
+    appearancePane,
+    advancedPane,
+    confirmPane,
+    button: appearanceButton,
+    host,
+    log,
+    languageNow: () => language,
+    settingsNow: () => settings,
+    preview: (appearance) => showAppearanceOf(appearance),
+    keep: (appearance) => {
+      settings = { ...settings, ...appearance };
+      saveSettings(settings);
+    },
+    say: (said) => {
+      notice = said;
+      showStatus();
+    },
+  });
+
   archived = createArchivedTexts({
     pane: archivePane,
     strip: archiveBlock,
@@ -948,7 +875,7 @@ export async function startApp(runningOn: Host): Promise<void> {
     showLostTexts(document.body, { folder: host.writingFolder, because }, language, {
       // Straight in, with no word to type. The guard is there to stop idle
       // curiosity, and a man staring at this screen is not idly curious.
-      onAdvanced: showAdvanced,
+      onAdvanced: () => panels.showAdvanced(),
     });
   }
 
