@@ -93,14 +93,16 @@ export interface Writing {
  * under a filename, so rewriting his first line made a second entry for one
  * text; words thrown away because a save of *another* text succeeded.
  *
- * @param changed run after a write lands, so the list can be read again — a
- * save can rename a text, which moves it, and a stale row reads as loss.
+ * @param changed run after every pass of the worker, with whichever texts were
+ * written — none of them, when the pass failed. Always, and not only on a
+ * write, because a failure changes what the strip along the bottom should say
+ * and nothing else would ever tell it.
  */
 export function createWriting(
   files: FileSystem,
   folder: string,
   log: Log,
-  changed: () => void = () => undefined,
+  changed: (written: Handle[]) => void = () => undefined,
   timers: Timers = realTimers,
 ): Writing {
   const nextHandle = createHandles();
@@ -171,7 +173,7 @@ export function createWriting(
   }
 
   async function run(): Promise<void> {
-    let wrote = false;
+    const wrote: Handle[] = [];
     try {
       for (;;) {
         const next = [...waiting].find(([, entry]) => entry.due);
@@ -179,13 +181,26 @@ export function createWriting(
         const [handle, entry] = next;
         waiting.delete(handle);
 
+        const was = livesAt.get(handle) ?? null;
         try {
-          const id = await store.save(livesAt.get(handle) ?? null, entry.text);
+          const id = await store.save(was, entry.text);
           if (id !== null) {
             byToken.set(id, handle);
             livesAt.set(handle, id);
+            /*
+              Logged here and not above, because only here are both names
+              known. The save itself is never logged — it lands within a second
+              of him stopping, and a session would be a thousand identical
+              lines — but the part that moves a file is what a telephone call
+              turns out to be about.
+            */
+            if (was === null) log.info('Created a text', { id });
+            else if (was !== id) log.info('Renamed a text, since his first line changed', {
+              from: was,
+              to: id,
+            });
           }
-          wrote = true;
+          wrote.push(handle);
         } catch (error: unknown) {
           const failures = entry.failures + 1;
           log.error('Could not save', { failures, error: describeError(error) });
@@ -201,7 +216,7 @@ export function createWriting(
         }
       }
     } finally {
-      if (wrote) changed();
+      changed(wrote);
     }
   }
 

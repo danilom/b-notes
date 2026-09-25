@@ -1,6 +1,7 @@
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 import { fileNameBase } from '../notes/note-naming.ts';
-import { createNoteStore } from '../notes/note-store.ts';
+import type { Handle } from '../notes/note-handle.ts';
+import { SPEAK_AFTER_FAILURES, type Writing, createWriting } from '../notes/writing.ts';
 import { titleFrom } from '../notes/note-title.ts';
 import {
   type Archive,
@@ -118,7 +119,9 @@ const seeVersions = element('see-versions', HTMLButtonElement);
 const seeVersionsLabel = element('see-versions-label', HTMLSpanElement);
 
 /** Built here from whatever filesystem the host provides. */
-let store: ReturnType<typeof createNoteStore>;
+let writing: Writing;
+/** The store beneath, for everything that is not saving. */
+let store: Writing['store'];
 
 let settings: Settings;
 let saveSettings: (settings: Settings) => void;
@@ -172,7 +175,20 @@ let readingArchive = false;
  * can never be shown against another. See `keptOf`.
  */
 let kept: KeptCopies = { note: null, count: 0 };
-let openId: string | null = null;
+/**
+ * Which text is open, as a thing and not as a filename.
+ *
+ * It was the filename, and a filename here is built from his opening line — so
+ * it changed under everything holding it the moment he rewrote his first
+ * sentence, and again when another text of the same name arrived and took the
+ * bare one. `openName()` asks where it lives at this moment.
+ */
+let openHandle: Handle | null = null;
+
+/** Where the open text lives now, or null before it has a file. */
+function openName(): string | null {
+  return openHandle === null ? null : writing.tokenOf(openHandle);
+}
 
 /**
  * Something to tell him once, which outranks the saved state for one painting.
@@ -185,60 +201,16 @@ let notice: string | null = null;
 
 /**
  * The text he has started but which isn't on disk yet. It exists only so the
- * list has something to show him immediately; `openId` being null is what
+ * list has something to show him immediately; `openName()` being null is what
  * actually means "the new one is what's open".
  */
 let draft: Draft | null = null;
 let savedAt: number | null = null;
-let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
-/** Words that have not reached disk, and how many attempts in a row have failed. */
-interface Unsaved {
-  id: string | null;
-  text: string;
-  attempts: number;
-}
 
-/**
- * Everything waiting to be written, by the name of the text it belongs to.
- *
- * Carried rather than read back from the editor when the attempt runs: by then
- * he may have opened another text, and what has to be written is what he typed,
- * not what happens to be in front of him.
- *
- * A map and not one slot, because one slot is one text: a second failure for
- * another text evicted the first, and what it held was the only copy left of
- * what he had written.
- */
-const unsaved = new Map<string, Unsaved>();
-let retryTimer: ReturnType<typeof setTimeout> | undefined;
-
-/**
- * What to file a text under while it waits.
- *
- * `openId` is the file that exists, and is null until one does — but the name
- * is knowable the whole time, because it is derived from his own first line.
- * So a text that has never been written still has somewhere of its own to
- * wait, rather than sharing a slot with whatever fails next.
- */
-function waitingKey(id: string | null, text: string): string {
-  return id ?? fileNameBase(titleFrom(text));
-}
-
-/**
- * Said on the second failure in a row, not the first.
- *
- * Dropbox holds a file for about a second while it uploads it and Windows
- * refuses to touch one that is held, so a single failure is the ordinary case
- * and the attempt after it succeeds.
- */
-const SPEAK_AFTER_FAILURES = 2;
-
-/** Slow, and forever. A save that stopped being attempted is one he was never told about. */
-const RETRY_AFTER_MS = [1_000, 3_000, 10_000, 30_000] as const;
 
 function draw(): void {
-  renderList(listPane, { notes, query: search.value, openId, draft, language });
+  renderList(listPane, { notes, query: search.value, openId: openName(), draft, language });
   drawDeletedBlock();
   drawArchiveBlock();
 }
@@ -374,14 +346,14 @@ window.addEventListener('resize', () => {
 /** Everything the strip along the bottom is decided from. */
 function whatIsHappening(): WhatIsHappening {
   return {
-    openId,
+    openId: openName(),
     text: editor.value,
     savedAt,
     // Another attempt at a save that failed is a save still on its way, and
     // the line stays silent for it the same way. Without this, the one failure
     // that Dropbox causes weekly left the report of the *previous* save on
     // screen — true about the file, false about what he had just typed.
-    saving: saveTimer !== undefined || retryTimer !== undefined,
+    saving: openHandle !== null && writing.stateOf(openHandle).waiting,
     /*
       About the text in front of him, and only that one. A failure belongs to
       the words it could not write; saying it over another text tells him his
@@ -390,9 +362,50 @@ function whatIsHappening(): WhatIsHappening {
       for as long as the app is open.
     */
     couldNotSave:
-      (unsaved.get(waitingKey(openId, editor.value))?.attempts ?? 0) >= SPEAK_AFTER_FAILURES,
+      openHandle !== null && writing.stateOf(openHandle).failures >= SPEAK_AFTER_FAILURES,
     notice,
   };
+}
+
+/**
+ * He typed, or something put words in front of him that count as typing.
+ *
+ * A text he has begun has no file and so no name; it gets a handle the moment
+ * there is anything to write, and keeps it through every rename after.
+ */
+function typedSomething(): void {
+  openHandle ??= writing.begin();
+  writing.save(openHandle, editor.value);
+  showStatus();
+}
+
+/**
+ * Words reached disk. Reload rather than patch: a save can rename a text,
+ * which moves it in the list, and a stale row is exactly what reads as loss.
+ */
+function afterWriting(written: Handle[]): void {
+  if (openHandle !== null && written.includes(openHandle)) {
+    savedAt = Date.now();
+    draft = null;
+  }
+  // Always, even when nothing was written: a failure is the other thing the
+  // strip has to hear about, and it says so on the second one in a row.
+  showStatus();
+  if (written.length > 0) void reloadAfterWriting();
+}
+
+async function reloadAfterWriting(): Promise<void> {
+  try {
+    notes = await writing.list();
+  } catch (error: unknown) {
+    log.error('Could not read his texts after saving', describeError(error));
+    return;
+  }
+  draw();
+  showStatus();
+  // A save may have kept a copy before it landed, which is when the way to
+  // them first appears.
+  void countKeptOfOpen();
 }
 
 function showStatus(): void {
@@ -448,157 +461,14 @@ function drawArchiveBlock(): void {
  * the file out from under a save that had not run yet, leaving two of his text.
  */
 async function flushPendingSave(): Promise<void> {
-  if (saveTimer === undefined) return;
-  clearTimeout(saveTimer);
-  saveTimer = undefined;
-  await saveNow();
+  await writing.flush();
 }
 
-/**
- * Everything still waiting, tried once more, now.
- *
- * Closing is the last moment any of it can be written: an attempt scheduled
- * for thirty seconds' time is an attempt that will never run. The open text
- * goes through `flushPendingSave` above; this is for the ones he left behind
- * with words that never reached disk.
- */
-async function flushEverythingWaiting(): Promise<void> {
-  if (unsaved.size === 0) return;
-  clearTimeout(retryTimer);
-  retryTimer = undefined;
-  await tryAgain();
-}
 
-async function saveNow(): Promise<void> {
-  const text = editor.value;
-  const was = openId;
-  const id = await store.save(openId, text);
-  if (id === null) return;
 
-  const wasNew = was === null;
-  openId = id;
-  savedAt = Date.now();
-  /*
-    This text is not waiting any more, and this is the line that stops the older
-    words being written over the newer ones. A failed save leaves its text
-    waiting; if he goes on typing, the save that follows succeeds with what he
-    has now — and the attempt still scheduled would otherwise wake a second
-    later and put back what he had then.
 
-    Only this text. Clearing everything on any save at all was how a failure he
-    had left behind was thrown away by the next text he happened to write in.
-  */
-  unsaved.delete(id);
-  if (was === null) unsaved.delete(waitingKey(null, text));
-  scheduleRetry();
-  draft = null;
-  remember(id);
 
-  // Reload rather than patch: saving can rename the note, which moves it in the
-  // list, and a stale entry is exactly the kind of thing that reads as loss.
-  notes = await store.list();
-  draw();
-  showStatus();
-  // A save may have kept a copy before it landed, which is when the way to them
-  // first appears.
-  void countKeptOfOpen();
 
-  /*
-    The save itself is not logged, and deliberately: it lands within a second of
-    him stopping, so a session would be a thousand identical lines, and a log
-    nobody can read is a log we do not have.
-
-    What is logged is the part that moves a file. Rewriting his first line
-    renames the text and takes its copies with it, which is the question a
-    telephone call is actually about — and until now it happened in silence.
-  */
-  if (wasNew) log.info('Created a text', { id });
-  else if (id !== was) log.info('Renamed a text, since his first line changed', { from: was, to: id });
-}
-
-function scheduleSave(): void {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    saveTimer = undefined;
-    saveNow().catch((error: unknown) => {
-      keepTrying(openId, editor.value, error);
-    });
-  }, AUTOSAVE_IDLE_MS);
-  showStatus();
-}
-
-/**
- * What a failed write leads to: another attempt, and eventually a word to him.
- *
- * Through `statusFor` rather than written into the element. It was written into
- * the element, and `showStatus` put the ordinary line back over it twelve lines
- * below — so the one sentence that mattered survived until his next keystroke.
- */
-function keepTrying(id: string | null, text: string, error: unknown): void {
-  const key = waitingKey(id, text);
-  const attempts = (unsaved.get(key)?.attempts ?? 0) + 1;
-  unsaved.set(key, { id, text, attempts });
-  log.error('Could not save', { text: key, attempts, error: describeError(error) });
-
-  scheduleRetry();
-  showStatus();
-}
-
-/** One timer for everything waiting, paced by whichever has failed most. */
-function scheduleRetry(): void {
-  clearTimeout(retryTimer);
-  if (unsaved.size === 0) {
-    retryTimer = undefined;
-    return;
-  }
-  const worst = Math.max(...[...unsaved.values()].map((each) => each.attempts));
-  const wait = RETRY_AFTER_MS[Math.min(worst, RETRY_AFTER_MS.length) - 1] ?? 30_000;
-  retryTimer = setTimeout(() => {
-    void tryAgain();
-  }, wait);
-}
-
-/**
- * One more attempt at everything that has not reached disk.
- *
- * Superseded rather than repeated where he has gone on typing in that same
- * text: a save is already scheduled for the newer words, and writing the older
- * ones over them is the one thing worse than not writing at all. Only that
- * text, though — a save pending for whatever he is looking at now says nothing
- * about the one he left behind, and dropping it on that reasoning is how his
- * writing would go.
- */
-async function tryAgain(): Promise<void> {
-  // Spent the moment it fires. Left set, it would stand for an attempt that is
-  // waiting when none is, and the line would keep the silence it keeps for one.
-  retryTimer = undefined;
-  const openKey = waitingKey(openId, editor.value);
-
-  for (const [key, waiting] of [...unsaved]) {
-    if (key === openKey && saveTimer !== undefined) {
-      unsaved.delete(key);
-      continue;
-    }
-    try {
-      const id = await store.save(waiting.id, waiting.text);
-      unsaved.delete(key);
-      if (id !== null && id === openId) savedAt = Date.now();
-      log.info('Saved after all', { text: key, attempts: waiting.attempts });
-    } catch (error: unknown) {
-      unsaved.set(key, { ...waiting, attempts: waiting.attempts + 1 });
-      log.error('Could not save', {
-        text: key,
-        attempts: waiting.attempts + 1,
-        error: describeError(error),
-      });
-    }
-  }
-
-  notes = await store.list();
-  draw();
-  scheduleRetry();
-  showStatus();
-}
 
 
 
@@ -608,7 +478,7 @@ async function open(id: string): Promise<void> {
   const note = notes.find((candidate) => candidate.id === id);
   if (note === undefined) return;
 
-  openId = id;
+  openHandle = writing.handleFor(id);
   editor.value = note.text;
   savedAt = note.updatedAt;
   draft = null;
@@ -650,12 +520,12 @@ editor.addEventListener('scroll', () => {
 editor.addEventListener('input', () => {
   // He can also start a new text simply by typing, without going near the
   // button. Either way it belongs in the list from the first keystroke.
-  if (openId === null && draft === null) {
+  if (openName() === null && draft === null) {
     draft = { startedAt: Date.now() };
     draw();
   }
   markMatches();
-  scheduleSave();
+  typedSomething();
 });
 
 /**
@@ -686,7 +556,7 @@ search.addEventListener('input', searchChanged);
 
 
 newNote.addEventListener('click', () => {
-  openId = null;
+  openHandle = null;
   savedAt = null;
   editor.value = '';
   editorMarks.replaceChildren();
@@ -717,7 +587,7 @@ newNote.addEventListener('click', () => {
  * of the fact that it can be undone, which is the part he cannot know.
  */
 function askToDelete(): void {
-  const id = openId;
+  const id = openName();
   if (id === null) return;
   const note = notes.find((candidate) => candidate.id === id);
   if (note === undefined) return;
@@ -768,7 +638,7 @@ async function copyWholeText(): Promise<void> {
     return;
   }
 
-  log.info('Copied the whole text to the clipboard', { id: openId, bytes: text.length });
+  log.info('Copied the whole text to the clipboard', { id: openName(), bytes: text.length });
   flashToast(toast, words.copied, words.copiedHow);
 }
 
@@ -791,7 +661,7 @@ async function deleteOpenNote(id: string): Promise<void> {
     return;
   }
 
-  openId = null;
+  openHandle = null;
   editor.value = '';
   savedAt = null;
   draft = null;
@@ -828,14 +698,14 @@ function showVersionsButton(): void {
     — and the first thing he needs to learn here is that the app keeps copies
     at all.
   */
-  const count = keptOf(openId, kept);
+  const count = keptOf(openName(), kept);
   seeVersionsLabel.textContent = `${words.versions} (${count})`;
   seeVersions.disabled = count === 0;
 }
 
 /** Asks the store how many copies the open text has, and shows the way to them. */
 async function countKeptOfOpen(): Promise<void> {
-  const asking = openId;
+  const asking = openName();
   let count = 0;
   if (asking !== null) {
     try {
@@ -852,14 +722,15 @@ async function countKeptOfOpen(): Promise<void> {
   }
   // He may have moved on while the disk was answering, in which case this
   // answer is about a text he is no longer in and would displace a fresher one.
-  if (asking !== openId) return;
+  if (asking !== openName()) return;
   kept = { note: asking, count };
   showVersionsButton();
 }
 
 function showVersions(): void {
-  if (versionsPane.open || openId === null) return;
-  const id = openId;
+  // Read once and narrowed: it is a question now, not a variable.
+  const id = openName();
+  if (versionsPane.open || id === null) return;
 
   void (async () => {
     // A copy that matches his text exactly is not worth offering, and the
@@ -921,7 +792,7 @@ function showVersions(): void {
  * safe, carried out unprotected, is the one outcome here worth refusing over.
  */
 async function bringBackVersion(text: string): Promise<void> {
-  const id = openId;
+  const id = openName();
   if (id === null) return;
 
   try {
@@ -939,9 +810,9 @@ async function bringBackVersion(text: string): Promise<void> {
   atFound = 0;
   markMatches();
   notice = words.restored;
-  scheduleSave();
+  typedSomething();
   editor.focus();
-  log.info('Brought an earlier version back', { id: openId });
+  log.info('Brought an earlier version back', { id: openName() });
 }
 
 function showDeleted(): void {
@@ -1115,7 +986,7 @@ async function restoreNote(id: string): Promise<void> {
 
 /** Both lists, after anything that can move a text between them. */
 async function reload(): Promise<void> {
-  [notes, deleted] = await Promise.all([store.list(), store.listDeleted()]);
+  [notes, deleted] = await Promise.all([writing.list(), store.listDeleted()]);
   // How many there are, every time it changes. A count in the log is what tells
   // a folder that emptied itself from a man who deleted one text, days later,
   // over the telephone — and it costs one line per delete or restore.
@@ -1295,8 +1166,9 @@ export async function startApp(runningOn: Host): Promise<void> {
   */
   host.onBeforeClose(async () => {
     try {
-      await flushPendingSave();
-      await flushEverythingWaiting();
+      // Everything waiting, not only what is in front of him: an attempt due
+      // in thirty seconds is one that will never run.
+      await writing.flush();
     } catch (error: unknown) {
       // Said here and nowhere else: the status line he would read it in is
       // leaving with the window. What should happen instead is the rescue
@@ -1335,7 +1207,8 @@ export async function startApp(runningOn: Host): Promise<void> {
     });
   };
 
-  store = createNoteStore(host.files, host.writingFolder, log);
+  writing = createWriting(host.files, host.writingFolder, log, afterWriting);
+  store = writing.store;
   newNoteLabel.textContent = words.newNote;
   foundSteps = createStepper(
     { previous: words.foundPrevious, next: words.foundNext, close: words.clearSearch },
@@ -1434,7 +1307,10 @@ export async function startApp(runningOn: Host): Promise<void> {
       moment later and pushing the list up under him.
     */
     const [live, away, kept] = await Promise.all([
-      store.list(),
+      // Through `writing`, which is where a text is given the name it keeps
+      // for the run. Read straight from the store, every note came back
+      // without one, and everything holding a text by handle had nothing.
+      writing.list(),
       store.listDeleted(),
       store.listArchives(),
     ]);
