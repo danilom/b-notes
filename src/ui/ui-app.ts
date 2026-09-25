@@ -9,7 +9,6 @@ import {
 import {
   type Archive,
   type ArchivedNote,
-  type DeletedNote,
   type Note,
   isEmptyText,
 } from '../notes/note.ts';
@@ -27,9 +26,8 @@ import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
 import { openConfirmDialog } from './confirm-dialog.ts';
 import { openAdvancedPanel } from './advanced-panel.ts';
 import { showLostTexts } from './lost-texts.ts';
-import { openDeletedDialog } from './deleted-dialog.ts';
 import { openArchiveDialog } from './archive-dialog.ts';
-import { confirmationForDeleting, confirmationForDestroying } from './note-confirmations.ts';
+import { confirmationForDeleting } from './note-confirmations.ts';
 import { readSession, writeSession } from './app-session.ts';
 import {
   type Settings,
@@ -39,7 +37,6 @@ import {
 } from './app-settings.ts';
 import { icon } from './icons.ts';
 import { type Draft, renderList } from './note-list.ts';
-import { deletedStripFor } from './deleted-strip.ts';
 import { flashToast } from './toast.ts';
 import { archiveStripFor } from './archive-strip.ts';
 import {
@@ -50,6 +47,7 @@ import {
 } from './status-line.ts';
 import { type FindInText, createFindInText } from './find-in-text.ts';
 import { type KeptCopiesView, createKeptCopies } from './kept-copies.ts';
+import { type PutAwayTexts, createPutAwayTexts } from './put-away-texts.ts';
 
 /** Long enough that he isn't saved mid-word, short enough to never lose a thought. */
 const AUTOSAVE_IDLE_MS = 800;
@@ -142,8 +140,7 @@ let showAppearanceOf: (appearance: Appearance) => void;
  * answered with "there is no such text" about a text that is right there.
  */
 let notes: LiveNote[] = [];
-/** Everything he has put away. Held like `notes`, and for the same reason. */
-let deleted: DeletedNote[] = [];
+
 /**
  * The archive folders and their counts — names and sizes, never their texts.
  *
@@ -204,12 +201,13 @@ let savedAt: number | null = null;
 
 function draw(): void {
   renderList(listPane, { notes, query: search.value, openId: openName(), draft, language });
-  drawDeletedBlock();
+  putAway.drawStrip();
   drawArchiveBlock();
 }
 
 let findInText: FindInText;
 let keptCopies: KeptCopiesView;
+let putAway: PutAwayTexts;
 
 
 /**
@@ -329,14 +327,6 @@ function showStatus(): void {
   notice = null;
 }
 
-function drawDeletedBlock(): void {
-  const strip = deletedStripFor(deleted, search.value, language);
-  deletedBlockLabel.textContent = strip.label;
-  deletedSee.disabled = !strip.canOpen;
-  // The whole strip is the target, so the whole strip has to go quiet with the
-  // button: the cursor and the hover are what promise there is something here.
-  deletedBlock.classList.toggle('dead', !strip.canOpen);
-}
 
 /**
  * The strip is there or it is not — there is no disabled state for it.
@@ -587,24 +577,6 @@ async function deleteOpenNote(id: string, handle: NoteHandle): Promise<void> {
 
 
 
-function showDeleted(): void {
-  if (deletedPane.open) return;
-
-  log.info('Looked at the texts he has put away', { count: deleted.length });
-  const close = openDeletedDialog(deletedPane, { deleted, query: search.value }, language, {
-    onClose: () => {
-      close();
-      deletedSee.focus();
-    },
-    onRestore: (id: string) => {
-      close();
-      void restoreNote(id);
-    },
-    onDestroy: (note: DeletedNote) => {
-      askToDestroy(note, close);
-    },
-  });
-}
 
 /**
  * Opens the archive, reading it first.
@@ -679,90 +651,16 @@ async function bringBackNote(note: ArchivedNote): Promise<void> {
   await open(back);
 }
 
-/**
- * Asks before destroying, and asks harder the more there is to lose.
- *
- * The barrier is a word written out rather than a second button, because a
- * second button is still one press and the point is that this one should not be
- * reachable by pressing. Under the threshold it is a plain question: a pile of
- * empty ones has to be clearable, or he will live with the pile.
- */
-function askToDestroy(note: DeletedNote, closeDeleted: () => void): void {
-  const close = openConfirmDialog(
-    confirmPane,
-    {
-      ...confirmationForDestroying(note, language),
-      onConfirm: () => {
-        close();
-        void destroyNote(note.id, closeDeleted);
-      },
-      onCancel: () => {
-        close();
-      },
-    },
-    language,
-  );
-}
 
-async function destroyNote(id: string, closeDeleted: () => void): Promise<void> {
-  try {
-    await writing.destroy(id);
-    await reload();
-  } catch (error: unknown) {
-    // Out of the dialog first, or the line saying so would be behind it. What
-    // he was destroying is still in the list, which is the safe way to fail.
-    closeDeleted();
-    notice = words.notDestroyed;
-    showStatus();
-    log.error('Could not destroy a text', describeError(error));
-    return;
-  }
-  log.warn('Destroyed a text for good', { id });
 
-  // Back among the rest of them, since he is probably clearing several — unless
-  // that was the last one, in which case there is nothing left to come back to.
-  closeDeleted();
-  if (deleted.length > 0) showDeleted();
-  else deletedSee.focus();
-}
-
-async function restoreNote(id: string): Promise<void> {
-  /*
-    Anything still on its way to disk lands first, exactly as putting a text
-    away does. Bringing one back can rename the text he is *in* — it takes the
-    bare name, so the one already holding it is numbered — and a save that
-    fired afterwards would write his open text back under the name it no longer
-    has, leaving two copies of it in his list.
-  */
-  await writing.flush();
-
-  let back: NoteHandle;
-  try {
-    back = await writing.restore(id);
-    await reload();
-  } catch (error: unknown) {
-    // The dialog has already closed, so the line is his to read.
-    notice = words.notRestored;
-    showStatus();
-    log.error('Could not bring a text back', describeError(error));
-    return;
-  }
-
-  // Straight into it, and said out loud. He asked for this text; leaving him
-  // looking at the list to find it again would be answering a question with a
-  // question.
-  notice = words.restored;
-  await open(back);
-  log.info('Brought a text back', { id, back });
-}
 
 /** Both lists, after anything that can move a text between them. */
 async function reload(): Promise<void> {
-  [notes, deleted] = await Promise.all([writing.list(), writing.putAway()]);
+  [notes] = await Promise.all([writing.list(), putAway.read()]);
   // How many there are, every time it changes. A count in the log is what tells
   // a folder that emptied itself from a man who deleted one text, days later,
   // over the telephone — and it costs one line per delete or restore.
-  log.info('The list now holds', { texts: notes.length, deleted: deleted.length });
+  log.info('The list now holds', { texts: notes.length, deleted: putAway.countNow() });
   draw();
 }
 
@@ -867,7 +765,7 @@ deleteNote.addEventListener('click', askToDelete);
 // On the strip, not the button: a press on the button bubbles up to here, so
 // there is one way in rather than two that have to agree.
 deletedBlock.addEventListener('click', () => {
-  if (!deletedSee.disabled) showDeleted();
+  if (!deletedSee.disabled) putAway.show();
 });
 archiveBlock.addEventListener('click', () => {
   void showArchive();
@@ -981,6 +879,26 @@ export async function startApp(runningOn: Host): Promise<void> {
 
   writing = createWriting(host.files, host.writingFolder, log, afterWriting);
   newNoteLabel.textContent = words.newNote;
+  putAway = createPutAwayTexts({
+    pane: deletedPane,
+    confirmPane,
+    strip: deletedBlock,
+    stripLabel: deletedBlockLabel,
+    see: deletedSee,
+    writing,
+    log,
+    languageNow: () => language,
+    queryNow: () => search.value,
+    refresh: reload,
+    // Straight into it. He asked for this text; leaving him looking at the
+    // list to find it again would be answering a question with a question.
+    openText: open,
+    say: (said) => {
+      notice = said;
+      showStatus();
+    },
+  });
+
   keptCopies = createKeptCopies({
     pane: versionsPane,
     button: seeVersions,
@@ -1074,7 +992,6 @@ export async function startApp(runningOn: Host): Promise<void> {
    */
   async function readEverything(): Promise<{
     notes: LiveNote[];
-    deleted: DeletedNote[];
     archives: Archive[];
   }> {
     // Before anything is listed: a note still in another format is one he can't
@@ -1103,8 +1020,8 @@ export async function startApp(runningOn: Host): Promise<void> {
       that answer has to be right from the first paint rather than arriving a
       moment later and pushing the list up under him.
     */
-    const [away, kept] = await Promise.all([writing.putAway(), writing.archives()]);
-    return { notes: live, deleted: away, archives: kept };
+    const [, kept] = await Promise.all([putAway.read(), writing.archives()]);
+    return { notes: live, archives: kept };
   }
 
   function cannotReachHisWriting(because?: string): void {
@@ -1136,7 +1053,7 @@ export async function startApp(runningOn: Host): Promise<void> {
   }
 
   try {
-    ({ notes, deleted, archives } = await readEverything());
+    ({ notes, archives } = await readEverything());
   } catch (error: unknown) {
     log.error('Could not read his writing at all', describeError(error));
     // Verbatim. It is the only thing that tells a disconnected drive from a
@@ -1171,7 +1088,7 @@ export async function startApp(runningOn: Host): Promise<void> {
   log.info('Ready', {
     build: BUILD_STAMP,
     notes: notes.length,
-    deleted: deleted.length,
+    deleted: putAway.countNow(),
     host: host.runMode,
     viewport: { width: window.innerWidth, height: window.innerHeight },
     body: { width: Math.round(body.width), height: Math.round(body.height) },
