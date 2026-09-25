@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import type { DeletedNote } from '../src/notes/note.ts';
 import { toSearchable } from '../src/language/diacritics.ts';
-import { deletedStripFor } from '../src/ui/deleted-strip.ts';
+import { deletedStripFor } from '../src/ui/elsewhere/deleted-strip.ts';
 
 const noteOf = (title: string, text: string): DeletedNote => ({
   id: title,

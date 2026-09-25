@@ -8,7 +8,7 @@ import {
   SCALE_STEPS,
   clampScale,
   stepScale,
-} from '../src/ui/appearance.ts';
+} from '../src/ui/settings/appearance.ts';
 
 describe('how large he has made everything', () => {
   it('stops at the ends rather than running away', () => {

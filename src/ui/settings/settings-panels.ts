@@ -1,11 +1,11 @@
-import type { Language } from '../language/wording.ts';
-import type { Host } from '../platform/host.ts';
-import { type Log, describeError } from '../platform/logging.ts';
+import type { Language } from '../../language/wording.ts';
+import type { Host } from '../../platform/host.ts';
+import { type Log, describeError } from '../../platform/logging.ts';
 import { openAdvancedPanel } from './advanced-panel.ts';
 import type { Appearance } from './appearance.ts';
 import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
 import type { Settings } from './app-settings.ts';
-import { openConfirmDialog } from './confirm-dialog.ts';
+import { openConfirmDialog } from '../parts/confirm-dialog.ts';
 
 export interface SettingsPanelsParts {
   appearancePane: HTMLDialogElement;

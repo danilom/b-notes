@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type { FileSystem } from '../src/platform/file-system.ts';
-import { readSession, writeSession } from '../src/ui/app-session.ts';
+import { readSession, writeSession } from '../src/ui/settings/app-session.ts';
 
 const FOLDER = 'Podaci';
 

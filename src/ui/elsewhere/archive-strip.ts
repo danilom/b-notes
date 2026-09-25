@@ -1,5 +1,5 @@
-import { type Language, strings } from '../language/wording.ts';
-import type { Archive } from '../notes/note.ts';
+import { type Language, strings } from '../../language/wording.ts';
+import type { Archive } from '../../notes/note.ts';
 
 /** What the Arhiva strip says, and whether there is a strip at all. */
 export interface ArchiveStrip {

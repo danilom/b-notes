@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type { Archive } from '../src/notes/note.ts';
-import { archiveStripFor } from '../src/ui/archive-strip.ts';
+import { archiveStripFor } from '../src/ui/elsewhere/archive-strip.ts';
 
 const strip = (archives: Archive[]) => archiveStripFor(archives, 'sr');
 

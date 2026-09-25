@@ -2,14 +2,14 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type { FileSystem } from '../src/platform/file-system.ts';
-import { MAX_WRITING, MAX_ZOOM, MIN_SCALE } from '../src/ui/appearance.ts';
+import { MAX_WRITING, MAX_ZOOM, MIN_SCALE } from '../src/ui/settings/appearance.ts';
 import {
   DEFAULT_SETTINGS,
   type Settings,
   createSettingsWriter,
   readSettings,
   settingsFrom,
-} from '../src/ui/app-settings.ts';
+} from '../src/ui/settings/app-settings.ts';
 
 const FOLDERS = { writingFolder: 'Tekstovi', appFolder: 'Podaci' };
 

@@ -9,37 +9,37 @@ import {
 import { BUILD_STAMP } from '../platform/build-info.ts';
 import type { Host } from '../platform/host.ts';
 import { type Log, describeError } from '../platform/logging.ts';
-import { readSession, writeSession } from './app-session.ts';
+import { readSession, writeSession } from './settings/app-session.ts';
 import {
   type Settings,
   type SettingsFolders,
   createSettingsWriter,
   readSettings,
-} from './app-settings.ts';
+} from './settings/app-settings.ts';
 import {
   type Appearance,
   DEFAULT_APPEARANCE,
   MAX_ZOOM,
   applyAppearance,
   stepScale,
-} from './appearance.ts';
-import { type ArchivedTexts, createArchivedTexts } from './archived-texts.ts';
-import { openConfirmDialog } from './confirm-dialog.ts';
+} from './settings/appearance.ts';
+import { type ArchivedTexts, createArchivedTexts } from './elsewhere/archived-texts.ts';
+import { openConfirmDialog } from './parts/confirm-dialog.ts';
 import { type FindInText, createFindInText } from './find-in-text.ts';
-import { icon } from './icons.ts';
-import { type KeptCopiesView, createKeptCopies } from './kept-copies.ts';
+import { icon } from './parts/icons.ts';
+import { type KeptCopiesView, createKeptCopies } from './elsewhere/kept-copies.ts';
 import { showLostTexts } from './lost-texts.ts';
-import { confirmationForDeleting } from './note-confirmations.ts';
+import { confirmationForDeleting } from './elsewhere/note-confirmations.ts';
 import { type Draft, renderList } from './note-list.ts';
-import { type PutAwayTexts, createPutAwayTexts } from './put-away-texts.ts';
-import { type SettingsPanels, createSettingsPanels } from './settings-panels.ts';
+import { type PutAwayTexts, createPutAwayTexts } from './elsewhere/put-away-texts.ts';
+import { type SettingsPanels, createSettingsPanels } from './settings/settings-panels.ts';
 import {
   type WhatIsHappening,
   canDelete,
   emptyHintShows,
   statusFor,
 } from './status-line.ts';
-import { flashToast } from './toast.ts';
+import { flashToast } from './parts/toast.ts';
 
 let language: Language;
 let words: ReturnType<typeof strings>;

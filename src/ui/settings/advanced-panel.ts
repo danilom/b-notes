@@ -1,7 +1,7 @@
-import { type Shown, showAsModal } from './modal.ts';
-import { APP_VERSION, BUILD_STAMP } from '../platform/build-info.ts';
-import type { Host } from '../platform/host.ts';
-import { icon } from './icons.ts';
+import { type Shown, showAsModal } from '../parts/modal.ts';
+import { APP_VERSION, BUILD_STAMP } from '../../platform/build-info.ts';
+import type { Host } from '../../platform/host.ts';
+import { icon } from '../parts/icons.ts';
 
 /**
  * The one surface in this app that is not written for him.

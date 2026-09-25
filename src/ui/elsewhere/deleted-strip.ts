@@ -1,6 +1,6 @@
-import { type Language, strings } from '../language/wording.ts';
-import type { DeletedNote } from '../notes/note.ts';
-import { matches } from './note-list.ts';
+import { type Language, strings } from '../../language/wording.ts';
+import type { DeletedNote } from '../../notes/note.ts';
+import { matches } from '../note-list.ts';
 
 /** What the strip under his list says, and whether there is anything behind it. */
 export interface DeletedStrip {

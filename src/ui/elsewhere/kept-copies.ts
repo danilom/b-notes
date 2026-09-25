@@ -1,8 +1,8 @@
-import { type Language, strings } from '../language/wording.ts';
-import { NO_NOTE, type NoNote, type NoteHandle } from '../notes/note-handle.ts';
-import type { Writing } from '../notes/writing.ts';
-import { type Log, describeError } from '../platform/logging.ts';
-import { type KeptCopies, keptOf } from './status-line.ts';
+import { type Language, strings } from '../../language/wording.ts';
+import { NO_NOTE, type NoNote, type NoteHandle } from '../../notes/note-handle.ts';
+import type { Writing } from '../../notes/writing.ts';
+import { type Log, describeError } from '../../platform/logging.ts';
+import { type KeptCopies, keptOf } from '../status-line.ts';
 import { versionsWorthShowing } from './version-row.ts';
 import { openVersionsDialog } from './versions-dialog.ts';
 

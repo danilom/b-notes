@@ -1,7 +1,7 @@
-import { type Language, describeWhen, strings } from '../language/wording.ts';
-import type { NoteVersion } from '../notes/note.ts';
-import { titleFrom } from '../notes/note-title.ts';
-import { countWords } from '../notes/word-count.ts';
+import { type Language, describeWhen, strings } from '../../language/wording.ts';
+import type { NoteVersion } from '../../notes/note.ts';
+import { titleFrom } from '../../notes/note-title.ts';
+import { countWords } from '../../notes/word-count.ts';
 
 /**
  * One row of the index beside a diff.

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { answersThePhrase, sentenceParts } from '../src/ui/confirm-dialog.ts';
+import { answersThePhrase, sentenceParts } from '../src/ui/parts/confirm-dialog.ts';
 import { strings } from '../src/language/wording.ts';
 
 const SPELLINGS = ['uništi', 'unisti'];

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { scrollShowing } from '../src/ui/change-in-view.ts';
+import { scrollShowing } from '../src/ui/elsewhere/change-in-view.ts';
 
 const view = { height: 600, scrollable: 7000 };
 

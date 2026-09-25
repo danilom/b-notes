@@ -1,6 +1,6 @@
 import { type Shown, showAsModal } from './modal.ts';
-import { toSearchable } from '../language/diacritics.ts';
-import { type Language, strings } from '../language/wording.ts';
+import { toSearchable } from '../../language/diacritics.ts';
+import { type Language, strings } from '../../language/wording.ts';
 import { type Titled, titleOf } from './dialog-heading.ts';
 import { icon } from './icons.ts';
 

@@ -1,8 +1,8 @@
-import { type Language, strings } from '../language/wording.ts';
-import type { NoteHandle } from '../notes/note-handle.ts';
-import type { Archive, ArchivedNote } from '../notes/note.ts';
-import type { Writing } from '../notes/writing.ts';
-import { type Log, describeError } from '../platform/logging.ts';
+import { type Language, strings } from '../../language/wording.ts';
+import type { NoteHandle } from '../../notes/note-handle.ts';
+import type { Archive, ArchivedNote } from '../../notes/note.ts';
+import type { Writing } from '../../notes/writing.ts';
+import { type Log, describeError } from '../../platform/logging.ts';
 import { openArchiveDialog } from './archive-dialog.ts';
 import { archiveStripFor } from './archive-strip.ts';
 

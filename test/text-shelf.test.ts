@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { groupsFor, openingFilter, snippetOf } from '../src/ui/text-shelf.ts';
-import { mustWriteItOut } from '../src/ui/note-confirmations.ts';
+import { groupsFor, openingFilter, snippetOf } from '../src/ui/elsewhere/text-shelf.ts';
+import { mustWriteItOut } from '../src/ui/elsewhere/note-confirmations.ts';
 import { toSearchable } from '../src/language/diacritics.ts';
 
 const noteOf = (text: string, title: string, versions = 0) => ({

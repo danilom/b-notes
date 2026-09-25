@@ -1,13 +1,13 @@
-import { type Shown, showAsModal } from './modal.ts';
-import { type Language, describeWhen, strings } from '../language/wording.ts';
-import type { NoteVersion } from '../notes/note.ts';
-import { type DiffPiece, type DiffRun, diffParagraphs, runsOf } from '../notes/paragraph-diff.ts';
-import { icon } from './icons.ts';
+import { type Shown, showAsModal } from '../parts/modal.ts';
+import { type Language, describeWhen, strings } from '../../language/wording.ts';
+import type { NoteVersion } from '../../notes/note.ts';
+import { type DiffPiece, type DiffRun, diffParagraphs, runsOf } from '../../notes/paragraph-diff.ts';
+import { icon } from '../parts/icons.ts';
 import { scrollShowing } from './change-in-view.ts';
-import { createStepper } from './stepper.ts';
-import { type Titled, titleOf } from './dialog-heading.ts';
-import { beginningAndEnd } from './text-snippet.ts';
-import { countWords } from '../notes/word-count.ts';
+import { createStepper } from '../parts/stepper.ts';
+import { type Titled, titleOf } from '../parts/dialog-heading.ts';
+import { beginningAndEnd } from '../parts/text-snippet.ts';
+import { countWords } from '../../notes/word-count.ts';
 import { type VersionInList, describeVersion } from './version-row.ts';
 
 export interface VersionsHandlers {

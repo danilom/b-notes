@@ -6,7 +6,7 @@ import {
   confirmationForDeleting,
   confirmationForDestroying,
   mustWriteItOut,
-} from '../src/ui/note-confirmations.ts';
+} from '../src/ui/elsewhere/note-confirmations.ts';
 
 const noteOf = (title: string, text: string): Note => ({
   id: title,

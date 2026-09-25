@@ -1,6 +1,6 @@
 import type { Language } from '../language/wording.ts';
-import { type Stepper, createStepper } from './stepper.ts';
-import { type TextMatch, foundPanelFor, matchesIn } from './text-match.ts';
+import { type Stepper, createStepper } from './parts/stepper.ts';
+import { type TextMatch, foundPanelFor, matchesIn } from './parts/text-match.ts';
 
 /** What the panel's three buttons are called, in his language. */
 export interface FindWords {

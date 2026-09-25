@@ -1,5 +1,5 @@
-import type { Language } from '../language/wording.ts';
-import type { FileSystem } from '../platform/file-system.ts';
+import type { Language } from '../../language/wording.ts';
+import type { FileSystem } from '../../platform/file-system.ts';
 import {
   type Appearance,
   DEFAULT_APPEARANCE,

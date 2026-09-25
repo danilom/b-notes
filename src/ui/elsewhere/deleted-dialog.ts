@@ -1,6 +1,6 @@
-import { type Language, describeWhen, strings } from '../language/wording.ts';
+import { type Language, describeWhen, strings } from '../../language/wording.ts';
 import { type Shelf, openTextShelf } from './text-shelf.ts';
-import type { DeletedNote } from '../notes/note.ts';
+import type { DeletedNote } from '../../notes/note.ts';
 
 /**
  * The shelf he filled himself, and the way back off it.

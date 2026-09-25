@@ -1,5 +1,5 @@
-import type { FileSystem } from '../platform/file-system.ts';
-import { isNoteId } from '../notes/note-naming.ts';
+import type { FileSystem } from '../../platform/file-system.ts';
+import { isNoteId } from '../../notes/note-naming.ts';
 
 const FILE = 'session.json';
 

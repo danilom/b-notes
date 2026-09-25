@@ -69,7 +69,10 @@ whether the sentence is about the screen, about a thing on it, or about an act
 | `src/notes/` | everywhere | what a note is: the store, titles, naming, save decisions |
 | `src/platform/` | everywhere | what a platform must provide: the filesystem contract, the log bridge, build identity |
 | `src/language/` | everywhere | every word he reads, in both languages |
-| `src/ui/` | everywhere | the interface itself |
+| `src/ui/` | everywhere | the screen he writes on: the list, the editor's search, the strip along the bottom |
+| `src/ui/elsewhere/` | everywhere | where a text can be other than in his list: Obrisano, Arhiva, the copies kept of one |
+| `src/ui/settings/` | everywhere | how the app looks and where it reads from, and what remembers both |
+| `src/ui/parts/` | everywhere | pieces with no feature in them: dialogs, icons, the toast, the stepper |
 | `src/hosts/electron/` | only the packaged app | lifecycle, the preload bridge, updates, the log file, the real filesystem |
 | `src/hosts/mockup/` | only the browser | a pretend filesystem, and the test corpus it's filled with |
 
