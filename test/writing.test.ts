@@ -5,6 +5,7 @@ import path from 'node:path';
 import { describe, it } from 'node:test';
 
 import { createFileSystem } from '../src/hosts/electron/disk-file-system.ts';
+import type { NoteHandle } from '../src/notes/note-handle.ts';
 import type { FileSystem } from '../src/platform/file-system.ts';
 import { type Timers, createWriting } from '../src/notes/writing.ts';
 import { silentLog } from './silent-log.ts';
