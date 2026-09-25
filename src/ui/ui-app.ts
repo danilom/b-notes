@@ -1,28 +1,14 @@
-import { type Language, describeWhen, strings } from '../language/wording.ts';
+import { type Language, strings } from '../language/wording.ts';
 import { NO_NOTE, type NoNote, type NoteHandle } from '../notes/note-handle.ts';
 import {
-  SPEAK_AFTER_FAILURES,
   type LiveNote,
+  SPEAK_AFTER_FAILURES,
   type Writing,
   createWriting,
 } from '../notes/writing.ts';
-import {
-  type Note,
-  isEmptyText,
-} from '../notes/note.ts';
 import { BUILD_STAMP } from '../platform/build-info.ts';
 import type { Host } from '../platform/host.ts';
 import { type Log, describeError } from '../platform/logging.ts';
-import {
-  type Appearance,
-  DEFAULT_APPEARANCE,
-  MAX_ZOOM,
-  applyAppearance,
-  stepScale,
-} from './appearance.ts';
-import { openConfirmDialog } from './confirm-dialog.ts';
-import { showLostTexts } from './lost-texts.ts';
-import { confirmationForDeleting } from './note-confirmations.ts';
 import { readSession, writeSession } from './app-session.ts';
 import {
   type Settings,
@@ -30,23 +16,30 @@ import {
   createSettingsWriter,
   readSettings,
 } from './app-settings.ts';
+import {
+  type Appearance,
+  DEFAULT_APPEARANCE,
+  MAX_ZOOM,
+  applyAppearance,
+  stepScale,
+} from './appearance.ts';
+import { type ArchivedTexts, createArchivedTexts } from './archived-texts.ts';
+import { openConfirmDialog } from './confirm-dialog.ts';
+import { type FindInText, createFindInText } from './find-in-text.ts';
 import { icon } from './icons.ts';
+import { type KeptCopiesView, createKeptCopies } from './kept-copies.ts';
+import { showLostTexts } from './lost-texts.ts';
+import { confirmationForDeleting } from './note-confirmations.ts';
 import { type Draft, renderList } from './note-list.ts';
-import { flashToast } from './toast.ts';
+import { type PutAwayTexts, createPutAwayTexts } from './put-away-texts.ts';
+import { type SettingsPanels, createSettingsPanels } from './settings-panels.ts';
 import {
   type WhatIsHappening,
   canDelete,
   emptyHintShows,
   statusFor,
 } from './status-line.ts';
-import { type FindInText, createFindInText } from './find-in-text.ts';
-import { type KeptCopiesView, createKeptCopies } from './kept-copies.ts';
-import { type PutAwayTexts, createPutAwayTexts } from './put-away-texts.ts';
-import { type ArchivedTexts, createArchivedTexts } from './archived-texts.ts';
-import { type SettingsPanels, createSettingsPanels } from './settings-panels.ts';
-
-/** Long enough that he isn't saved mid-word, short enough to never lose a thought. */
-const AUTOSAVE_IDLE_MS = 800;
+import { flashToast } from './toast.ts';
 
 let language: Language;
 let words: ReturnType<typeof strings>;
