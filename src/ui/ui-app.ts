@@ -125,8 +125,6 @@ const seeVersionsLabel = element('see-versions-label', HTMLSpanElement);
 
 /** Built here from whatever filesystem the host provides. */
 let writing: Writing;
-/** The store beneath, for everything that is not saving. */
-let store: Writing['store'];
 
 let settings: Settings;
 let saveSettings: (settings: Settings) => void;
@@ -484,10 +482,10 @@ async function flushPendingSave(): Promise<void> {
 
 
 
-async function open(id: string): Promise<void> {
+async function open(handle: Handle): Promise<void> {
   await flushPendingSave();
 
-  const note = notes.find((candidate) => candidate.id === id);
+  const note = notes.find((candidate) => candidate.handle === handle);
   if (note === undefined) return;
 
   /*
@@ -498,11 +496,11 @@ async function open(id: string): Promise<void> {
     told there is no such text — which is exactly what happened when the list
     was read without minting handles at all, and every text opened as nothing.
   */
-  openHandle = note.handle;
+  openHandle = handle;
   editor.value = note.text;
   savedAt = note.updatedAt;
   draft = null;
-  remember(id);
+  remember(note.id);
   editor.setSelectionRange(0, 0);
   editor.scrollTop = 0;
   atFound = 0;
@@ -511,13 +509,14 @@ async function open(id: string): Promise<void> {
   draw();
   showStatus();
   void countKeptOfOpen();
-  log.info('Opened a text', { id });
+  log.info('Opened a text', { id: note.id });
 }
 
 listPane.addEventListener('click', (event) => {
   const row = (event.target as Element | null)?.closest('.note');
   const id = row instanceof HTMLElement ? row.dataset['id'] : undefined;
-  if (id !== undefined) void open(id);
+  const note = id === undefined ? undefined : notes.find((each) => each.id === id);
+  if (note !== undefined) void open(note.handle);
 });
 
 
@@ -608,7 +607,8 @@ newNote.addEventListener('click', () => {
  */
 function askToDelete(): void {
   const id = openName();
-  if (id === null) return;
+  const handle = openHandle;
+  if (id === null || handle === null) return;
   const note = notes.find((candidate) => candidate.id === id);
   if (note === undefined) return;
 
@@ -618,7 +618,7 @@ function askToDelete(): void {
       ...confirmationForDeleting(note, language),
       onConfirm: () => {
         close();
-        void deleteOpenNote(id);
+        void deleteOpenNote(id, handle);
       },
       onCancel: () => {
         close();
@@ -662,12 +662,12 @@ async function copyWholeText(): Promise<void> {
   flashToast(toast, words.copied, words.copiedHow);
 }
 
-async function deleteOpenNote(id: string): Promise<void> {
+async function deleteOpenNote(id: string, handle: Handle): Promise<void> {
   try {
-    // Anything still on its way to disk lands first. Putting away a file while
-    // a save is in flight would write the text back where it no longer lives.
-    await flushPendingSave();
-    await store.moveToDeleted(id);
+    // `discard` writes anything still on its way first, and attempts nothing
+    // for the text afterwards: a save landing later would put back the file he
+    // has just put away.
+    await writing.discard(handle);
   } catch (error: unknown) {
     /*
       Dropbox holds a file open while it uploads it, and Windows refuses to move
@@ -718,18 +718,18 @@ function showVersionsButton(): void {
     — and the first thing he needs to learn here is that the app keeps copies
     at all.
   */
-  const count = keptOf(openName(), kept);
+  const count = keptOf(openHandle, kept);
   seeVersionsLabel.textContent = `${words.versions} (${count})`;
   seeVersions.disabled = count === 0;
 }
 
 /** Asks the store how many copies the open text has, and shows the way to them. */
 async function countKeptOfOpen(): Promise<void> {
-  const asking = openName();
+  const asking = openHandle;
   let count = 0;
   if (asking !== null) {
     try {
-      count = await store.countVersions(asking);
+      count = await writing.countVersions(asking);
     } catch (error: unknown) {
       // The number on a button is not worth failing a startup over, but it is
       // worth saying so: a text whose copies cannot be counted has something
@@ -740,9 +740,16 @@ async function countKeptOfOpen(): Promise<void> {
       });
     }
   }
-  // He may have moved on while the disk was answering, in which case this
-  // answer is about a text he is no longer in and would displace a fresher one.
-  if (asking !== openName()) return;
+  /*
+    He may have moved on while the disk was answering, in which case this
+    answer is about a text he is no longer in and would displace a fresher one.
+
+    Against the handle and not the name. Compared against `openName()` this was
+    a number against a string: always unequal, so it always returned here and
+    the count was never set. The compiler allowed it because both sides can be
+    null, which is overlap enough for it and no use at all.
+  */
+  if (asking !== openHandle) return;
   kept = { note: asking, count };
   showVersionsButton();
 }
@@ -750,14 +757,15 @@ async function countKeptOfOpen(): Promise<void> {
 function showVersions(): void {
   // Read once and narrowed: it is a question now, not a variable.
   const id = openName();
-  if (versionsPane.open || id === null) return;
+  const handle = openHandle;
+  if (versionsPane.open || id === null || handle === null) return;
 
   void (async () => {
     // A copy that matches his text exactly is not worth offering, and the
     // count on the button cannot know that without reading every file, so the
     // button can be there with nothing behind it. Saying so is better than a
     // press that does nothing.
-    const versions = versionsWorthShowing(await store.listVersions(id), editor.value);
+    const versions = versionsWorthShowing(await writing.versionsOf(handle), editor.value);
     if (versions.length === 0) {
       notice = words.versionsAllSame;
       showStatus();
@@ -813,10 +821,11 @@ function showVersions(): void {
  */
 async function bringBackVersion(text: string): Promise<void> {
   const id = openName();
-  if (id === null) return;
+  const handle = openHandle;
+  if (id === null || handle === null) return;
 
   try {
-    restored = { note: id, version: await store.keepCopy(id, editor.value) };
+    restored = { note: id, version: await writing.keepCopy(handle, editor.value) };
   } catch (failure) {
     log.error('Could not keep a copy before bringing a version back', { id, failure });
     notice = words.notRestored;
@@ -867,7 +876,7 @@ async function showArchive(): Promise<void> {
   readingArchive = true;
   let found: ArchivedNote[];
   try {
-    found = await store.listArchived(new Set(notes.map((note) => note.title)));
+    found = await writing.archived(new Set(notes.map((note) => note.title)));
   } catch (error: unknown) {
     // A folder that is there and will not open. He gets a line he can read
     // over the telephone; the reason goes where it can be looked at.
@@ -906,10 +915,10 @@ async function bringBackNote(note: ArchivedNote): Promise<void> {
   // landing afterwards would write his open text back under the old name.
   await flushPendingSave();
 
-  let back: string;
+  let back: Handle;
   try {
-    back = await store.bringBack(note.archive, note.id);
-    archives = await store.listArchives();
+    back = await writing.bringBack(note.archive, note.id);
+    archives = await writing.archives();
     await reload();
   } catch (error: unknown) {
     notice = words.archiveNotBrought;
@@ -954,7 +963,7 @@ function askToDestroy(note: DeletedNote, closeDeleted: () => void): void {
 
 async function destroyNote(id: string, closeDeleted: () => void): Promise<void> {
   try {
-    await store.destroy(id);
+    await writing.destroy(id);
     await reload();
   } catch (error: unknown) {
     // Out of the dialog first, or the line saying so would be behind it. What
@@ -984,9 +993,9 @@ async function restoreNote(id: string): Promise<void> {
   */
   await flushPendingSave();
 
-  let back: string;
+  let back: Handle;
   try {
-    back = await store.restore(id);
+    back = await writing.restore(id);
     await reload();
   } catch (error: unknown) {
     // The dialog has already closed, so the line is his to read.
@@ -1006,7 +1015,7 @@ async function restoreNote(id: string): Promise<void> {
 
 /** Both lists, after anything that can move a text between them. */
 async function reload(): Promise<void> {
-  [notes, deleted] = await Promise.all([writing.list(), store.listDeleted()]);
+  [notes, deleted] = await Promise.all([writing.list(), writing.putAway()]);
   // How many there are, every time it changes. A count in the log is what tells
   // a folder that emptied itself from a man who deleted one text, days later,
   // over the telephone — and it costs one line per delete or restore.
@@ -1228,7 +1237,6 @@ export async function startApp(runningOn: Host): Promise<void> {
   };
 
   writing = createWriting(host.files, host.writingFolder, log, afterWriting);
-  store = writing.store;
   newNoteLabel.textContent = words.newNote;
   foundSteps = createStepper(
     { previous: words.foundPrevious, next: words.foundNext, close: words.clearSearch },
@@ -1296,7 +1304,7 @@ export async function startApp(runningOn: Host): Promise<void> {
   }> {
     // Before anything is listed: a note still in another format is one he can't
     // open without this app, which is the guarantee .txt was chosen for.
-    const converted = await store.convertToPlainText();
+    const { notes: live, converted } = await writing.load();
     if (converted.converted > 0) {
       log.info('Put texts into plain text', { count: converted.converted });
     }
@@ -1311,12 +1319,6 @@ export async function startApp(runningOn: Host): Promise<void> {
         });
       }
     }
-    // After the conversion, since that hands out names of its own, and before
-    // anything is listed, so the numbers he reads are the ones on the files.
-    // His corpus arrived from Simplenote half-numbered and no save has ever
-    // had cause to look at it.
-    await store.settleNames();
-
     /*
       The archives are counted, not read. What is in them is six hundred texts
       he mostly already has, and reading that at startup would spend the second
@@ -1326,14 +1328,7 @@ export async function startApp(runningOn: Host): Promise<void> {
       that answer has to be right from the first paint rather than arriving a
       moment later and pushing the list up under him.
     */
-    const [live, away, kept] = await Promise.all([
-      // Through `writing`, which is where a text is given the name it keeps
-      // for the run. Read straight from the store, every note came back
-      // without one, and everything holding a text by handle had nothing.
-      writing.list(),
-      store.listDeleted(),
-      store.listArchives(),
-    ]);
+    const [away, kept] = await Promise.all([writing.putAway(), writing.archives()]);
     return { notes: live, deleted: away, archives: kept };
   }
 
@@ -1383,8 +1378,15 @@ export async function startApp(runningOn: Host): Promise<void> {
   // Reopen what he was last in. The search is deliberately not restored — a
   // filtered list on startup looks exactly like texts having gone missing.
   const { openNoteId } = await readSession(host.files, host.appFolder);
-  if (openNoteId !== null && notes.some((note) => note.id === openNoteId)) {
-    await open(openNoteId);
+  /*
+    The one place a name is written down and read back. Everything else holds
+    a handle, which means nothing between one run and the next — so this is
+    where a name becomes a text again, and where a name that no longer finds
+    one simply opens nothing rather than guessing at the nearest.
+  */
+  const wasOpen = openNoteId === null ? null : writing.handleFor(openNoteId);
+  if (wasOpen !== null) {
+    await open(wasOpen);
   } else {
     draw();
     showStatus();

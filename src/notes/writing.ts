@@ -2,7 +2,14 @@ import type { FileSystem } from '../platform/file-system.ts';
 import { type Log, describeError } from '../platform/logging.ts';
 import type { Handle } from './note-handle.ts';
 import { createHandles } from './note-handle.ts';
-import type { Note, NoteStore } from './note.ts';
+import type {
+  Archive,
+  ArchivedNote,
+  Converted,
+  DeletedNote,
+  Note,
+  NoteVersion,
+} from './note.ts';
 import { createNoteStore } from './note-store.ts';
 
 /** A text of his, and what it is called while the app runs. */
@@ -55,8 +62,13 @@ interface Waiting {
 }
 
 export interface Writing {
-  /** Everything of his, read once. Handles are minted here and nowhere else. */
-  load(): Promise<LiveNote[]>;
+  /**
+   * Everything of his, read once, with whatever the conversion had to say.
+   *
+   * Converting what is not plain text and settling the numbering happen here
+   * rather than being two calls a caller has to know to make, in that order.
+   */
+  load(): Promise<{ notes: LiveNote[]; converted: Converted }>;
   /** Read again, keeping the handle each text already had. */
   list(): Promise<LiveNote[]>;
   /** A text he has begun that has no file yet. */
@@ -78,8 +90,32 @@ export interface Writing {
    * that has to write a name down and read it back next time.
    */
   handleFor(token: string): Handle | null;
-  /** The store underneath, while the rest of the app still speaks to it directly. */
-  readonly store: NoteStore;
+  /** Everything he has put away, newest first. */
+  putAway(): Promise<DeletedNote[]>;
+  /** The archive folders and how many texts each holds. Counted, not read. */
+  archives(): Promise<Archive[]>;
+  /** Every archived text, from every archive. Only when he asks. */
+  archived(liveTitles: ReadonlySet<string>): Promise<ArchivedNote[]>;
+  /**
+   * Out of his list and into Obrisano, with the copies kept of it.
+   *
+   * Anything of his still waiting is written first, or the copy that lands
+   * there is missing his last sentence — and nothing is attempted for it
+   * afterwards, or the write would put back the file he just removed.
+   */
+  discard(handle: Handle): Promise<void>;
+  /** Back from Obrisano, under whatever name is free, as a text he can edit. */
+  restore(token: string): Promise<Handle>;
+  /** Out of an archive and into his list, with its kept copies. */
+  bringBack(archive: string, token: string): Promise<Handle>;
+  /** Destroyed, along with every copy that went with it. Never from his list. */
+  destroy(token: string): Promise<void>;
+  /** A copy kept now, whatever the ordinary rule would say. */
+  keepCopy(handle: Handle, text: string): Promise<string>;
+  /** How many copies are kept of a text. Counted without reading any. */
+  countVersions(handle: Handle): Promise<number>;
+  /** Every copy kept of a text, newest first. */
+  versionsOf(handle: Handle): Promise<NoteVersion[]>;
   /** Resolves once nothing is being written. Waiting, unstarted work stays waiting. */
   idle(): Promise<void>;
   /** Timers down, nothing further attempted. */
@@ -227,16 +263,55 @@ export function createWriting(
     }
   }
 
-  return {
-    store,
+  /** A token for something still on disk, or a failure he can be told about. */
+  function nameOf(handle: Handle): string {
+    const id = livesAt.get(handle) ?? null;
+    if (id === null) throw new Error('That text has not been written yet');
+    return id;
+  }
 
-    async load(): Promise<LiveNote[]> {
-      // Both of these are startup housekeeping that a caller should not have
-      // to know to call, and in what order.
-      await store.convertToPlainText();
+  return {
+    async load(): Promise<{ notes: LiveNote[]; converted: Converted }> {
+      /*
+        Both of these are startup housekeeping in a fixed order that a caller
+        should not have to know: what is not plain text is converted first,
+        since that hands out names of its own, and the numbering is settled
+        before anything is listed, so the numbers he reads are the ones on the
+        files.
+      */
+      const converted = await store.convertToPlainText();
       await store.settleNames();
-      return this.list();
+      return { notes: await this.list(), converted };
     },
+
+    putAway: () => store.listDeleted(),
+    archives: () => store.listArchives(),
+    archived: (liveTitles) => store.listArchived(liveTitles),
+    destroy: (token) => store.destroy(token),
+
+    async discard(handle: Handle): Promise<void> {
+      // His last sentence first, or the copy that lands in Obrisano is missing
+      // it. Then nothing more is attempted for this text: a write afterwards
+      // would put back the file he has just put away.
+      await this.flush(handle);
+      const id = nameOf(handle);
+      waiting.delete(handle);
+      await store.moveToDeleted(id);
+      byToken.delete(id);
+      livesAt.delete(handle);
+    },
+
+    async restore(token: string): Promise<Handle> {
+      return remember(await store.restore(token));
+    },
+
+    async bringBack(archive: string, token: string): Promise<Handle> {
+      return remember(await store.bringBack(archive, token));
+    },
+
+    keepCopy: (handle, text) => store.keepCopy(nameOf(handle), text),
+    countVersions: (handle) => store.countVersions(nameOf(handle)),
+    versionsOf: (handle) => store.listVersions(nameOf(handle)),
 
     async list(): Promise<LiveNote[]> {
       const notes = await store.list();
