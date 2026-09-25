@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import type { NoteHandle } from '../src/notes/note-handle.ts';
+import { NO_TEXT, type NoteHandle } from '../src/notes/note-handle.ts';
 import { describe, it } from 'node:test';
 
 import {
@@ -113,7 +113,7 @@ describe('how many copies the open text has', () => {
     // starting a new one. The editor is empty either way and the number is
     // still sitting there from the text he left, which used to be offered to
     // him against an empty screen.
-    assert.equal(keptOf(null, { note: zima, count: 4 }), 0);
+    assert.equal(keptOf(NO_TEXT, { note: zima, count: 4 }), 0);
   });
 
   it('counts none while the number still belongs to the text he left', () => {
@@ -123,7 +123,7 @@ describe('how many copies the open text has', () => {
   });
 
   it('counts none before anything has been counted at all', () => {
-    assert.equal(keptOf(zima, { note: null, count: 0 }), 0);
+    assert.equal(keptOf(zima, { note: NO_TEXT, count: 0 }), 0);
   });
 });
 

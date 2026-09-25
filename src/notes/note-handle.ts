@@ -37,3 +37,24 @@ export function createHandles(): () => NoteHandle {
     return last as NoteHandle;
   };
 }
+
+/**
+ * No text open.
+ *
+ * A value of its own rather than `null` or `undefined`, for two reasons.
+ *
+ * `undefined` is what a dozen accidents look like — a `Map` that missed, a
+ * `find` that found nothing, a property that was never set, a function that
+ * fell off its end. A meaning carried by it cannot be told from any of those.
+ *
+ * And `null` is what a filename uses for the same absence, which is precisely
+ * the overlap that let a handle be compared with a name: `asking !== openName()`
+ * compiled, a number against a string, always unequal — so the guard always
+ * took the wrong branch and the way to his kept copies stayed shut. With no
+ * value in common the comparison is refused. `test/identity.test.ts` fails if
+ * it ever stops being.
+ */
+export const NO_TEXT: unique symbol = Symbol('no text open');
+
+/** What stands in for a text when there is not one. */
+export type NoText = typeof NO_TEXT;

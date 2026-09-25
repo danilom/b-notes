@@ -1,5 +1,5 @@
 import { type Language, describeWhen, strings } from '../language/wording.ts';
-import type { NoteHandle } from '../notes/note-handle.ts';
+import { NO_TEXT, type NoText, type NoteHandle } from '../notes/note-handle.ts';
 import {
   SPEAK_AFTER_FAILURES,
   type LiveNote,
@@ -182,7 +182,7 @@ let readingArchive = false;
  * Carried with its text rather than on its own, so that a count taken for one
  * can never be shown against another. See `keptOf`.
  */
-let kept: KeptCopies = { note: null, count: 0 };
+let kept: KeptCopies = { note: NO_TEXT, count: 0 };
 /**
  * Which text is open, as a thing and not as a filename.
  *
@@ -190,12 +190,18 @@ let kept: KeptCopies = { note: null, count: 0 };
  * it changed under everything holding it the moment he rewrote his first
  * sentence, and again when another text of the same name arrived and took the
  * bare one. `openName()` asks where it lives at this moment.
+ *
+ * `NO_TEXT` for nothing open, where a name is `null` for the same. The
+ * mismatch is the point: both being null let the compiler see an overlap
+ * between a handle and a filename, so `asking !== openName()` compiled — a
+ * number against a string, always unequal, which quietly shut the way to his
+ * kept copies. See `NO_TEXT` for why it is not `undefined` either.
  */
-let openHandle: NoteHandle | null = null;
+let openHandle: NoteHandle | NoText = NO_TEXT;
 
 /** Where the open text lives now, or null before it has a file. */
 function openName(): string | null {
-  return openHandle === null ? null : writing.tokenOf(openHandle);
+  return openHandle === NO_TEXT ? null : writing.tokenOf(openHandle);
 }
 
 /**
@@ -361,7 +367,7 @@ function whatIsHappening(): WhatIsHappening {
     // the line stays silent for it the same way. Without this, the one failure
     // that Dropbox causes weekly left the report of the *previous* save on
     // screen — true about the file, false about what he had just typed.
-    saving: openHandle !== null && writing.stateOf(openHandle).waiting,
+    saving: openHandle !== NO_TEXT && writing.stateOf(openHandle).waiting,
     /*
       About the text in front of him, and only that one. A failure belongs to
       the words it could not write; saying it over another text tells him his
@@ -370,7 +376,8 @@ function whatIsHappening(): WhatIsHappening {
       for as long as the app is open.
     */
     couldNotSave:
-      openHandle !== null && writing.stateOf(openHandle).failures >= SPEAK_AFTER_FAILURES,
+      openHandle !== NO_TEXT &&
+      writing.stateOf(openHandle).failures >= SPEAK_AFTER_FAILURES,
     notice,
   };
 }
@@ -382,7 +389,7 @@ function whatIsHappening(): WhatIsHappening {
  * there is anything to write, and keeps it through every rename after.
  */
 function typedSomething(): void {
-  openHandle ??= writing.begin();
+  if (openHandle === NO_TEXT) openHandle = writing.begin();
   writing.save(openHandle, editor.value);
   showStatus();
 }
@@ -392,7 +399,7 @@ function typedSomething(): void {
  * which moves it in the list, and a stale row is exactly what reads as loss.
  */
 function afterWriting(written: NoteHandle[]): void {
-  if (openHandle !== null && written.includes(openHandle)) {
+  if (openHandle !== NO_TEXT && written.includes(openHandle)) {
     savedAt = Date.now();
     draft = null;
     /*
@@ -574,7 +581,7 @@ search.addEventListener('input', searchChanged);
 
 
 newNote.addEventListener('click', () => {
-  openHandle = null;
+  openHandle = NO_TEXT;
   savedAt = null;
   editor.value = '';
   editorMarks.replaceChildren();
@@ -607,7 +614,7 @@ newNote.addEventListener('click', () => {
 function askToDelete(): void {
   const id = openName();
   const handle = openHandle;
-  if (id === null || handle === null) return;
+  if (id === null || handle === NO_TEXT) return;
   const note = notes.find((candidate) => candidate.id === id);
   if (note === undefined) return;
 
@@ -680,7 +687,7 @@ async function deleteOpenNote(id: string, handle: NoteHandle): Promise<void> {
     return;
   }
 
-  openHandle = null;
+  openHandle = NO_TEXT;
   editor.value = '';
   savedAt = null;
   draft = null;
@@ -726,7 +733,7 @@ function showVersionsButton(): void {
 async function countKeptOfOpen(): Promise<void> {
   const asking = openHandle;
   let count = 0;
-  if (asking !== null) {
+  if (asking !== NO_TEXT) {
     try {
       count = await writing.countVersions(asking);
     } catch (error: unknown) {
@@ -757,7 +764,7 @@ function showVersions(): void {
   // Read once and narrowed: it is a question now, not a variable.
   const id = openName();
   const handle = openHandle;
-  if (versionsPane.open || id === null || handle === null) return;
+  if (versionsPane.open || id === null || handle === NO_TEXT) return;
 
   void (async () => {
     // A copy that matches his text exactly is not worth offering, and the
@@ -821,7 +828,7 @@ function showVersions(): void {
 async function bringBackVersion(text: string): Promise<void> {
   const id = openName();
   const handle = openHandle;
-  if (id === null || handle === null) return;
+  if (id === null || handle === NO_TEXT) return;
 
   try {
     restored = { note: id, version: await writing.keepCopy(handle, editor.value) };
