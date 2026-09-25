@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { NO_TEXT, type NoText, type NoteHandle } from '../src/notes/note-handle.ts';
+import { NO_NOTE, type NoNote, type NoteHandle } from '../src/notes/note-handle.ts';
 
 /**
  * That a handle and a filename cannot be mistaken for one another.
@@ -19,7 +19,7 @@ import { NO_TEXT, type NoText, type NoteHandle } from '../src/notes/note-handle.
  * copies stayed greyed out. Nothing in the language objected: both sides could
  * be null, and a shared null is overlap enough for TypeScript.
  *
- * So they no longer share one. Nothing open is `NO_TEXT` for a handle and
+ * So they no longer share one. Nothing open is `NO_NOTE` for a handle and
  * `null` for a name, and with no value in common the comparison is refused.
  * Not `undefined` for the handle either: that is what a `Map` that missed, a
  * `find` that found nothing and a property never set all look like, and a
@@ -32,10 +32,20 @@ import { NO_TEXT, type NoText, type NoteHandle } from '../src/notes/note-handle.
   is a plain number against a plain string — which has never compiled, under
   either shape. Written that way this file passed while guarding nothing.
 */
-function compare(handle: NoteHandle | NoText, name: string | null): boolean {
+function compare(handle: NoteHandle | NoNote, name: string | null): boolean {
   // @ts-expect-error a handle is not a name for a text, and asking whether one
   // equals the other is the mistake this pair of types exists to refuse.
   return handle === name;
+}
+
+/*
+  The same, for what `writing` hands back when a name is looked up. It returned
+  null, which put the overlap back in the one function whose whole job is
+  turning a name into a text — the likeliest place of all to hold both at once.
+*/
+function compareLookup(found: NoteHandle | NoNote, name: string | null): boolean {
+  // @ts-expect-error what a name resolved to is a text, never another name.
+  return found === name;
 }
 
 describe('a handle and a filename', () => {
@@ -45,12 +55,16 @@ describe('a handle and a filename', () => {
     assert.equal(compare(1 as NoteHandle, 'Pismo'), false);
   });
 
+  it('cannot be compared when one of them came from a name', () => {
+    assert.equal(compareLookup(NO_NOTE, 'Pismo'), false);
+  });
+
   it('are both still usable for what they are for', () => {
     // The other half: making them incomparable must not make them unusable.
-    const open: NoteHandle | NoText = NO_TEXT;
+    const open: NoteHandle | NoNote = NO_NOTE;
     const where: string | null = null;
 
-    assert.equal(open === NO_TEXT ? 'nothing open' : 'a text', 'nothing open');
+    assert.equal(open === NO_NOTE ? 'nothing open' : 'a text', 'nothing open');
     assert.equal(where ?? 'no file yet', 'no file yet');
   });
 });

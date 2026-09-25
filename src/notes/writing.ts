@@ -1,7 +1,7 @@
 import type { FileSystem } from '../platform/file-system.ts';
 import { type Log, describeError } from '../platform/logging.ts';
 import type { NoteHandle } from './note-handle.ts';
-import { createHandles } from './note-handle.ts';
+import { NO_NOTE, type NoNote, createHandles } from './note-handle.ts';
 import type {
   Archive,
   ArchivedNote,
@@ -96,12 +96,18 @@ export interface Writing {
   /**
    * That name read back, once `load` has minted the handles.
    *
-   * Nothing in the app asks yet — a row he clicks already carries its handle,
-   * which is both quicker and incapable of answering "no such text" about a
-   * text sitting in front of him. This is for `session.json`, the one place
-   * that has to write a name down and read it back next time.
+   * For `session.json`, the one place that has to write a name down and read
+   * it back next time. A row he clicks carries its own handle, which is both
+   * quicker and incapable of answering "no such text" about a text sitting in
+   * front of him.
+   *
+   * `NO_NOTE` and not null when the name finds nothing: null is what a name
+   * uses for its own absence, and a handle that could be null could be
+   * compared with one — which is the whole fault this pair of types exists to
+   * refuse, and it would be back in the one function that turns a name into a
+   * text.
    */
-  handleFor(token: string): NoteHandle | null;
+  handleFor(token: string): NoteHandle | NoNote;
   /** Everything he has put away, newest first. */
   putAway(): Promise<DeletedNote[]>;
   /** The archive folders and how many texts each holds. Counted, not read. */
@@ -388,8 +394,8 @@ export function createWriting(
       return livesAt.get(handle) ?? null;
     },
 
-    handleFor(token: string): NoteHandle | null {
-      return byToken.get(token) ?? null;
+    handleFor(token: string): NoteHandle | NoNote {
+      return byToken.get(token) ?? NO_NOTE;
     },
 
     idle(): Promise<void> {

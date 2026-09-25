@@ -54,7 +54,12 @@ export function createHandles(): () => NoteHandle {
  * value in common the comparison is refused. `test/identity.test.ts` fails if
  * it ever stops being.
  */
-export const NO_TEXT: unique symbol = Symbol('no text open');
+export const NO_NOTE: unique symbol = Symbol('no note');
 
-/** What stands in for a text when there is not one. */
-export type NoText = typeof NO_TEXT;
+/**
+ * What stands in for a text where one could be.
+ *
+ * Named beside `NoteHandle` on purpose: a reader meeting `NoteHandle | NoNote`
+ * should not have to look up what the second half belongs to.
+ */
+export type NoNote = typeof NO_NOTE;
