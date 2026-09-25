@@ -10,11 +10,23 @@ import type {
   Note,
   NoteVersion,
 } from './note.ts';
+import { copyNumberOf } from './note-naming.ts';
 import { createNoteStore } from './note-store.ts';
 
 /** A text of his, and what it is called while the app runs. */
 export interface LiveNote extends Note {
   handle: NoteHandle;
+  /**
+   * Which of several texts sharing a name this one is — read off its filename,
+   * never counted, and null when it is alone in its name.
+   *
+   * Carried here rather than worked out where the list is drawn, which had the
+   * interface taking a filename apart to find it. `Pismo (2)` in the list is
+   * `Pismo (2).txt` in his folder, always: the one moment the number has to be
+   * right is the one where the app is not there to explain itself — him in the
+   * folder, on the telephone, opening his writing in Notepad.
+   */
+  copyNumber: number | null;
 }
 
 /** What the strip along the bottom needs to know about one text. */
@@ -315,7 +327,11 @@ export function createWriting(
 
     async list(): Promise<LiveNote[]> {
       const notes = await store.list();
-      return notes.map((note) => ({ ...note, handle: remember(note.id) }));
+      return notes.map((note) => ({
+        ...note,
+        handle: remember(note.id),
+        copyNumber: copyNumberOf(note.id),
+      }));
     },
 
     begin(): NoteHandle {

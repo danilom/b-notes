@@ -1,5 +1,4 @@
 import { type Language, describeWhen, strings } from '../language/wording.ts';
-import { fileNameBase } from '../notes/note-naming.ts';
 import type { NoteHandle } from '../notes/note-handle.ts';
 import {
   SPEAK_AFTER_FAILURES,
@@ -7,7 +6,6 @@ import {
   type Writing,
   createWriting,
 } from '../notes/writing.ts';
-import { titleFrom } from '../notes/note-title.ts';
 import {
   type Archive,
   type ArchivedNote,

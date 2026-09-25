@@ -1,3 +1,6 @@
+import { copyNumberOf } from '../src/notes/note-naming.ts';
+import type { NoteHandle } from '../src/notes/note-handle.ts';
+import type { LiveNote } from '../src/notes/writing.ts';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
@@ -5,8 +8,22 @@ import { toSearchable } from '../src/language/diacritics.ts';
 import type { Note } from '../src/notes/note.ts';
 import { type ListView, openRowFor, sectionsFor } from '../src/ui/note-list.ts';
 
-function note(title: string, text: string, updatedAt: number): Note {
-  return { id: title, title, text, searchable: toSearchable(text), updatedAt, bytes: text.length };
+let minted = 0;
+
+function note(title: string, text: string, updatedAt: number): LiveNote {
+  minted += 1;
+  return {
+    id: title,
+    title,
+    text,
+    searchable: toSearchable(text),
+    updatedAt,
+    bytes: text.length,
+    handle: minted as NoteHandle,
+    // These are titles with no number on them, which is what a text alone in
+    // its name looks like.
+    copyNumber: null,
+  };
 }
 
 const NOTES = [
@@ -114,8 +131,20 @@ describe('the list of texts', () => {
   });
 });
 
-function alike(id: string, title: string, updatedAt: number): Note {
-  return { id, title, text: title, searchable: toSearchable(title), updatedAt, bytes: title.length };
+function alike(id: string, title: string, updatedAt: number): LiveNote {
+  minted += 1;
+  return {
+    id,
+    title,
+    text: title,
+    searchable: toSearchable(title),
+    updatedAt,
+    bytes: title.length,
+    handle: minted as NoteHandle,
+    // Off the filename, which is the whole point of these: what the list shows
+    // and what the folder says cannot be allowed to disagree.
+    copyNumber: copyNumberOf(id),
+  };
 }
 
 const marksIn = (sections: ReturnType<typeof sectionsFor>, heading: string) =>

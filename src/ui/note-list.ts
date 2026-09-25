@@ -1,5 +1,4 @@
-import type { Note } from '../notes/note.ts';
-import { copyNumberOf } from '../notes/note-naming.ts';
+import type { LiveNote } from '../notes/writing.ts';
 import { toSearchable } from '../language/diacritics.ts';
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 
@@ -7,7 +6,7 @@ import { type Language, describeWhen, strings } from '../language/wording.ts';
 const RECENT_COUNT = 5;
 
 export interface ListView {
-  notes: readonly Note[];
+  notes: readonly LiveNote[];
   query: string;
   openId: string | null;
   /**
@@ -64,31 +63,23 @@ export function matches(row: { searchable: string }, query: string): boolean {
   return row.searchable.includes(needle);
 }
 
-function titleOf(note: Note, words: ReturnType<typeof strings>): string {
+function titleOf(note: LiveNote, words: ReturnType<typeof strings>): string {
   return note.title.length > 0 ? note.title : words.untitled;
 }
 
 /**
- * Which of several texts sharing a name this one is — read off its filename,
- * never counted.
+ * The number shown beside a title, or nothing.
  *
- * `Pismo (2)` in the list is `Pismo (2).txt` in his folder, always. The one
- * moment the number has to be right is the one where the app is not there to
- * explain itself: him in the folder, on the phone, opening his writing in
- * Notepad. A number worked out from the rows on screen would be a different
- * number from the one on the file, and would say so with complete confidence.
- *
- * Which is why nothing here decides whether to show it either. A text alone in
- * its name has no number to show, because the store takes it away — the last
- * of a group is renamed back to a plain name. So there is nothing to test for:
- * show what the file says, and the folder and the list cannot disagree.
+ * Only the brackets are decided here. Which number it is, and whether there is
+ * one at all, is read off the filename where the filenames live — a text alone
+ * in its name has none, because the store takes it away when a group drops to
+ * its last.
  */
-function markOf(note: Note): string | null {
-  const number = copyNumberOf(note.id);
-  return number === null ? null : `(${number})`;
+function markOf(note: LiveNote): string | null {
+  return note.copyNumber === null ? null : `(${note.copyNumber})`;
 }
 
-function toRow(note: Note, words: ReturnType<typeof strings>): Row {
+function toRow(note: LiveNote, words: ReturnType<typeof strings>): Row {
   return {
     id: note.id,
     title: titleOf(note, words),
