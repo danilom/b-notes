@@ -397,6 +397,15 @@ function afterWriting(written: NoteHandle[]): void {
   if (openHandle !== null && written.includes(openHandle)) {
     savedAt = Date.now();
     draft = null;
+    /*
+      Written down again, because the save may have renamed it.
+ 
+      The session file is the one place a name outlives the run, and it was
+      only ever written when he opened a text — so rewriting his first line
+      left it pointing at a name that had moved, and the text he was last in
+      came back as nothing the next morning.
+    */
+    remember(writing.tokenOf(openHandle));
   }
   // Always, even when nothing was written: a failure is the other thing the
   // strip has to hear about, and it says so on the second one in a row.
@@ -500,7 +509,7 @@ async function open(handle: NoteHandle): Promise<void> {
   editor.value = note.text;
   savedAt = note.updatedAt;
   draft = null;
-  remember(note.id);
+  remember(writing.tokenOf(handle));
   editor.setSelectionRange(0, 0);
   editor.scrollTop = 0;
   atFound = 0;
