@@ -1,5 +1,7 @@
 import { type Language, describeWhen, strings } from '../language/wording.ts';
+import { fileNameBase } from '../notes/note-naming.ts';
 import { createNoteStore } from '../notes/note-store.ts';
+import { titleFrom } from '../notes/note-title.ts';
 import {
   type Archive,
   type ArchivedNote,
@@ -190,15 +192,38 @@ let draft: Draft | null = null;
 let savedAt: number | null = null;
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
+/** Words that have not reached disk, and how many attempts in a row have failed. */
+interface Unsaved {
+  id: string | null;
+  text: string;
+  attempts: number;
+}
+
 /**
- * Words that have not reached disk, and how many attempts in a row have failed.
+ * Everything waiting to be written, by the name of the text it belongs to.
  *
  * Carried rather than read back from the editor when the attempt runs: by then
  * he may have opened another text, and what has to be written is what he typed,
  * not what happens to be in front of him.
+ *
+ * A map and not one slot, because one slot is one text: a second failure for
+ * another text evicted the first, and what it held was the only copy left of
+ * what he had written.
  */
-let unsaved: { id: string | null; text: string; attempts: number } | null = null;
+const unsaved = new Map<string, Unsaved>();
 let retryTimer: ReturnType<typeof setTimeout> | undefined;
+
+/**
+ * What to file a text under while it waits.
+ *
+ * `openId` is the file that exists, and is null until one does — but the name
+ * is knowable the whole time, because it is derived from his own first line.
+ * So a text that has never been written still has somewhere of its own to
+ * wait, rather than sharing a slot with whatever fails next.
+ */
+function waitingKey(id: string | null, text: string): string {
+  return id ?? fileNameBase(titleFrom(text));
+}
 
 /**
  * Said on the second failure in a row, not the first.
@@ -357,7 +382,15 @@ function whatIsHappening(): WhatIsHappening {
     // that Dropbox causes weekly left the report of the *previous* save on
     // screen — true about the file, false about what he had just typed.
     saving: saveTimer !== undefined || retryTimer !== undefined,
-    couldNotSave: (unsaved?.attempts ?? 0) >= SPEAK_AFTER_FAILURES,
+    /*
+      About the text in front of him, and only that one. A failure belongs to
+      the words it could not write; saying it over another text tells him his
+      writing is at risk where it is not, and there is nothing he could do
+      about the one he has left anyway — it goes on being attempted, silently,
+      for as long as the app is open.
+    */
+    couldNotSave:
+      (unsaved.get(waitingKey(openId, editor.value))?.attempts ?? 0) >= SPEAK_AFTER_FAILURES,
     notice,
   };
 }
@@ -421,6 +454,21 @@ async function flushPendingSave(): Promise<void> {
   await saveNow();
 }
 
+/**
+ * Everything still waiting, tried once more, now.
+ *
+ * Closing is the last moment any of it can be written: an attempt scheduled
+ * for thirty seconds' time is an attempt that will never run. The open text
+ * goes through `flushPendingSave` above; this is for the ones he left behind
+ * with words that never reached disk.
+ */
+async function flushEverythingWaiting(): Promise<void> {
+  if (unsaved.size === 0) return;
+  clearTimeout(retryTimer);
+  retryTimer = undefined;
+  await tryAgain();
+}
+
 async function saveNow(): Promise<void> {
   const text = editor.value;
   const was = openId;
@@ -431,15 +479,18 @@ async function saveNow(): Promise<void> {
   openId = id;
   savedAt = Date.now();
   /*
-    Nothing is waiting any more, and this is the line that stops the older words
-    being written over the newer ones. A failed save leaves its text waiting; if
-    he goes on typing, the save that follows succeeds with what he has now — and
-    the attempt still scheduled would otherwise wake a second later and put back
-    what he had then.
+    This text is not waiting any more, and this is the line that stops the older
+    words being written over the newer ones. A failed save leaves its text
+    waiting; if he goes on typing, the save that follows succeeds with what he
+    has now — and the attempt still scheduled would otherwise wake a second
+    later and put back what he had then.
+
+    Only this text. Clearing everything on any save at all was how a failure he
+    had left behind was thrown away by the next text he happened to write in.
   */
-  unsaved = null;
-  clearTimeout(retryTimer);
-  retryTimer = undefined;
+  unsaved.delete(id);
+  if (was === null) unsaved.delete(waitingKey(null, text));
+  scheduleRetry();
   draft = null;
   remember(id);
 
@@ -484,49 +535,72 @@ function scheduleSave(): void {
  * below — so the one sentence that mattered survived until his next keystroke.
  */
 function keepTrying(id: string | null, text: string, error: unknown): void {
-  const attempts = (unsaved?.attempts ?? 0) + 1;
-  unsaved = { id, text, attempts };
-  log.error('Could not save', { attempts, error: describeError(error) });
+  const key = waitingKey(id, text);
+  const attempts = (unsaved.get(key)?.attempts ?? 0) + 1;
+  unsaved.set(key, { id, text, attempts });
+  log.error('Could not save', { text: key, attempts, error: describeError(error) });
 
-  clearTimeout(retryTimer);
-  const wait = RETRY_AFTER_MS[Math.min(attempts, RETRY_AFTER_MS.length) - 1] ?? 30_000;
-  retryTimer = setTimeout(() => {
-    void tryAgain();
-  }, wait);
+  scheduleRetry();
   showStatus();
 }
 
+/** One timer for everything waiting, paced by whichever has failed most. */
+function scheduleRetry(): void {
+  clearTimeout(retryTimer);
+  if (unsaved.size === 0) {
+    retryTimer = undefined;
+    return;
+  }
+  const worst = Math.max(...[...unsaved.values()].map((each) => each.attempts));
+  const wait = RETRY_AFTER_MS[Math.min(worst, RETRY_AFTER_MS.length) - 1] ?? 30_000;
+  retryTimer = setTimeout(() => {
+    void tryAgain();
+  }, wait);
+}
+
 /**
- * One more attempt at what did not reach disk.
+ * One more attempt at everything that has not reached disk.
  *
- * Superseded rather than repeated when he has gone on typing: a save is already
- * scheduled for the newer words, and writing the older ones over them is the
- * one thing worse than not writing at all.
+ * Superseded rather than repeated where he has gone on typing in that same
+ * text: a save is already scheduled for the newer words, and writing the older
+ * ones over them is the one thing worse than not writing at all. Only that
+ * text, though — a save pending for whatever he is looking at now says nothing
+ * about the one he left behind, and dropping it on that reasoning is how his
+ * writing would go.
  */
 async function tryAgain(): Promise<void> {
   // Spent the moment it fires. Left set, it would stand for an attempt that is
   // waiting when none is, and the line would keep the silence it keeps for one.
   retryTimer = undefined;
-  const waiting = unsaved;
-  if (waiting === null) return;
-  if (saveTimer !== undefined) {
-    unsaved = null;
-    showStatus();
-    return;
+  const openKey = waitingKey(openId, editor.value);
+
+  for (const [key, waiting] of [...unsaved]) {
+    if (key === openKey && saveTimer !== undefined) {
+      unsaved.delete(key);
+      continue;
+    }
+    try {
+      const id = await store.save(waiting.id, waiting.text);
+      unsaved.delete(key);
+      if (id !== null && id === openId) savedAt = Date.now();
+      log.info('Saved after all', { text: key, attempts: waiting.attempts });
+    } catch (error: unknown) {
+      unsaved.set(key, { ...waiting, attempts: waiting.attempts + 1 });
+      log.error('Could not save', {
+        text: key,
+        attempts: waiting.attempts + 1,
+        error: describeError(error),
+      });
+    }
   }
 
-  try {
-    const id = await store.save(waiting.id, waiting.text);
-    unsaved = null;
-    if (id !== null && id === openId) savedAt = Date.now();
-    notes = await store.list();
-    draw();
-    showStatus();
-    log.info('Saved after all', { attempts: waiting.attempts });
-  } catch (error: unknown) {
-    keepTrying(waiting.id, waiting.text, error);
-  }
+  notes = await store.list();
+  draw();
+  scheduleRetry();
+  showStatus();
 }
+
+
 
 async function open(id: string): Promise<void> {
   await flushPendingSave();
@@ -1222,6 +1296,7 @@ export async function startApp(runningOn: Host): Promise<void> {
   host.onBeforeClose(async () => {
     try {
       await flushPendingSave();
+      await flushEverythingWaiting();
     } catch (error: unknown) {
       // Said here and nowhere else: the status line he would read it in is
       // leaving with the window. What should happen instead is the rescue

@@ -139,3 +139,64 @@ test('never writes the words he has left behind over the ones he has now', async
   expect(await fileCount(page)).toBe(files);
   await expect(page.locator('#status-text')).not.toHaveText('Poslednje izmene nisu sačuvane');
 });
+
+test('goes on trying for a text he has left, and does not warn him about it', async ({ page }) => {
+  const editor = page.locator('#editor');
+  const notes = page.locator('#list .note');
+
+  await notes.first().click();
+  await expect(editor).not.toHaveValue('');
+  const first = await editor.inputValue();
+  await editor.fill(`${first} Ostavljena.`);
+  await refuseTheNextWrites(page, 1);
+  await page.clock.runFor(900);
+
+  // Away to another text, and nothing typed there.
+  await notes.nth(1).click();
+  await expect(editor).not.toHaveValue(`${first} Ostavljena.`);
+
+  /*
+    Refused here rather than counted out in advance: opening a text writes
+    which one he had open, so a refusal set aside earlier is spent on that
+    instead of on the attempt this is about.
+  */
+  await refuseTheNextWrites(page, 1);
+  await page.clock.runFor(1200);
+
+  /*
+    Two failures now, which is what the line speaks for — but they belong to a
+    text he is not looking at. What is in front of him is written and safe, and
+    saying otherwise tells him his writing is at risk where it is not.
+  */
+  await expect(page.locator('#status-text')).not.toHaveText('Poslednje izmene nisu sačuvane');
+
+  // Still being attempted all the same, and it gets through.
+  await page.clock.runFor(60_000);
+  expect((await liveTexts(page)).some((text) => text.includes('Ostavljena.'))).toBe(true);
+});
+
+test('does not throw away one text because another one saved', async ({ page }) => {
+  /*
+    How this lost writing before the waiting texts were kept apart: a single
+    slot, cleared by any save that succeeded. He types in one, the write is
+    refused, he moves to another and writes there — and the words in the first
+    were dropped by the save of the second.
+  */
+  const editor = page.locator('#editor');
+  const notes = page.locator('#list .note');
+
+  await notes.first().click();
+  const first = await editor.inputValue();
+  await editor.fill(`${first} Ostavljena.`);
+  await refuseTheNextWrites(page, 1);
+  await page.clock.runFor(900);
+
+  await notes.nth(1).click();
+  await editor.fill(`${await editor.inputValue()} Druga.`);
+  await page.clock.runFor(1000);
+
+  await page.clock.runFor(60_000);
+
+  expect((await liveTexts(page)).some((text) => text.includes('Ostavljena.'))).toBe(true);
+  expect((await liveTexts(page)).some((text) => text.includes('Druga.'))).toBe(true);
+});
