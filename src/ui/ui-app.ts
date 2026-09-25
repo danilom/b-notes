@@ -52,8 +52,7 @@ import {
   keptOf,
   statusFor,
 } from './status-line.ts';
-import { type Stepper, createStepper } from './stepper.ts';
-import { type TextMatch, foundPanelFor, matchesIn } from './text-match.ts';
+import { type FindInText, createFindInText } from './find-in-text.ts';
 
 /** Long enough that he isn't saved mid-word, short enough to never lose a thought. */
 const AUTOSAVE_IDLE_MS = 800;
@@ -229,109 +228,8 @@ function draw(): void {
   drawArchiveBlock();
 }
 
-/**
- * Which of the matches in the open text he is standing on.
- *
- * Kept here rather than worked out from the scroll position, because he can
- * scroll away and come back and should not lose his place in the search.
- */
-let found: TextMatch[] = [];
-let atFound = 0;
-/** Built once the words are known, since its buttons are named in them. */
-let foundSteps: Stepper;
+let findInText: FindInText;
 
-/**
- * Paints the matches on the layer behind his writing.
- *
- * Built out of text nodes and `mark` elements rather than a string of HTML: his
- * writing is never turned into markup, so there is nothing in it that could be
- * read as markup — no escaping to get right, and no way for a stray angle
- * bracket in an essay to become part of the page.
- */
-function markMatches(): void {
-  const text = editor.value;
-  found = matchesIn(text, search.value);
-  atFound = Math.min(atFound, Math.max(0, found.length - 1));
-
-  showFound();
-
-  if (found.length === 0) {
-    editorMarks.replaceChildren();
-    return;
-  }
-
-  const pieces: Node[] = [];
-  let at = 0;
-  found.forEach(({ start, end }, index) => {
-    if (start > at) pieces.push(document.createTextNode(text.slice(at, start)));
-    const mark = document.createElement('mark');
-    if (index === atFound) mark.className = 'now';
-    mark.textContent = text.slice(start, end);
-    pieces.push(mark);
-    at = end;
-  });
-  // A trailing newline is not given a line of its own unless something follows
-  // it, so the layer would come up a line short of the textarea at the bottom.
-  pieces.push(document.createTextNode(`${text.slice(at)}
-`));
-
-  editorMarks.replaceChildren(...pieces);
-  editorMarks.scrollTop = editor.scrollTop;
-}
-
-/**
- * Says where he is among the matches, and offers the way to the next.
- *
- * Shown for a single match as well as for many. Hiding it there was considered
- * and is worse: as he types, the count falls away — 74, 12, 3, 1, none — and a
- * panel that vanished at one would go while a match was still highlighted in
- * front of him, which reads as the match having gone too.
- *
- * The buttons stay for the same reason, greyed rather than gone: they would
- * otherwise appear and disappear as he crosses between one match and two,
- * moving the panel twice in as many keystrokes. "Samo jednom" is what makes
- * that greying legible — there is one, so there is nowhere to go — where
- * "1 od 1" would only have counted him against himself.
- */
-function showFound(): void {
-  const panel = foundPanelFor(found, atFound, language);
-  foundPane.hidden = !panel.shown;
-  foundSteps.showing(panel.label, { canGoBack: panel.canGoBack, canGoOn: panel.canGoOn });
-}
-
-/**
- * Moves to the match before or after this one, round the ends.
- *
- * Stopping at the ends rather than wrapping. Wrapping kept both buttons alive,
- * but a list that silently starts over is worse than a button that is visibly
- * spent: he presses on, lands back at the first match, and has no way of
- * telling whether he has seen them all or lost his place. The greyed-out
- * button says where the end is before he reaches for it.
- */
-function stepThroughFound(direction: 1 | -1): void {
-  const next = atFound + direction;
-  if (next < 0 || next >= found.length) return;
-  atFound = next;
-  markMatches();
-  scrollToCurrentMatch();
-}
-
-/**
- * Brings the current match into view.
- *
- * A textarea cannot say where a character has ended up on screen, so the
- * position comes from the layer behind it, which is laid out identically and is
- * made of elements that can be asked. Placed a third of the way down rather than
- * at the very top, so he can see what comes before it and know where he is.
- */
-function scrollToCurrentMatch(): void {
-  const mark = editorMarks.querySelector('mark.now');
-  if (!(mark instanceof HTMLElement)) return;
-
-  const target = mark.offsetTop - editor.clientHeight / 3;
-  editor.scrollTop = Math.max(0, target);
-  editorMarks.scrollTop = editor.scrollTop;
-}
 
 /**
  * Aims the bubble's tail at the middle of the button it is talking about.
@@ -503,9 +401,9 @@ async function open(handle: NoteHandle): Promise<void> {
   remember(writing.tokenOf(handle));
   editor.setSelectionRange(0, 0);
   editor.scrollTop = 0;
-  atFound = 0;
-  markMatches();
-  scrollToCurrentMatch();
+  findInText.fromTheTop();
+  findInText.again(search.value);
+  findInText.scrollToCurrent();
   draw();
   showStatus();
   void countKeptOfOpen();
@@ -535,7 +433,7 @@ listPane.addEventListener('click', (event) => {
 search.addEventListener('keydown', (event) => {
   if (event.key !== 'Enter') return;
   event.preventDefault();
-  stepThroughFound(event.shiftKey ? -1 : 1);
+  findInText.step(event.shiftKey ? -1 : 1);
 });
 
 editor.addEventListener('scroll', () => {
@@ -549,7 +447,7 @@ editor.addEventListener('input', () => {
     draft = { startedAt: Date.now() };
     draw();
   }
-  markMatches();
+  findInText.again(search.value);
   typedSomething();
 });
 
@@ -561,7 +459,7 @@ editor.addEventListener('input', () => {
  */
 function searchChanged(): void {
   // A fresh search starts at the top of the text again.
-  atFound = 0;
+  findInText.fromTheTop();
   draw();
 
   // And at the top of the list. What he found goes above everything else, so
@@ -570,10 +468,10 @@ function searchChanged(): void {
   // having done nothing, or the word not being there. Nothing else moves the
   // list: opening a text and saving one both leave him where he was.
   listPane.scrollTop = 0;
-  markMatches();
+  findInText.again(search.value);
   // Only on a fresh search: once he is reading, moving the page under him would
   // be the app taking the text away from where he had put it.
-  scrollToCurrentMatch();
+  findInText.scrollToCurrent();
 }
 
 search.addEventListener('input', searchChanged);
@@ -585,8 +483,7 @@ newNote.addEventListener('click', () => {
   savedAt = null;
   editor.value = '';
   editorMarks.replaceChildren();
-  found = [];
-  showFound();
+  findInText.nothing();
 
   // The search belonged to whatever he was looking for before, and a new text
   // is not that. There is a precedent: a search isn't restored on startup
@@ -693,7 +590,7 @@ async function deleteOpenNote(id: string, handle: NoteHandle): Promise<void> {
   draft = null;
   remember(null);
   await reload();
-  markMatches();
+  findInText.again(search.value);
   // Said out loud for the same reason the restore is: the text left the editor
   // and left the list, and an empty screen on its own does not tell him whether
   // that was the thing he asked for.
@@ -842,8 +739,8 @@ async function bringBackVersion(text: string): Promise<void> {
   editor.value = text;
   editor.setSelectionRange(0, 0);
   editor.scrollTop = 0;
-  atFound = 0;
-  markMatches();
+  findInText.fromTheTop();
+  findInText.again(search.value);
   notice = words.restored;
   typedSomething();
   editor.focus();
@@ -1244,21 +1141,20 @@ export async function startApp(runningOn: Host): Promise<void> {
 
   writing = createWriting(host.files, host.writingFolder, log, afterWriting);
   newNoteLabel.textContent = words.newNote;
-  foundSteps = createStepper(
-    { previous: words.foundPrevious, next: words.foundNext, close: words.clearSearch },
-    {
-      onPrevious: () => stepThroughFound(-1),
-      onNext: () => stepThroughFound(1),
-      // The whole search, not merely these marks. Stopping the highlighting
-      // while the list stayed filtered would leave two thirds of his texts
-      // missing with nothing on screen left to explain why.
-      onClose: () => {
-        search.value = '';
-        searchChanged();
-      },
+  findInText = createFindInText({
+    editor,
+    marks: editorMarks,
+    panel: foundPane,
+    words: { previous: words.foundPrevious, next: words.foundNext, close: words.clearSearch },
+    languageNow: () => language,
+    // The whole search, not merely these marks. Stopping the highlighting
+    // while the list stayed filtered would leave two thirds of his texts
+    // missing with nothing on screen left to explain why.
+    onClear: () => {
+      search.value = '';
+      searchChanged();
     },
-  );
-  foundPane.append(foundSteps.root);
+  });
 
   /*
     Registered here rather than beside the others at the top of the file.
@@ -1272,7 +1168,7 @@ export async function startApp(runningOn: Host): Promise<void> {
     nothing was wrong.
   */
   window.addEventListener('resize', () => {
-    markMatches();
+    findInText.again(search.value);
   });
   newNote.prepend(icon('new-text'));
   appearanceLabel.textContent = words.appearance;
