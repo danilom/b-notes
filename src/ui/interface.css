@@ -329,7 +329,15 @@ body {
   /* Painted inside a transparent border so the thumb floats clear of the
      edge instead of being welded to it. */
   border: 3px solid transparent;
-  border-radius: 8px;
+  /*
+    Round ends rather than rounded corners, which is a larger number than it
+    looks. The radius is measured on the border box, so the painted shape's
+    corner comes out three smaller — an 8px radius on a 17px-wide thumb read
+    as 5px and stopped well short of a half-circle. Anything past half the
+    width clamps, so this asks for far more than it can have and gets the
+    ends exactly round.
+  */
+  border-radius: 999px;
   background: hsl(var(--grey-h) var(--surface) var(--l-thumb));
   background-clip: padding-box;
 }
