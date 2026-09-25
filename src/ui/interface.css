@@ -30,7 +30,7 @@
   --writing-leading: 1.65;
   --gutter-left: max(2rem, calc((100% - var(--measure)) * 0.4));
   --gutter-right: max(2rem, calc((100% - var(--measure)) * 0.6));
-  --scrollbar: 17px;
+  --scrollbar: 23px;
 
   /*
     Grey chrome, and the colour spent all in one place.
@@ -104,6 +104,7 @@
   --word-new-ink: var(--ink);
   --l-thumb: 82%;
   --l-thumb-hover: 68%;
+  --l-track-hover: 93%;
   --l-shadow: 12%;
   --shadow-alpha: 0.3;
   --swatch-edge: rgb(0 0 0 / 0.15);
@@ -216,6 +217,7 @@
   --word-new-ink: var(--added-ink);
   --l-thumb: 34%;
   --l-thumb-hover: 48%;
+  --l-track-hover: 26%;
   --l-shadow: 2%;
   --shadow-alpha: 0.6;
   --swatch-edge: rgb(255 255 255 / 0.25);
@@ -283,9 +285,10 @@ body {
   ours. Safe to style with the -webkit- pseudo-elements because Chromium
   is the only engine this will ever run in.
 
-  Wide rather than fashionable: the whole 17px is the target even though
-  only 11px of it is painted, and he is aiming with an unsteady hand on a
-  trackpad. Thin scrollbars are a young person's affordance.
+  Wide rather than fashionable: the whole 23px is the target even though
+  only 17px of it is painted, and he is aiming with an unsteady hand on a
+  trackpad. Thin scrollbars are a young person's affordance. Widened again
+  after watching him hunt for the old one.
 
   Wider, but no darker: the thumb sits at about 1.5:1 against the page,
   under what a control is usually asked to hold. Darkening it to clear
@@ -296,6 +299,25 @@ body {
 ::-webkit-scrollbar {
   width: var(--scrollbar);
   height: var(--scrollbar);
+  /*
+    An arrow over the bar, not the I-beam his writing gets.
+
+    A textarea's cursor covers its scrollbar too, so the pointer went on
+    saying "type here" over the one strip where typing does nothing — and
+    the shape of the pointer is how he tells one kind of place from another.
+  */
+  cursor: default;
+}
+
+/*
+  The whole strip answers, not only the thumb.
+
+  He hunts for the bar rather than for the thumb inside it, so the thing
+  that lights up has to be the thing he is aiming at. Faint: it says "this
+  is the place" and nothing more, beside writing he is in the middle of.
+*/
+::-webkit-scrollbar:hover {
+  background: hsl(var(--grey-h) var(--surface) var(--l-track-hover));
 }
 
 ::-webkit-scrollbar-track,
@@ -2385,7 +2407,16 @@ button:disabled {
   user-select: none;
 }
 
-/* Present, so it takes up its width; invisible, because it is not his. */
+/*
+  Present, so it takes up its width; invisible, because it is not his.
+
+  The hover that lights the strip elsewhere is turned off here too. His
+  writing sits over this layer and should take the pointer first, but that
+  is stacking order rather than intent, and a second scrollbar appearing
+  behind the first is not something to leave to it.
+*/
+#editor-marks::-webkit-scrollbar,
+#editor-marks::-webkit-scrollbar:hover,
 #editor-marks::-webkit-scrollbar-thumb,
 #editor-marks::-webkit-scrollbar-track {
   background: transparent;

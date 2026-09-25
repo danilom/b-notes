@@ -85,6 +85,13 @@ What does: code whose wrong answer still looks like an answer.
   five minutes, which is a long time to lose in the middle of iterating — so
   say what you'd run it for and wait to be told yes, rather than starting it
   and reporting afterwards. Offer the targeted form where one fits.
+- **Permission to run it is for the run you were given it for.** "Go ahead
+  without asking" covers the batch of work it was said about and expires with
+  it; it is not a standing arrangement, and carrying it into the next task is
+  how ten minutes gets spent on a change he was still tweaking.
+- **That a change is obviously a GUI change is a reason to run it, not a
+  reason to skip asking.** The cost is the same either way, and only he knows
+  whether he is done editing.
 
 ## Git
 
