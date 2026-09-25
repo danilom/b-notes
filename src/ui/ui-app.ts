@@ -7,8 +7,6 @@ import {
   createWriting,
 } from '../notes/writing.ts';
 import {
-  type Archive,
-  type ArchivedNote,
   type Note,
   isEmptyText,
 } from '../notes/note.ts';
@@ -26,7 +24,6 @@ import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
 import { openConfirmDialog } from './confirm-dialog.ts';
 import { openAdvancedPanel } from './advanced-panel.ts';
 import { showLostTexts } from './lost-texts.ts';
-import { openArchiveDialog } from './archive-dialog.ts';
 import { confirmationForDeleting } from './note-confirmations.ts';
 import { readSession, writeSession } from './app-session.ts';
 import {
@@ -38,7 +35,6 @@ import {
 import { icon } from './icons.ts';
 import { type Draft, renderList } from './note-list.ts';
 import { flashToast } from './toast.ts';
-import { archiveStripFor } from './archive-strip.ts';
 import {
   type WhatIsHappening,
   canDelete,
@@ -48,6 +44,7 @@ import {
 import { type FindInText, createFindInText } from './find-in-text.ts';
 import { type KeptCopiesView, createKeptCopies } from './kept-copies.ts';
 import { type PutAwayTexts, createPutAwayTexts } from './put-away-texts.ts';
+import { type ArchivedTexts, createArchivedTexts } from './archived-texts.ts';
 
 /** Long enough that he isn't saved mid-word, short enough to never lose a thought. */
 const AUTOSAVE_IDLE_MS = 800;
@@ -141,22 +138,8 @@ let showAppearanceOf: (appearance: Appearance) => void;
  */
 let notes: LiveNote[] = [];
 
-/**
- * The archive folders and their counts — names and sizes, never their texts.
- *
- * Read at startup because it decides whether the strip exists at all, and it
- * costs one directory listing per folder. What is *in* them is read only when
- * he asks, which is what `listArchived` is for.
- */
-let archives: Archive[] = [];
-/**
- * Whether the archive is being read right now.
- *
- * A flag rather than a disabled button, because the strip has no button to
- * disable any more. Reading six hundred texts takes long enough that he can
- * press again before the dialog arrives, and twice would read them twice.
- */
-let readingArchive = false;
+
+
 
 
 /**
@@ -202,12 +185,13 @@ let savedAt: number | null = null;
 function draw(): void {
   renderList(listPane, { notes, query: search.value, openId: openName(), draft, language });
   putAway.drawStrip();
-  drawArchiveBlock();
+  archived.drawStrip();
 }
 
 let findInText: FindInText;
 let keptCopies: KeptCopiesView;
 let putAway: PutAwayTexts;
+let archived: ArchivedTexts;
 
 
 /**
@@ -328,19 +312,6 @@ function showStatus(): void {
 }
 
 
-/**
- * The strip is there or it is not — there is no disabled state for it.
- *
- * Nothing he can do makes an archive, so an empty one is not a place he has
- * not been to yet. The label does not move when he searches either: these
- * texts are not in memory, and a count of matches here would be claiming to
- * have looked.
- */
-function drawArchiveBlock(): void {
-  const strip = archiveStripFor(archives, language);
-  archiveBlockLabel.textContent = strip.label;
-  archiveBlock.hidden = !strip.present;
-}
 
 
 
@@ -578,78 +549,7 @@ async function deleteOpenNote(id: string, handle: NoteHandle): Promise<void> {
 
 
 
-/**
- * Opens the archive, reading it first.
- *
- * The one place in the app that goes to disk because he pressed something, so
- * it says so: an import can be six hundred texts, and a button that does
- * nothing for a second is a button he presses again.
- */
-async function showArchive(): Promise<void> {
-  if (archivePane.open || readingArchive) return;
 
-  readingArchive = true;
-  let found: ArchivedNote[];
-  try {
-    found = await writing.archived(new Set(notes.map((note) => note.title)));
-  } catch (error: unknown) {
-    // A folder that is there and will not open. He gets a line he can read
-    // over the telephone; the reason goes where it can be looked at.
-    notice = words.archiveUnreadable;
-    showStatus();
-    log.error('Could not read the archive', describeError(error));
-    return;
-  } finally {
-    readingArchive = false;
-  }
-
-  log.info('Looked at the archive', { count: found.length, archives: archives.length });
-  const close = openArchiveDialog(archivePane, { archived: found, query: search.value }, language, {
-    onClose: () => {
-      close();
-      // Back to the strip he came in by, which is the control now.
-      archiveBlock.focus();
-    },
-    onBringBack: (note: ArchivedNote) => {
-      close();
-      void bringBackNote(note);
-    },
-  });
-}
-
-/**
- * Moves one text out of an archive and into his list, then opens it.
- *
- * Opened rather than merely listed, for the same reason a restored text is: he
- * asked for this text, and leaving him to find it in six hundred others would
- * be answering a question with a question.
- */
-async function bringBackNote(note: ArchivedNote): Promise<void> {
-  // Anything still on its way to disk lands first. Bringing a text in can
-  // rename the one he is in — it claims a name in his list — and a save
-  // landing afterwards would write his open text back under the old name.
-  await writing.flush();
-
-  let back: NoteHandle;
-  try {
-    back = await writing.bringBack(note.archive, note.id);
-    archives = await writing.archives();
-    await reload();
-  } catch (error: unknown) {
-    notice = words.archiveNotBrought;
-    showStatus();
-    log.error('Could not bring a text in from the archive', {
-      archive: note.archive,
-      id: note.id,
-      failure: describeError(error),
-    });
-    return;
-  }
-
-  log.info('Brought a text in from the archive', { archive: note.archive, from: note.id, id: back });
-  notice = words.archiveBrought;
-  await open(back);
-}
 
 
 
@@ -768,14 +668,14 @@ deletedBlock.addEventListener('click', () => {
   if (!deletedSee.disabled) putAway.show();
 });
 archiveBlock.addEventListener('click', () => {
-  void showArchive();
+  void archived.show();
 });
 // A real button answers both of these on its own. This one is a strip wearing
 // the role, so it has to answer them itself or the archive is mouse-only.
 archiveBlock.addEventListener('keydown', (event: KeyboardEvent) => {
   if (event.key !== 'Enter' && event.key !== ' ') return;
   event.preventDefault();
-  void showArchive();
+  void archived.show();
 });
 seeVersions.addEventListener('click', () => keptCopies.show());
 
@@ -879,6 +779,29 @@ export async function startApp(runningOn: Host): Promise<void> {
 
   writing = createWriting(host.files, host.writingFolder, log, afterWriting);
   newNoteLabel.textContent = words.newNote;
+  archived = createArchivedTexts({
+    pane: archivePane,
+    strip: archiveBlock,
+    stripLabel: archiveBlockLabel,
+    writing,
+    log,
+    languageNow: () => language,
+    /*
+      The titles he already has, handed over rather than read again. The whole
+      corpus is in memory here, and reading six hundred files a second time to
+      learn their first lines would double what this costs to answer a question
+      that is already answered.
+    */
+    liveTitlesNow: () => new Set(notes.map((note) => note.title)),
+    queryNow: () => search.value,
+    refresh: reload,
+    openText: open,
+    say: (said) => {
+      notice = said;
+      showStatus();
+    },
+  });
+
   putAway = createPutAwayTexts({
     pane: deletedPane,
     confirmPane,
@@ -990,10 +913,7 @@ export async function startApp(runningOn: Host): Promise<void> {
    * instead, and used to take the whole startup down as an unhandled rejection:
    * he was left looking at the frame of an app that never filled in.
    */
-  async function readEverything(): Promise<{
-    notes: LiveNote[];
-    archives: Archive[];
-  }> {
+  async function readEverything(): Promise<{ notes: LiveNote[] }> {
     // Before anything is listed: a note still in another format is one he can't
     // open without this app, which is the guarantee .txt was chosen for.
     const { notes: live, converted } = await writing.load();
@@ -1020,8 +940,8 @@ export async function startApp(runningOn: Host): Promise<void> {
       that answer has to be right from the first paint rather than arriving a
       moment later and pushing the list up under him.
     */
-    const [, kept] = await Promise.all([putAway.read(), writing.archives()]);
-    return { notes: live, archives: kept };
+    await Promise.all([putAway.read(), archived.read()]);
+    return { notes: live };
   }
 
   function cannotReachHisWriting(because?: string): void {
@@ -1053,7 +973,7 @@ export async function startApp(runningOn: Host): Promise<void> {
   }
 
   try {
-    ({ notes, archives } = await readEverything());
+    ({ notes } = await readEverything());
   } catch (error: unknown) {
     log.error('Could not read his writing at all', describeError(error));
     // Verbatim. It is the only thing that tells a disconnected drive from a
