@@ -12,11 +12,23 @@ import { describe, it } from 'node:test';
 const SOURCE = 'src';
 
 
+/**
+ * Every source file under a folder, however deep.
+ *
+ * Deep rather than flat, and that is the whole of the point: it read only the
+ * files sitting directly in the folder, so the first subfolder anyone made
+ * would have taken its contents out from under every rule here without a
+ * single test going red.
+ */
 async function sourceFiles(folder: string): Promise<string[]> {
   const entries = await readdir(path.join(SOURCE, folder), { withFileTypes: true });
-  return entries
-    .filter((entry) => entry.isFile() && entry.name.endsWith('.ts'))
-    .map((entry) => path.join(SOURCE, folder, entry.name));
+  const found: string[] = [];
+  for (const entry of entries) {
+    const at = path.join(folder, entry.name);
+    if (entry.isDirectory()) found.push(...(await sourceFiles(at)));
+    else if (entry.name.endsWith('.ts')) found.push(path.join(SOURCE, at));
+  }
+  return found;
 }
 
 async function importsIn(file: string): Promise<string[]> {
