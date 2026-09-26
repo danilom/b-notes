@@ -165,6 +165,19 @@
   --found: hsl(var(--accent-h) var(--strong) var(--l-found));
   /* Whatever can be read on top of a solid accent, either way up. */
   --on-chosen: hsl(var(--grey-h) var(--muted) var(--l-on-chosen));
+
+  /*
+    The little page beside a title, and the writing on it.
+
+    A pale sheet with the writing a shade firmer on top. On white, a sheet
+    drawn as an outline was the louder thing in the row — the edge is what
+    catches the eye, and the edge is the part that says nothing. Filling it
+    instead puts the weight where the meaning is: the lines.
+  */
+  --sheet-alpha: 0.15;
+  --written: currentColor;
+  --written-alpha: 0.6;
+  --written-width: 1.7;
 }
 
 /*
@@ -236,6 +249,20 @@
   --l-shadow: 2%;
   --shadow-alpha: 0.6;
   --swatch-edge: rgb(255 255 255 / 0.25);
+
+  /*
+    The page turns over too, and not by dimming the light treatment.
+
+    A pale sheet with paler writing on it disappears against a dark row, so the
+    sheet takes the grey and the writing is cut out of it in the page colour —
+    the lines are holes rather than marks. It reads as writing for the same
+    reason a window reads as a window at night: what is lit and what is not have
+    swapped, and the shape is unchanged.
+  */
+  --sheet-alpha: 0.3;
+  --written: var(--page);
+  --written-alpha: 1;
+  --written-width: 2;
 }
 
 /* Carries the same tenth into every padding, gap and width below. */
@@ -623,17 +650,42 @@ button svg {
   lands in a different place on every line. Leading, they make a column he can
   run his eye down, and the titles stay aligned with each other as before.
 
-  The same faint grey as the date, and no darker. It answers a question he did
+  Never darker than the date, and mostly lighter. It answers a question he did
   not ask, so it must not compete with the title, which answers the one he did.
+  Both modes take the date's grey as their one colour and work in opacities off
+  it, so whatever the date does the page follows.
 */
 .note-length {
   flex: none;
-  width: 1em;
-  height: 1em;
+  /*
+    Bigger than the words beside it, which an icon normally is not. It can be,
+    because it is pale enough not to compete: a glyph at the title's own size had
+    to be drawn darker to be read at all, and then it was the first thing in the
+    row. Larger and fainter answers the question more quietly than smaller and
+    firmer.
+
+    It is now the tallest thing in a row, so the row is a few pixels deeper than
+    it was. Worth it twice over: the page has room to be read, and the thing he
+    has to hit with a mouse got bigger.
+  */
+  width: 1.45em;
+  height: 1.45em;
   color: var(--faint);
   /* Set against the title's baseline rather than the row's, so it sits with
      the words instead of floating above them. */
   align-self: center;
+}
+
+.note-sheet {
+  fill: currentColor;
+  fill-opacity: var(--sheet-alpha);
+}
+
+.note-written {
+  fill: none;
+  stroke: var(--written);
+  stroke-opacity: var(--written-alpha);
+  stroke-width: var(--written-width);
 }
 
 .note-title {

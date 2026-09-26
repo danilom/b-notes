@@ -91,6 +91,26 @@ function markOf(note: LiveNote): string | null {
   return note.copyNumber === null ? null : `(${note.copyNumber})`;
 }
 
+/** The sheet, with its top-right corner turned down. */
+const SHEET = 'M5 2h9l5 5v15H5z';
+
+/**
+ * Where each line of writing goes, filled from the top.
+ *
+ * Four fixed places rather than a loop over an offset, because the first and
+ * last are not like the middle two. The first is short and tucks up beside the
+ * turned corner, which would otherwise be the one part of the page that never
+ * gets written on; the last is short across and stops well clear of the bottom
+ * edge, the way a paragraph ends. Every band draws the same slot the same way,
+ * so two rows can be compared by their lines rather than by their spacing.
+ */
+const LINES = [
+  'M7.5 5h4.5',
+  'M7.5 9.2h9',
+  'M7.5 13.4h9',
+  'M7.5 17.6h6.5',
+] as const;
+
 /**
  * A page with as much written on it as the text has in it.
  *
@@ -99,31 +119,30 @@ function markOf(note: LiveNote): string | null {
  * be learned. Four is as many lines as tell apart at this size, and a page
  * with none says the text is empty — which he can otherwise only find out by
  * opening it.
+ *
+ * Shape only. What colour the sheet and the writing are is in the stylesheet,
+ * because the two modes do not agree: light fills a pale sheet and writes on it
+ * a little darker, dark fills a firmer sheet and takes the writing out of it in
+ * the page colour. Same geometry either way, so nothing here has to know which
+ * mode it is in.
  */
 function pageGlyph(band: LengthBand): SVGElement {
   const svg = document.createElementNS(SVG_NS, 'svg');
-  svg.setAttribute('viewBox', '0 0 16 16');
+  svg.setAttribute('viewBox', '0 0 24 24');
   svg.setAttribute('class', 'note-length');
-  svg.setAttribute('fill', 'none');
-  svg.setAttribute('stroke', 'currentColor');
-  svg.setAttribute('stroke-width', '1.2');
   svg.setAttribute('stroke-linecap', 'round');
-  svg.setAttribute('stroke-linejoin', 'round');
   svg.setAttribute('aria-hidden', 'true');
   svg.setAttribute('focusable', 'false');
 
-  // A corner turned down, which is what makes it read as a page rather than
-  // as a box with lines in it.
-  const page = document.createElementNS(SVG_NS, 'path');
-  page.setAttribute('d', 'M3.5 1.5h6l3 3v10h-9z M9.5 1.5v3h3');
-  svg.append(page);
+  const sheet = document.createElementNS(SVG_NS, 'path');
+  sheet.setAttribute('class', 'note-sheet');
+  sheet.setAttribute('d', SHEET);
+  svg.append(sheet);
 
-  // From the top down, so a short text is a page begun rather than one with
-  // writing stranded in the middle of it.
-  for (let line = 0; line < band; line += 1) {
+  for (const line of LINES.slice(0, band)) {
     const written = document.createElementNS(SVG_NS, 'path');
-    const y = 7 + line * 2;
-    written.setAttribute('d', `M5.5 ${y}h5`);
+    written.setAttribute('class', 'note-written');
+    written.setAttribute('d', line);
     svg.append(written);
   }
 
