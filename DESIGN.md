@@ -19,18 +19,71 @@ The consequences that shape the code:
 - Errors are our problem, not his — recover silently where possible; never surface a stack trace, error code, or a question he can't answer.
 - Files live in a Dropbox folder so they're backed up and synced. He must never need to know that.
 - He uses several machines, including old ones, and tends to reach for the slowest. Assume a 4GB spinning-disk laptop: keep the renderer lean and don't pull in heavy UI or editor libraries.
-- Because several machines sync the same folder, Dropbox *will* eventually produce conflicted copies (`essay (Brano's conflicted copy 2026-09-18).md`). Detect them, never show him that filename, and resolve them without asking him to choose between two files he can't tell apart. This is the most likely way he loses work.
+- Because several machines sync the same folder, Dropbox *will* eventually produce conflicted copies (`essay (Brano's conflicted copy 2026-09-18).md`). Detect them, never show him that filename, and resolve them without asking him to choose between two files he can't tell apart. Never hide one: until it is resolved, it is his writing. In practice an old name brought back by another machine's Resoph is far more common than a conflicted copy — see *His files are Resoph's* below.
 - A laptop left off for months comes back running an old build. An older version must never corrupt a file written by a newer one, so keep the on-disk format boring and forward-compatible.
 - Only ever one instance. When nothing appears to happen he will click the icon again, and two copies autosaving into the same folder race each other.
 - A window he cannot see is, to him, work that is gone. Window behaviour is a data-safety concern here, not polish.
-- Roughly 600 texts, possibly more. Search is the primary way he finds anything, not scrolling.
+- About 1,200 texts in his live folder, 11 MB, the largest near 300 KB — twice what the first design assumed. Search is the primary way he finds anything, not scrolling.
 - Assume his screen is warm. Windows Night Light (and any f.lux-alike) pulls blue down hard, so a palette that leans on faint tints falls apart on it — a two-point green tint arrives at the eye as amber. The chrome is therefore neutral and the colour is spent on the accent, and contrast is checked at 2400K as well as at 6500K. Never judge colour on a screen with it switched on without saying so.
 - He writes Serbian in Latin script and frequently drops the diacritics (`sdzcc` for `šđžčć`). Search must match with or without them, in both directions, or he won't find his own writing.
 - UI text is Serbian (Latin) and English, Serbian first. Keep every string in one place from the start — retrofitting that later is the expensive version.
 - The app addresses him as *ti*, never *vi* — direct singular imperative, `Obriši` not `Obrišite`. It speaks ekavian (`pre`, not `prije`) even though he writes ijekavian: both read as ordinary Serbian to him, and ekavian is shorter, which matters in the narrow column beside his titles. Sample prose in the test corpus stays ijekavian — that stands in for his writing, not for the app's voice.
-- He arrives with several hundred existing texts in `.txt`/`.md` and/or ResophNotes XML, already containing near-duplicate drafts of the same essay. Migration is part of the versioning design, not a separate import chore.
+- He arrives with his whole corpus in ResophNotes' folder and format (below), already containing near-duplicate drafts of the same essay and many byte-identical copies. Migration is part of the versioning design, not a separate import chore.
 
 When the tradeoff is between "powerful" and "impossible to get wrong", choose impossible to get wrong.
+
+### His files are Resoph's
+
+He writes in ResophNotes and will keep doing so until b-notes is clearly
+better. Years of moving him to Simplenote, Notepad, GMail drafts and Obsidian
+didn't stick. So b-notes shares his Resoph folder with Resoph itself, often with
+both open at once, on three or four machines that sync through Dropbox after
+long offline stretches. **b-notes is not the only writer of these files, and
+won't be for the foreseeable future.** The evidence behind everything in this
+section is in `CORPUS-ANALYSIS.md`.
+
+**Resoph keeps a note's title in the filename and writes only the rest into the
+file.** In Resoph the title shows as the first line of the note, and editing
+that line renames the file. Opened directly, the file has no title: its first
+line is his opening sentence, a section number or a note to himself. Of the
+~890 files in his folder that Resoph last wrote, 25 have their title inside
+them. The exceptions are texts from a 2023 Simplenote export that Resoph hasn't
+rewritten since; those also carry the title as their first line. Confirmed by
+hand in Resoph, on one file so far.
+
+What follows:
+
+- **A Resoph note is its filename plus its file.** The title is the filename
+  read through Resoph's escapes: `%2A` is `*`, `%3F` `?`, `%2F` `/`, `%5C` `\`,
+  `%3A` `:`, `%09` a tab. The text is what the file holds. Taking the title
+  from the file's first line shows him 1,200 opening sentences and a list he
+  doesn't recognise, which is what 0.7.0 did.
+- **Every name on disk is valid.** More than a quarter of his names begin or end
+  with spaces, and many carry escapes and marks. Explorer can't make these
+  names, Windows 11 Notepad shows them as blank tabs, and Windows' own zip
+  refuses them — but they are his titles, and none may be refused. 0.7.0
+  refused them, and his edits to three texts never reached the disk.
+- **His filing lives in his titles.** Leading spaces rank a text (more spaces
+  sort higher), and so do `*` and `AA`; `(UP)` with a number orders a
+  collection; `(E)` and `(P)` mark kinds; `zz` sinks; words in brackets give a
+  status. It only works in title order. He does organise, constantly, but in
+  his own way and never through a feature built for it.
+- **Resoph rewrites from memory any note whose file has gone.** A rename or
+  move made while Resoph runs is undone within minutes, and one made on any
+  machine can be undone later by another machine's Resoph. In the 0.7.0 test
+  b-notes renumbered eight names at each start, Resoph wrote them back each
+  time, and his list grew by nineteen texts in two hours. So **b-notes renames
+  nothing of his**, and anything that moves a file — deleting, restoring,
+  bringing back from the archive — waits until Resoph isn't running. His own
+  title edits in Resoph are the same kind of rename, and are where most of his
+  identical copies came from.
+- **Files change underneath b-notes.** Resoph, Notepad and Dropbox all write
+  them. Before writing a file, check it is still what b-notes last read; if it
+  isn't, keep both.
+- **His filenames will have to be cleaned up eventually**, and not by renaming
+  in place, for the reason above. The shape recorded in `CORPUS-ANALYSIS.md`
+  §9 is copying out into a folder of b-notes' own, once Resoph no longer
+  writes the old one anywhere.
 
 Where the app's own words go, on any screen that shows him something and asks
 him to decide:

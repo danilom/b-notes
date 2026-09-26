@@ -33,8 +33,10 @@ With hundreds of notes, search is how he finds anything.
 
 ## How he works
 
-- Not systematic. He will not name, file, tag or organise anything, and any
-  feature that depends on him doing so will go unused.
+- Not systematic. Any feature that depends on him organising *our* way will go
+  unused. He does organise, constantly and in several overlapping schemes, but
+  only in his titles: spaces to rank, `*`, `(UP)` with a number, `AA`, `zz`,
+  status words in brackets (see `DESIGN.md`, *His files are Resoph's*).
 - Very messy in practice: in ResophNotes he routinely ends up with three or five
   variants of the same text, differing slightly, and then can't tell which one is
   the latest or which he actually meant to edit.
@@ -51,6 +53,14 @@ With hundreds of notes, search is how he finds anything.
 From a filename listing of a Simplenote backup (~590 live notes plus ~95 in
 trash). His titles are his first lines, so they are content and are not
 reproduced here.
+
+**Read this section against his real folder.** In 2026 his live ResophNotes
+folder turned out to hold about 1,200 texts, stored the way Resoph stores
+them: the title in the filename and only the rest in the file. Simplenote had
+flattened that away. Some of what follows holds (he versions by copying,
+pinning matters, jots sit beside essays). Some doesn't: he organises far more
+than this shows, and the sizes are twice these. `CORPUS-ANALYSIS.md` has the
+real folder, and `DESIGN.md` what follows from it.
 
 - **Pinning is his one organising habit, and he does it well.** Of 592 live
   notes, 113 are pinned. Their median lifespan — creation to last edit — is 516
@@ -145,7 +155,8 @@ Two anecdotes that say a lot:
 
 - **ResophNotes** — his mainstay, and he kind of liked it. Last real update 2018;
   the recent release is only a rebuild. Effectively unsupported. Some of his data
-  losses may have been its sync. Stores notes as plain XML.
+  losses may have been its sync. Stores each note as a plain text file named
+  after its title, with the title itself left out of the file.
 - **Simplenote** — possibly, alongside or before Resoph. A 2021 Simplenote backup
   holds on the order of **600 notes**; the current figure is unknown.
 - **Notepad, GMail drafts, Obsidian** — all tried, none stuck. Not certain why in
