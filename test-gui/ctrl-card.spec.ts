@@ -27,13 +27,20 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#list .note').first()).toBeVisible();
   await page.locator('#list .note').first().click();
+  // Clicked into, not merely opened. Opening a text leaves the caret out of
+  // it, the way the program he has used for years does.
+  await page.locator('#editor').click();
   await expect(page.locator('#editor')).toBeFocused();
 });
 
-test('opening a text puts the caret in it, which is what the card answers to', async ({ page }) => {
-  // It did not, and nothing noticed: he clicked a text, held Ctrl, and nothing
-  // happened, because the focus was still on the list he clicked.
-  await expect(page.locator('#editor')).toBeFocused();
+test('says nothing until he has put the caret in his writing', async ({ page }) => {
+  // Those keys do nothing while the caret is elsewhere, so neither does this.
+  await page.locator('#list .note').nth(1).click();
+
+  await holdCtrl(page);
+  await page.clock.runFor(2000);
+
+  await expect(card(page)).toBeHidden();
 });
 
 test('shows what he can do once he has held it long enough', async ({ page }) => {

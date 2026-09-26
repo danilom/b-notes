@@ -337,11 +337,14 @@ async function open(handle: NoteHandle): Promise<void> {
   draft = null;
   remember(writing.tokenOf(handle));
   /*
-    The caret goes into his writing, which it did not before: he clicked a text
-    to write in it, and everything that answers a key — the card of shortcuts
-    most of all — answers only while the caret is here.
+    The caret is deliberately not put in his writing. Resoph does not do it,
+    and he has used Resoph for years — and the caret would land at position
+    zero, which is his opening line, which is the filename: an absent-minded
+    keystroke into a text he has just opened would rename it and move it in
+    the list. The card of shortcuts answers only while the caret is here, so
+    it waits until he clicks in, which is also when those keys start meaning
+    anything.
   */
-  editor.focus();
   editor.setSelectionRange(0, 0);
   editor.scrollTop = 0;
   findInText.fromTheTop();
