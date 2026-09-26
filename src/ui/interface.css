@@ -626,7 +626,15 @@ button svg {
   display: flex;
   justify-content: space-between;
   gap: 0.6rem;
-  align-items: baseline;
+  /*
+    Centred rather than sharing a baseline, because the tallest thing in the row
+    is now a drawing and not a word. Baseline alignment puts the words at the top
+    of the row and lets the slack fall underneath, which left the title sitting
+    two pixels above the middle of the page beside it — close enough to look like
+    a mistake rather than a choice. The date gives up about a pixel of shared
+    baseline with the title for it, at a size where nobody can see that.
+  */
+  align-items: center;
 }
 
 .note:hover {
@@ -671,9 +679,6 @@ button svg {
   width: 1.45em;
   height: 1.45em;
   color: var(--faint);
-  /* Set against the title's baseline rather than the row's, so it sits with
-     the words instead of floating above them. */
-  align-self: center;
 }
 
 .note-sheet {
