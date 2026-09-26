@@ -625,9 +625,17 @@ button svg {
 }
 
 .note {
-  padding: 0.5rem 0.9rem;
+  /*
+    The stripe that marks the chosen row is a border, so it takes its width out
+    of the row before the padding starts and every row is indented by it —
+    against a heading and a search box that are not. Four pixels is little
+    enough to pass as a gap and too much to pass as alignment. Giving the left
+    padding the width back puts the page glyph on the same line as both.
+  */
+  --mark-width: 4px;
+  padding: 0.5rem 0.9rem 0.5rem calc(0.9rem - var(--mark-width));
   cursor: pointer;
-  border-left: 4px solid transparent;
+  border-left: var(--mark-width) solid transparent;
   display: flex;
   justify-content: space-between;
   gap: 0.6rem;
