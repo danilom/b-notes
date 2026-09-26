@@ -131,7 +131,7 @@ function pageGlyph(band: LengthBand): SVGElement {
   // The sheet's own bounds, not a square around it. A square box carried four
   // or five pixels of empty margin into a row that has none to spare, and no
   // amount of adjusting the padding could reach it: it was inside the picture.
-  svg.setAttribute('viewBox', '5 2 15 20');
+  svg.setAttribute('viewBox', '5 2 14 20');
   svg.setAttribute('class', 'note-length');
   svg.setAttribute('stroke-linecap', 'round');
   svg.setAttribute('aria-hidden', 'true');

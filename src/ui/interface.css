@@ -683,7 +683,7 @@ button svg {
 .note-length {
   flex: none;
   /*
-    About as tall as the title's line and three quarters as wide, which is the
+    About as tall as the title's line and seven tenths as wide, which is the
     shape of the sheet the box now holds. Drawn a shade taller than the words to
     be read at all — it is pale enough that it can be, without becoming the
     first thing in the row.
@@ -692,7 +692,7 @@ button svg {
     cannot be squashed by changing one and forgetting the other.
   */
   height: 1.21em;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 7 / 10;
   color: var(--faint);
 }
 
