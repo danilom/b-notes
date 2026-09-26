@@ -1,5 +1,6 @@
 import { type Language, strings } from '../language/wording.ts';
 import { NO_NOTE, type NoNote, type NoteHandle } from '../notes/note-handle.ts';
+import { countWords } from '../notes/word-count.ts';
 import {
   type LiveNote,
   SPEAK_AFTER_FAILURES,
@@ -173,6 +174,14 @@ let notice: string | null = null;
  */
 let draft: Draft | null = null;
 let savedAt: number | null = null;
+/**
+ * How many words were in the open text when it last reached disk.
+ *
+ * Taken at the save rather than as he types: counting a long essay on every
+ * keystroke is work nobody asked for, and the line it appears on is blank
+ * while a save is waiting anyway.
+ */
+let savedWords = 0;
 
 
 
@@ -219,6 +228,7 @@ function whatIsHappening(): WhatIsHappening {
     openId: openName(),
     text: editor.value,
     savedAt,
+    savedWords,
     // Another attempt at a save that failed is a save still on its way, and
     // the line stays silent for it the same way. Without this, the one failure
     // that Dropbox causes weekly left the report of the *previous* save on
@@ -257,6 +267,7 @@ function typedSomething(): void {
 function afterWriting(written: NoteHandle[]): void {
   if (openHandle !== NO_NOTE && written.includes(openHandle)) {
     savedAt = Date.now();
+    savedWords = countWords(editor.value);
     draft = null;
     /*
       Written down again, because the save may have renamed it.
@@ -334,6 +345,7 @@ async function open(handle: NoteHandle): Promise<void> {
   openHandle = handle;
   editor.value = note.text;
   savedAt = note.updatedAt;
+  savedWords = countWords(note.text);
   draft = null;
   remember(writing.tokenOf(handle));
   /*
