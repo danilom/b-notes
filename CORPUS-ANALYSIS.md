@@ -13,8 +13,8 @@ Sources:
   and all text past the first thirty words blanked (`scripts/anonymize-corpus.mjs`).
 - `testdata/real-redacted-report.json` — the anonymizer's census.
 - Danilo's observations of him using 0.7.0 for about an hour on 2026-09-26, and
-  his notes from it in `TODO.md` (*Brano user test 2026-09-26*). The b-notes log
-  from one of the machines exists and hasn't been read yet.
+  his notes from it in `TODO.md` (*Brano user test 2026-09-26*), and the
+  b-notes logs from that test on one machine.
 - The b-notes source at `e766b3b`, for what the app currently does.
 
 His titles are his writing, so none is quoted here and this file can be
@@ -67,54 +67,67 @@ Where a finding is a hypothesis rather than a count, it says so.
 
 ## 2. How he names, titles, structures and files
 
-### 2.1 The filename is his title. The first line is not.
+### 2.1 Resoph keeps the title in the filename, not in the file
 
-Comparing each live filename with the first line of its text:
+**This is the most important finding here, and it isn't something he did.**
+Resoph appears to store a note as two parts: the title becomes the filename,
+and only the rest is written into the file. In Resoph the title shows as the
+first line of the note, and editing that line renames the file — which is why
+Resoph "renames by the first line" and why there is no title field to find.
+Anything opening the file directly — Notepad, b-notes — sees the text *without
+its title*.
 
-| relation | live | Simplenote / Dell archives | HP 2023 archive |
-| --- | ---: | ---: | ---: |
-| name is the first line (exactly, or up to spacing) | 292 (24%) | ~85% | 0% |
-| name is his marks + the first line, or a truncation of it | 197 (16%) | ~7% | 2% |
-| loosely related | 33 | 3% | 2% |
-| **no relation at all** | **682 (56%)** | **1 file** | **91%** |
-| empty file | 7 | | |
+The evidence, from three angles:
 
-Simplenote named files after the first line and nothing else. In Resoph, from at
-least September 2023 on, **he names the file and the first line goes its own
-way.** Resoph set the name from the first line when a note was created; he then
-changed the name.
+- **By where a file last came from.** Files dropped into the folder from a
+  Simplenote export in September 2023 and not written by Resoph since: name
+  equals first line in 284 of 320. Every file Resoph has written, from the HP
+  laptop import in 2023 through to 2026: name equals first line in **25 of
+  888**.
 
-What his first lines hold instead is telling. Of 1,208 non-empty live texts:
+  | last written by | name = first line | related | unrelated |
+  | --- | ---: | ---: | ---: |
+  | Simplenote export, 2023-09-16, untouched since | 284 | 31 | 5 |
+  | Resoph (HP import 2023, and everything 2024–2026) | 25 | 167 | 696 |
 
-- 100 first lines are four characters or fewer — often a bare section number
+- **Against Simplenote.** Simplenote keeps a note as one piece of text, title
+  first. For texts whose Resoph name looks unrelated to the file's first line
+  and which also exist in the Simplenote export, the Simplenote copy starts
+  with a line matching the Resoph filename in 121 cases, and the Resoph file
+  simply lacks that line. That's the title, moved out of the text and into the
+  name.
+- **Against the November 2024 snapshot.** Since then 155 texts changed name
+  while the file's content, first line included, stayed byte-for-byte the same,
+  and in 14 of 14 texts whose file first line changed, the name didn't follow.
+  Both are what editing the title line in Resoph looks like on disk. So is the
+  identical-copy debris in §3: names captured at each stage of typing, over
+  file contents that never change.
+
+The ~24% where name and first line do agree are mostly Simplenote-era files
+that carry their title inside the text as well. In Resoph those presumably show
+the title twice.
+
+Danilo has confirmed this by hand on one file. Still worth pinning down in
+Resoph (Question 1): what exactly sits between the title and the body (a blank
+line, or nothing), what happens to characters Resoph can't put in a filename,
+and how it names two notes with the same title.
+
+**What this means for b-notes.** His first lines are not broken, and he didn't
+decouple anything: to him the first line *is* the title, exactly as Resoph
+shows it. b-notes showed the file without its title, so it showed him a list of
+opening sentences, section numbers and notes to himself. Of 1,208 non-empty
+live files:
+
+- 100 start with four characters or fewer — often a bare section number
   (34 are only digits), a single letter, or `x`.
-- 150 are ALL CAPS, and many of those are **notes to himself**: *this has no
-  point*, *the last part is missing, it was deleted*, *there are several parts
-  here, the first is the tidied version of the one after*, *don't know if this
-  goes in the story or the songs — decide*.
-- 122 are over 80 characters: the first paragraph, with no title at all.
+- 150 start in ALL CAPS, and many of those are **notes to himself** under the
+  title: *this has no point*, *the last part is missing, it was deleted*,
+  *don't know if this goes in the story or the songs — decide*.
+- 122 start with a line over 80 characters: straight into the first paragraph.
 
-So the first line is where his text starts, or where he talks to himself about
-it. **The name is where he says what it is.**
-
-**How, when Resoph names files after the first line.** He renames them
-directly, and a renamed file stops following its first line. Matching each live
-text to the same text in the November 2024 Resoph snapshot (by its opening
-words after the first line):
-
-| since Nov 2024 | texts |
-| --- | ---: |
-| same name, same first line | 615 |
-| **name changed, text's first line untouched** | **155** |
-| name changed *to* the first line | 3 |
-| first line changed, name did not follow | 14 of 14 |
-
-155 renames in 22 months with the text unchanged means the name is being
-edited somewhere other than the text — presumably Resoph's rename in the list.
-The identical-copy debris in §3 shows the same thing: names captured
-mid-typing on files whose bytes are identical. And no decoupled name was ever
-pulled back when its first line changed. Worth confirming by hand in Resoph:
-rename a note in the list, then edit its first line.
+To be a better Resoph, b-notes has to read a Resoph note the way Resoph does:
+**the filename (read through Resoph's escapes) is the first line, and the file
+is everything after it.**
 
 ### 2.2 His marks
 
@@ -159,7 +172,7 @@ odd for him to type anything this consistently. The data:
 Uniform spelling and fixed-width gaps fit a prefix that is **copied from an
 existing name and pasted**, or one applied by some tool, better than one typed
 fresh each time. The debris shows it being edited by hand in the name at least
-sometimes. What it means is still open (Question 2).
+sometimes. What it means is still open (Question 3).
 
 He is not using one scheme. He is using at least five — rank, star, collection
 with position, kind, and status — and he mixes them within one name. Spelling
@@ -188,9 +201,9 @@ touched most recently.
 
 This matches Danilo's read: he organises a lot, just not in an organised way.
 The earlier conclusion in `TARGET-USER.md` — that he "will not name, file, tag
-or organise anything" — was drawn from a Simplenote backup, where the name
-could only be the first line. Given a name field he could edit, he organised
-constantly.
+or organise anything" — was drawn from a Simplenote backup. What he actually
+does is organise *in his titles*, which in Resoph are the first line he sees
+and the filename on disk.
 
 ### 2.4 Structure and folders
 
@@ -226,11 +239,14 @@ constantly.
   modification time to the second, which a copy-then-fail-to-delete keeps and a
   rewrite would not.
 
-  *Hypothesis:* each time he edits a name in Resoph, the file is saved under the
-  new name and the old one is not removed — either because Resoph's delete fails
-  (Dropbox or Notepad holding the file), or because the other machine, or
-  Resoph's Simplenote sync, puts the old name back. Either way, **every rename
-  he makes is a potential duplicate**, and he makes a lot of them (§2.1).
+  Each of these is him editing a title line in Resoph (§2.1): every edit to
+  the title is a rename on disk, and sometimes the old file survives the
+  rename. *Hypothesis for why:* Resoph keeps notes in memory and writes back
+  any whose file has gone. The test log shows it doing exactly that to files
+  b-notes renamed (§6). A second Resoph — the same machine's Notepad-and-Resoph
+  pile-up, or another machine through Dropbox — would bring old names back the
+  same way. Either way, **every title edit he makes is a potential duplicate**,
+  and he makes a lot of them.
 - **One Dropbox conflicted copy** in the live folder, 102 KB, one of his
   space-ranked texts. The design has treated conflicted copies as the likeliest
   way he loses work. On this machine the resurrected old name is far more
@@ -285,16 +301,32 @@ times below — left:
   but CRLF endings — which b-notes never writes. Something other than b-notes
   copied a version into his list. The file in `Obrisano/` carries another
   version's name, so a version-named text was in his list and then deleted.
-- **Two batches of numbered copies**: at 18:15:05 and at 19:54:45, six groups
-  that already had `(1)` and `(2)` each gained a `(3)` and then a `(4)` (one
-  gained `(4)` and `(5)`), each a byte copy of the highest-numbered one. The
-  timestamp-named file appeared one second after the second batch.
+- **Batches of numbered copies**, eight groups at a time.
 
-  *Hypothesis:* on each b-notes start, `settleNames` renamed a bare `X` to
-  `X (n)` to keep a group numbered, and Resoph then wrote the bare `X` back —
-  a copy of the highest-numbered sibling, whose first line is `X`. Each round
-  adds one file per group. The log should confirm or kill this: a settle is
-  logged as *Settled the numbers on texts sharing a name*.
+**What the log shows** (`testdata/2026-09-26-B-notes-logs-dell`, six runs,
+18:14–20:25; the machine was offline, so no Dropbox; Resoph and Notepad were
+open the whole time):
+
+- **b-notes and Resoph fed each other.** At three of the starts (18:14, 18:16,
+  20:25) `settleNames` renamed the same eight bare names — `X` beside `X (1)` —
+  to the next number. Between starts, Resoph wrote all eight bare names back:
+  at 18:15:05, with b-notes still open, and at 19:54:45, seven seconds after
+  b-notes closed. Each round added eight files, and the list grew from 1,196
+  texts to 1,215 in two hours. Resoph evidently rewrites, from memory, any note
+  whose file has disappeared. The version-named file in his list was written
+  one second into the second Resoph batch, with Resoph's CRLF endings — so
+  Resoph apparently also picked up a file from b-notes' `Verzije/` subfolder
+  and wrote it into his list as a note. That one is a hypothesis.
+- **His edits to three texts never reached the disk.** All three had
+  space-edged names. One was edited for about 30 minutes across two runs, with
+  78 failed saves (up to 47 in a row); another failed 26 times in 8 minutes.
+  At each close the window "finished saving" in under 80 ms, with the saves
+  still failing. **What he typed into those texts in b-notes is gone**, unless
+  he typed it again in Resoph.
+- **The copy button never worked** in the installed build: eight tries, each
+  `Cannot read properties of undefined (reading 'writeText')` — the
+  *Tekst nije kopiran* in `TODO.md`.
+- One `.md` in his folder was converted to `.txt` at the first start.
 
 ### Would b-notes make it worse if pointed at his folder again?
 
@@ -311,29 +343,30 @@ planning only and renaming nothing:
   - **326 texts can't save at all.** Their names fail the id check, and the
     autosave retries in memory. That is the *Izmjene nisu sačuvane* he kept
     seeing in the test.
-  - **576 texts would be renamed to their first line** — 47% of his list,
-    losing the name he gave each one. 66 of those would clash with each other
+  - **576 texts would be renamed after the first line of the file** — 47% of
+    his list. That line is his opening sentence, a section number or a note to
+    himself, and it would replace his title. 66 of those would clash with each other
     (up to five texts wanting the same first line) and be numbered, and 3
     would push an untouched text of his aside to a number.
   - 312 keep their name.
 - Every one of those renames is then a candidate to come back as a duplicate,
   from Resoph or from the other machine (§10).
 
-Until Stage 0 in §9 is in, b-notes should only be run
+Until the next build in §9 is in, b-notes should only be run
 against a copy of his folder.
 
 ## 7. The assumptions, against the evidence
 
 | # | b-notes assumes | verdict | why |
 | --- | --- | --- | --- |
-| 1 | **Title = first line** (`titleFrom`) | **breaks** | 56% of names have nothing to do with the first line; 100 first lines are ≤4 characters and many are notes to himself. His list would read as a list he doesn't recognise. |
-| 2 | **Filename derives from the title and follows it** (rename on save when the first line changes) | **breaks** | The first save of a text he named would replace the name he chose, marks and all, with its first line — and the old name would then likely come back from the other machine or from Resoph as a duplicate. |
+| 1 | **Title = first line** (`titleFrom`) | **holds for him, breaks on disk** | To him the first line is the title, as in Resoph. But Resoph keeps that line in the filename and out of the file (§2.1), so b-notes, reading the file, never sees his title: it showed opening sentences, section numbers and notes to himself. |
+| 2 | **Filename derives from the title and follows it** (rename on save when the first line changes) | **holds as Resoph's rule; breaks as implemented** | Resoph does rename on a title edit. b-notes takes the title from the *file's* first line, so its first save of a Resoph note would replace his title with his opening sentence — and Resoph, still holding the old name, writes it back (§6). |
 | 3 | **A note id is a trimmed name** (`isNoteId`, `requireNoteId`) | **breaks, worst of all** | 326 texts — 56% of his writing, his highest-ranked and most recent — have names with spaces at the edges. `save`, `read` and `moveToDeleted` throw for all of them, and the autosave retries forever. Matches the frequent *Izmjene nisu sačuvane* in the test. |
 | 4 | **One flat folder** | holds for him; bends for archives | He keeps no folders. But archive folders are listed through `isNoteFile`, which only takes `.txt`, and all 3,004 archive files are `.md` — so every archive reads as empty, which is why the strip never appeared in the test. |
 | 5 | **What counts as a text**: `.txt` in the root; `.md` converted on sight; conflicted copies set aside | bends | Right about extensions. Wrong to hide the conflicted copy (102 KB of a ranked text, silently gone). A zero-byte file can be a whole note. |
 | 6 | **Duplicates are named ` (n)`, and a group is all-numbered or bare** (`claimName`, `settleGroup`) | **breaks** | His duplicates are mostly spacing and prefix variants, not ` (n)`. 31 names already end in ` (n)` (the old claim was none of 592). Renaming to keep the rule on a folder another writer shares is a duplicate factory (§6). |
 | 7 | **Migration is triggered, never ambient** (`TARGET-USER.md`) | **breaks in the code** | `convertToPlainText` and `settleNames` rename files on his live Dropbox folder at every start. |
-| 8 | **b-notes is the only writer** (single instance, autosave, "save" never his job) | **breaks** | Resoph and Notepad have the same files open at the same time, and a second machine writes to the same folder through Dropbox. Nothing checks whether a file changed on disk between b-notes reading it and writing it; the copy-before-a-big-loss rule catches only large shrinkages. |
+| 8 | **b-notes is the only writer** (single instance, autosave, "save" never his job) | **breaks** | Resoph and Notepad have the same files open at the same time — through the whole test, and Resoph rewrote files under b-notes (§6) — and other machines write to the same folder through Dropbox. Nothing checks whether a file changed on disk between b-notes reading it and writing it; the copy-before-a-big-loss rule catches only large shrinkages. |
 | 9 | **"Safe" = no b-notes action loses text** | bends | True inside the app. The losses that matter here come from other writers, renames, and names b-notes can't handle. Safe has to mean safe while sharing the folder. |
 | 10 | **Emptying is deleting / empty files are debris** | bends | Seven zero-byte files hold their whole content in the name. Deleting one in b-notes removes the file outright (`removeEmptyFile`) — and the idea with it. |
 | 11 | **He doesn't organise; pinning / `AA` is his one habit** | **breaks** | Three quarters of names carry marks; five schemes; a numbered book structure. |
@@ -344,7 +377,7 @@ against a copy of his folder.
 | 16 | **Dropbox conflicted copies are the likeliest loss** | bends | One exists. Resurrected names are the common multi-machine artefact. |
 | 17 | **~600 texts, 3.3 MB, largest 145 KB** | bends | 1,215 / 11.3 MB / 296 KB live, 33 MB with archives. Memory is fine; editor speed on 300 KB on his slowest laptop is untested. |
 | 18 | **Files are UTF-8** | holds | All of them, on this machine. |
-| 19 | **Line endings don't matter; writing LF is fine** | bends | His files are CRLF. b-notes writes LF, and Notepad before Windows 10 1809 shows an LF file as one line (Question 9). It also breaks our own rule of preserving a file's endings. |
+| 19 | **Line endings don't matter; writing LF is fine** | bends | His files are CRLF. b-notes writes LF, and Notepad before Windows 10 1809 shows an LF file as one line (Question 5). It also breaks our own rule of preserving a file's endings. |
 | 20 | **Versions stay in `Verzije/`** | bends | A version got into his list (§6). Whatever carried it there, the design assumed nothing else looks in that folder. |
 
 ## 8. What b-notes has to survive, worst first
@@ -354,7 +387,8 @@ losing his organising, then clutter and wear.
 
 1. **Texts it can't save.** Every edit to 326 of his texts — the ones he ranks
    highest and touches most — fails and retries in memory. If the window closes
-   first, the edit is gone. *Loses writing.*
+   first, the edit is gone. This happened in the test, to three texts (§6).
+   *Loses writing.*
 2. **Another program writing the same file.** Resoph, Notepad and the second
    machine all write files b-notes has open. Whoever writes last wins, with no
    copy kept unless a lot of text vanished. *Loses writing, silently.*
@@ -385,158 +419,144 @@ losing his organising, then clutter and wear.
 
 ## 9. Directions
 
-Not code, and not decided — things to talk about. Three stages: stop the harm,
-then clean up by copying, then give his organising a better home.
+Not code, and not decided. Three facts shape all of it:
 
-His filenames are a disaster zone outside b-notes too: Windows 11 Notepad
-opens them as blank tabs, Windows' own zip refuses them, Explorer can't make
-them. So "leave his names alone" can't be where this ends. It's where it has
-to start, because every way of cleaning them up in place runs into §10.
+- **Resoph stays.** Years of trying other tools haven't moved him off it, and
+  nothing will until something is clearly better. So b-notes lives beside
+  Resoph in the same folder, often with Resoph open at the same moment, on
+  three or four machines. That isn't a transition to get through. It's the
+  condition to design for.
+- **Resoph's format is known** (§2.1): the title is the filename, and the text
+  is the file. Living beside Resoph means speaking that format.
+- **Cleaning up filenames is not on the table yet.** His names break Notepad,
+  zip and Explorer, and they will have to be dealt with. But any rename in a
+  folder that several Resophs remember gets undone (§6, §10), so it waits.
 
-### Stage 0 — First, do no harm
+### The next build: first, do no harm
 
-What b-notes needs before it opens his real folder again, in the order of the
-harm each one prevents. All of it is about living in a folder shared with
-Resoph, Notepad and another machine. None of it tidies anything.
+For a build in his hands within days. Ordered by the harm each item prevents;
+each removes a failure seen in the log or predicted by the simulation in §6.
 
-1. **Accept every name that's on disk.** The id checks exist to keep b-notes'
-   own names sane. They must not refuse his — spaces at either end, `%2A`,
-   whatever Resoph wrote. This alone ends *Izmjene nisu sačuvane* for 326 texts.
-2. **Rename nothing b-notes didn't create.** No rename when the first line
-   changes, no settling of ` (n)` groups at startup, no conversion on sight.
-   Renaming is what Stage 1 does, once, on purpose.
-3. **Never write blind.** Before each write, check the file is still what
-   b-notes last read (size, time or hash). If something else changed it, keep
-   both rather than choose. Reload a text whose file changed on disk when
-   nothing is waiting to be saved in b-notes.
-4. **Hide nothing.** A conflicted copy shows next to the text it came from. A
-   zero-byte file's name is its text, and it is never removed. Archives read
-   `.md`.
-5. **Show his name as the title** wherever it differs from the first line,
-   read through Resoph's escapes (`%2A` → `*`), and search names as well as
-   text. Otherwise his list is a list of strangers and he goes back to Resoph,
-   which makes everything above worse.
-6. **Keep line endings as found.**
+1. **Accept every name on disk.** Ends the lost edits and *Izmjene nisu
+   sačuvane* for 326 texts.
+2. **Rename nothing.** No settling of ` (n)` groups at startup, no conversion
+   on sight, no rename when a first line changes. This ends the loop with
+   Resoph and the 576 predicted renames. It also means no editing of titles in
+   this build, which is fine: he can't edit them in b-notes today either.
+3. **Show his title.** In the list, and above the text, show the filename read
+   through Resoph's escapes (`%2A` → `*`), since that is his title. Search it
+   along with the text. Without this his list is 1,200 opening sentences.
+4. **Never write blind.** Before each write, check the file is still what
+   b-notes last read. If Resoph, Notepad or Dropbox changed it, keep both —
+   the other version as a copy of the text — rather than overwrite. When nothing
+   is waiting to be saved, reload a text whose file changed on disk.
+5. **Mind Resoph while b-notes is open.** Resoph rewrites notes it remembers,
+   so with Resoph open, any rename or move b-notes makes is undone. That
+   includes *deleting* a text, which moves it into `Obrisano/`. What b-notes can
+   do:
+   - Notice Resoph running (its process) and log it, always.
+   - While it runs, hold off anything that moves a file (deleting, restoring,
+     bringing back from the archive), and say so plainly where the button is.
+   - Possibly offer to close Resoph for him — asking it to close the way a
+     click on its close button would, never killing it. Whether Resoph saves
+     on that, and what its tray icon does, needs trying first (Question 2).
+     It must never be a question he can't answer.
+6. **Hide nothing.** Show the conflicted copy next to the text it came from.
+   Never remove a zero-byte file, because its name is the note.
+7. **Keep line endings as found.** Write CRLF to a CRLF file.
+8. **Fix the copy button** (the log's `writeText` failure).
 
-### Stage 1 — Clean up by copying, with the old folder as a source
+New texts in this build: the simplest safe choice is the current one — named
+from the first line when created, with the whole text, title line included,
+written into the file. Resoph will show such a title twice, as it already does
+for his ~300 Simplenote-era texts. (Question 9.)
 
-Danilo's instinct — treat his Resoph folder as a disaster site and copy out of
-it — is the one shape that survives two offline machines:
+### After that: a better Resoph
 
-- **b-notes gets a folder of its own.** An import *copies* each text out of the
-  Resoph folder into it, under a clean name: no edge spaces, no `%XX`, no marks,
-  nothing Notepad, zip or Explorer choke on.
-- **What the old name said isn't lost.** His marks become things b-notes knows
-  about the text — rank, collection and position, kind, status — and the raw
-  old name goes into the import's record, so any text can be traced back to
-  the file it came from.
-- **Identical copies arrive as one text.** Identical bytes lose nothing when
-  merged. Deliberate drafts arrive as drafts, grouped under the conservative
-  rules in `TARGET-USER.md`.
-- **The old folder is never written again.** Nothing renamed means nothing can
-  come back from the dead, and Resoph or Notepad writing there can't overwrite
-  anything of b-notes'.
-- **The import can run again, and only brings what's new.** It records each
-  source file's name and hash. When the other machine comes online and its
-  diverged state lands in the old folder — and it will, late — the next run
-  brings a changed text in as a newer version of the text it came from, and an
-  unknown one as a new text. Late arrivals are expected, not an error.
-- **Triggered, never ambient**, as `TARGET-USER.md` already says: Danilo runs
-  it, and can run it again.
-
-The risk is the cutover itself. After it, anything he writes in Resoph lands
-in the old folder. The import will pick that up, but nothing carries b-notes'
-edits back the other way: go back to Resoph and his newest work is "gone".
-**So the cutover is the day Resoph leaves both machines**, done in person.
-Until then, Stage 0 lets b-notes and Resoph share the old folder safely.
-
-### Stage 2 — His organising, in spirit
-
+- **Read and write the full Resoph format.** The title shows as the first line
+  of the text, as it does in Resoph; b-notes splits it into filename and file
+  when it saves. Editing a title becomes a rename, and a rename is only safe
+  when no Resoph is running on this machine — and never safe against another
+  machine's Resoph (§10). That's why it comes after the first build.
 - **Read his marks, don't make him follow ours.** Turn what he already types
   into things the app shows: rank (spaces, `*`, `AA`), sinking (`zz`, `y`),
   collection and position (`(UP) n`, `(UP) II n`, series codes), kind (`(E)`,
   `(P)`), status (*this one*, *final*, *work on it*, *spare*, *pointless*).
-  He'll keep typing marks into names in new ways, so the parser follows his
-  habits and doesn't enforce a grammar. The raw name stays one click away.
-- **Give him his order back.** A list in his name order, with the arms race
-  collapsed into rank, as the complete list. Newest-first stays as *recent*.
-  Search covers names as well as text.
+  He'll keep typing marks in new ways, so the parser follows his habits and
+  doesn't enforce a grammar. The raw title stays one click away.
+- **Give him his order back.** A list in his title order, with the arms race
+  collapsed into rank. Newest-first stays as *recent*.
 - **Better ways, alongside the old.** A real *this is the current one*, a real
-  pin, a real collection with order — each set with one click, and each stored
-  outside the filename so setting it never renames anything. His own marks
-  keep working, and the two agree.
-- **Metadata that survives two offline machines.** Not one shared JSON file,
-  which Dropbox will split into conflicted copies. Something mergeable: one
-  small file per machine, or per text, combined on read, last change wins per
-  field.
-- **Until Stage 1, collapse identical copies in the view only.** One row,
-  "also kept under 6 other names" — safe because the bytes are identical.
-- **Measure the 300 KB case** on the slowest laptop before designing around it.
+  pin, a real collection with order, each kept outside the filename so setting
+  it never renames anything. Stored so that several offline machines can
+  merge it: one small file per machine, combined on read, not one shared file
+  that Dropbox splits into conflicted copies.
+- **Collapse byte-identical copies in the view.** One row, "also kept under 6
+  other names". Safe because the bytes are identical. Deliberate drafts keep
+  the conservative grouping rules in `TARGET-USER.md`.
+- **Archives read `.md`**, so the archive strip appears at all.
+- **Measure the 300 KB case** on the slowest laptop.
 
-### Resoph and Notepad
+### Later, not on the table: cleaning up filenames
 
-Three programs editing the same notes will fail whatever b-notes does, and
-nothing in b-notes can stop another program opening a file. What there is:
+The copy-out idea stays the best shape found so far: a folder of b-notes' own
+with clean, safe names (plain ASCII is the safe end), copied from the Resoph
+folder, which is never written again. A re-runnable import brings in whatever
+lands in the old folder later, from any machine. The blocker is the same as
+before, stated more strongly: it only works once Resoph is no longer writing
+the old folder anywhere. Until then his Resoph edits land where b-notes no
+longer looks, and b-notes' edits never reach Resoph.
 
-- **Resoph** leaves by being uninstalled, at the Stage 1 cutover, on both
-  machines. Before that, Stage 0 makes sharing survivable.
-- **Notepad** can't be removed. After Stage 1 it only matters if he goes
-  looking in b-notes' folder himself. Before then, never writing blind covers
-  most of it.
-- b-notes could notice Resoph running and log it. It must not ask him about it
-  — that's a question he can't answer — but a log line would explain a lot of
-  later phone calls.
+## 10. The other machines
 
-## 10. The second machine
+There are three or four, not two, each with its own Resoph, each offline for
+long stretches, all syncing one Dropbox folder. This corpus is one machine's
+view.
 
-The corpus is one machine's view. The other has been offline for long periods,
-overlaps heavily and has diverged in places.
-
-- **Any rename on one machine can undo itself.** Dropbox carries a rename across
-  as a delete plus a create. If the other machine edited the old file while
-  offline — or Resoph there rewrites it — the old name comes back beside the new
-  one. That is the most likely source of the copies in §3, and it's why a
-  one-shot cleanup of his names can't work: it would be applied to one machine's
-  view and then contradicted by the other's.
-- **So names are cleaned by copying, not renaming** (Stage 1 in §9). The old
-  folder only ever gains files, and each one is ingested once, however late it
-  arrives.
-- **Identity can't rest on the filename alone.** A text that arrives under a
-  revived old name is the same text. Identical bytes settle that for the
-  mechanical copies; for texts that diverged, both must stay and both must
-  show.
-- **We need the other machine's folder** — at least its names, sizes and times
-  — before deciding anything about merging.
+- **A rename can be undone by any Resoph that remembers the old name.** The log
+  shows Resoph rewriting notes whose files vanished within minutes. A Resoph on
+  another machine does the same when it next saves, and Dropbox then carries
+  the old name back to everyone. That is almost certainly where most of his
+  identical copies come from — his own title edits in Resoph, undone somewhere
+  else — and why no cleanup by renaming can work.
+- **b-notes can't stop Resoph's duplicates, but it mustn't add to them.** It
+  renames nothing, and it recognises identical copies for what they are.
+- **Identity can't rest on the filename alone.** A text that comes back under
+  an old name is the same text. Identical bytes settle that for the mechanical
+  copies; texts that diverged must stay apart, and both must show.
+- **The other machines' folders** (names, sizes and times are enough) would
+  show how far they've diverged. Useful soon, but the next build doesn't wait
+  on them: everything in it is about not making things worse, whatever state
+  the folder arrives in.
 
 ## 11. Questions for Danilo
 
-Answered so far: the test times (the b-notes sessions), the archives (Danilo's,
-from the Obsidian attempt), creation times (lost in the copy).
+Answered so far: the test times (the b-notes sessions), the archives (yours,
+from the Obsidian attempt), creation times (lost in the copy), the title/first
+line split (Resoph's format, confirmed on one file), whether Resoph can leave
+(no), and filename cleanup (later).
 
-1. **The b-notes log from the test** — where is it? It would confirm or kill
-   the settle-and-Resoph loop in §6, and should show the refused saves.
-2. What do `(UP)`, `(E)` and `(P)` stand for? It isn't Resoph's pin (§2.2).
-   Could you ask him, and watch how he adds one — does he copy it from another
-   name? Are `(UP) n` and `(UP) II n` two volumes of one book?
-3. Did he type the text whose first line is *Naslov teksta*, or did you? Any
-   idea how a version-named file got into his list?
+1. **Resoph's format, precisely.** What separates title and body in the file —
+   nothing, or a blank line? Which characters become `%XX`? How does it name a
+   second note with the same title? And does it pick up `.txt` files in
+   subfolders? Put one in a subfolder and see if it appears in the list.
+   b-notes' `Verzije/` and `Obrisano/` sit inside his folder, and the version
+   file that turned up in his list suggests Resoph may be reading them.
+2. **Closing Resoph.** What is its process called? With "minimize to system
+   tray" on, does its close button quit or hide? Does it save everything when
+   asked to close? And would you want b-notes to offer to close it?
+3. What do `(UP)`, `(E)` and `(P)` stand for? It isn't Resoph's pin (§2.2).
+   Worth asking him, and watching how he adds one.
 4. Does he know that more leading spaces sort higher, or does he just add
-   "some more"? Does he sort Resoph by name?
-5. Can Resoph actually leave both machines — and if he reinstalls it or asks
-   for it, what then? Stage 1 depends on this.
-6. Clean names in Stage 1: keep Serbian letters, or fold to ASCII? Windows'
-   built-in zip has a history of mangling non-ASCII names.
-7. After the cutover, is the title a field of its own that he edits (what his
-   data says he does), or Resoph-style, the first line? His first lines are
-   often notes to himself, which argues for a field of its own.
-8. When could we see the other machine's folder — names, sizes and times are
-   enough?
-9. Which Windows builds are on the two machines? (Notepad and LF endings.)
-10. Does Resoph on either machine still sync with Simplenote?
-11. When he saves in Notepad, does he answer the "save changes?" prompt, and
-    which way?
-12. For a set of identical copies that differ only by spacing, which name is
-    "his" — the most spaces, the most recent edit, something else?
+   "some more"? Does he sort Resoph by title?
+5. Which Windows versions are on the machines? At least one has Windows 11's
+   Notepad, with tabs that come back.
+6. Does Resoph on any machine still sync with Simplenote?
+7. When Notepad asks whether to save changes, what does he answer?
+8. For identical copies that differ only in spacing, which title is "his" —
+   the most spaces, the last edited, something else?
+9. New texts in the next build: keep the title line in the file (Resoph shows
+   it twice), or write the Resoph way from the start?
 
 ## 12. Parked
 
