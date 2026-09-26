@@ -64,6 +64,13 @@ const TEXT = {
       flickering at the edge of his eye all day.
     */
     wordCount: (n: number) => `${n} ${plural(n, 'reč', 'reči', 'reči')}`,
+    /*
+      Under a copied text, where it travels away from the app and is read by
+      somebody who cannot see the status line. "Izmena" and not "sačuvano":
+      what the reader wants to know is when the writing last changed, which is
+      the question "have I read this one already" turns on.
+    */
+    lastChanged: 'Poslednja izmena',
     notSaved: 'Nije sačuvano',
     changesNotSaved: 'Poslednje izmene nisu sačuvane',
     minutesAgo: (n: number) => `pre ${n} ${plural(n, 'minut', 'minuta', 'minuta')}`,
@@ -369,6 +376,7 @@ const TEXT = {
     foundNext: 'Next',
     savedAgo: (when: string) => `Saved ${when}`,
     wordCount: (n: number) => `${n} ${n === 1 ? 'word' : 'words'}`,
+    lastChanged: 'Last changed',
     notSaved: 'Not saved',
     changesNotSaved: 'Latest changes not saved',
     minutesAgo: (n: number) => `${n} minute${n === 1 ? '' : 's'} ago`,
