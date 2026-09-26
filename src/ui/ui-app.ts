@@ -1,4 +1,5 @@
 import { type Language, strings } from '../language/wording.ts';
+import { textToCopy } from './copied-text.ts';
 import { NO_NOTE, type NoNote, type NoteHandle } from '../notes/note-handle.ts';
 import { type LengthBands, bandsFrom } from '../notes/text-length.ts';
 import { countWords } from '../notes/word-count.ts';
@@ -517,7 +518,7 @@ async function copyWholeText(): Promise<void> {
   if (text.trim().length === 0) return;
 
   try {
-    await host.copyToClipboard(text);
+    await host.copyToClipboard(textToCopy(text, savedAt, language));
   } catch (error: unknown) {
     /*
       Said in the status line and not in the toast. A failed copy leaves the

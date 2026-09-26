@@ -47,7 +47,30 @@ test('puts the whole text on the clipboard, to the last character', async ({ pag
     character neither he nor we ever chose.
   */
   const onClipboard = await page.evaluate(() => navigator.clipboard.readText());
-  expect(onClipboard.replaceAll('\r\n', '\n')).toBe(text);
+  // His text first and entire. The app adds a line under it saying which text
+  // this is, so this is no longer the whole of what is on the clipboard — but
+  // it is still the whole of what he wrote, which is what the button promises.
+  const copied = onClipboard.replaceAll('\r\n', '\n');
+  expect(copied.slice(0, text.length)).toBe(text);
+});
+
+/*
+  The line is for the man at the other end, who is sent the same essay several
+  times as it is worked on and cannot otherwise tell a revision from the one he
+  read last week. What it says is settled in `copied-text.test.ts`; what this
+  asks is whether it survives a real clipboard, which is the half no unit test
+  can reach.
+*/
+test('signs the copy with the date it last changed and how long it is', async ({ page }) => {
+  const text = await openFirstText(page);
+
+  await page.getByRole('button', { name: COPY }).click();
+  await expect(page.locator('#toast')).toBeVisible();
+
+  const onClipboard = await page.evaluate(() => navigator.clipboard.readText());
+  const copied = onClipboard.replaceAll('\r\n', '\n');
+
+  expect(copied.slice(text.length)).toMatch(/^\n\n\nPoslednja izmena: \d{4}-\d{2}-\d{2} · \d+ reč/);
 });
 
 test('says so, because nothing else on screen changes', async ({ page }) => {
