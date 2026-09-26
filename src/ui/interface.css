@@ -701,6 +701,22 @@ button svg {
   fill-opacity: var(--sheet-alpha);
 }
 
+/*
+  Nothing written, so nothing filled — an outline with the row showing through.
+
+  Unfilled rather than filled in the row's own colour, which would come to the
+  same thing on a plain row and to the wrong thing on a hovered one: hover tints
+  with a wash rather than a colour, and a whole sheet of the untinted colour
+  would sit in the middle of it as a patch. A line's worth of that is invisible;
+  a page's worth would not be.
+*/
+.note-sheet-blank {
+  fill: none;
+  stroke: currentColor;
+  stroke-opacity: 0.3;
+  stroke-width: 1;
+}
+
 .note-written {
   fill: none;
   stroke: var(--written);

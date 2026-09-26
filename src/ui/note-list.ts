@@ -95,6 +95,23 @@ function markOf(note: LiveNote): string | null {
 const SHEET = 'M5 2h9l5 5v15H5z';
 
 /**
+ * The same sheet drawn as an edge rather than a mass, for a text with nothing
+ * in it.
+ *
+ * Every other band is a filled page with the writing punched out of it, so ink
+ * *falls* as a text gets longer — which nobody notices while there are lines to
+ * count, and which makes the empty page the heaviest mark in the list the
+ * moment there are none. An empty page is the limit of the same idea: a page
+ * whose whole surface is the hole. It keeps the edge so it still reads as a
+ * page and not as a gap.
+ *
+ * Held half a unit inside `SHEET` because a stroke straddles its path, and this
+ * one runs along the edge of the viewBox — centred on the original it would be
+ * shaved in half on all four sides.
+ */
+const BLANK_SHEET = 'M5.5 2.5h8.3l4.7 4.7v14.3H5.5z';
+
+/**
  * Where each line of writing goes, filled from the top.
  *
  * Four fixed places rather than a loop over an offset, because the first and
@@ -137,9 +154,10 @@ function pageGlyph(band: LengthBand): SVGElement {
   svg.setAttribute('aria-hidden', 'true');
   svg.setAttribute('focusable', 'false');
 
+  const blank = band === 0;
   const sheet = document.createElementNS(SVG_NS, 'path');
-  sheet.setAttribute('class', 'note-sheet');
-  sheet.setAttribute('d', SHEET);
+  sheet.setAttribute('class', blank ? 'note-sheet-blank' : 'note-sheet');
+  sheet.setAttribute('d', blank ? BLANK_SHEET : SHEET);
   svg.append(sheet);
 
   for (const line of LINES.slice(0, band)) {
