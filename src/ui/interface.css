@@ -1592,7 +1592,10 @@ dialog::backdrop {
      after the date it would land in a different place on every row. */
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  /* The same air between the page and the words that his own list leaves, and
+     wider than the inset to its left on purpose: a mark set closer to what it
+     describes than to the edge belongs to the row rather than to the margin. */
+  gap: 0.6rem;
   /* This list can hold everything he has ever put away, so room between rows is
      room paid for by the hundred; the inset at the sides is what keeps the text
      off the hover edge, and no more than that. */
@@ -1668,7 +1671,7 @@ dialog::backdrop {
 .index-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   padding: 0.5rem 0.6rem;
 }
 
