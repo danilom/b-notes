@@ -165,6 +165,24 @@
   --found: hsl(var(--accent-h) var(--strong) var(--l-found));
   /* Whatever can be read on top of a solid accent, either way up. */
   --on-chosen: hsl(var(--grey-h) var(--muted) var(--l-on-chosen));
+
+  /*
+    The little page beside a title, and the writing on it.
+
+    A grey sheet with the writing taken out of it in the colour of the list
+    behind — so the lines are gaps rather than marks, and what shows through
+    them is the actual backdrop. Drawing them instead in a darker grey was
+    tried and was worse: two greys a little apart on a third read as a smudge,
+    where a hole reads as a hole.
+
+    An outline round the sheet was tried before either, and was the loudest of
+    the three: the edge is what catches the eye, and the edge is the part that
+    says nothing.
+  */
+  --sheet-alpha: 0.3;
+  --written: var(--panel);
+  --written-alpha: 1;
+  --written-width: 2;
 }
 
 /*
@@ -236,6 +254,20 @@
   --l-shadow: 2%;
   --shadow-alpha: 0.6;
   --swatch-edge: rgb(255 255 255 / 0.25);
+
+  /*
+    The page turns over too, and not by dimming the light treatment.
+
+    A pale sheet with paler writing on it disappears against a dark row, so the
+    sheet takes the grey and the writing is cut out of it in the page colour —
+    the lines are holes rather than marks. It reads as writing for the same
+    reason a window reads as a window at night: what is lit and what is not have
+    swapped, and the shape is unchanged.
+  */
+  --sheet-alpha: 0.3;
+  --written: var(--page);
+  --written-alpha: 1;
+  --written-width: 2;
 }
 
 /* Carries the same tenth into every padding, gap and width below. */
@@ -593,13 +625,28 @@ button svg {
 }
 
 .note {
-  padding: 0.5rem 0.9rem;
+  /*
+    The stripe that marks the chosen row is a border, so it takes its width out
+    of the row before the padding starts and every row is indented by it —
+    against a heading and a search box that are not. Four pixels is little
+    enough to pass as a gap and too much to pass as alignment. Giving the left
+    padding the width back puts the page glyph on the same line as both.
+  */
+  --mark-width: 4px;
+  padding: 0.5rem 0.9rem 0.5rem calc(0.9rem - var(--mark-width));
   cursor: pointer;
-  border-left: 4px solid transparent;
+  border-left: var(--mark-width) solid transparent;
   display: flex;
   justify-content: space-between;
   gap: 0.6rem;
-  align-items: baseline;
+  /*
+    Centred rather than sharing a baseline, because one of the things in the row
+    is a drawing. A picture has no baseline of its own, so baseline alignment
+    sets its bottom edge on the words' baseline and hangs it a descender's height
+    too high. The date gives up about a pixel of shared baseline with the title
+    for this, at a size where nobody can see that.
+  */
+  align-items: center;
 }
 
 .note:hover {
@@ -613,9 +660,97 @@ button svg {
 .note[aria-current='true'] {
   background-color: var(--chosen-soft);
   border-left-color: var(--chosen);
+  /* The gaps in the page show the row behind it, and this row is not the same
+     colour as the rest of the list. Hover is left alone: it tints with a wash
+     rather than a colour, so there is no token to match, and at five per cent
+     there is nothing to see. */
+  --written: var(--chosen-soft);
+}
+
+/*
+  How much is written in a text, drawn as how much is written on a page.
+
+  First in the row rather than after the date, which would leave it ragged:
+  dates here run from `pre 36 minuta` to `2019`, so anything following one
+  lands in a different place on every line. Leading, they make a column he can
+  run his eye down, and the titles stay aligned with each other as before.
+
+  Never darker than the date, and mostly lighter. It answers a question he did
+  not ask, so it must not compete with the title, which answers the one he did.
+  Both modes take the date's grey as their one colour and work in opacities off
+  it, so whatever the date does the page follows.
+*/
+.note-length {
+  flex: none;
+  /* The shelves lay their rows out on a grid, where the default would stretch
+     it; his list lays them out with flex, where it would not. Said once here so
+     the glyph sits the same way in both. */
+  align-self: center;
+  /*
+    About as tall as the title's line and seven tenths as wide, which is the
+    shape of the sheet the box now holds. Drawn a shade taller than the words to
+    be read at all — it is pale enough that it can be, without becoming the
+    first thing in the row.
+
+    The height is given and the width follows from the viewBox, so the page
+    cannot be squashed by changing one and forgetting the other.
+
+    In rem, so it is one size in all four lists. In em it tracked whatever type
+    the list around it was set in, and the same mark came out three sizes — the
+    one thing that stops him reading two of them against each other, which is
+    the only reason the mark is there.
+  */
+  height: 1.13rem;
+  aspect-ratio: 7 / 10;
+  /*
+    Said, rather than left out, because the shelves and the index draw their
+    rows as buttons and `button svg` sets a square width for the app's icons.
+    That rule only ever reached the width — the height here outranks it — so the
+    page came out a sixth too wide in the two dialogs and right in the list.
+    `auto` is what the ratio needs to do its work, and it outranks a bare tag.
+  */
+  width: auto;
+  color: var(--faint);
+}
+
+.note-sheet {
+  fill: currentColor;
+  fill-opacity: var(--sheet-alpha);
+}
+
+/*
+  Nothing written, so nothing filled — an outline with the row showing through.
+
+  Unfilled rather than filled in the row's own colour, which would come to the
+  same thing on a plain row and to the wrong thing on a hovered one: hover tints
+  with a wash rather than a colour, and a whole sheet of the untinted colour
+  would sit in the middle of it as a patch. A line's worth of that is invisible;
+  a page's worth would not be.
+*/
+.note-sheet-blank {
+  fill: none;
+  stroke: currentColor;
+  stroke-opacity: 0.3;
+  stroke-width: 1;
+}
+
+.note-written {
+  fill: none;
+  stroke: var(--written);
+  stroke-opacity: var(--written-alpha);
+  stroke-width: var(--written-width);
 }
 
 .note-title {
+  /*
+    Takes the room the row has left, and is the thing that gives way when
+    there is not enough. Said outright rather than left to `space-between`:
+    with a glyph, a title and a date the middle one has space on both sides of
+    it and floats into the centre of the row, which put every one of his
+    titles adrift the moment the glyph arrived.
+  */
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1452,13 +1587,28 @@ dialog::backdrop {
 }
 
 .review-row {
+  /* The page, and then everything the row says. The page is first for the
+     reason it is first in his list: down a column it can be run past, where
+     after the date it would land in a different place on every row. */
+  display: flex;
+  align-items: center;
+  /* The same air between the page and the words that his own list leaves, and
+     wider than the inset to its left on purpose: a mark set closer to what it
+     describes than to the edge belongs to the row rather than to the margin. */
+  gap: 0.6rem;
+  /* This list can hold everything he has ever put away, so room between rows is
+     room paid for by the hundred; the inset at the sides is what keeps the text
+     off the hover edge, and no more than that. */
+  padding: 0.3rem 0.45rem;
+}
+
+/* What the row says, which is two or three lines of it. */
+.review-row-body {
+  flex: 1;
+  min-width: 0;
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 0.25rem 1rem;
-  /* Vertical only. This list can hold everything he has ever put away, so
-     room between rows is room paid for by the hundred; the inset at the
-     sides is what keeps the text off the hover edge. */
-  padding: 0.3rem 0.6rem;
 }
 
 .review-title {
@@ -1502,8 +1652,10 @@ dialog::backdrop {
   /* Wide enough for the longest line it can be asked to hold: a number,
      a five-figure word count and "23. septembra", which is the longest
      date his language makes. Narrower and the rows wrap, which at this
-     size reads as damage rather than as a second line. */
-  width: 13rem;
+     size reads as damage rather than as a second line. The page beside
+     each row costs about a rem and a half of that, and was paid for here
+     rather than taken off the line. */
+  width: 14.5rem;
   overflow-y: auto;
   padding: 0.4rem 0 1rem;
   border-right: 1px solid var(--line);
@@ -1517,8 +1669,17 @@ dialog::backdrop {
 }
 
 .index-row {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   padding: 0.5rem 0.6rem;
+}
+
+/* Everything the row says, so the page stands beside the lot of it rather than
+   level with the first line. */
+.index-body {
+  flex: 1;
+  min-width: 0;
 }
 
 /*
@@ -1530,19 +1691,18 @@ dialog::backdrop {
   about before he has read a word of it, rather than as the first of the
   copies.
 */
-.index-row-active .index-line {
+/*
+  The number and the count together, the date at the far end.
+
+  Not `space-between`, which on the three things a copy's line carries would
+  strand the word count in the middle, away from the number it belongs to. Only
+  the date is pushed out, so the head row — which carries two things — and the
+  copies under it lay out by the same rule instead of by two.
+*/
+.index-line {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
   gap: 0.5rem;
-}
-
-.index-row-active .index-when {
-  margin-left: 0;
-}
-
-.index-line {
-  display: block;
   color: var(--ink);
 }
 
@@ -1561,7 +1721,7 @@ dialog::backdrop {
 }
 
 .index-when {
-  margin-left: 0.4rem;
+  margin-left: auto;
   color: var(--quiet);
   white-space: nowrap;
 }

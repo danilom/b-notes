@@ -1,4 +1,5 @@
 import { type Language, describeWhen, strings } from '../../language/wording.ts';
+import type { LengthBands } from '../../notes/text-length.ts';
 import { type Shelf, openTextShelf } from './text-shelf.ts';
 import type { ArchivedNote } from '../../notes/note.ts';
 
@@ -20,6 +21,8 @@ export interface ArchiveHandlers {
 export interface ArchivedTexts {
   archived: readonly ArchivedNote[];
   query: string;
+  /** The bands his own list is drawn by, so a page means the same thing here. */
+  lengths: LengthBands;
 }
 
 function shelfFor(language: Language, handlers: ArchiveHandlers): Shelf<ArchivedNote> {
@@ -64,11 +67,11 @@ function shelfFor(language: Language, handlers: ArchiveHandlers): Shelf<Archived
 
 export function openArchiveDialog(
   container: HTMLDialogElement,
-  { archived, query }: ArchivedTexts,
+  { archived, query, lengths }: ArchivedTexts,
   language: Language,
   handlers: ArchiveHandlers,
 ): () => void {
-  return openTextShelf(container, shelfFor(language, handlers), { texts: archived, query }, language, {
+  return openTextShelf(container, shelfFor(language, handlers), { texts: archived, query, lengths }, language, {
     onClose: handlers.onClose,
   });
 }

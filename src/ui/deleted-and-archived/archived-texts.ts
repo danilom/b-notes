@@ -1,4 +1,5 @@
 import { type Language, strings } from '../../language/wording.ts';
+import type { LengthBands } from '../../notes/text-length.ts';
 import type { NoteHandle } from '../../notes/note-handle.ts';
 import type { Archive, ArchivedNote } from '../../notes/note.ts';
 import type { Writing } from '../../notes/writing.ts';
@@ -17,6 +18,14 @@ export interface ArchivedParts {
   /** The titles already in his list, so the dialog can say which it has too. */
   liveTitlesNow: () => ReadonlySet<string>;
   queryNow: () => string;
+  /**
+   * The bands his list is drawn by, read at the moment he opens this.
+   *
+   * Asked for rather than handed over once: they are worked out afresh
+   * whenever his texts change, and a copy taken when the app started would
+   * be measuring him against the man he was that morning.
+   */
+  lengthsNow: () => LengthBands;
   refresh: () => Promise<void>;
   openText: (handle: NoteHandle) => Promise<void>;
   say: (notice: string) => void;
@@ -115,7 +124,7 @@ export function createArchivedTexts(parts: ArchivedParts): ArchivedTexts {
     log.info('Looked at the archive', { count: found.length, archives: archives.length });
     const close = openArchiveDialog(
       pane,
-      { archived: found, query: parts.queryNow() },
+      { archived: found, query: parts.queryNow(), lengths: parts.lengthsNow() },
       parts.languageNow(),
       {
         onClose: () => {

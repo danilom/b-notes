@@ -14,6 +14,7 @@ const AT_REST: WhatIsHappening = {
   openId: 'O zimi',
   text: 'O zimi\n\nTekst.',
   savedAt: Date.now(),
+  savedWords: 0,
   saving: false,
   couldNotSave: false,
   notice: null,
@@ -54,7 +55,10 @@ describe('the line along the bottom', () => {
   });
 
   it('reports when it last reached disk the rest of the time', () => {
-    assert.equal(statusFor(at({ savedAt: Date.now() }), 'sr'), 'Sačuvano upravo sad');
+    assert.equal(
+      statusFor(at({ savedAt: Date.now(), savedWords: 1250 }), 'sr'),
+      'Sačuvano upravo sad · 1250 reči',
+    );
   });
 
   it('reports a text he has started typing into but not yet saved', () => {
@@ -156,5 +160,44 @@ describe('writing that has not reached disk', () => {
   it('is not said for a text that has simply never been written', () => {
     // Different sentence, different situation: nothing has failed here.
     assert.equal(statusFor(at({ savedAt: null }), 'sr'), 'Nije sačuvano');
+  });
+});
+
+
+describe('how much he has written', () => {
+  /*
+    Beside the save, and only there. It is the number a man writing an essay
+    watches — but it belongs to what is on disk, so it appears where the line
+    already says what is on disk and nowhere the line is making a different
+    point.
+  */
+  it('counts what was saved, in the form his language takes', () => {
+    // 1 reč, 2 reči, 5 reči — and 21 reč, but 11 reči.
+    const at5 = at({ savedAt: Date.now(), savedWords: 5 });
+    const at21 = at({ savedAt: Date.now(), savedWords: 21 });
+    const at11 = at({ savedAt: Date.now(), savedWords: 11 });
+
+    assert.match(statusFor(at5, 'sr'), /5 reči$/);
+    assert.match(statusFor(at21, 'sr'), /21 reč$/);
+    assert.match(statusFor(at11, 'sr'), /11 reči$/);
+  });
+
+  it('says nothing about words while a save is still waiting', () => {
+    // The line is silent there, and a count would be the one thing on it —
+    // which would read as a report about writing that is not on disk yet.
+    assert.equal(statusFor(at({ saving: true, savedWords: 1250 }), 'sr'), '');
+  });
+
+  it('says nothing about words over a text that has never been written', () => {
+    assert.equal(statusFor(at({ savedAt: null, savedWords: 40 }), 'sr'), 'Nije sačuvano');
+  });
+
+  it('says nothing about words when his writing did not reach disk', () => {
+    // That line is a warning. A word count beside it would soften a sentence
+    // whose whole job is to not be soft.
+    assert.equal(
+      statusFor(at({ couldNotSave: true, savedWords: 1250 }), 'sr'),
+      'Poslednje izmene nisu sačuvane',
+    );
   });
 });

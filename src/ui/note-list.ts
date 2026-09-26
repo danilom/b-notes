@@ -1,12 +1,21 @@
+import { type LengthBand, type LengthBands, bandOf } from '../notes/text-length.ts';
 import type { LiveNote } from '../notes/writing.ts';
 import { toSearchable } from '../language/diacritics.ts';
 import { type Language, describeWhen, strings } from '../language/wording.ts';
+import { pageGlyph } from './page-glyph.ts';
 
 /** How many recent texts to offer before he has to look for himself. */
 const RECENT_COUNT = 5;
 
 export interface ListView {
   notes: readonly LiveNote[];
+  /**
+   * Where one length band becomes the next, taken from his whole corpus.
+   *
+   * Handed in rather than worked out here: they are the same for every row, so
+   * counting them per row would be counting the corpus once per text.
+   */
+  lengths: LengthBands;
   query: string;
   openId: string | null;
   /**
@@ -32,6 +41,8 @@ export interface Draft {
 export interface Row {
   id: string | null;
   title: string;
+  /** How full a page to draw beside it, from empty to four lines. */
+  length: LengthBand;
   /** Folded, so `macka` finds `mačka` and `mačka` finds `macka`. */
   searchable: string;
   updatedAt: number;
@@ -79,19 +90,20 @@ function markOf(note: LiveNote): string | null {
   return note.copyNumber === null ? null : `(${note.copyNumber})`;
 }
 
-function toRow(note: LiveNote, words: ReturnType<typeof strings>): Row {
+function toRow(note: LiveNote, words: ReturnType<typeof strings>, lengths: LengthBands): Row {
   return {
     id: note.id,
     title: titleOf(note, words),
     searchable: note.searchable,
     updatedAt: note.updatedAt,
+    length: bandOf(note.bytes, lengths),
     mark: markOf(note),
   };
 }
 
 function rowsFor(view: ListView): Row[] {
   const words = strings(view.language);
-  return view.notes.map((note) => toRow(note, words));
+  return view.notes.map((note) => toRow(note, words, view.lengths));
 }
 
 /**
@@ -117,6 +129,8 @@ export function openRowFor(view: ListView): Row | null {
     title: words.untitledNew,
     searchable: '',
     updatedAt: view.draft.startedAt,
+    // Nothing written in it yet, which is exactly what an empty page says.
+    length: 0,
     mark: null,
   };
 }
@@ -175,12 +189,14 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
   title.className = 'note-title';
   title.textContent = row.title;
 
+  const length = pageGlyph(row.length);
+
   const when = document.createElement('span');
   when.className = 'note-when';
   when.textContent = describeWhen(row.updatedAt, view.language);
 
   if (row.mark === null) {
-    element.append(title, when);
+    element.append(length, title, when);
     return element;
   }
 
@@ -191,7 +207,7 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
   mark.className = 'note-mark';
   mark.textContent = row.mark;
 
-  element.append(title, mark, when);
+  element.append(length, title, mark, when);
   return element;
 }
 

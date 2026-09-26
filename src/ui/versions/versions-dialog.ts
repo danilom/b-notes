@@ -8,12 +8,29 @@ import { createStepper } from '../stepper.ts';
 import { type Titled, titleOf } from '../dialogs/dialog-heading.ts';
 import { beginningAndEnd } from '../deleted-and-archived/text-snippet.ts';
 import { countWords } from '../../notes/word-count.ts';
+import { type LengthBands, bandOf, bytesOf } from '../../notes/text-length.ts';
+import { pageGlyph } from '../page-glyph.ts';
 import { type VersionInList, describeVersion } from './version-row.ts';
 
 export interface VersionsHandlers {
   /** Put this text in front of him. The save that follows keeps what was there. */
   onRestore: (version: NoteVersion) => void;
   onClose: () => void;
+}
+
+/**
+ * Everything a row says, held together so the page can sit beside all of it.
+ *
+ * A row here is two or three lines deep, where his list's is one. Without this
+ * the page would be another item on the first line, level with the word count
+ * and above whatever the second line says — beside part of the row instead of
+ * beside the row.
+ */
+function bodyOf(...lines: readonly HTMLElement[]): HTMLElement {
+  const body = document.createElement('span');
+  body.className = 'index-body';
+  body.append(...lines);
+  return body;
 }
 
 /**
@@ -25,7 +42,12 @@ export interface VersionsHandlers {
  * the first thing about it; and it says nothing about how it compares, having
  * nothing to compare itself to.
  */
-function activeRowFor(current: string, language: Language, show: () => void): HTMLButtonElement {
+function activeRowFor(
+  current: string,
+  lengths: LengthBands,
+  language: Language,
+  show: () => void,
+): HTMLButtonElement {
   const words = strings(language);
 
   const row = document.createElement('button');
@@ -44,7 +66,7 @@ function activeRowFor(current: string, language: Language, show: () => void): HT
   size.textContent = words.versionWords(countWords(current));
 
   line.append(name, size);
-  row.append(line);
+  row.append(pageGlyph(bandOf(bytesOf(current), lengths)), bodyOf(line));
   row.addEventListener('click', show);
   return row;
 }
@@ -56,18 +78,25 @@ function activeRowFor(current: string, language: Language, show: () => void): HT
  * it says is no longer trying to be a reason to pick it — the diff beside it is
  * that.
  */
-function rowFor(about: VersionInList, language: Language, show: () => void): HTMLButtonElement {
+function rowFor(
+  about: VersionInList,
+  lengths: LengthBands,
+  language: Language,
+  show: () => void,
+): HTMLButtonElement {
   const said = describeVersion(about, language);
 
   const row = document.createElement('button');
   row.type = 'button';
   row.className = 'index-row';
 
+  const body = bodyOf();
+
   if (said.wasActive !== null) {
     const mark = document.createElement('span');
     mark.className = 'index-was-active';
     mark.textContent = said.wasActive;
-    row.append(mark);
+    body.append(mark);
   }
 
   const top = document.createElement('span');
@@ -89,15 +118,16 @@ function rowFor(about: VersionInList, language: Language, show: () => void): HTM
   when.textContent = said.when;
 
   top.append(size, when);
-  row.append(top);
+  body.append(top);
 
   if (said.note !== null) {
     const note = document.createElement('span');
     note.className = 'index-note';
     note.textContent = said.note;
-    row.append(note);
+    body.append(note);
   }
 
+  row.append(pageGlyph(bandOf(bytesOf(about.version.text), lengths)), body);
   row.addEventListener('click', show);
   return row;
 }
@@ -221,11 +251,20 @@ export interface VersionsOf {
    * sitting and not about the file.
    */
   previouslyActive: string | null;
+  /**
+   * The bands his list is drawn by, so a copy's page can be read against the
+   * pages he was just looking at.
+   *
+   * Not worked out from the copies of this one text, which would say how this
+   * text has grown — a different question, and one the word counts beside them
+   * already answer.
+   */
+  lengths: LengthBands;
 }
 
 export function openVersionsDialog(
   container: HTMLDialogElement,
-  { title, versions, current, previouslyActive }: VersionsOf,
+  { title, versions, current, previouslyActive, lengths }: VersionsOf,
   language: Language,
   handlers: VersionsHandlers,
 ): () => void {
@@ -301,7 +340,7 @@ export function openVersionsDialog(
 
   const rows = entries.map((version, at) =>
     version === null
-      ? activeRowFor(current, language, () => select(0))
+      ? activeRowFor(current, lengths, language, () => select(0))
       : rowFor(
           {
             version,
@@ -310,6 +349,7 @@ export function openVersionsDialog(
             at: { row: at, of: versions.length },
             restoredFrom: version.id === previouslyActive,
           },
+          lengths,
           language,
           () => select(at),
         ),

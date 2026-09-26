@@ -57,6 +57,13 @@ const TEXT = {
     foundPrevious: 'Prethodni',
     foundNext: 'Sledeći',
     savedAgo: (when: string) => `Sačuvano ${when}`,
+    /*
+      The one number a man writing an essay actually watches. Counted the way
+      he would count by hand — whitespace apart — and set beside the save it
+      belongs to rather than running while he types, which would be a figure
+      flickering at the edge of his eye all day.
+    */
+    wordCount: (n: number) => `${n} ${plural(n, 'reč', 'reči', 'reči')}`,
     notSaved: 'Nije sačuvano',
     changesNotSaved: 'Poslednje izmene nisu sačuvane',
     minutesAgo: (n: number) => `pre ${n} ${plural(n, 'minut', 'minuta', 'minuta')}`,
@@ -361,6 +368,7 @@ const TEXT = {
     foundPrevious: 'Previous',
     foundNext: 'Next',
     savedAgo: (when: string) => `Saved ${when}`,
+    wordCount: (n: number) => `${n} ${n === 1 ? 'word' : 'words'}`,
     notSaved: 'Not saved',
     changesNotSaved: 'Latest changes not saved',
     minutesAgo: (n: number) => `${n} minute${n === 1 ? '' : 's'} ago`,

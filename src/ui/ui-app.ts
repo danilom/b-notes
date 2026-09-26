@@ -1,5 +1,7 @@
 import { type Language, strings } from '../language/wording.ts';
 import { NO_NOTE, type NoNote, type NoteHandle } from '../notes/note-handle.ts';
+import { type LengthBands, bandsFrom } from '../notes/text-length.ts';
+import { countWords } from '../notes/word-count.ts';
 import {
   type LiveNote,
   SPEAK_AFTER_FAILURES,
@@ -132,6 +134,16 @@ let showAppearanceOf: (appearance: Appearance) => void;
  */
 let notes: LiveNote[] = [];
 
+/**
+ * Where one length band becomes the next, over everything he has written.
+ *
+ * Worked out when the list is read and not again: the boundaries are quartiles
+ * of six hundred texts, and one more text moves them by nothing anybody could
+ * see. A band that shifted while he watched would be the list rearranging
+ * itself under him, which is the thing it most carefully never does.
+ */
+let lengths: LengthBands = bandsFrom([]);
+
 
 
 
@@ -173,11 +185,19 @@ let notice: string | null = null;
  */
 let draft: Draft | null = null;
 let savedAt: number | null = null;
+/**
+ * How many words were in the open text when it last reached disk.
+ *
+ * Taken at the save rather than as he types: counting a long essay on every
+ * keystroke is work nobody asked for, and the line it appears on is blank
+ * while a save is waiting anyway.
+ */
+let savedWords = 0;
 
 
 
 function draw(): void {
-  renderList(listPane, { notes, query: search.value, openId: openName(), draft, language });
+  renderList(listPane, { notes, lengths, query: search.value, openId: openName(), draft, language });
   putAway.drawStrip();
   archived.drawStrip();
 }
@@ -219,6 +239,7 @@ function whatIsHappening(): WhatIsHappening {
     openId: openName(),
     text: editor.value,
     savedAt,
+    savedWords,
     // Another attempt at a save that failed is a save still on its way, and
     // the line stays silent for it the same way. Without this, the one failure
     // that Dropbox causes weekly left the report of the *previous* save on
@@ -257,6 +278,7 @@ function typedSomething(): void {
 function afterWriting(written: NoteHandle[]): void {
   if (openHandle !== NO_NOTE && written.includes(openHandle)) {
     savedAt = Date.now();
+    savedWords = countWords(editor.value);
     draft = null;
     /*
       Written down again, because the save may have renamed it.
@@ -277,6 +299,7 @@ function afterWriting(written: NoteHandle[]): void {
 async function reloadAfterWriting(): Promise<void> {
   try {
     notes = await writing.list();
+    lengths = bandsFrom(notes.map((note) => note.bytes));
   } catch (error: unknown) {
     log.error('Could not read his texts after saving', describeError(error));
     return;
@@ -334,6 +357,7 @@ async function open(handle: NoteHandle): Promise<void> {
   openHandle = handle;
   editor.value = note.text;
   savedAt = note.updatedAt;
+  savedWords = countWords(note.text);
   draft = null;
   remember(writing.tokenOf(handle));
   /*
@@ -561,6 +585,7 @@ async function deleteOpenNote(id: string, handle: NoteHandle): Promise<void> {
 /** Both lists, after anything that can move a text between them. */
 async function reload(): Promise<void> {
   [notes] = await Promise.all([writing.list(), putAway.read()]);
+  lengths = bandsFrom(notes.map((note) => note.bytes));
   // How many there are, every time it changes. A count in the log is what tells
   // a folder that emptied itself from a man who deleted one text, days later,
   // over the telephone — and it costs one line per delete or restore.
@@ -738,6 +763,7 @@ export async function startApp(runningOn: Host): Promise<void> {
     */
     liveTitlesNow: () => new Set(notes.map((note) => note.title)),
     queryNow: () => search.value,
+    lengthsNow: () => lengths,
     refresh: reload,
     openText: open,
     say: (said) => {
@@ -756,6 +782,7 @@ export async function startApp(runningOn: Host): Promise<void> {
     log,
     languageNow: () => language,
     queryNow: () => search.value,
+    lengthsNow: () => lengths,
     refresh: reload,
     // Straight into it. He asked for this text; leaving him looking at the
     // list to find it again would be answering a question with a question.
@@ -774,6 +801,7 @@ export async function startApp(runningOn: Host): Promise<void> {
     writing,
     log,
     languageNow: () => language,
+    lengthsNow: () => lengths,
     openTextNow: () => ({
       handle: openHandle,
       name: openName(),
@@ -918,6 +946,7 @@ export async function startApp(runningOn: Host): Promise<void> {
 
   try {
     ({ notes } = await readEverything());
+    lengths = bandsFrom(notes.map((note) => note.bytes));
   } catch (error: unknown) {
     log.error('Could not read his writing at all', describeError(error));
     // Verbatim. It is the only thing that tells a disconnected drive from a

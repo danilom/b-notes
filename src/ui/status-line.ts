@@ -15,6 +15,17 @@ export interface WhatIsHappening {
   text: string;
   /** When it last reached disk, or null if it never has. */
   savedAt: number | null;
+  /**
+   * How many words were in it when it last reached disk.
+   *
+   * Of the saved text, not of what is in the editor this instant — which is
+   * the same thing whenever this line is visible, since it says nothing at all
+   * while a save is still waiting. Counted then rather than now: a figure
+   * recomputed on every keystroke is both a hundred and forty thousand
+   * characters of work per letter and a number flickering at the edge of his
+   * eye while he writes.
+   */
+  savedWords: number;
   /** Whether a save is waiting to run, including another attempt at one that failed. */
   saving: boolean;
   /**
@@ -59,7 +70,13 @@ export function statusFor(now: WhatIsHappening, language: Language): string {
   if (now.notice !== null) return now.notice;
   if (now.openId === null && isEmptyText(now.text)) return '';
   if (now.saving) return '';
-  return now.savedAt === null ? words.notSaved : words.savedAgo(describeWhen(now.savedAt, language));
+  if (now.savedAt === null) return words.notSaved;
+  /*
+    Beside the save rather than on a line of its own. It is the one number a
+    man writing an essay watches, and it changes only when the save it sits
+    next to changes — so the line is as still as it was.
+  */
+  return `${words.savedAgo(describeWhen(now.savedAt, language))} · ${words.wordCount(now.savedWords)}`;
 }
 
 /**
