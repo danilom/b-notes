@@ -341,6 +341,36 @@ function showStatus(): void {
 
 
 
+/** The top of a text, which is where one he has never been into starts. */
+const START = { caret: 0, scrollTop: 0 } as const;
+
+/**
+ * Where he is in the open text: the caret, and how far down the box is.
+ *
+ * `selectionStart` rather than `selectionEnd`, so a run of selected text comes
+ * back with the caret at its head. Read from the editor at the moment it is
+ * wanted rather than tracked as he moves, which would be a listener on every
+ * scroll and every arrow key to hold a number nothing reads in between.
+ */
+function placeInEditor(): { caret: number; scrollTop: number } {
+  return { caret: editor.selectionStart, scrollTop: Math.round(editor.scrollTop) };
+}
+
+/**
+ * Puts him back where he was in a text.
+ *
+ * Held to what is actually there. The session file describes a text in Dropbox
+ * that another machine may have rewritten since, so an offset from last night
+ * can point past the end of this morning's text — which reads as the caret
+ * simply being at the end, and is the kind of wrong that never gets reported.
+ * The box clamps its own scroll, so nothing has to be done about that.
+ */
+function goBackTo(place: { caret: number; scrollTop: number }): void {
+  const caret = Math.min(place.caret, editor.value.length);
+  editor.setSelectionRange(caret, caret);
+  editor.scrollTop = place.scrollTop;
+}
+
 async function open(handle: NoteHandle): Promise<void> {
   await writing.flush();
 
@@ -360,7 +390,6 @@ async function open(handle: NoteHandle): Promise<void> {
   savedAt = note.updatedAt;
   savedWords = countWords(note.text);
   draft = null;
-  remember(writing.tokenOf(handle));
   /*
     The caret is deliberately not put in his writing. Resoph does not do it,
     and he has used Resoph for years — and the caret would land at position
@@ -372,6 +401,10 @@ async function open(handle: NoteHandle): Promise<void> {
   */
   editor.setSelectionRange(0, 0);
   editor.scrollTop = 0;
+  // After the box has been put back to the top, and not before: assigning
+  // `value` leaves the caret and the scroll wherever the browser decides, so
+  // written down any earlier this records the place he just left.
+  remember(writing.tokenOf(handle));
   findInText.fromTheTop();
   findInText.again(search.value);
   findInText.scrollToCurrent();
@@ -679,10 +712,20 @@ export async function startApp(runningOn: Host): Promise<void> {
       await writing.flush();
     } catch (error: unknown) {
       // Said here and nowhere else: the status line he would read it in is
-      // leaving with the window. What should happen instead is the rescue
-      // write, which does not exist yet.
+      // leaving with the window. There is nowhere else for it to go — a folder
+      // that has gone at the moment of closing is the one failure this app
+      // cannot report, and it is rare enough to be left that way.
       log.error('Could not save before closing', describeError(error));
     }
+
+    /*
+      And where he was reading, which is written here rather than as he moves.
+      Scrolling and moving the caret are the two things he does constantly and
+      neither is worth a write, so the place goes down whenever the session file
+      is being written anyway — and this is the one moment that is guaranteed to
+      come after the last of them.
+    */
+    remember(openName());
   });
 
   const folders: SettingsFolders = {
@@ -710,9 +753,12 @@ export async function startApp(runningOn: Host): Promise<void> {
   // he was is worth nothing next to what he's typing, so a failure here is
   // logged and otherwise ignored.
   remember = (openNoteId) => {
-    writeSession(host.files, host.appFolder, { openNoteId }).catch((error: unknown) => {
-      log.warn('Could not remember which text is open', describeError(error));
-    });
+    const { caret, scrollTop } = openNoteId === null ? START : placeInEditor();
+    writeSession(host.files, host.appFolder, { openNoteId, caret, scrollTop }).catch(
+      (error: unknown) => {
+        log.warn('Could not remember which text is open', describeError(error));
+      },
+    );
   };
 
   writing = createWriting(host.files, host.writingFolder, log, afterWriting);
@@ -963,7 +1009,8 @@ export async function startApp(runningOn: Host): Promise<void> {
   // the button for getting rid of it.
   // Reopen what he was last in. The search is deliberately not restored — a
   // filtered list on startup looks exactly like texts having gone missing.
-  const { openNoteId } = await readSession(host.files, host.appFolder);
+  const wasIn = await readSession(host.files, host.appFolder);
+  const { openNoteId } = wasIn;
   /*
     The one place a name is written down and read back. Everything else holds
     a handle, which means nothing between one run and the next — so this is
@@ -973,6 +1020,18 @@ export async function startApp(runningOn: Host): Promise<void> {
   const wasOpen = openNoteId === null ? NO_NOTE : writing.handleFor(openNoteId);
   if (wasOpen !== NO_NOTE) {
     await open(wasOpen);
+    /*
+      After `open`, which puts every text it shows at the top — the right answer
+      for a text he picked off the list, and the wrong one for the morning after
+      he left off in the middle of an essay. Resoph comes back where he was and
+      he has used it for years.
+
+      The editor is not focused for it. That was decided separately and holds
+      here: a caret in his writing is a keystroke away from editing it, and the
+      one at offset zero is a keystroke away from renaming the text, since the
+      name comes from the first line.
+    */
+    goBackTo(wasIn);
   } else {
     draw();
     showStatus();
