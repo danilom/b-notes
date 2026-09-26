@@ -48,7 +48,15 @@ import { flashToast } from './toast.ts';
 
 let language: Language;
 let words: ReturnType<typeof strings>;
-let remember: (openNoteId: string | null) => void;
+/**
+ * Writes down which text is open and where he is in it.
+ *
+ * Returns the write rather than firing it, so the one caller that must not be
+ * beaten by the closing window can wait for it. Everywhere else drops it on
+ * purpose: remembering where he was is worth nothing next to what he is
+ * typing, and a failure is logged and otherwise ignored.
+ */
+let remember: (openNoteId: string | null) => Promise<void>;
 
 /** Both come from the host, and nothing here reaches past it for them. */
 let log: Log;
@@ -289,7 +297,7 @@ function afterWriting(written: NoteHandle[]): void {
       left it pointing at a name that had moved, and the text he was last in
       came back as nothing the next morning.
     */
-    remember(writing.tokenOf(openHandle));
+    void remember(writing.tokenOf(openHandle));
   }
   // Always, even when nothing was written: a failure is the other thing the
   // strip has to hear about, and it says so on the second one in a row.
@@ -404,7 +412,7 @@ async function open(handle: NoteHandle): Promise<void> {
   // After the box has been put back to the top, and not before: assigning
   // `value` leaves the caret and the scroll wherever the browser decides, so
   // written down any earlier this records the place he just left.
-  remember(writing.tokenOf(handle));
+  void remember(writing.tokenOf(handle));
   findInText.fromTheTop();
   findInText.again(search.value);
   findInText.scrollToCurrent();
@@ -498,7 +506,7 @@ newNote.addEventListener('click', () => {
   // would leave him a second of having clicked and nothing having happened,
   // which is the second in which he clicks again.
   draft = { startedAt: Date.now() };
-  remember(null);
+  void remember(null);
   draw();
   showStatus();
   editor.focus();
@@ -592,7 +600,7 @@ async function deleteOpenNote(id: string, handle: NoteHandle): Promise<void> {
   editor.value = '';
   savedAt = null;
   draft = null;
-  remember(null);
+  void remember(null);
   await reload();
   findInText.again(search.value);
   // Said out loud for the same reason the restore is: the text left the editor
@@ -722,10 +730,14 @@ export async function startApp(runningOn: Host): Promise<void> {
       And where he was reading, which is written here rather than as he moves.
       Scrolling and moving the caret are the two things he does constantly and
       neither is worth a write, so the place goes down whenever the session file
-      is being written anyway — and this is the one moment that is guaranteed to
-      come after the last of them.
+      is being written anyway — and this is the last moment there is.
+
+      Awaited, unlike every other call to it. The window is held open until this
+      callback settles, so a write merely started here is a write racing a
+      closing window — which is how the first version of this shipped, and it
+      would have lost that race nearly every time.
     */
-    remember(openName());
+    await remember(openName());
   });
 
   const folders: SettingsFolders = {
@@ -752,13 +764,13 @@ export async function startApp(runningOn: Host): Promise<void> {
   // Written as he moves between texts, and never waited on: remembering where
   // he was is worth nothing next to what he's typing, so a failure here is
   // logged and otherwise ignored.
-  remember = (openNoteId) => {
+  remember = async (openNoteId) => {
     const { caret, scrollTop } = openNoteId === null ? START : placeInEditor();
-    writeSession(host.files, host.appFolder, { openNoteId, caret, scrollTop }).catch(
-      (error: unknown) => {
-        log.warn('Could not remember which text is open', describeError(error));
-      },
-    );
+    try {
+      await writeSession(host.files, host.appFolder, { openNoteId, caret, scrollTop });
+    } catch (error: unknown) {
+      log.warn('Could not remember which text is open', describeError(error));
+    }
   };
 
   writing = createWriting(host.files, host.writingFolder, log, afterWriting);
