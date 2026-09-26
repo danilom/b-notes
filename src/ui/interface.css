@@ -632,12 +632,11 @@ button svg {
   justify-content: space-between;
   gap: 0.6rem;
   /*
-    Centred rather than sharing a baseline, because the tallest thing in the row
-    is now a drawing and not a word. Baseline alignment puts the words at the top
-    of the row and lets the slack fall underneath, which left the title sitting
-    two pixels above the middle of the page beside it — close enough to look like
-    a mistake rather than a choice. The date gives up about a pixel of shared
-    baseline with the title for it, at a size where nobody can see that.
+    Centred rather than sharing a baseline, because one of the things in the row
+    is a drawing. A picture has no baseline of its own, so baseline alignment
+    sets its bottom edge on the words' baseline and hangs it a descender's height
+    too high. The date gives up about a pixel of shared baseline with the title
+    for this, at a size where nobody can see that.
   */
   align-items: center;
 }
@@ -676,18 +675,16 @@ button svg {
 .note-length {
   flex: none;
   /*
-    Bigger than the words beside it, which an icon normally is not. It can be,
-    because it is pale enough not to compete: a glyph at the title's own size had
-    to be drawn darker to be read at all, and then it was the first thing in the
-    row. Larger and fainter answers the question more quietly than smaller and
-    firmer.
+    About as tall as the title's line and three quarters as wide, which is the
+    shape of the sheet the box now holds. Drawn a shade taller than the words to
+    be read at all — it is pale enough that it can be, without becoming the
+    first thing in the row.
 
-    It is now the tallest thing in a row, so the row is a few pixels deeper than
-    it was. Worth it twice over: the page has room to be read, and the thing he
-    has to hit with a mouse got bigger.
+    The height is given and the width follows from the viewBox, so the page
+    cannot be squashed by changing one and forgetting the other.
   */
-  width: 1.45em;
-  height: 1.45em;
+  height: 1.21em;
+  aspect-ratio: 3 / 4;
   color: var(--faint);
 }
 
