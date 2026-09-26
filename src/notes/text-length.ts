@@ -64,6 +64,22 @@ function quartile(sorted: readonly number[], through: number): number {
   return sorted[at] ?? 0;
 }
 
+/**
+ * How many bytes a text would take on disk.
+ *
+ * For the three lists that hold writing without holding its file: the deleted,
+ * the archive, and the copies kept of one text. Those arrive as strings, and
+ * the bands they are measured against were worked out from file sizes, so the
+ * measure has to be the same one — a length in characters would put every text
+ * with diacritics in it a band too low.
+ */
+export function bytesOf(text: string): number {
+  return ENCODER.encode(text).length;
+}
+
+/** One for the app, rather than one per row on a list six hundred long. */
+const ENCODER = new TextEncoder();
+
 /** Which band a text falls in. */
 export function bandOf(bytes: number, bands: LengthBands): LengthBand {
   if (bytes < EMPTY_UNDER_BYTES) return 0;

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { EMPTY_UNDER_BYTES, bandOf, bandsFrom } from '../src/notes/text-length.ts';
+import { EMPTY_UNDER_BYTES, bandOf, bandsFrom, bytesOf } from '../src/notes/text-length.ts';
 
 /**
  * How long a text is, against the others he has written.
@@ -75,5 +75,21 @@ describe('banding his texts by length', () => {
       const { at } = bandsFrom(corpus);
       assert.ok(at[0] <= at[1] && at[1] <= at[2], `out of order for ${JSON.stringify(corpus)}`);
     }
+  });
+});
+
+/**
+ * The lists that hold writing without holding its file measure it themselves,
+ * and must come out with the number the file would have given.
+ */
+describe('measuring a text that is not a file', () => {
+  it('counts a letter he actually writes with as the two bytes it takes', () => {
+    assert.equal(bytesOf('cacka'), 5);
+    assert.equal(bytesOf('čačka'), 7);
+  });
+
+  it('agrees with the bands that an emptied text is empty', () => {
+    assert.ok(bytesOf('') < EMPTY_UNDER_BYTES);
+    assert.ok(bytesOf('- [ ]') < EMPTY_UNDER_BYTES);
   });
 });
