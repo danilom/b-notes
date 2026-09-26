@@ -694,9 +694,22 @@ button svg {
 
     The height is given and the width follows from the viewBox, so the page
     cannot be squashed by changing one and forgetting the other.
+
+    In rem, so it is one size in all four lists. In em it tracked whatever type
+    the list around it was set in, and the same mark came out three sizes — the
+    one thing that stops him reading two of them against each other, which is
+    the only reason the mark is there.
   */
-  height: 1.21em;
+  height: 1.13rem;
   aspect-ratio: 7 / 10;
+  /*
+    Said, rather than left out, because the shelves and the index draw their
+    rows as buttons and `button svg` sets a square width for the app's icons.
+    That rule only ever reached the width — the height here outranks it — so the
+    page came out a sixth too wide in the two dialogs and right in the list.
+    `auto` is what the ratio needs to do its work, and it outranks a bare tag.
+  */
+  width: auto;
   color: var(--faint);
 }
 
@@ -1217,7 +1230,7 @@ dialog::backdrop {
   knows the two are the same text, only that they start alike.
 */
 .review-already {
-  grid-column: 2 / -1;
+  grid-column: 1 / -1;
   color: var(--chosen-ink);
   font-size: 0.92em;
 }
@@ -1574,16 +1587,25 @@ dialog::backdrop {
 }
 
 .review-row {
+  /* The page, and then everything the row says. The page is first for the
+     reason it is first in his list: down a column it can be run past, where
+     after the date it would land in a different place on every row. */
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  /* This list can hold everything he has ever put away, so room between rows is
+     room paid for by the hundred; the inset at the sides is what keeps the text
+     off the hover edge, and no more than that. */
+  padding: 0.3rem 0.45rem;
+}
+
+/* What the row says, which is two or three lines of it. */
+.review-row-body {
+  flex: 1;
+  min-width: 0;
   display: grid;
-  /* A page, what it is called, and when. The page is first for the reason it is
-     first in his list: down a column it can be run past, where after the date
-     it would land in a different place on every row. */
-  grid-template-columns: auto 1fr auto;
-  gap: 0.25rem 0.7rem;
-  /* Vertical only. This list can hold everything he has ever put away, so
-     room between rows is room paid for by the hundred; the inset at the
-     sides is what keeps the text off the hover edge. */
-  padding: 0.3rem 0.6rem;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 1rem;
 }
 
 .review-title {
@@ -1666,19 +1688,18 @@ dialog::backdrop {
   about before he has read a word of it, rather than as the first of the
   copies.
 */
-.index-row-active .index-line {
+/*
+  The number and the count together, the date at the far end.
+
+  Not `space-between`, which on the three things a copy's line carries would
+  strand the word count in the middle, away from the number it belongs to. Only
+  the date is pushed out, so the head row — which carries two things — and the
+  copies under it lay out by the same rule instead of by two.
+*/
+.index-line {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
   gap: 0.5rem;
-}
-
-.index-row-active .index-when {
-  margin-left: 0;
-}
-
-.index-line {
-  display: block;
   color: var(--ink);
 }
 
@@ -1697,7 +1718,7 @@ dialog::backdrop {
 }
 
 .index-when {
-  margin-left: 0.4rem;
+  margin-left: auto;
   color: var(--quiet);
   white-space: nowrap;
 }
@@ -1789,9 +1810,7 @@ dialog::backdrop {
   he works out which one it is.
 */
 .review-snippet {
-  /* Under the title, not under the page: the page belongs to the whole row and
-     an opening line indented to clear it reads as belonging to the page. */
-  grid-column: 2 / -1;
+  grid-column: 1 / -1;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;

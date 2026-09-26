@@ -230,15 +230,22 @@ function rowFor<T extends ShelvedText>(
   snippet.className = said.length > 0 ? 'review-snippet' : 'review-snippet review-snippet-none';
   snippet.textContent = said.length > 0 ? said : words.untexted;
 
-  row.append(length, title, when, snippet);
+  // The lines held together, so the page can sit against all of them. A row
+  // here runs to three lines where his list runs to one, and a page level with
+  // the first of them is beside the title rather than beside the text.
+  const lines = document.createElement('span');
+  lines.className = 'review-row-body';
+  lines.append(title, when, snippet);
 
   const marked = shelf.markedFor?.(note) ?? null;
   if (marked !== null) {
     const line = document.createElement('span');
     line.className = 'review-already';
     line.textContent = marked;
-    row.append(line);
+    lines.append(line);
   }
+
+  row.append(length, lines);
 
   row.addEventListener('click', () => show(note));
   return row;
