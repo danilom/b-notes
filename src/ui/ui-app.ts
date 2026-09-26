@@ -126,12 +126,21 @@ let settings: Settings;
 let saveSettings: (settings: Settings) => void;
 
 /**
- * Puts an appearance on screen, both halves of it.
+ * Puts an appearance on screen: the stylesheet, the window's zoom, and how long
+ * Nedavni is.
  *
- * The stylesheet's half and the window's zoom move together here so that the
- * panel, the keyboard and startup can't drift apart on which is in charge.
+ * All three move together here so that the panel, the keyboard and startup
+ * can't drift apart on which is in charge.
  */
 let showAppearanceOf: (appearance: Appearance) => void;
+
+/**
+ * How long Nedavni is on screen now, which is not yet what is saved.
+ *
+ * The panel previews before he keeps anything, and it has to: a number of rows
+ * is the one choice in there he can only judge by looking at the list it makes.
+ */
+let shownRecent = DEFAULT_APPEARANCE.recentCount;
 
 
 
@@ -207,7 +216,15 @@ let savedWords = 0;
 
 
 function draw(): void {
-  renderList(listPane, { notes, lengths, query: search.value, openId: openName(), draft, language });
+  renderList(listPane, {
+    notes,
+    lengths,
+    query: search.value,
+    recentCount: shownRecent,
+    openId: openName(),
+    draft,
+    language,
+  });
   putAway.drawStrip();
   archived.drawStrip();
 }
@@ -775,6 +792,9 @@ export async function startApp(runningOn: Host): Promise<void> {
   showAppearanceOf = (appearance) => {
     applyAppearance(document.documentElement, appearance);
     host.setZoom(appearance.zoom);
+    // Not drawn here: this runs before the first paint, when there is no list
+    // to draw and nothing yet read from disk to put in it.
+    shownRecent = appearance.recentCount;
   };
 
   // Before the first paint, so he never sees the app in someone else's colours
@@ -820,7 +840,13 @@ export async function startApp(runningOn: Host): Promise<void> {
     languageNow: () => language,
     settingsNow: () => settings,
     advancedNow: () => advanced,
-    preview: (appearance) => showAppearanceOf(appearance),
+    preview: (appearance) => {
+      showAppearanceOf(appearance);
+      // Everything else in the panel is a stylesheet away. This one is a
+      // different list, so it has to be built again — and cancelling previews
+      // what he walked in with, which puts it back.
+      draw();
+    },
     keep: (appearance) => {
       settings = { ...settings, ...appearance };
       saveSettings(settings);

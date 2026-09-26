@@ -5,6 +5,7 @@ import type { LiveNote } from '../src/notes/writing.ts';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { DEFAULT_APPEARANCE } from '../src/ui/settings/appearance.ts';
 import { toSearchable } from '../src/language/diacritics.ts';
 import type { Note } from '../src/notes/note.ts';
 import { type ListView, openRowFor, sectionsFor } from '../src/ui/note-list.ts';
@@ -38,6 +39,7 @@ function view(over: Partial<ListView> = {}): ListView {
     notes: NOTES,
     lengths: bandsFrom(NOTES.map((note) => note.bytes)),
     query: '',
+    recentCount: DEFAULT_APPEARANCE.recentCount,
     openId: null,
     draft: null,
     language: 'sr',
@@ -52,6 +54,14 @@ describe('the list of texts', () => {
   it('shows nothing extra while he has not started a new text', () => {
     const sections = sectionsFor(view());
     assert.deepEqual(titlesIn(sections, 'Nedavni'), ['Ponta', 'Zima', 'Amsterdam']);
+    assert.deepEqual(titlesIn(sections, 'Svi tekstovi'), ['Amsterdam', 'Ponta', 'Zima']);
+  });
+
+  it('offers as many recent texts as he has asked for, and no more', () => {
+    // Shortening Nedavni hides nothing: it is a shortcut into Svi tekstovi, so
+    // what falls off the end of it is still in the list below, in its place.
+    const sections = sectionsFor(view({ recentCount: 2 }));
+    assert.deepEqual(titlesIn(sections, 'Nedavni'), ['Ponta', 'Zima']);
     assert.deepEqual(titlesIn(sections, 'Svi tekstovi'), ['Amsterdam', 'Ponta', 'Zima']);
   });
 

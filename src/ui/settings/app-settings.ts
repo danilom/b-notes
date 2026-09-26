@@ -4,6 +4,7 @@ import {
   type Appearance,
   DEFAULT_APPEARANCE,
   MAX_ZOOM,
+  clampRecent,
   clampScale,
   isAccentChoice,
   isFontChoice,
@@ -39,6 +40,11 @@ export interface SharedSettings {
    */
   writingFont: Appearance['writingFont'];
   writingSize: Appearance['writingSize'];
+  /**
+   * How long Nedavni is. Shared rather than per-screen: it answers how many
+   * texts he has on the go, which is the same wherever he sits down.
+   */
+  recentCount: Appearance['recentCount'];
 }
 
 /**
@@ -121,6 +127,7 @@ export function settingsFrom(
     writingSize: isScale(shared['writingSize'])
       ? clampScale(shared['writingSize'])
       : DEFAULT_SETTINGS.writingSize,
+    recentCount: clampRecent(shared['recentCount']),
     // Clamped rather than rejected: a file naming a zoom we no longer allow
     // still means he wanted it big, so bring it to the nearest size we do.
     zoom: isScale(local['zoom']) ? clampScale(local['zoom'], MAX_ZOOM) : DEFAULT_SETTINGS.zoom,
@@ -152,7 +159,8 @@ async function writeSettings(
   folders: SettingsFolders,
   settings: Settings,
 ): Promise<void> {
-  const { language, font, accent, writingFont, writingSize, zoom, mode } = settings;
+  const { language, font, accent, writingFont, writingSize, recentCount, zoom, mode } =
+    settings;
   const sharedPath = `${folders.writingFolder}/${SHARED_FILE}`;
   const localPath = `${folders.appFolder}/${LOCAL_FILE}`;
 
@@ -166,7 +174,7 @@ async function writeSettings(
   await Promise.all([
     files.write(
       sharedPath,
-      `${JSON.stringify({ ...shared, language, font, accent, writingFont, writingSize }, null, 2)}\n`,
+      `${JSON.stringify({ ...shared, language, font, accent, writingFont, writingSize, recentCount }, null, 2)}\n`,
     ),
     files.write(localPath, `${JSON.stringify({ ...local, zoom, mode }, null, 2)}\n`),
   ]);

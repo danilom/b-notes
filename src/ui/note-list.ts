@@ -4,9 +4,6 @@ import { toSearchable } from '../language/diacritics.ts';
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 import { pageGlyph } from './page-glyph.ts';
 
-/** How many recent texts to offer before he has to look for himself. */
-const RECENT_COUNT = 5;
-
 export interface ListView {
   notes: readonly LiveNote[];
   /**
@@ -17,6 +14,11 @@ export interface ListView {
    */
   lengths: LengthBands;
   query: string;
+  /**
+   * How many recent texts to offer before he has to look for himself. His to
+   * set, in Izgled, because how many essays a man has on the go is his habit.
+   */
+  recentCount: number;
   openId: string | null;
   /**
    * A text he has asked for but not yet written into, so one with no file
@@ -164,7 +166,7 @@ export function sectionsFor(view: ListView): Section[] {
 
   if (view.query.trim().length === 0) {
     return [
-      { heading: words.sectionRecent, rows: byRecency.slice(0, RECENT_COUNT) },
+      { heading: words.sectionRecent, rows: byRecency.slice(0, view.recentCount) },
       { heading: words.sectionAll, rows: all },
     ];
   }

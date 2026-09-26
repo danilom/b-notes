@@ -2445,6 +2445,14 @@ button:disabled {
   color: var(--quiet);
 }
 
+/* Four numbers, all the same width, so the row reads as a scale rather
+   than as four differently sized buttons. */
+.count-choice {
+  padding: 0.4rem;
+  min-width: 2.6rem;
+  font-variant-numeric: tabular-nums;
+}
+
 /* No name beside it. He has known what these colours are called for
    eighty years, and six words would only crowd six obvious dots. */
 .colour-choice {

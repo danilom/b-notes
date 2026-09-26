@@ -14,6 +14,23 @@ export type AccentChoice = 'blue' | 'teal' | 'green' | 'gold' | 'red' | 'violet'
 export type ModeChoice = 'light' | 'dark';
 export type WritingFontChoice = 'georgia' | 'cambria' | 'corbel';
 
+/**
+ * How many of his most recent texts Nedavni offers, and the choices he has.
+ *
+ * Nedavni is a shortcut into Svi tekstovi rather than a slice of it, so this
+ * number costs nothing but the length of one list — and how many texts a man
+ * has on the go at once is his own habit rather than something the app can work
+ * out, which is exactly what makes it worth asking him.
+ *
+ * A short ladder rather than a free number. There is no right value to be found
+ * by fine steps, and every rung here is a list he can still take in at a
+ * glance.
+ */
+export const RECENT_COUNTS = [5, 10, 15, 20] as const;
+
+/** Enough that a week's work is all there, short of a second whole list. */
+const DEFAULT_RECENT = 10;
+
 export interface Appearance {
   font: FontChoice;
   /** How much larger than life the app is, the way a browser means it. */
@@ -24,6 +41,8 @@ export interface Appearance {
   writingFont: WritingFontChoice;
   /** On top of the zoom, so his prose can grow without the list growing with it. */
   writingSize: number;
+  /** How many recent texts the list offers above the whole lot. */
+  recentCount: number;
 }
 
 /**
@@ -38,6 +57,7 @@ export const DEFAULT_APPEARANCE: Appearance = {
   mode: 'light',
   writingFont: 'georgia',
   writingSize: 1,
+  recentCount: DEFAULT_RECENT,
 };
 
 export const MODES = ['light', 'dark'] as const satisfies readonly ModeChoice[];
@@ -130,6 +150,22 @@ export function stepScale(
   const stepped = SCALE_STEPS[next];
   if (next < 0 || stepped === undefined || stepped > ceiling) return clampScale(factor, ceiling);
   return stepped;
+}
+
+/**
+ * Brings whatever the file says onto the ladder.
+ *
+ * Snapped rather than clamped, for the same reason a size is: a file naming
+ * twelve — a build that stepped differently, or a hand edit — should leave the
+ * panel showing one chosen rung rather than four unchosen ones.
+ */
+export function clampRecent(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return DEFAULT_RECENT;
+  let nearest: number = RECENT_COUNTS[0];
+  for (const count of RECENT_COUNTS) {
+    if (Math.abs(count - value) < Math.abs(nearest - value)) nearest = count;
+  }
+  return nearest;
 }
 
 export function isScale(value: unknown): value is number {

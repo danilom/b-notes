@@ -9,6 +9,7 @@ import {
   MIN_SCALE,
   MAX_ZOOM,
   MODES,
+  RECENT_COUNTS,
   WRITING_FONTS,
   stepScale,
   writingSampleFor,
@@ -51,7 +52,7 @@ export interface OpenPanel {
   change: (next: Appearance) => void;
 }
 
-interface OptionSpec<T extends string> {
+interface OptionSpec<T extends string | number> {
   value: T;
   /** What this option is called. Always set, even where nothing is drawn. */
   name: string;
@@ -68,7 +69,7 @@ function choicesIn<T extends string>(record: Record<T, unknown>): T[] {
   return Object.keys(record) as T[];
 }
 
-function optionGroup<T extends string>(
+function optionGroup<T extends string | number>(
   heading: string,
   options: readonly OptionSpec<T>[],
   chosen: T,
@@ -306,6 +307,25 @@ function fill(
     advanced,
   );
 
+  /*
+    Named for the section it lengthens, and not for the number it is: the word
+    over these buttons is the same word he reads over those rows, which is the
+    only thing that connects the two. The list behind the panel is redrawn as he
+    presses them, so the answer to "how many is 15?" is on screen beside the
+    question.
+  */
+  const recent = optionGroup(
+    words.sectionRecent,
+    RECENT_COUNTS.map((value) => ({
+      value,
+      name: words.noteCount(value),
+      label: String(value),
+      className: 'count-choice',
+    })),
+    chosen.recentCount,
+    (recentCount) => change({ ...chosen, recentCount }),
+  );
+
   const accents = optionGroup(
     words.appearanceColour,
     choicesIn(ACCENTS).map((value) => ({
@@ -359,7 +379,7 @@ function fill(
   // anything. Setting his text first and then the zoom would change it twice.
   panel.replaceChildren(
     header,
-    half(words.appearanceApp, [modes, fonts, row([appSize, accents])]),
+    half(words.appearanceApp, [row([modes, recent]), fonts, row([appSize, accents])]),
     half(words.appearanceWriting, [writingFonts, writingSize]),
     footer,
   );

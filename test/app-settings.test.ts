@@ -98,6 +98,19 @@ describe('reading how he likes the app set up', () => {
     assert.ok(MAX_WRITING > MAX_ZOOM);
   });
 
+  it('takes how long Nedavni is from the folder that travels with it', () => {
+    // How many texts he has on the go is the same wherever he sits down, so
+    // this one follows his writing rather than staying with a screen.
+    assert.equal(settingsFrom({ recentCount: 20 }, {}).recentCount, 20);
+    assert.equal(settingsFrom({}, { recentCount: 20 }).recentCount, DEFAULT_SETTINGS.recentCount);
+  });
+
+  it('brings a stored Nedavni that is not on the ladder onto it', () => {
+    assert.equal(settingsFrom({ recentCount: 12 }, {}).recentCount, 10);
+    assert.equal(settingsFrom({ recentCount: 900 }, {}).recentCount, 20);
+    assert.equal(settingsFrom({ recentCount: 'mnogo' }, {}).recentCount, DEFAULT_SETTINGS.recentCount);
+  });
+
   it('falls back when the stored zoom is not a number at all', () => {
     assert.equal(settingsFrom({}, { zoom: 'veliko' }).zoom, DEFAULT_SETTINGS.zoom);
     assert.equal(settingsFrom({}, { zoom: null }).zoom, DEFAULT_SETTINGS.zoom);
@@ -146,6 +159,7 @@ describe('saving how he likes the app set up', () => {
       mode: 'light',
       writingFont: 'georgia',
       writingSize: 1,
+      recentCount: 10,
     });
   });
 
