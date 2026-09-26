@@ -28,6 +28,36 @@ test('opens him back into the text he was in', async ({ page }) => {
   await expect(editor).toHaveValue(new RegExp('Dopisano\.'));
 });
 
+/*
+  Coming back to the top of a long essay is not coming back. What makes this a
+  GUI test rather than a unit one is that nothing below the browser knows how
+  far down a box is scrolled, and the value has to survive being written at the
+  close and read at the open.
+*/
+test('opens him back where he had got to in it, not at the top', async ({ page }) => {
+  const editor = page.locator('#editor');
+  await page.locator('#list .note').nth(1).click();
+  // Long enough to have somewhere to be, since a text that fits on screen
+  // cannot be scrolled and would pass this without doing anything.
+  await editor.fill(`Naslov\n${'Jedan pasus o zimi i o moru.\n\n'.repeat(200)}`);
+  await page.clock.runFor(1200);
+
+  await editor.evaluate((box: HTMLTextAreaElement) => {
+    box.setSelectionRange(900, 900);
+    box.scrollTop = 700;
+  });
+  await page.evaluate(async () => {
+    await (window as unknown as { closeWindow: () => Promise<void> }).closeWindow();
+  });
+
+  await page.goto('/');
+
+  await expect
+    .poll(async () => editor.evaluate((box: HTMLTextAreaElement) => box.scrollTop))
+    .toBe(700);
+  expect(await editor.evaluate((box: HTMLTextAreaElement) => box.selectionStart)).toBe(900);
+});
+
 test('opens him back into it after his first line changed its name', async ({ page }) => {
   // The rename is the case the session file used to miss: it was written when
   // he opened a text and never again, so a retitle left it pointing at a name

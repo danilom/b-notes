@@ -38,20 +38,26 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#list .note').first()).toBeVisible();
   await page.locator('#list .note').first().click();
-  // Clicked into, not merely opened. Opening a text leaves the caret out of
-  // it, the way the program he has used for years does.
-  await page.locator('#editor').click();
   await expect(page.locator('#editor')).toBeFocused();
 });
 
-test('says nothing until he has put the caret in his writing', async ({ page }) => {
-  // Those keys do nothing while the caret is elsewhere, so neither does this.
+test('answers a text he has only just opened, because he can type in it already', async ({
+  page,
+}) => {
+  /*
+    This used to assert the opposite, and was right to: opening a text left the
+    caret out of it, so those keys did nothing and neither did the card. Opening
+    now puts the caret back where he left off and takes the focus with it, so
+    Ctrl+C means something from the first moment — and a card that stayed silent
+    would be silent exactly when he had no idea the keys were live.
+  */
   await page.locator('#list .note').nth(1).click();
+  await expect(page.locator('#editor')).toBeFocused();
 
   await holdCtrl(page);
-  await page.clock.runFor(PAST_THE_WAIT + 1000);
+  await page.clock.runFor(PAST_THE_WAIT);
 
-  await expect(card(page)).toBeHidden();
+  await expect(card(page)).toBeVisible();
 });
 
 test('shows what he can do once he has held it long enough', async ({ page }) => {

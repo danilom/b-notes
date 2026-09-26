@@ -13,7 +13,8 @@ import { BUILD_STAMP } from '../platform/build-info.ts';
 import type { Host } from '../platform/host.ts';
 import { type Log, describeError } from '../platform/logging.ts';
 import { DEFAULT_CTRL_CARD_AFTER_MS, readAdvanced } from './settings/advanced-settings.ts';
-import { readSession, writeSession } from './settings/app-session.ts';
+import { type Place, readSession, writeSession } from './settings/app-session.ts';
+import { writingStartsAt } from '../notes/note-title.ts';
 import {
   type Settings,
   type SettingsFolders,
@@ -48,7 +49,15 @@ import { flashToast } from './toast.ts';
 
 let language: Language;
 let words: ReturnType<typeof strings>;
-let remember: (openNoteId: string | null) => void;
+/**
+ * Writes down which text is open and where he is in it.
+ *
+ * Returns the write rather than firing it, so the one caller that must not be
+ * beaten by the closing window can wait for it. Everywhere else drops it on
+ * purpose: remembering where he was is worth nothing next to what he is
+ * typing, and a failure is logged and otherwise ignored.
+ */
+let remember: (openNoteId: string | null) => Promise<void>;
 
 /** Both come from the host, and nothing here reaches past it for them. */
 let log: Log;
@@ -289,7 +298,7 @@ function afterWriting(written: NoteHandle[]): void {
       left it pointing at a name that had moved, and the text he was last in
       came back as nothing the next morning.
     */
-    remember(writing.tokenOf(openHandle));
+    void remember(writing.tokenOf(openHandle));
   }
   // Always, even when nothing was written: a failure is the other thing the
   // strip has to hear about, and it says so on the second one in a row.
@@ -341,6 +350,50 @@ function showStatus(): void {
 
 
 
+/**
+ * Where he was in each text he has been in this sitting.
+ *
+ * By handle and not by name, so a text that renames itself under him — which
+ * his do, every time he rewrites a first line — keeps the place he had in it.
+ * That is what handles are for, and this is the cheapest thing ever asked of
+ * them.
+ *
+ * This sitting only. What survives a restart is the one text he was last in,
+ * which `session.json` holds; the rest is worth a map in memory and not a file
+ * on disk, a rule for pruning it, and a second set of names to keep in step.
+ */
+const placeInText = new Map<NoteHandle, Place>();
+
+/**
+ * Where he is in the open text: the caret, and how far down the box is.
+ *
+ * `selectionStart` rather than `selectionEnd`, so a run of selected text comes
+ * back with the caret at its head. Read from the editor at the moment it is
+ * wanted rather than tracked as he moves, which would be a listener on every
+ * scroll and every arrow key to hold a number nothing reads in between.
+ */
+function placeInEditor(): Place {
+  return { caret: editor.selectionStart, scrollTop: Math.round(editor.scrollTop) };
+}
+
+/**
+ * Puts him back where he was in a text.
+ *
+ * Held to what is actually there. The session file describes a text in Dropbox
+ * that another machine may have rewritten since, so an offset from last night
+ * can point past the end of this morning's text — which reads as the caret
+ * simply being at the end, and is the kind of wrong that never gets reported.
+ * The box clamps its own scroll, so nothing has to be done about that.
+ */
+function goBackTo(place: Place): void {
+  const caret = Math.min(place.caret, editor.value.length);
+  editor.focus();
+  editor.setSelectionRange(caret, caret);
+  // Last of the three. Focusing scrolls the caret into view and so does moving
+  // it, so a scroll set before either of them is a scroll they undo.
+  editor.scrollTop = place.scrollTop;
+}
+
 async function open(handle: NoteHandle): Promise<void> {
   await writing.flush();
 
@@ -355,23 +408,35 @@ async function open(handle: NoteHandle): Promise<void> {
     told there is no such text — which is exactly what happened when the list
     was read without minting handles at all, and every text opened as nothing.
   */
+  // Where he was in the one he is leaving, before its text goes out of the box.
+  if (openHandle !== NO_NOTE) placeInText.set(openHandle, placeInEditor());
+
   openHandle = handle;
   editor.value = note.text;
   savedAt = note.updatedAt;
   savedWords = countWords(note.text);
   draft = null;
-  remember(writing.tokenOf(handle));
   /*
-    The caret is deliberately not put in his writing. Resoph does not do it,
-    and he has used Resoph for years — and the caret would land at position
-    zero, which is his opening line, which is the filename: an absent-minded
-    keystroke into a text he has just opened would rename it and move it in
-    the list. The card of shortcuts answers only while the caret is here, so
-    it waits until he clicks in, which is also when those keys start meaning
-    anything.
+    Back where he was in this one, or its top the first time he opens it.
+    Resoph does the same, and he has used Resoph for years — a text he left in
+    the middle coming back at the top is the odd behaviour, not this.
+
+    Focused, so the caret is really there and he can carry on typing. Resoph
+    does that too and he has used it for years.
+
+    It was nearly made conditional — focus only where there was a place worth
+    returning to, so that a text opened at its top never has a live caret on the
+    first line, which is the filename, where one absent-minded keystroke renames
+    the text and moves it in the list. That was overruled deliberately: he knows
+    the first line is the title, and a caret that sometimes appears is a worse
+    thing to live with than the risk it avoids. Do not quietly reintroduce the
+    condition.
   */
-  editor.setSelectionRange(0, 0);
-  editor.scrollTop = 0;
+  goBackTo(placeInText.get(handle) ?? { caret: writingStartsAt(note.text), scrollTop: 0 });
+  // After the box has been put where it belongs, and not before: assigning
+  // `value` leaves the caret and the scroll wherever the browser decides, so
+  // written down any earlier this records the place he just left.
+  void remember(writing.tokenOf(handle));
   findInText.fromTheTop();
   findInText.again(search.value);
   findInText.scrollToCurrent();
@@ -465,7 +530,7 @@ newNote.addEventListener('click', () => {
   // would leave him a second of having clicked and nothing having happened,
   // which is the second in which he clicks again.
   draft = { startedAt: Date.now() };
-  remember(null);
+  void remember(null);
   draw();
   showStatus();
   editor.focus();
@@ -559,7 +624,7 @@ async function deleteOpenNote(id: string, handle: NoteHandle): Promise<void> {
   editor.value = '';
   savedAt = null;
   draft = null;
-  remember(null);
+  void remember(null);
   await reload();
   findInText.again(search.value);
   // Said out loud for the same reason the restore is: the text left the editor
@@ -679,10 +744,24 @@ export async function startApp(runningOn: Host): Promise<void> {
       await writing.flush();
     } catch (error: unknown) {
       // Said here and nowhere else: the status line he would read it in is
-      // leaving with the window. What should happen instead is the rescue
-      // write, which does not exist yet.
+      // leaving with the window. There is nowhere else for it to go — a folder
+      // that has gone at the moment of closing is the one failure this app
+      // cannot report, and it is rare enough to be left that way.
       log.error('Could not save before closing', describeError(error));
     }
+
+    /*
+      And where he was reading, which is written here rather than as he moves.
+      Scrolling and moving the caret are the two things he does constantly and
+      neither is worth a write, so the place goes down whenever the session file
+      is being written anyway — and this is the last moment there is.
+
+      Awaited, unlike every other call to it. The window is held open until this
+      callback settles, so a write merely started here is a write racing a
+      closing window — which is how the first version of this shipped, and it
+      would have lost that race nearly every time.
+    */
+    await remember(openName());
   });
 
   const folders: SettingsFolders = {
@@ -709,10 +788,13 @@ export async function startApp(runningOn: Host): Promise<void> {
   // Written as he moves between texts, and never waited on: remembering where
   // he was is worth nothing next to what he's typing, so a failure here is
   // logged and otherwise ignored.
-  remember = (openNoteId) => {
-    writeSession(host.files, host.appFolder, { openNoteId }).catch((error: unknown) => {
+  remember = async (openNoteId) => {
+    const place = openNoteId === null ? null : placeInEditor();
+    try {
+      await writeSession(host.files, host.appFolder, { openNoteId, place });
+    } catch (error: unknown) {
       log.warn('Could not remember which text is open', describeError(error));
-    });
+    }
   };
 
   writing = createWriting(host.files, host.writingFolder, log, afterWriting);
@@ -963,7 +1045,8 @@ export async function startApp(runningOn: Host): Promise<void> {
   // the button for getting rid of it.
   // Reopen what he was last in. The search is deliberately not restored — a
   // filtered list on startup looks exactly like texts having gone missing.
-  const { openNoteId } = await readSession(host.files, host.appFolder);
+  const wasIn = await readSession(host.files, host.appFolder);
+  const { openNoteId } = wasIn;
   /*
     The one place a name is written down and read back. Everything else holds
     a handle, which means nothing between one run and the next — so this is
@@ -972,6 +1055,14 @@ export async function startApp(runningOn: Host): Promise<void> {
   */
   const wasOpen = openNoteId === null ? NO_NOTE : writing.handleFor(openNoteId);
   if (wasOpen !== NO_NOTE) {
+    /*
+      Put where he left it before it is opened, so the morning after runs down
+      the same path as switching back to a text during the day. `open` reads
+      this map, so seeding it is the whole of restoring him — and leaving it
+      unseeded, when the file says nothing, is the whole of not pretending to
+      know.
+    */
+    if (wasIn.place !== null) placeInText.set(wasOpen, wasIn.place);
     await open(wasOpen);
   } else {
     draw();
