@@ -1,7 +1,9 @@
 import { type Language, strings } from '../../language/wording.ts';
+import { type LengthBands, bandOf, bytesOf } from '../../notes/text-length.ts';
 import { type Shown, showAsModal } from '../dialogs/modal.ts';
 import { type IconName, icon } from '../icons.ts';
 import { matches } from '../note-list.ts';
+import { pageGlyph } from '../page-glyph.ts';
 import { titleOf } from '../dialogs/dialog-heading.ts';
 import { onOneLine } from './text-snippet.ts';
 
@@ -109,6 +111,17 @@ export interface Shelf<T extends ShelvedText> {
 export interface ShelfContents<T extends ShelvedText> {
   texts: readonly T[];
   /**
+   * The bands his own texts are measured against, so a page here means what it
+   * means in the list.
+   *
+   * His corpus rather than this shelf's. Working out fresh quartiles from ten
+   * archived texts would draw a full page beside the longest of the ten — and
+   * he would read it against the list he just came from, where a full page
+   * means something else entirely. The archive is measured by the same ruler or
+   * it is not worth measuring.
+   */
+  lengths: LengthBands;
+  /**
    * What was in the search box when he opened it, which the list arrives
    * filtered by. Named rather than ordered, so it cannot be handed over in the
    * place where the language goes.
@@ -182,6 +195,7 @@ function rowFor<T extends ShelvedText>(
   note: T,
   shelf: Shelf<T>,
   words: ReturnType<typeof strings>,
+  lengths: LengthBands,
   show: (note: T) => void,
   aside = false,
 ): HTMLElement {
@@ -191,6 +205,10 @@ function rowFor<T extends ShelvedText>(
   // a search missed for this reason: a row that goes when he types reads as a
   // text that has gone, and here it would read as the archive being incomplete.
   row.className = aside ? 'review-row aside' : 'review-row';
+
+  // Measured off the text itself: what is on a shelf is held in memory rather
+  // than as a file, so there is no size on disk to ask for.
+  const length = pageGlyph(bandOf(bytesOf(note.text), lengths));
 
   const title = document.createElement('span');
   title.className = 'review-title';
@@ -212,7 +230,7 @@ function rowFor<T extends ShelvedText>(
   snippet.className = said.length > 0 ? 'review-snippet' : 'review-snippet review-snippet-none';
   snippet.textContent = said.length > 0 ? said : words.untexted;
 
-  row.append(title, when, snippet);
+  row.append(length, title, when, snippet);
 
   const marked = shelf.markedFor?.(note) ?? null;
   if (marked !== null) {
@@ -235,7 +253,7 @@ const CLASS_FOR: Record<ShelfAction['strength'], string> = {
 export function openTextShelf<T extends ShelvedText>(
   container: HTMLDialogElement,
   shelf: Shelf<T>,
-  { texts, query }: ShelfContents<T>,
+  { texts, query, lengths }: ShelfContents<T>,
   language: Language,
   handlers: ShelfHandlers,
 ): () => void {
@@ -310,7 +328,7 @@ export function openTextShelf<T extends ShelvedText>(
     const { found, rest } = groupsFor(texts, filter);
 
     if (filter.length === 0) {
-      for (const note of found) list.push(rowFor(note, shelf, words, show));
+      for (const note of found) list.push(rowFor(note, shelf, words, lengths, show));
       rows.replaceChildren(...list);
       return;
     }
@@ -322,11 +340,11 @@ export function openTextShelf<T extends ShelvedText>(
       empty.textContent = words.nothingFound;
       list.push(empty);
     }
-    for (const note of found) list.push(rowFor(note, shelf, words, show));
+    for (const note of found) list.push(rowFor(note, shelf, words, lengths, show));
 
     if (rest.length > 0) {
       list.push(headingOf(`${words.shelfRest} · ${words.noteCount(rest.length)}`));
-      for (const note of rest) list.push(rowFor(note, shelf, words, show, true));
+      for (const note of rest) list.push(rowFor(note, shelf, words, lengths, show, true));
     }
 
     rows.replaceChildren(...list);

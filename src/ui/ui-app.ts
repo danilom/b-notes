@@ -763,6 +763,7 @@ export async function startApp(runningOn: Host): Promise<void> {
     */
     liveTitlesNow: () => new Set(notes.map((note) => note.title)),
     queryNow: () => search.value,
+    lengthsNow: () => lengths,
     refresh: reload,
     openText: open,
     say: (said) => {
@@ -781,6 +782,7 @@ export async function startApp(runningOn: Host): Promise<void> {
     log,
     languageNow: () => language,
     queryNow: () => search.value,
+    lengthsNow: () => lengths,
     refresh: reload,
     // Straight into it. He asked for this text; leaving him looking at the
     // list to find it again would be answering a question with a question.

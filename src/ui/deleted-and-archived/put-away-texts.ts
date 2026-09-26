@@ -1,4 +1,5 @@
 import { type Language, strings } from '../../language/wording.ts';
+import type { LengthBands } from '../../notes/text-length.ts';
 import type { NoteHandle } from '../../notes/note-handle.ts';
 import type { DeletedNote } from '../../notes/note.ts';
 import type { Writing } from '../../notes/writing.ts';
@@ -21,6 +22,14 @@ export interface PutAwayParts {
   languageNow: () => Language;
   /** What he is searching for, which the strip and the dialog both narrow by. */
   queryNow: () => string;
+  /**
+   * The bands his list is drawn by, read at the moment he opens this.
+   *
+   * Asked for rather than handed over once: they are worked out afresh
+   * whenever his texts change, and a copy taken when the app started would
+   * be measuring him against the man he was that morning.
+   */
+  lengthsNow: () => LengthBands;
   /** Everything read again, because a text moved between two lists. */
   refresh: () => Promise<void>;
   /** A text is back in his list and should be in front of him. */
@@ -137,7 +146,7 @@ export function createPutAwayTexts(parts: PutAwayParts): PutAwayTexts {
     log.info('Looked at the texts he has put away', { count: deleted.length });
     const close = openDeletedDialog(
       pane,
-      { deleted, query: parts.queryNow() },
+      { deleted, query: parts.queryNow(), lengths: parts.lengthsNow() },
       parts.languageNow(),
       {
         onClose: () => {

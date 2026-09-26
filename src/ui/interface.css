@@ -682,6 +682,10 @@ button svg {
 */
 .note-length {
   flex: none;
+  /* The shelves lay their rows out on a grid, where the default would stretch
+     it; his list lays them out with flex, where it would not. Said once here so
+     the glyph sits the same way in both. */
+  align-self: center;
   /*
     About as tall as the title's line and seven tenths as wide, which is the
     shape of the sheet the box now holds. Drawn a shade taller than the words to
@@ -1213,7 +1217,7 @@ dialog::backdrop {
   knows the two are the same text, only that they start alike.
 */
 .review-already {
-  grid-column: 1 / -1;
+  grid-column: 2 / -1;
   color: var(--chosen-ink);
   font-size: 0.92em;
 }
@@ -1571,8 +1575,11 @@ dialog::backdrop {
 
 .review-row {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.25rem 1rem;
+  /* A page, what it is called, and when. The page is first for the reason it is
+     first in his list: down a column it can be run past, where after the date
+     it would land in a different place on every row. */
+  grid-template-columns: auto 1fr auto;
+  gap: 0.25rem 0.7rem;
   /* Vertical only. This list can hold everything he has ever put away, so
      room between rows is room paid for by the hundred; the inset at the
      sides is what keeps the text off the hover edge. */
@@ -1771,7 +1778,9 @@ dialog::backdrop {
   he works out which one it is.
 */
 .review-snippet {
-  grid-column: 1 / -1;
+  /* Under the title, not under the page: the page belongs to the whole row and
+     an opening line indented to clear it reads as belonging to the page. */
+  grid-column: 2 / -1;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;

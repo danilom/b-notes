@@ -1,4 +1,5 @@
 import { type Language, describeWhen, strings } from '../../language/wording.ts';
+import type { LengthBands } from '../../notes/text-length.ts';
 import { type Shelf, openTextShelf } from './text-shelf.ts';
 import type { DeletedNote } from '../../notes/note.ts';
 
@@ -26,6 +27,8 @@ export interface DeletedHandlers {
 export interface DeletedTexts {
   deleted: readonly DeletedNote[];
   query: string;
+  /** The bands his own list is drawn by, so a page means the same thing here. */
+  lengths: LengthBands;
 }
 
 function shelfFor(language: Language, handlers: DeletedHandlers): Shelf<DeletedNote> {
@@ -53,11 +56,11 @@ function shelfFor(language: Language, handlers: DeletedHandlers): Shelf<DeletedN
 
 export function openDeletedDialog(
   container: HTMLDialogElement,
-  { deleted, query }: DeletedTexts,
+  { deleted, query, lengths }: DeletedTexts,
   language: Language,
   handlers: DeletedHandlers,
 ): () => void {
-  return openTextShelf(container, shelfFor(language, handlers), { texts: deleted, query }, language, {
+  return openTextShelf(container, shelfFor(language, handlers), { texts: deleted, query, lengths }, language, {
     onClose: handlers.onClose,
   });
 }
