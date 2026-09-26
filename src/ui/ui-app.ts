@@ -349,8 +349,28 @@ function showStatus(): void {
 
 
 
+/** Where the caret sits in a text, and how far down the box is. */
+interface Place {
+  caret: number;
+  scrollTop: number;
+}
+
 /** The top of a text, which is where one he has never been into starts. */
-const START = { caret: 0, scrollTop: 0 } as const;
+const START: Place = { caret: 0, scrollTop: 0 };
+
+/**
+ * Where he was in each text he has been in this sitting.
+ *
+ * By handle and not by name, so a text that renames itself under him — which
+ * his do, every time he rewrites a first line — keeps the place he had in it.
+ * That is what handles are for, and this is the cheapest thing ever asked of
+ * them.
+ *
+ * This sitting only. What survives a restart is the one text he was last in,
+ * which `session.json` holds; the rest is worth a map in memory and not a file
+ * on disk, a rule for pruning it, and a second set of names to keep in step.
+ */
+const placeInText = new Map<NoteHandle, Place>();
 
 /**
  * Where he is in the open text: the caret, and how far down the box is.
@@ -360,7 +380,7 @@ const START = { caret: 0, scrollTop: 0 } as const;
  * wanted rather than tracked as he moves, which would be a listener on every
  * scroll and every arrow key to hold a number nothing reads in between.
  */
-function placeInEditor(): { caret: number; scrollTop: number } {
+function placeInEditor(): Place {
   return { caret: editor.selectionStart, scrollTop: Math.round(editor.scrollTop) };
 }
 
@@ -373,7 +393,7 @@ function placeInEditor(): { caret: number; scrollTop: number } {
  * simply being at the end, and is the kind of wrong that never gets reported.
  * The box clamps its own scroll, so nothing has to be done about that.
  */
-function goBackTo(place: { caret: number; scrollTop: number }): void {
+function goBackTo(place: Place): void {
   const caret = Math.min(place.caret, editor.value.length);
   editor.setSelectionRange(caret, caret);
   editor.scrollTop = place.scrollTop;
@@ -393,23 +413,28 @@ async function open(handle: NoteHandle): Promise<void> {
     told there is no such text — which is exactly what happened when the list
     was read without minting handles at all, and every text opened as nothing.
   */
+  // Where he was in the one he is leaving, before its text goes out of the box.
+  if (openHandle !== NO_NOTE) placeInText.set(openHandle, placeInEditor());
+
   openHandle = handle;
   editor.value = note.text;
   savedAt = note.updatedAt;
   savedWords = countWords(note.text);
   draft = null;
   /*
-    The caret is deliberately not put in his writing. Resoph does not do it,
-    and he has used Resoph for years — and the caret would land at position
-    zero, which is his opening line, which is the filename: an absent-minded
-    keystroke into a text he has just opened would rename it and move it in
-    the list. The card of shortcuts answers only while the caret is here, so
-    it waits until he clicks in, which is also when those keys start meaning
-    anything.
+    Back where he was in this one, or its top the first time he opens it.
+    Resoph does the same, and he has used Resoph for years — a text he left in
+    the middle coming back at the top is the odd behaviour, not this.
+
+    The editor is still not focused for it. A caret in his writing is one
+    absent-minded keystroke from editing it, and the keystroke at offset zero
+    edits his opening line, which is the filename — it would rename the text and
+    move it in the list. The card of shortcuts answers only while the caret is
+    in here, so it waits until he clicks in, which is also the moment those keys
+    start meaning anything.
   */
-  editor.setSelectionRange(0, 0);
-  editor.scrollTop = 0;
-  // After the box has been put back to the top, and not before: assigning
+  goBackTo(placeInText.get(handle) ?? START);
+  // After the box has been put where it belongs, and not before: assigning
   // `value` leaves the caret and the scroll wherever the browser decides, so
   // written down any earlier this records the place he just left.
   void remember(writing.tokenOf(handle));
@@ -1031,19 +1056,13 @@ export async function startApp(runningOn: Host): Promise<void> {
   */
   const wasOpen = openNoteId === null ? NO_NOTE : writing.handleFor(openNoteId);
   if (wasOpen !== NO_NOTE) {
-    await open(wasOpen);
     /*
-      After `open`, which puts every text it shows at the top — the right answer
-      for a text he picked off the list, and the wrong one for the morning after
-      he left off in the middle of an essay. Resoph comes back where he was and
-      he has used it for years.
-
-      The editor is not focused for it. That was decided separately and holds
-      here: a caret in his writing is a keystroke away from editing it, and the
-      one at offset zero is a keystroke away from renaming the text, since the
-      name comes from the first line.
+      Put where he left it before it is opened, so the morning after runs down
+      the same path as switching back to a text during the day. `open` reads
+      this map, so seeding it is the whole of restoring him.
     */
-    goBackTo(wasIn);
+    placeInText.set(wasOpen, { caret: wasIn.caret, scrollTop: wasIn.scrollTop });
+    await open(wasOpen);
   } else {
     draw();
     showStatus();
