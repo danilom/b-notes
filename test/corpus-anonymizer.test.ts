@@ -113,6 +113,19 @@ describe('what the census says about a name', () => {
     assert.deepEqual(oddityOfName('zero​width.txt'), ['holds an invisible mark']);
   });
 
+  it('reports the leading spaces and escapes in a real name of his', () => {
+    // Exactly as it is on his machine. Explorer cannot make it and VS Code will
+    // not open it; Resoph made it, apparently writing * and ? as %2A and %3F.
+    assert.deepEqual(oddityOfName('                            %2A Ivo A    ( %3Fkonacna v.).md'), [
+      'starts with a space',
+      'holds %-escapes',
+    ]);
+  });
+
+  it('reports a name that could be the short alias of another', () => {
+    assert.deepEqual(oddityOfName('LONGFI~1.TXT'), ['looks like a Windows short name']);
+  });
+
   it('says nothing about an ordinary name of his', () => {
     assert.deepEqual(oddityOfName('Pismo Mileni 2019.txt'), []);
   });

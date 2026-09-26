@@ -17,10 +17,11 @@
  * odd it found goes beside it, not in it, so the copy stays a faithful mirror.
  * Every time is kept: modified and accessed through Node, and created through
  * one call to the PowerShell that ships with Windows, since Node cannot set it.
- * Exits non-zero if anything at all could not be copied or given its times.
+ * When it is done it reads the copy back and checks every name and every size
+ * against the original. Exits non-zero if anything at all could not be copied,
+ * given its times, or found again exactly as it should be.
  *
  * Options:
- *   --force             write into an output folder that already has things in it
  *   --keep-words N      how many of his words survive at the head of each file
  *   --report FILE       where the census goes (default: <output>-report.json)
  *
@@ -227,6 +228,11 @@ export function oddityOfName(name) {
   if (RESERVED.test(name)) why.push('is a reserved device name');
   if (name !== name.normalize('NFC')) why.push('is not in normal form');
   if (/[\u200b-\u200f\u202a-\u202e\u2060\ufeff]/.test(name)) why.push('holds an invisible mark');
+  // `%2A` for `*`, `%3F` for `?`: how Resoph appears to write a title holding
+  // a character Windows will not have in a name. Worth knowing which texts
+  // carry them, since his title and his filename then disagree.
+  if (/%[0-9a-f]{2}/i.test(name)) why.push('holds %-escapes');
+  if (LOOKS_LIKE_SHORT_NAME.test(name)) why.push('looks like a Windows short name');
   if (name.length > 200) why.push(`is ${name.length} characters long`);
   return why;
 }
@@ -413,7 +419,10 @@ async function copyFile(from, to, report, keepWords) {
   const why = oddityOfFile(buffer, read);
   if (why.length > 0) report.oddFiles.push({ path: report.relative(from), why });
 
-  await writeFile(to, bytes);
+  // Never over anything. The copy starts empty, so a name that is already
+  // taken can only be a short-name alias of something written a moment ago —
+  // and writing through it would put this file's bytes into that one.
+  await writeFile(to, bytes, { flag: 'wx' });
   await keepTimes(to, was);
   report.created.push({ path: to, folder: false, created: fileTimeOf(was.birthtimeNs) });
 
@@ -421,6 +430,31 @@ async function copyFile(from, to, report, keepWords) {
   report.totals.files += 1;
   report.totals.bytes += buffer.length;
   report.extensions[extension] = (report.extensions[extension] ?? 0) + 1;
+}
+
+/**
+ * A name Windows could also be using as the short alias of a long one.
+ *
+ * Every long name on a volume that keeps 8.3 names gets one, `LONGFI~1.TXT`
+ * for `Long filename.txt`, and it opens the file exactly as the long name
+ * does. So a copy that makes `Long filename.txt` first hands it `~1`, and then
+ * "creating" `LONGFI~1.TXT` opens the long one and writes over it. Two files
+ * become one, and nothing says so. His machine let both exist because the `~1`
+ * file was there first, and the long one took `~2`.
+ */
+const LOOKS_LIKE_SHORT_NAME = /~\d/;
+
+/**
+ * The same entries, in an order that lets them all exist.
+ *
+ * Anything that could be an alias goes first, which is the order that made
+ * them possible on his machine: once a literal `~1` name is taken, no long name
+ * can be given it. Otherwise the order is whatever the folder listed.
+ */
+function inCreationOrder(entries) {
+  const short = entries.filter((entry) => LOOKS_LIKE_SHORT_NAME.test(entry.name));
+  const rest = entries.filter((entry) => !LOOKS_LIKE_SHORT_NAME.test(entry.name));
+  return [...short, ...rest];
 }
 
 /**
@@ -434,10 +468,13 @@ async function walk(from, to, report, keepWords) {
   // Read before anything is made, so a folder that cannot be read leaves no
   // empty copy of itself behind to be mistaken for one that was empty.
   const entries = await readdir(from, { withFileTypes: true });
-  await mkdir(to, { recursive: true });
+  // Only the root may already be there, and only empty. Anywhere below it, a
+  // folder that exists already is an alias of one just made — the same trap
+  // as a file, and it would merge two folders into one.
+  await mkdir(to, { recursive: to === report.to });
   report.totals.folders += 1;
 
-  for (const entry of entries) {
+  for (const entry of inCreationOrder(entries)) {
     const here = path.join(from, entry.name);
     const there = path.join(to, entry.name);
 
@@ -477,12 +514,11 @@ async function walk(from, to, report, keepWords) {
 
 function readArguments(argv) {
   const plain = [];
-  const options = { force: false, keepWords: KEEP_WORDS, report: null };
+  const options = { keepWords: KEEP_WORDS, report: null };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === '--force') options.force = true;
-    else if (arg === '--keep-words') {
+    if (arg === '--keep-words') {
       const said = Number(argv[(i += 1)]);
       if (!Number.isInteger(said) || said < 0) throw new Error('--keep-words wants a whole number');
       options.keepWords = said;
@@ -500,9 +536,11 @@ function readArguments(argv) {
  *
  * Writing inside the folder being read is a walk that keeps finding its own
  * output; writing over a folder that already holds something is a mistake
- * nobody can undo.
+ * nobody can undo. There is no option to do it anyway: every write refuses to
+ * replace anything, so a second run into the same folder could only fail file
+ * by file.
  */
-async function checkWhereItIsGoing(from, to, force) {
+async function checkWhereItIsGoing(from, to) {
   const inside = (outer, inner) =>
     inner === outer || inner.toLowerCase().startsWith(`${outer.toLowerCase()}${path.sep}`);
   if (inside(from, to)) throw new Error('The output folder is inside the input folder');
@@ -515,9 +553,59 @@ async function checkWhereItIsGoing(from, to, force) {
     // Not there yet, which is the ordinary case and exactly what we want.
     return;
   }
-  if (holds.length > 0 && !force) {
-    throw new Error(`${to} already has ${holds.length} things in it. Pass --force to write anyway.`);
+  if (holds.length > 0) {
+    throw new Error(`${to} already has ${holds.length} things in it. Delete it, or name a new folder.`);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Checking the copy
+// ---------------------------------------------------------------------------
+
+/**
+ * Every name under a folder, with each file's size, or -1 for a folder.
+ *
+ * Links and anything that is neither a file nor a folder are left out, the
+ * same as the copy leaves them out, so they are not reported twice.
+ */
+async function treeOf(root, relative = '') {
+  const found = new Map();
+  const here = relative === '' ? root : path.join(root, relative);
+  for (const entry of await readdir(here, { withFileTypes: true })) {
+    const at = relative === '' ? entry.name : path.join(relative, entry.name);
+    if (entry.isDirectory()) {
+      found.set(at, -1);
+      for (const [below, size] of await treeOf(root, at)) found.set(below, size);
+    } else if (entry.isFile()) {
+      found.set(at, (await stat(path.join(root, at))).size);
+    }
+  }
+  return found;
+}
+
+/**
+ * Reads the copy back and holds it against the original, name by name.
+ *
+ * The one guarantee that matters most is that every name comes back exactly
+ * as it went in, and the only honest way to give it is to look. Sizes too:
+ * nothing here changes a file's length, so a size that moved is a file that
+ * was written into by something other than its own copy.
+ */
+async function checkCopy(from, to, report) {
+  const [had, made] = await Promise.all([treeOf(from), treeOf(to)]);
+  const known = new Set(report.failures.map((failed) => failed.path));
+  const say = (at, error) => {
+    if (!known.has(at)) report.failures.push({ path: at, error });
+  };
+
+  for (const [at, size] of had) {
+    if (!made.has(at)) say(at, 'is missing from the copy');
+    else if (made.get(at) !== size) say(at, `is ${made.get(at)} bytes in the copy, not ${size}`);
+  }
+  for (const at of made.keys()) {
+    if (!had.has(at)) say(at, 'is in the copy but not in his corpus');
+  }
+  return had.size;
 }
 
 function summarise(report, where) {
@@ -540,8 +628,8 @@ function summarise(report, where) {
 }
 
 async function run(argv) {
-  const { from, to, force, keepWords, report: reportAt } = readArguments(argv);
-  await checkWhereItIsGoing(from, to, force);
+  const { from, to, keepWords, report: reportAt } = readArguments(argv);
+  await checkWhereItIsGoing(from, to);
 
   const report = {
     from,
@@ -572,6 +660,10 @@ async function run(argv) {
     // made is missing. Said, and the run carries on to its report.
     report.failures.push({ path: '.', error: String(error) });
   }
+
+  // Last, so it sees the copy exactly as it will be carried away.
+  const checked = await checkCopy(from, to, report);
+  report.notes.push(`Every name and size checked against the original: ${checked} entries.`);
 
   const where = reportAt ?? `${to}-report.json`;
   const { relative, created, ...written } = report;
