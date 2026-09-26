@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { DEFAULT_ADVANCED } from '../src/ui/settings/advanced-settings.ts';
+import { DEFAULT_CTRL_CARD_AFTER_MS } from '../src/ui/settings/advanced-settings.ts';
 
 /**
  * Past the wait, whatever the wait is.
@@ -9,7 +9,7 @@ import { DEFAULT_ADVANCED } from '../src/ui/settings/advanced-settings.ts';
  * the day somebody decided he was slower than that. What the tests mean is
  * "long enough", so that is what they say.
  */
-const PAST_THE_WAIT = DEFAULT_ADVANCED.ctrlCardAfterMs + 300;
+const PAST_THE_WAIT = DEFAULT_CTRL_CARD_AFTER_MS + 300;
 
 /**
  * The keys he can use, shown while he holds the one they all start with.

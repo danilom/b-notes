@@ -1,7 +1,7 @@
 import { type Shown, showAsModal } from '../dialogs/modal.ts';
 import { APP_VERSION, BUILD_STAMP } from '../../platform/build-info.ts';
 import type { Host } from '../../platform/host.ts';
-import type { AdvancedSettings } from './advanced-settings.ts';
+import { type AdvancedSettings, DEFAULT_CTRL_CARD_AFTER_MS } from './advanced-settings.ts';
 import { icon } from '../icons.ts';
 
 /**
@@ -25,7 +25,7 @@ import { icon } from '../icons.ts';
  */
 export interface AdvancedHandlers {
   onClose: () => void;
-  onKeep: (settings: { writing: string; logs: string; ctrlCardAfterMs: number }) => void;
+  onKeep: (settings: { writing: string; logs: string; ctrlCardAfterMs: number | null }) => void;
 }
 
 /** A path, and the way to look at it. */
@@ -108,7 +108,7 @@ function folderRow(
  * patience — a thing to find by watching him, which is why it is reachable at
  * all rather than compiled in.
  */
-function waitRow(value: number, change: (to: number) => void): HTMLElement {
+function waitRow(value: number | null, change: (to: number | null) => void): HTMLElement {
   const row = document.createElement('div');
   row.className = 'advanced-row';
 
@@ -122,12 +122,18 @@ function waitRow(value: number, change: (to: number) => void): HTMLElement {
   field.min = '0';
   field.max = '5000';
   field.step = '100';
-  field.value = String(value);
-  field.addEventListener('change', () => change(Number(field.value)));
+  // Empty means the app decides, so an unset value shows as empty and the
+  // number it would use stands behind it in grey.
+  field.value = value === null ? '' : String(value);
+  field.placeholder = String(DEFAULT_CTRL_CARD_AFTER_MS);
+  field.addEventListener('change', () => {
+    const typed = field.value.trim();
+    change(typed === '' ? null : Number(typed));
+  });
 
   const unit = document.createElement('span');
   unit.className = 'advanced-note';
-  unit.textContent = 'ms before the shortcut card appears. 0 shows it at once.';
+  unit.textContent = 'ms before the shortcut card appears. Empty uses the default; 0 shows it at once.';
 
   row.append(name, field, unit);
   return row;
@@ -141,7 +147,7 @@ export function openAdvancedPanel(
 ): () => void {
   let writing = host.writingFolder;
   let logs = host.logsFolder;
-  let wait = advanced.ctrlCardAfterMs;
+  let wait: number | null = advanced.ctrlCardAfterMs;
 
   let modal: Shown | null = null;
   const close = (): void => {

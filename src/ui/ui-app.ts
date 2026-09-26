@@ -9,7 +9,7 @@ import {
 import { BUILD_STAMP } from '../platform/build-info.ts';
 import type { Host } from '../platform/host.ts';
 import { type Log, describeError } from '../platform/logging.ts';
-import { readAdvanced } from './settings/advanced-settings.ts';
+import { DEFAULT_CTRL_CARD_AFTER_MS, readAdvanced } from './settings/advanced-settings.ts';
 import { readSession, writeSession } from './settings/app-session.ts';
 import {
   type Settings,
@@ -698,7 +698,8 @@ export async function startApp(runningOn: Host): Promise<void> {
     within: writingBox,
     editor,
     languageNow: () => language,
-    waitNow: () => advanced.ctrlCardAfterMs,
+    // The file's answer, or the app's own when it has none.
+    waitNow: () => advanced.ctrlCardAfterMs ?? DEFAULT_CTRL_CARD_AFTER_MS,
   });
 
   panels = createSettingsPanels({

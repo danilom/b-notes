@@ -15,29 +15,32 @@ import type { FileSystem } from '../../platform/file-system.ts';
  */
 const FILE = 'advanced.json';
 
+/**
+ * The app's own answer, used whenever the file does not give one.
+ *
+ * Eight hundred: long enough that a man who knows the shortcut never sees the
+ * card, short enough that hesitating brings it. Found by watching him rather
+ * than reasoned about, which is why the file can overrule it.
+ */
+export const DEFAULT_CTRL_CARD_AFTER_MS = 800;
+
 export interface AdvancedSettings {
   /**
-   * How long Ctrl is held before the card of shortcuts appears.
+   * How long Ctrl is held before the card of shortcuts appears, or null when
+   * the file says nothing and the number above is used.
    *
    * Long enough that anyone who knows the shortcut never sees it, short enough
    * that hesitating summons it. The right number is the one that clears his
-   * fastest deliberate `Ctrl+C` and stays under his patience, which is a thing
-   * to watch rather than a thing to reason about — so it is here to be changed
-   * after watching, not guessed at once and buried.
+   * Not set is its own answer, and not the same as zero: zero means show the
+   * card the instant he touches the key, and nothing means leave it to the
+   * app. Emptying the box in the panel says the second, so a number pinned
+   * once does not outlive every later judgement about the right one.
    */
-  ctrlCardAfterMs: number;
+  ctrlCardAfterMs: number | null;
 }
 
-export const DEFAULT_ADVANCED: AdvancedSettings = {
-  /*
-    A second, because he is slow. Four hundred was the first guess and it was
-    a guess about a quicker man: by the time he has decided he does not know
-    which key, and looked down, and looked back, four hundred has long gone —
-    it would have shown the card to someone who was still deciding whether to
-    ask for it.
-  */
-  ctrlCardAfterMs: 1_000,
-};
+/** The file saying nothing, which is what it says until somebody writes it. */
+export const NOTHING_SET: AdvancedSettings = { ctrlCardAfterMs: null };
 
 /** Outside this, the delay is either a mistake or a way to switch the card off. */
 const LONGEST_WAIT_MS = 5_000;
@@ -63,17 +66,17 @@ export async function readAdvanced(
       this is the ordinary path rather than a fault, and a line each start would
       say nothing but "still absent".
     */
-    return DEFAULT_ADVANCED;
+    return NOTHING_SET;
   }
   return advancedFrom(raw);
 }
 
 /** Separated from the reading so the rules can be tested without a disk. */
 export function advancedFrom(raw: unknown): AdvancedSettings {
-  if (typeof raw !== 'object' || raw === null) return DEFAULT_ADVANCED;
+  if (typeof raw !== 'object' || raw === null) return NOTHING_SET;
   const wait = (raw as Record<string, unknown>)['ctrlCardAfterMs'];
   if (typeof wait !== 'number' || !Number.isFinite(wait) || wait < 0 || wait > LONGEST_WAIT_MS) {
-    return DEFAULT_ADVANCED;
+    return NOTHING_SET;
   }
   return { ctrlCardAfterMs: wait };
 }
@@ -99,7 +102,14 @@ export async function writeAdvanced(
     // changed anything. There is nothing to preserve, so there is nothing to
     // report either.
   }
-  const kept = typeof had === 'object' && had !== null ? had : {};
-  await files.write(at, `${JSON.stringify({ ...kept, ...settings }, null, 2)}
+  const kept: Record<string, unknown> =
+    typeof had === 'object' && had !== null ? { ...(had as Record<string, unknown>) } : {};
+
+  // Nothing set is written by taking the key out, not by writing a null: the
+  // file should read as one somebody never touched.
+  if (settings.ctrlCardAfterMs === null) delete kept['ctrlCardAfterMs'];
+  else kept['ctrlCardAfterMs'] = settings.ctrlCardAfterMs;
+
+  await files.write(at, `${JSON.stringify(kept, null, 2)}
 `);
 }
