@@ -395,7 +395,10 @@ function placeInEditor(): Place {
  */
 function goBackTo(place: Place): void {
   const caret = Math.min(place.caret, editor.value.length);
+  editor.focus();
   editor.setSelectionRange(caret, caret);
+  // Last of the three. Focusing scrolls the caret into view and so does moving
+  // it, so a scroll set before either of them is a scroll they undo.
   editor.scrollTop = place.scrollTop;
 }
 
@@ -426,12 +429,16 @@ async function open(handle: NoteHandle): Promise<void> {
     Resoph does the same, and he has used Resoph for years — a text he left in
     the middle coming back at the top is the odd behaviour, not this.
 
-    The editor is still not focused for it. A caret in his writing is one
-    absent-minded keystroke from editing it, and the keystroke at offset zero
-    edits his opening line, which is the filename — it would rename the text and
-    move it in the list. The card of shortcuts answers only while the caret is
-    in here, so it waits until he clicks in, which is also the moment those keys
-    start meaning anything.
+    Focused, so the caret is really there and he can carry on typing. Resoph
+    does that too and he has used it for years.
+
+    It was nearly made conditional — focus only where there was a place worth
+    returning to, so that a text opened at its top never has a live caret on the
+    first line, which is the filename, where one absent-minded keystroke renames
+    the text and moves it in the list. That was overruled deliberately: he knows
+    the first line is the title, and a caret that sometimes appears is a worse
+    thing to live with than the risk it avoids. Do not quietly reintroduce the
+    condition.
   */
   goBackTo(placeInText.get(handle) ?? START);
   // After the box has been put where it belongs, and not before: assigning
