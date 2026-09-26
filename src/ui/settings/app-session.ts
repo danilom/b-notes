@@ -3,24 +3,33 @@ import { isNoteId } from '../../notes/note-naming.ts';
 
 const FILE = 'session.json';
 
-/** What he was doing when the app last closed. Per machine, and never synced. */
-export interface Session {
-  openNoteId: string | null;
-  /**
-   * Where the caret sat, as an offset into his text, and how far down the box
-   * was scrolled.
-   *
-   * Both mean nothing without a text to apply them to, and neither is believed
-   * when it arrives: the file it describes is in Dropbox and may have been
-   * rewritten on another machine since, so an offset can easily point past the
-   * end of what is now there. Held to the text at the moment it is used rather
-   * than checked here, which is the only place the text is known.
-   */
+/** Where the caret sat in a text, and how far down the box was scrolled. */
+export interface Place {
   caret: number;
   scrollTop: number;
 }
 
-const NOTHING_OPEN: Session = { openNoteId: null, caret: 0, scrollTop: 0 };
+/** What he was doing when the app last closed. Per machine, and never synced. */
+export interface Session {
+  openNoteId: string | null;
+  /**
+   * Where he was in that text, or null when the file does not say.
+   *
+   * Null is a real answer and not a zero. A file written by a build from before
+   * any of this says nothing about where he was, and reading that as the top of
+   * the text would put a live caret on his first line — which is the filename,
+   * and the one place the app must not leave one. Not knowing has its own
+   * answer, and it is the caller's to give.
+   *
+   * Nothing here is believed either: the text it describes lives in Dropbox and
+   * may have been rewritten on another machine since, so an offset can point
+   * past the end of what is there now. Held to the text at the moment it is
+   * used, which is the only place the text is known.
+   */
+  place: Place | null;
+}
+
+const NOTHING_OPEN: Session = { openNoteId: null, place: null };
 
 /**
  * Safe to delete. A missing or unreadable file opens the app with nothing
@@ -71,16 +80,27 @@ export function sessionFrom(raw: unknown): Session {
   const open = held['openNoteId'];
   if (typeof open !== 'string' || !isNoteId(open)) return NOTHING_OPEN;
 
-  return {
-    openNoteId: open,
-    caret: offsetFrom(held['caret']),
-    scrollTop: offsetFrom(held['scrollTop']),
-  };
+  return { openNoteId: open, place: placeFrom(held['place']) };
 }
 
-/** A position in his text or in the box, or the top when it is not one. */
-function offsetFrom(value: unknown): number {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return 0;
+/**
+ * The two numbers, or nothing at all.
+ *
+ * All or neither: half a place is not one, and a caret without the scroll that
+ * went with it would put him somewhere he never was. Nothing is a perfectly
+ * good answer here, so there is no reason to salvage a broken one.
+ */
+function placeFrom(raw: unknown): Place | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const held = raw as Record<string, unknown>;
+  const caret = offsetFrom(held['caret']);
+  const scrollTop = offsetFrom(held['scrollTop']);
+  return caret === null || scrollTop === null ? null : { caret, scrollTop };
+}
+
+/** A position in his text or in the box, or nothing when it is not one. */
+function offsetFrom(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return null;
   // Whole pixels and whole characters. A fraction is harmless in both, and
   // rounding here keeps the file readable by whoever opens it.
   return Math.floor(value);

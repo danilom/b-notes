@@ -13,7 +13,8 @@ import { BUILD_STAMP } from '../platform/build-info.ts';
 import type { Host } from '../platform/host.ts';
 import { type Log, describeError } from '../platform/logging.ts';
 import { DEFAULT_CTRL_CARD_AFTER_MS, readAdvanced } from './settings/advanced-settings.ts';
-import { readSession, writeSession } from './settings/app-session.ts';
+import { type Place, readSession, writeSession } from './settings/app-session.ts';
+import { writingStartsAt } from '../notes/note-title.ts';
 import {
   type Settings,
   type SettingsFolders,
@@ -349,15 +350,6 @@ function showStatus(): void {
 
 
 
-/** Where the caret sits in a text, and how far down the box is. */
-interface Place {
-  caret: number;
-  scrollTop: number;
-}
-
-/** The top of a text, which is where one he has never been into starts. */
-const START: Place = { caret: 0, scrollTop: 0 };
-
 /**
  * Where he was in each text he has been in this sitting.
  *
@@ -440,7 +432,7 @@ async function open(handle: NoteHandle): Promise<void> {
     thing to live with than the risk it avoids. Do not quietly reintroduce the
     condition.
   */
-  goBackTo(placeInText.get(handle) ?? START);
+  goBackTo(placeInText.get(handle) ?? { caret: writingStartsAt(note.text), scrollTop: 0 });
   // After the box has been put where it belongs, and not before: assigning
   // `value` leaves the caret and the scroll wherever the browser decides, so
   // written down any earlier this records the place he just left.
@@ -797,9 +789,9 @@ export async function startApp(runningOn: Host): Promise<void> {
   // he was is worth nothing next to what he's typing, so a failure here is
   // logged and otherwise ignored.
   remember = async (openNoteId) => {
-    const { caret, scrollTop } = openNoteId === null ? START : placeInEditor();
+    const place = openNoteId === null ? null : placeInEditor();
     try {
-      await writeSession(host.files, host.appFolder, { openNoteId, caret, scrollTop });
+      await writeSession(host.files, host.appFolder, { openNoteId, place });
     } catch (error: unknown) {
       log.warn('Could not remember which text is open', describeError(error));
     }
@@ -1066,9 +1058,11 @@ export async function startApp(runningOn: Host): Promise<void> {
     /*
       Put where he left it before it is opened, so the morning after runs down
       the same path as switching back to a text during the day. `open` reads
-      this map, so seeding it is the whole of restoring him.
+      this map, so seeding it is the whole of restoring him — and leaving it
+      unseeded, when the file says nothing, is the whole of not pretending to
+      know.
     */
-    placeInText.set(wasOpen, { caret: wasIn.caret, scrollTop: wasIn.scrollTop });
+    if (wasIn.place !== null) placeInText.set(wasOpen, wasIn.place);
     await open(wasOpen);
   } else {
     draw();
