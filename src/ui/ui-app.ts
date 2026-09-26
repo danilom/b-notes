@@ -9,6 +9,7 @@ import {
 import { BUILD_STAMP } from '../platform/build-info.ts';
 import type { Host } from '../platform/host.ts';
 import { type Log, describeError } from '../platform/logging.ts';
+import { readAdvanced } from './settings/advanced-settings.ts';
 import { readSession, writeSession } from './settings/app-session.ts';
 import {
   type Settings,
@@ -25,6 +26,7 @@ import {
 } from './settings/appearance.ts';
 import { type ArchivedTexts, createArchivedTexts } from './deleted-and-archived/archived-texts.ts';
 import { openConfirmDialog } from './dialogs/confirm-dialog.ts';
+import { createCtrlCard } from './ctrl-card.ts';
 import { type FindInText, createFindInText } from './find-in-text.ts';
 import { icon } from './icons.ts';
 import { type KeptCopiesView, createKeptCopies } from './versions/kept-copies.ts';
@@ -77,6 +79,7 @@ function element<T extends Element>(id: string, kind: new () => T): T {
 const listPane = element('list', HTMLDivElement);
 const editor = element('editor', HTMLTextAreaElement);
 const editorMarks = element('editor-marks', HTMLDivElement);
+const writingBox = element('writing', HTMLDivElement);
 const foundPane = element('found', HTMLDivElement);
 const statusText = element('status-text', HTMLSpanElement);
 const search = element('search', HTMLInputElement);
@@ -333,6 +336,12 @@ async function open(handle: NoteHandle): Promise<void> {
   savedAt = note.updatedAt;
   draft = null;
   remember(writing.tokenOf(handle));
+  /*
+    The caret goes into his writing, which it did not before: he clicked a text
+    to write in it, and everything that answers a key — the card of shortcuts
+    most of all — answers only while the caret is here.
+  */
+  editor.focus();
   editor.setSelectionRange(0, 0);
   editor.scrollTop = 0;
   findInText.fromTheTop();
@@ -679,6 +688,16 @@ export async function startApp(runningOn: Host): Promise<void> {
 
   writing = createWriting(host.files, host.writingFolder, log, afterWriting);
   newNoteLabel.textContent = words.newNote;
+  // Read at startup, like everything else in that file. Editing it takes
+  // effect next time the app opens, which is when whoever edited it is there.
+  const advanced = await readAdvanced(host.files, host.appFolder);
+  createCtrlCard({
+    within: writingBox,
+    editor,
+    languageNow: () => language,
+    waitNow: () => advanced.ctrlCardAfterMs,
+  });
+
   panels = createSettingsPanels({
     appearancePane,
     advancedPane,

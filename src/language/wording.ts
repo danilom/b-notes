@@ -80,6 +80,12 @@ const TEXT = {
       The English paste in brackets is there because the menu he is about to
       use says that, not Nalepi.
     */
+    ctrlCardTitle: 'Dok držiš Ctrl',
+    ctrlCopy: 'Kopira tekst koji si označio mišem na klipbord.',
+    ctrlPaste: 'Zalepi ono što si kopirao — ovde, u Gmailu, bilo gde.',
+    ctrlUndo: 'Vraća tekst korak unazad.',
+    ctrlUndoWhen: 'Ako se desilo nešto što nisi hteo, prvo probaj ovo. Možeš i nekoliko puta zaredom.',
+    ctrlCardWholeText: 'Za ceo tekst ne treba Ctrl — pritisni dugme „Kopiraj ceo tekst“ dole.',
     copied: 'Ceo tekst je kopiran na klipbord.',
     copiedHow: 'Zalepi ga u Gmail ili drugi program (paste, Ctrl+V).',
     /* Not a toast. A copy that did not happen leaves the clipboard holding
@@ -365,6 +371,12 @@ const TEXT = {
     noteCount: (n: number) => `${n} text${n === 1 ? '' : 's'}`,
 
     copyAll: 'Copy the whole text',
+    ctrlCardTitle: 'While you hold Ctrl',
+    ctrlCopy: 'Copies the text you marked with the mouse.',
+    ctrlPaste: 'Pastes what you copied — here, in Gmail, anywhere.',
+    ctrlUndo: 'Takes the text one step back.',
+    ctrlUndoWhen: 'If something happened that you did not want, try this first. You can do it several times over.',
+    ctrlCardWholeText: 'For the whole text you do not need Ctrl — press the "Copy whole text" button below.',
     copied: 'The whole text is on the clipboard.',
     copiedHow: 'Paste it into Gmail or another program (Ctrl+V).',
     notCopied: 'The text was not copied. Try again.',

@@ -2532,3 +2532,159 @@ button:disabled {
 #found[hidden] {
   display: none;
 }
+
+/*
+  The keys he can use, while he holds the one they all start with.
+
+  A bubble rather than a panel: it belongs to no part of the page, so it
+  floats clear of all of them on the shared shadow. Louder than the strip
+  that counts his search matches, which is part of his text and whispers;
+  quieter than the toast, which is inverted because it reports a thing that
+  has happened. This only answers a question, so it stays legible and stops
+  there.
+
+  Against the right edge of his writing, not confined to the column: the
+  measure leans left, so there is room out there that his eye is not using.
+*/
+#ctrl-card {
+  position: absolute;
+  right: 1.1rem;
+  z-index: 3;
+  max-width: 27rem;
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 6px 20px hsl(var(--grey-h) var(--surface) var(--l-shadow) / var(--shadow-alpha));
+  /*
+    It takes the pointer, but never the caret: he goes on typing straight
+    through it, and a click anywhere — on it or past it — closes it.
+
+    Taking the pointer is what lets a mouse coming near reveal the way out
+    below. The cost is that a click landing on the card does not also land on
+    the text under it, which is worth it for a thing that lives only while he
+    holds a key.
+  */
+  pointer-events: auto;
+}
+
+/*
+  Never seen, and that is the intention.
+
+  The card goes on the key, on a click, on the window going quiet — so in
+  ordinary use there is nothing here to press. It is for the state where none
+  of that happened, which is reached by exactly one route: him bringing the
+  mouse over to get rid of the thing. So that is when it appears.
+*/
+#ctrl-card-close {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.45rem;
+  padding: 0.1rem 0.4rem;
+  border: none;
+  background: none;
+  color: var(--quiet);
+  font-size: 1.1em;
+  line-height: 1;
+  opacity: 0;
+}
+
+#ctrl-card:hover #ctrl-card-close {
+  opacity: 1;
+}
+
+#ctrl-card-close:hover {
+  color: var(--ink);
+}
+
+/*
+  High while the caret is low and low while it is high, so it sits away from
+  where he is working rather than over it.
+*/
+#ctrl-card[data-where='low'] {
+  bottom: 1.1rem;
+}
+
+#ctrl-card[data-where='high'] {
+  top: 1.1rem;
+}
+
+#ctrl-card[hidden] {
+  display: none;
+}
+
+#ctrl-card h2 {
+  margin: 0 0 0.7rem;
+  font-size: 1em;
+  color: var(--quiet);
+  font-weight: normal;
+}
+
+.ctrl-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  margin-bottom: 0.7rem;
+}
+
+.ctrl-keys {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: none;
+}
+
+/*
+  Drawn as the key it is, and as the key on *his* keyboard: a pale cap with a
+  dark legend, thin border, a hair of shadow. Not the dark chiclet, which is
+  somebody else's machine. In dark mode it stays a pale cap for the same
+  reason — the keyboard under his hands does not invert with the screen.
+*/
+#ctrl-card kbd {
+  font: inherit;
+  font-size: 0.95em;
+  min-width: 1.5em;
+  padding: 0.15em 0.45em;
+  text-align: center;
+  border: 1px solid hsl(var(--grey-h) var(--surface) 62%);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: hsl(var(--grey-h) var(--surface) 97%);
+  color: hsl(var(--grey-h) var(--surface) 20%);
+}
+
+/* Not a key, so not drawn as one: he is not meant to press it. */
+.ctrl-plus {
+  color: var(--quiet);
+  padding: 0 0.1em;
+}
+
+.ctrl-said small {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--quiet);
+}
+
+.ctrl-footer {
+  margin: 0.9rem 0 0;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--line);
+  color: var(--quiet);
+}
+
+/*
+  There at once, gone slowly — the opposite of the toast, and for its reason.
+  A toast arrives unbidden, so it has to fade in or it is a flinch. This he
+  asked for by holding a key, and a thing you asked for should already be
+  there when you look.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  #ctrl-card {
+    transition: opacity 160ms ease-out;
+  }
+
+  #ctrl-card[data-leaving] {
+    opacity: 0;
+  }
+}
