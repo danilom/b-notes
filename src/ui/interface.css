@@ -169,15 +169,20 @@
   /*
     The little page beside a title, and the writing on it.
 
-    A pale sheet with the writing a shade firmer on top. On white, a sheet
-    drawn as an outline was the louder thing in the row — the edge is what
-    catches the eye, and the edge is the part that says nothing. Filling it
-    instead puts the weight where the meaning is: the lines.
+    A grey sheet with the writing taken out of it in the colour of the list
+    behind — so the lines are gaps rather than marks, and what shows through
+    them is the actual backdrop. Drawing them instead in a darker grey was
+    tried and was worse: two greys a little apart on a third read as a smudge,
+    where a hole reads as a hole.
+
+    An outline round the sheet was tried before either, and was the loudest of
+    the three: the edge is what catches the eye, and the edge is the part that
+    says nothing.
   */
-  --sheet-alpha: 0.15;
-  --written: currentColor;
-  --written-alpha: 0.6;
-  --written-width: 1.7;
+  --sheet-alpha: 0.3;
+  --written: var(--panel);
+  --written-alpha: 1;
+  --written-width: 2;
 }
 
 /*
@@ -648,6 +653,11 @@ button svg {
 .note[aria-current='true'] {
   background-color: var(--chosen-soft);
   border-left-color: var(--chosen);
+  /* The gaps in the page show the row behind it, and this row is not the same
+     colour as the rest of the list. Hover is left alone: it tints with a wash
+     rather than a colour, so there is no token to match, and at five per cent
+     there is nothing to see. */
+  --written: var(--chosen-soft);
 }
 
 /*
