@@ -419,7 +419,7 @@ losing his organising, then clutter and wear.
 
 ## 9. Directions
 
-Not code, and not decided. Three facts shape all of it:
+Not code, and not decided. The design continues in `RESOPH-COEXISTENCE.md`. Three facts shape all of it:
 
 - **Resoph stays.** Years of trying other tools haven't moved him off it, and
   nothing will until something is clearly better. So b-notes lives beside
