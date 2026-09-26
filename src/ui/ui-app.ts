@@ -801,6 +801,7 @@ export async function startApp(runningOn: Host): Promise<void> {
     writing,
     log,
     languageNow: () => language,
+    lengthsNow: () => lengths,
     openTextNow: () => ({
       handle: openHandle,
       name: openName(),

@@ -1,4 +1,5 @@
 import { type Language, strings } from '../../language/wording.ts';
+import type { LengthBands } from '../../notes/text-length.ts';
 import { NO_NOTE, type NoNote, type NoteHandle } from '../../notes/note-handle.ts';
 import type { Writing } from '../../notes/writing.ts';
 import { type Log, describeError } from '../../platform/logging.ts';
@@ -25,6 +26,8 @@ export interface KeptCopiesParts {
   /** Asked each time: both are his to change while the app is open. */
   languageNow: () => Language;
   openTextNow: () => OpenText;
+  /** The bands his list is drawn by, read at the moment he opens this. */
+  lengthsNow: () => LengthBands;
   /** Something to tell him once, said where he reads such things. */
   say: (notice: string) => void;
   /**
@@ -155,6 +158,7 @@ export function createKeptCopies(parts: KeptCopiesParts): KeptCopiesView {
           versions,
           current: editor.value,
           previouslyActive: restored?.note === name ? restored.version : null,
+          lengths: parts.lengthsNow(),
         },
         parts.languageNow(),
         {

@@ -1627,8 +1627,10 @@ dialog::backdrop {
   /* Wide enough for the longest line it can be asked to hold: a number,
      a five-figure word count and "23. septembra", which is the longest
      date his language makes. Narrower and the rows wrap, which at this
-     size reads as damage rather than as a second line. */
-  width: 13rem;
+     size reads as damage rather than as a second line. The page beside
+     each row costs about a rem and a half of that, and was paid for here
+     rather than taken off the line. */
+  width: 14.5rem;
   overflow-y: auto;
   padding: 0.4rem 0 1rem;
   border-right: 1px solid var(--line);
@@ -1642,8 +1644,17 @@ dialog::backdrop {
 }
 
 .index-row {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.5rem 0.6rem;
+}
+
+/* Everything the row says, so the page stands beside the lot of it rather than
+   level with the first line. */
+.index-body {
+  flex: 1;
+  min-width: 0;
 }
 
 /*
