@@ -1,3 +1,4 @@
+import { bandsFrom } from '../src/notes/text-length.ts';
 import { copyNumberOf } from '../src/notes/note-naming.ts';
 import type { NoteHandle } from '../src/notes/note-handle.ts';
 import type { LiveNote } from '../src/notes/writing.ts';
@@ -33,7 +34,15 @@ const NOTES = [
 ];
 
 function view(over: Partial<ListView> = {}): ListView {
-  return { notes: NOTES, query: '', openId: null, draft: null, language: 'sr', ...over };
+  return {
+    notes: NOTES,
+    lengths: bandsFrom(NOTES.map((note) => note.bytes)),
+    query: '',
+    openId: null,
+    draft: null,
+    language: 'sr',
+    ...over,
+  };
 }
 
 const titlesIn = (sections: ReturnType<typeof sectionsFor>, heading: string) =>

@@ -1,3 +1,4 @@
+import { type LengthBand, type LengthBands, bandOf } from '../notes/text-length.ts';
 import type { LiveNote } from '../notes/writing.ts';
 import { toSearchable } from '../language/diacritics.ts';
 import { type Language, describeWhen, strings } from '../language/wording.ts';
@@ -7,6 +8,13 @@ const RECENT_COUNT = 5;
 
 export interface ListView {
   notes: readonly LiveNote[];
+  /**
+   * Where one length band becomes the next, taken from his whole corpus.
+   *
+   * Handed in rather than worked out here: they are the same for every row, so
+   * counting them per row would be counting the corpus once per text.
+   */
+  lengths: LengthBands;
   query: string;
   openId: string | null;
   /**
@@ -29,9 +37,13 @@ export interface Draft {
  * A draft has no `id`, which is also precisely what marks it as the open one —
  * `openId` is null exactly while the draft is what he's in.
  */
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
 export interface Row {
   id: string | null;
   title: string;
+  /** How full a page to draw beside it, from empty to four lines. */
+  length: LengthBand;
   /** Folded, so `macka` finds `mačka` and `mačka` finds `macka`. */
   searchable: string;
   updatedAt: number;
@@ -79,19 +91,59 @@ function markOf(note: LiveNote): string | null {
   return note.copyNumber === null ? null : `(${note.copyNumber})`;
 }
 
-function toRow(note: LiveNote, words: ReturnType<typeof strings>): Row {
+/**
+ * A page with as much written on it as the text has in it.
+ *
+ * Drawn rather than described: a page carrying more lines depicts a longer
+ * text, where a number would have to be read and a row of dots would have to
+ * be learned. Four is as many lines as tell apart at this size, and a page
+ * with none says the text is empty — which he can otherwise only find out by
+ * opening it.
+ */
+function pageGlyph(band: LengthBand): SVGElement {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 16 16');
+  svg.setAttribute('class', 'note-length');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '1.2');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+
+  // A corner turned down, which is what makes it read as a page rather than
+  // as a box with lines in it.
+  const page = document.createElementNS(SVG_NS, 'path');
+  page.setAttribute('d', 'M3.5 1.5h6l3 3v10h-9z M9.5 1.5v3h3');
+  svg.append(page);
+
+  // From the top down, so a short text is a page begun rather than one with
+  // writing stranded in the middle of it.
+  for (let line = 0; line < band; line += 1) {
+    const written = document.createElementNS(SVG_NS, 'path');
+    const y = 7 + line * 2;
+    written.setAttribute('d', `M5.5 ${y}h5`);
+    svg.append(written);
+  }
+
+  return svg;
+}
+
+function toRow(note: LiveNote, words: ReturnType<typeof strings>, lengths: LengthBands): Row {
   return {
     id: note.id,
     title: titleOf(note, words),
     searchable: note.searchable,
     updatedAt: note.updatedAt,
+    length: bandOf(note.bytes, lengths),
     mark: markOf(note),
   };
 }
 
 function rowsFor(view: ListView): Row[] {
   const words = strings(view.language);
-  return view.notes.map((note) => toRow(note, words));
+  return view.notes.map((note) => toRow(note, words, view.lengths));
 }
 
 /**
@@ -117,6 +169,8 @@ export function openRowFor(view: ListView): Row | null {
     title: words.untitledNew,
     searchable: '',
     updatedAt: view.draft.startedAt,
+    // Nothing written in it yet, which is exactly what an empty page says.
+    length: 0,
     mark: null,
   };
 }
@@ -175,12 +229,14 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
   title.className = 'note-title';
   title.textContent = row.title;
 
+  const length = pageGlyph(row.length);
+
   const when = document.createElement('span');
   when.className = 'note-when';
   when.textContent = describeWhen(row.updatedAt, view.language);
 
   if (row.mark === null) {
-    element.append(title, when);
+    element.append(length, title, when);
     return element;
   }
 
@@ -191,7 +247,7 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
   mark.className = 'note-mark';
   mark.textContent = row.mark;
 
-  element.append(title, mark, when);
+  element.append(length, title, mark, when);
   return element;
 }
 

@@ -615,7 +615,37 @@ button svg {
   border-left-color: var(--chosen);
 }
 
+/*
+  How much is written in a text, drawn as how much is written on a page.
+
+  First in the row rather than after the date, which would leave it ragged:
+  dates here run from `pre 36 minuta` to `2019`, so anything following one
+  lands in a different place on every line. Leading, they make a column he can
+  run his eye down, and the titles stay aligned with each other as before.
+
+  The same faint grey as the date, and no darker. It answers a question he did
+  not ask, so it must not compete with the title, which answers the one he did.
+*/
+.note-length {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  color: var(--faint);
+  /* Set against the title's baseline rather than the row's, so it sits with
+     the words instead of floating above them. */
+  align-self: center;
+}
+
 .note-title {
+  /*
+    Takes the room the row has left, and is the thing that gives way when
+    there is not enough. Said outright rather than left to `space-between`:
+    with a glyph, a title and a date the middle one has space on both sides of
+    it and floats into the centre of the row, which put every one of his
+    titles adrift the moment the glyph arrived.
+  */
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

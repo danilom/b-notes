@@ -1,5 +1,6 @@
 import { type Language, strings } from '../language/wording.ts';
 import { NO_NOTE, type NoNote, type NoteHandle } from '../notes/note-handle.ts';
+import { type LengthBands, bandsFrom } from '../notes/text-length.ts';
 import { countWords } from '../notes/word-count.ts';
 import {
   type LiveNote,
@@ -133,6 +134,16 @@ let showAppearanceOf: (appearance: Appearance) => void;
  */
 let notes: LiveNote[] = [];
 
+/**
+ * Where one length band becomes the next, over everything he has written.
+ *
+ * Worked out when the list is read and not again: the boundaries are quartiles
+ * of six hundred texts, and one more text moves them by nothing anybody could
+ * see. A band that shifted while he watched would be the list rearranging
+ * itself under him, which is the thing it most carefully never does.
+ */
+let lengths: LengthBands = bandsFrom([]);
+
 
 
 
@@ -186,7 +197,7 @@ let savedWords = 0;
 
 
 function draw(): void {
-  renderList(listPane, { notes, query: search.value, openId: openName(), draft, language });
+  renderList(listPane, { notes, lengths, query: search.value, openId: openName(), draft, language });
   putAway.drawStrip();
   archived.drawStrip();
 }
@@ -288,6 +299,7 @@ function afterWriting(written: NoteHandle[]): void {
 async function reloadAfterWriting(): Promise<void> {
   try {
     notes = await writing.list();
+    lengths = bandsFrom(notes.map((note) => note.bytes));
   } catch (error: unknown) {
     log.error('Could not read his texts after saving', describeError(error));
     return;
@@ -573,6 +585,7 @@ async function deleteOpenNote(id: string, handle: NoteHandle): Promise<void> {
 /** Both lists, after anything that can move a text between them. */
 async function reload(): Promise<void> {
   [notes] = await Promise.all([writing.list(), putAway.read()]);
+  lengths = bandsFrom(notes.map((note) => note.bytes));
   // How many there are, every time it changes. A count in the log is what tells
   // a folder that emptied itself from a man who deleted one text, days later,
   // over the telephone — and it costs one line per delete or restore.
@@ -930,6 +943,7 @@ export async function startApp(runningOn: Host): Promise<void> {
 
   try {
     ({ notes } = await readEverything());
+    lengths = bandsFrom(notes.map((note) => note.bytes));
   } catch (error: unknown) {
     log.error('Could not read his writing at all', describeError(error));
     // Verbatim. It is the only thing that tells a disconnected drive from a
