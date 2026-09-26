@@ -5,8 +5,11 @@ import {
   MAX_WRITING,
   MAX_ZOOM,
   MIN_SCALE,
+  RECENT_MAX,
+  RECENT_MIN,
   SCALE_STEPS,
   clampScale,
+  stepRecent,
   stepScale,
 } from '../src/ui/settings/appearance.ts';
 
@@ -55,5 +58,27 @@ describe('how large he has made everything', () => {
   it('refuses a stored value that is not a usable number', () => {
     assert.equal(clampScale(Number.NaN), 1);
     assert.equal(clampScale(Number.POSITIVE_INFINITY), 1);
+  });
+});
+
+describe('how many recent texts he has asked for', () => {
+  it('moves one text at a time, so any number in the range is reachable', () => {
+    assert.equal(stepRecent(10, 1), 11);
+    assert.equal(stepRecent(10, -1), 9);
+  });
+
+  it('stops at the ends rather than running away', () => {
+    assert.equal(stepRecent(RECENT_MAX, 1), RECENT_MAX);
+    assert.equal(stepRecent(RECENT_MIN, -1), RECENT_MIN);
+  });
+
+  it('climbs from one end to the other without skipping one', () => {
+    const climbed: number[] = [];
+    let at = RECENT_MIN;
+    while (at !== RECENT_MAX) {
+      at = stepRecent(at, 1);
+      climbed.push(at);
+    }
+    assert.equal(climbed.length, RECENT_MAX - RECENT_MIN);
   });
 });

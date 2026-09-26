@@ -2,7 +2,13 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type { FileSystem } from '../src/platform/file-system.ts';
-import { MAX_WRITING, MAX_ZOOM, MIN_SCALE } from '../src/ui/settings/appearance.ts';
+import {
+  MAX_WRITING,
+  MAX_ZOOM,
+  MIN_SCALE,
+  RECENT_MAX,
+  RECENT_MIN,
+} from '../src/ui/settings/appearance.ts';
 import {
   DEFAULT_SETTINGS,
   type Settings,
@@ -105,10 +111,17 @@ describe('reading how he likes the app set up', () => {
     assert.equal(settingsFrom({}, { recentCount: 20 }).recentCount, DEFAULT_SETTINGS.recentCount);
   });
 
-  it('brings a stored Nedavni that is not on the ladder onto it', () => {
-    assert.equal(settingsFrom({ recentCount: 12 }, {}).recentCount, 10);
-    assert.equal(settingsFrom({ recentCount: 900 }, {}).recentCount, 20);
-    assert.equal(settingsFrom({ recentCount: 'mnogo' }, {}).recentCount, DEFAULT_SETTINGS.recentCount);
+  it('keeps a stored Nedavni between the ends, and on a whole number', () => {
+    // Any number he can reach is kept as it is; a hand-edited file is the
+    // expected way one arrives that he could not have chosen.
+    assert.equal(settingsFrom({ recentCount: 12 }, {}).recentCount, 12);
+    assert.equal(settingsFrom({ recentCount: 900 }, {}).recentCount, RECENT_MAX);
+    assert.equal(settingsFrom({ recentCount: 1 }, {}).recentCount, RECENT_MIN);
+    assert.equal(settingsFrom({ recentCount: 7.4 }, {}).recentCount, 7);
+    assert.equal(
+      settingsFrom({ recentCount: 'mnogo' }, {}).recentCount,
+      DEFAULT_SETTINGS.recentCount,
+    );
   });
 
   it('falls back when the stored zoom is not a number at all', () => {

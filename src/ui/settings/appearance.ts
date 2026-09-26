@@ -15,18 +15,22 @@ export type ModeChoice = 'light' | 'dark';
 export type WritingFontChoice = 'georgia' | 'cambria' | 'corbel';
 
 /**
- * How many of his most recent texts Nedavni offers, and the choices he has.
+ * How many of his most recent texts Nedavni offers, and how far it may go.
  *
  * Nedavni is a shortcut into Svi tekstovi rather than a slice of it, so this
  * number costs nothing but the length of one list — and how many texts a man
  * has on the go at once is his own habit rather than something the app can work
  * out, which is exactly what makes it worth asking him.
  *
- * A short ladder rather than a free number. There is no right value to be found
- * by fine steps, and every rung here is a list he can still take in at a
- * glance.
+ * Every whole number between the two ends, rather than a few chosen rungs.
+ * There is no reason to believe a ladder of ours would land on his answer, and
+ * the ends are the only part the app has any business deciding: below three the
+ * section is not worth the heading over it, and past twenty it stops being a
+ * shortcut and becomes a second copy of the list he is trying to avoid
+ * scrolling.
  */
-export const RECENT_COUNTS = [5, 10, 15, 20] as const;
+export const RECENT_MIN = 3;
+export const RECENT_MAX = 20;
 
 /** Enough that a week's work is all there, short of a second whole list. */
 const DEFAULT_RECENT = 10;
@@ -153,19 +157,19 @@ export function stepScale(
 }
 
 /**
- * Brings whatever the file says onto the ladder.
+ * Brings whatever the file says between the two ends, and onto a whole number.
  *
- * Snapped rather than clamped, for the same reason a size is: a file naming
- * twelve — a build that stepped differently, or a hand edit — should leave the
- * panel showing one chosen rung rather than four unchosen ones.
+ * A count of rows cannot be half of anything, and a hand-edited file is the
+ * expected way this one gets a value we never wrote.
  */
 export function clampRecent(value: unknown): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return DEFAULT_RECENT;
-  let nearest: number = RECENT_COUNTS[0];
-  for (const count of RECENT_COUNTS) {
-    if (Math.abs(count - value) < Math.abs(nearest - value)) nearest = count;
-  }
-  return nearest;
+  return Math.min(RECENT_MAX, Math.max(RECENT_MIN, Math.round(value)));
+}
+
+/** The next one up or down, stopping at either end. */
+export function stepRecent(from: number, direction: 1 | -1): number {
+  return clampRecent(from + direction);
 }
 
 export function isScale(value: unknown): value is number {

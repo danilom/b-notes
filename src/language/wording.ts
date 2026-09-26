@@ -26,6 +26,14 @@ const TEXT = {
     appearanceTextSize: 'Veličina teksta',
     appearanceColour: 'Boja',
     appearanceMode: 'Pozadina',
+    /*
+      Named for the rows it lengthens, and then said plainly underneath.
+      "Nedavni" alone is the heading over a control whose effect is the one
+      thing in this panel he cannot see from inside it — the list is behind
+      the dialog — so the number gets a sentence saying what it counts.
+    */
+    appearanceRecent: 'Nedavni tekstovi',
+    appearanceRecentNote: 'Koliko ih stoji na vrhu spiska, iznad „Svi tekstovi“.',
     appearanceReset: 'Vrati na početno',
     appearanceSmaller: 'Manje',
     appearanceLarger: 'Veće',
@@ -347,6 +355,8 @@ const TEXT = {
     appearanceTextSize: 'Text size',
     appearanceColour: 'Colour',
     appearanceMode: 'Background',
+    appearanceRecent: 'Recent texts',
+    appearanceRecentNote: 'How many stand at the top of the list, above “All texts”.',
     appearanceReset: 'Back to the start',
     appearanceSmaller: 'Smaller',
     appearanceLarger: 'Larger',

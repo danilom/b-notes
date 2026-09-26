@@ -9,8 +9,8 @@ import {
   MIN_SCALE,
   MAX_ZOOM,
   MODES,
-  RECENT_COUNTS,
   WRITING_FONTS,
+  stepRecent,
   stepScale,
   writingSampleFor,
 } from './appearance.ts';
@@ -52,7 +52,7 @@ export interface OpenPanel {
   change: (next: Appearance) => void;
 }
 
-interface OptionSpec<T extends string | number> {
+interface OptionSpec<T extends string> {
   value: T;
   /** What this option is called. Always set, even where nothing is drawn. */
   name: string;
@@ -69,7 +69,7 @@ function choicesIn<T extends string>(record: Record<T, unknown>): T[] {
   return Object.keys(record) as T[];
 }
 
-function optionGroup<T extends string | number>(
+function optionGroup<T extends string>(
   heading: string,
   options: readonly OptionSpec<T>[],
   chosen: T,
@@ -132,20 +132,34 @@ function optionGroup<T extends string | number>(
  * looks that can be said out loud, which is what makes "what does it say?" a
  * question with an answer.
  */
-function scaleGroup(
-  words: ReturnType<typeof strings>,
-  heading: string,
-  factor: number,
-  setTo: (next: number) => void,
-  ceiling?: number,
+interface Stepper {
+  heading: string;
+  /** Where it stands now, which is what both buttons step from. */
+  at: number;
+  /** That value said in words, which is the only reading he gets. */
+  reads: string;
+  nextFrom: (direction: 1 | -1) => number;
+  setTo: (next: number) => void;
   /** Something to sit at the far end of the same row, if anything does. */
-  beside?: HTMLElement,
-): HTMLElement {
+  beside?: HTMLElement;
+  /**
+   * A line under it, where the number alone doesn't say what it counts.
+   *
+   * Sizes need none: the app changes behind the panel as he presses, and the
+   * reading is a percentage he has seen in every program he has ever used.
+   */
+  note?: string;
+  /** Widens the reading where the words in it are longer than a percentage. */
+  className?: string;
+}
+
+function stepperGroup(words: ReturnType<typeof strings>, spec: Stepper): HTMLElement {
   const group = document.createElement('section');
-  group.className = 'choice-group';
+  group.className =
+    spec.className === undefined ? 'choice-group' : `choice-group ${spec.className}`;
 
   const title = document.createElement('h3');
-  title.textContent = heading;
+  title.textContent = spec.heading;
 
   const row = document.createElement('div');
   row.className = 'choices zoom-row';
@@ -157,17 +171,17 @@ function scaleGroup(
     button.textContent = glyph;
     button.title = name;
     button.setAttribute('aria-label', name);
-    const next = stepScale(factor, direction, ceiling);
+    const next = spec.nextFrom(direction);
     // Stopped rather than hidden at the ends: a button that vanishes is a
     // button he has to find again.
-    button.disabled = next === factor;
-    button.addEventListener('click', () => setTo(next));
+    button.disabled = next === spec.at;
+    button.addEventListener('click', () => spec.setTo(next));
     return button;
   };
 
   const reading = document.createElement('span');
   reading.className = 'zoom-reading';
-  reading.textContent = `${Math.round(factor * 100)}%`;
+  reading.textContent = spec.reads;
   reading.setAttribute('aria-live', 'polite');
 
   row.append(
@@ -175,9 +189,35 @@ function scaleGroup(
     reading,
     step(1, words.appearanceLarger, '+'),
   );
-  if (beside !== undefined) row.append(beside);
+  if (spec.beside !== undefined) row.append(spec.beside);
   group.append(title, row);
+
+  if (spec.note !== undefined) {
+    const said = document.createElement('p');
+    said.className = 'choice-note';
+    said.textContent = spec.note;
+    group.append(said);
+  }
   return group;
+}
+
+/** The two sizes, which step along a ladder and read as a percentage. */
+function scaleGroup(
+  words: ReturnType<typeof strings>,
+  heading: string,
+  factor: number,
+  setTo: (next: number) => void,
+  ceiling?: number,
+  beside?: HTMLElement,
+): HTMLElement {
+  return stepperGroup(words, {
+    heading,
+    at: factor,
+    reads: `${Math.round(factor * 100)}%`,
+    nextFrom: (direction) => stepScale(factor, direction, ceiling),
+    setTo,
+    ...(beside === undefined ? {} : { beside }),
+  });
 }
 
 /** Groups narrow enough to sit side by side, so the panel stays short. */
@@ -308,23 +348,25 @@ function fill(
   );
 
   /*
-    Named for the section it lengthens, and not for the number it is: the word
-    over these buttons is the same word he reads over those rows, which is the
-    only thing that connects the two. The list behind the panel is redrawn as he
-    presses them, so the answer to "how many is 15?" is on screen beside the
-    question.
+    The same two buttons the sizes use, counting texts instead of percent.
+
+    Any number between the ends rather than a few chosen ones: there is no
+    reason to think a ladder of ours would land on his answer, and he is the
+    only one who knows how many essays he has on the go. It reads in words —
+    "7 tekstova" — because the bare figure sits under a heading naming a
+    section he cannot see from inside the dialog, and a number with no noun on
+    it is a number he has to guess the units of. The list behind the panel is
+    redrawn as he presses, so the answer is on screen beside the question.
   */
-  const recent = optionGroup(
-    words.sectionRecent,
-    RECENT_COUNTS.map((value) => ({
-      value,
-      name: words.noteCount(value),
-      label: String(value),
-      className: 'count-choice',
-    })),
-    chosen.recentCount,
-    (recentCount) => change({ ...chosen, recentCount }),
-  );
+  const recent = stepperGroup(words, {
+    heading: words.appearanceRecent,
+    at: chosen.recentCount,
+    reads: words.noteCount(chosen.recentCount),
+    nextFrom: (direction) => stepRecent(chosen.recentCount, direction),
+    setTo: (recentCount) => change({ ...chosen, recentCount }),
+    note: words.appearanceRecentNote,
+    className: 'count-group',
+  });
 
   const accents = optionGroup(
     words.appearanceColour,
@@ -379,7 +421,7 @@ function fill(
   // anything. Setting his text first and then the zoom would change it twice.
   panel.replaceChildren(
     header,
-    half(words.appearanceApp, [row([modes, recent]), fonts, row([appSize, accents])]),
+    half(words.appearanceApp, [modes, fonts, row([appSize, accents]), recent]),
     half(words.appearanceWriting, [writingFonts, writingSize]),
     footer,
   );

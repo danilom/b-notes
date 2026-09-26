@@ -2445,12 +2445,25 @@ button:disabled {
   color: var(--quiet);
 }
 
-/* Four numbers, all the same width, so the row reads as a scale rather
-   than as four differently sized buttons. */
-.count-choice {
-  padding: 0.4rem;
-  min-width: 2.6rem;
-  font-variant-numeric: tabular-nums;
+/*
+  Wide enough for the longest thing it can ever say, so that pressing +
+  doesn't walk the button out from under his finger. "20 tekstova" is the
+  longest; the reading is centred inside it either way.
+*/
+.count-group .zoom-reading {
+  min-width: 7.5rem;
+}
+
+/*
+  The one control in the panel whose effect he cannot see from inside it:
+  the list it lengthens is behind the dialog. Everything else here shows
+  its own answer — a font is set in itself, a colour is the swatch — so
+  this is the only place a sentence earns its room.
+*/
+.choice-note {
+  margin: 0.35rem 0 0;
+  font-size: 0.85em;
+  color: var(--quiet);
 }
 
 /* No name beside it. He has known what these colours are called for
