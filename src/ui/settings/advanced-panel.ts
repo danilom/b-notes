@@ -1,6 +1,7 @@
 import { type Shown, showAsModal } from '../dialogs/modal.ts';
 import { APP_VERSION, BUILD_STAMP } from '../../platform/build-info.ts';
 import type { Host } from '../../platform/host.ts';
+import type { AdvancedSettings } from './advanced-settings.ts';
 import { icon } from '../icons.ts';
 
 /**
@@ -24,7 +25,7 @@ import { icon } from '../icons.ts';
  */
 export interface AdvancedHandlers {
   onClose: () => void;
-  onKeep: (folders: { writing: string; logs: string }) => void;
+  onKeep: (settings: { writing: string; logs: string; ctrlCardAfterMs: number }) => void;
 }
 
 /** A path, and the way to look at it. */
@@ -99,13 +100,48 @@ function folderRow(
   return row;
 }
 
+/**
+ * A number he has no opinion about, for whoever set the machine up.
+ *
+ * How long Ctrl is held before the card of shortcuts appears. The right value
+ * is the one that clears his fastest deliberate `Ctrl+C` and stays under his
+ * patience — a thing to find by watching him, which is why it is reachable at
+ * all rather than compiled in.
+ */
+function waitRow(value: number, change: (to: number) => void): HTMLElement {
+  const row = document.createElement('div');
+  row.className = 'advanced-row';
+
+  const name = document.createElement('span');
+  name.className = 'advanced-label';
+  name.textContent = 'Ctrl card delay';
+
+  const field = document.createElement('input');
+  field.type = 'number';
+  field.className = 'advanced-number';
+  field.min = '0';
+  field.max = '5000';
+  field.step = '100';
+  field.value = String(value);
+  field.addEventListener('change', () => change(Number(field.value)));
+
+  const unit = document.createElement('span');
+  unit.className = 'advanced-note';
+  unit.textContent = 'ms before the shortcut card appears. 0 shows it at once.';
+
+  row.append(name, field, unit);
+  return row;
+}
+
 export function openAdvancedPanel(
   container: HTMLDialogElement,
   host: Host,
+  advanced: AdvancedSettings,
   handlers: AdvancedHandlers,
 ): () => void {
   let writing = host.writingFolder;
   let logs = host.logsFolder;
+  let wait = advanced.ctrlCardAfterMs;
 
   let modal: Shown | null = null;
   const close = (): void => {
@@ -171,6 +207,9 @@ export function openAdvancedPanel(
       // Not changeable: it is where the file naming these two lives, so it has
       // to be somewhere the app can find without being told.
       folderRow('Settings', host.appFolder, host, null),
+      waitRow(wait, (to) => {
+        wait = to;
+      }),
     );
 
     const note = document.createElement('p');
@@ -182,7 +221,7 @@ export function openAdvancedPanel(
     keep.type = 'button';
     keep.className = 'keep';
     keep.textContent = 'Apply and restart';
-    keep.addEventListener('click', () => handlers.onKeep({ writing, logs }));
+    keep.addEventListener('click', () => handlers.onKeep({ writing, logs, ctrlCardAfterMs: wait }));
 
     const cancel = document.createElement('button');
     cancel.type = 'button';

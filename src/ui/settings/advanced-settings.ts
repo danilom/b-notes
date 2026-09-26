@@ -29,7 +29,14 @@ export interface AdvancedSettings {
 }
 
 export const DEFAULT_ADVANCED: AdvancedSettings = {
-  ctrlCardAfterMs: 400,
+  /*
+    A second, because he is slow. Four hundred was the first guess and it was
+    a guess about a quicker man: by the time he has decided he does not know
+    which key, and looked down, and looked back, four hundred has long gone —
+    it would have shown the card to someone who was still deciding whether to
+    ask for it.
+  */
+  ctrlCardAfterMs: 1_000,
 };
 
 /** Outside this, the delay is either a mistake or a way to switch the card off. */
@@ -69,4 +76,30 @@ export function advancedFrom(raw: unknown): AdvancedSettings {
     return DEFAULT_ADVANCED;
   }
   return { ctrlCardAfterMs: wait };
+}
+
+/**
+ * Writes the file back, leaving anything it does not know about alone.
+ *
+ * Same care the settings file takes: a machine left off for months comes back
+ * running an older build, and that build must not strip a key a newer one
+ * wrote.
+ */
+export async function writeAdvanced(
+  files: FileSystem,
+  appFolder: string,
+  settings: AdvancedSettings,
+): Promise<void> {
+  const at = `${appFolder}/${FILE}`;
+  let had: unknown = {};
+  try {
+    had = JSON.parse(await files.read(at));
+  } catch {
+    // Absent or unreadable, which is the ordinary state before anyone has
+    // changed anything. There is nothing to preserve, so there is nothing to
+    // report either.
+  }
+  const kept = typeof had === 'object' && had !== null ? had : {};
+  await files.write(at, `${JSON.stringify({ ...kept, ...settings }, null, 2)}
+`);
 }

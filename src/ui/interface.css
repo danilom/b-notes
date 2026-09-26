@@ -105,6 +105,11 @@
   --l-thumb: 82%;
   --l-thumb-hover: 68%;
   --l-track-hover: 93%;
+
+  /* A key drawn as the key on his desk: pale cap, dark legend. */
+  --l-cap: 97%;
+  --l-cap-ink: 20%;
+  --l-cap-line: 62%;
   --l-shadow: 12%;
   --shadow-alpha: 0.3;
   --swatch-edge: rgb(0 0 0 / 0.15);
@@ -218,6 +223,16 @@
   --l-thumb: 34%;
   --l-thumb-hover: 48%;
   --l-track-hover: 26%;
+
+  /*
+    And in the dark it is a dark key. The argument for keeping it pale — that
+    the keyboard under his hands does not invert — turned out to be an
+    argument about his desk rather than about his screen: a white cap on a
+    dark page is a hole punched in it, and he is looking at the page.
+  */
+  --l-cap: 30%;
+  --l-cap-ink: 88%;
+  --l-cap-line: 46%;
   --l-shadow: 2%;
   --shadow-alpha: 0.6;
   --swatch-edge: rgb(255 255 255 / 0.25);
@@ -1268,6 +1283,17 @@ dialog::backdrop {
   flex: none;
   padding: 0.25rem 0.6rem;
   font-size: 0.85em;
+}
+
+/* A number, sized for a number rather than for a path. */
+.advanced-number {
+  font: inherit;
+  width: 6em;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--page);
+  color: var(--ink);
 }
 
 .advanced-note {
@@ -2545,10 +2571,12 @@ button:disabled {
 
   Against the right edge of his writing, not confined to the column: the
   measure leans left, so there is room out there that his eye is not using.
+  Held off the edge, though — hard against it, it read as part of the window
+  frame and sat almost on the taskbar.
 */
 #ctrl-card {
   position: absolute;
-  right: 1.1rem;
+  right: 2.6rem;
   z-index: 3;
   max-width: 27rem;
   padding: 1rem 1.2rem;
@@ -2558,15 +2586,16 @@ button:disabled {
   color: var(--ink);
   box-shadow: 0 6px 20px hsl(var(--grey-h) var(--surface) var(--l-shadow) / var(--shadow-alpha));
   /*
-    It takes the pointer, but never the caret: he goes on typing straight
-    through it, and a click anywhere — on it or past it — closes it.
+    Neither the pointer nor the caret. He goes on typing straight through it,
+    and a click passes through to the text underneath — which is also what
+    closes it, so there is nothing here to get past.
 
-    Taking the pointer is what lets a mouse coming near reveal the way out
-    below. The cost is that a click landing on the card does not also land on
-    the text under it, which is worth it for a thing that lives only while he
-    holds a key.
+    It took the pointer for a while, so that hovering could reveal the way out
+    below. That stopped him clicking into his own writing wherever the card
+    happened to be, which is a poor trade for a button nothing should ever
+    need. The way out answers a moving mouse instead.
   */
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 /*
@@ -2579,6 +2608,8 @@ button:disabled {
 */
 #ctrl-card-close {
   position: absolute;
+  /* The one part of the card that answers a mouse at all. */
+  pointer-events: auto;
   top: 0.35rem;
   right: 0.45rem;
   padding: 0.1rem 0.4rem;
@@ -2590,7 +2621,12 @@ button:disabled {
   opacity: 0;
 }
 
-#ctrl-card:hover #ctrl-card-close {
+/*
+  Shown once a mouse moves while the card is up — not on hover, which was
+  already true the moment it appeared if his pointer happened to be resting
+  where it lands.
+*/
+#ctrl-card[data-mouse] #ctrl-card-close {
   opacity: 1;
 }
 
@@ -2603,11 +2639,11 @@ button:disabled {
   where he is working rather than over it.
 */
 #ctrl-card[data-where='low'] {
-  bottom: 1.1rem;
+  bottom: 2.2rem;
 }
 
 #ctrl-card[data-where='high'] {
-  top: 1.1rem;
+  top: 2.2rem;
 }
 
 #ctrl-card[hidden] {
@@ -2647,11 +2683,11 @@ button:disabled {
   min-width: 1.5em;
   padding: 0.15em 0.45em;
   text-align: center;
-  border: 1px solid hsl(var(--grey-h) var(--surface) 62%);
+  border: 1px solid hsl(var(--grey-h) var(--surface) var(--l-cap-line));
   border-bottom-width: 2px;
   border-radius: 5px;
-  background: hsl(var(--grey-h) var(--surface) 97%);
-  color: hsl(var(--grey-h) var(--surface) 20%);
+  background: hsl(var(--grey-h) var(--surface) var(--l-cap));
+  color: hsl(var(--grey-h) var(--surface) var(--l-cap-ink));
 }
 
 /* Not a key, so not drawn as one: he is not meant to press it. */

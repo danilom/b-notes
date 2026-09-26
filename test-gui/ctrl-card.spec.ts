@@ -1,5 +1,16 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { DEFAULT_ADVANCED } from '../src/ui/settings/advanced-settings.ts';
+
+/**
+ * Past the wait, whatever the wait is.
+ *
+ * These said 500ms, which cleared the delay as it was and stopped clearing it
+ * the day somebody decided he was slower than that. What the tests mean is
+ * "long enough", so that is what they say.
+ */
+const PAST_THE_WAIT = DEFAULT_ADVANCED.ctrlCardAfterMs + 300;
+
 /**
  * The keys he can use, shown while he holds the one they all start with.
  *
@@ -38,7 +49,7 @@ test('says nothing until he has put the caret in his writing', async ({ page }) 
   await page.locator('#list .note').nth(1).click();
 
   await holdCtrl(page);
-  await page.clock.runFor(2000);
+  await page.clock.runFor(PAST_THE_WAIT + 1000);
 
   await expect(card(page)).toBeHidden();
 });
@@ -47,7 +58,7 @@ test('shows what he can do once he has held it long enough', async ({ page }) =>
   await holdCtrl(page);
   await expect(card(page)).toBeHidden();
 
-  await page.clock.runFor(500);
+  await page.clock.runFor(PAST_THE_WAIT);
 
   await expect(card(page)).toBeVisible();
   await expect(card(page).locator('kbd')).toHaveText(['Ctrl', 'C', 'Ctrl', 'V', 'Ctrl', 'Z']);
@@ -59,14 +70,14 @@ test('says nothing to a man who already knows the shortcut', async ({ page }) =>
   await holdCtrl(page);
   await page.keyboard.press('Control+c');
 
-  await page.clock.runFor(2000);
+  await page.clock.runFor(PAST_THE_WAIT + 1000);
 
   await expect(card(page)).toBeHidden();
 });
 
 test('goes when he lets go', async ({ page }) => {
   await holdCtrl(page);
-  await page.clock.runFor(500);
+  await page.clock.runFor(PAST_THE_WAIT);
   await expect(card(page)).toBeVisible();
 
   await releaseCtrl(page);
@@ -80,7 +91,7 @@ test('goes when he lets go', async ({ page }) => {
 
 test('goes when he clicks anything at all', async ({ page }) => {
   await holdCtrl(page);
-  await page.clock.runFor(500);
+  await page.clock.runFor(PAST_THE_WAIT);
   await expect(card(page)).toBeVisible();
 
   await page.locator('#editor').click();
@@ -93,7 +104,7 @@ test('does not answer the search box, where those keys mean something else', asy
   await page.locator('#search').focus();
 
   await holdCtrl(page);
-  await page.clock.runFor(2000);
+  await page.clock.runFor(PAST_THE_WAIT + 1000);
 
   await expect(card(page)).toBeHidden();
 });
@@ -108,22 +119,39 @@ test('does not answer while a dialog is in front of his writing', async ({ page 
   await page.getByRole('button', { name: 'Izgled' }).click();
 
   await holdCtrl(page);
-  await page.clock.runFor(2000);
+  await page.clock.runFor(PAST_THE_WAIT + 1000);
 
   await expect(card(page)).toBeHidden();
 });
 
 test('offers a way out to a mouse that comes looking, and only then', async ({ page }) => {
   await holdCtrl(page);
-  await page.clock.runFor(500);
+  await page.clock.runFor(PAST_THE_WAIT);
   const away = page.locator('#ctrl-card-close');
 
-  // There, but not offering itself: nothing has gone wrong.
+  // There, but not offering itself: nothing has gone wrong yet.
   await expect(away).toHaveCSS('opacity', '0');
 
-  await card(page).hover();
+  // A mouse that moves, rather than one that merely rests where the card
+  // landed — which his often does, and which used to be enough to show it.
+  await page.mouse.move(400, 400);
+  await page.mouse.move(420, 410);
 
   await expect(away).toHaveCSS('opacity', '1');
+});
+
+test('never stands between him and his own writing', async ({ page }) => {
+  // It took the pointer for a while so that hovering could reveal the way
+  // out, and that stopped him clicking into his text wherever it happened to
+  // be sitting.
+  await holdCtrl(page);
+  await page.clock.runFor(PAST_THE_WAIT);
+  await expect(card(page)).toBeVisible();
+
+  const box = await card(page).boundingBox();
+  await page.mouse.click((box?.x ?? 0) + 20, (box?.y ?? 0) + 20);
+
+  await expect(page.locator('#editor')).toBeFocused();
 });
 
 test('does not appear for the Ctrl that AltGr is made of', async ({ page }) => {
@@ -134,7 +162,7 @@ test('does not appear for the Ctrl that AltGr is made of', async ({ page }) => {
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Alt', bubbles: true })),
   );
 
-  await page.clock.runFor(2000);
+  await page.clock.runFor(PAST_THE_WAIT + 1000);
 
   await expect(card(page)).toBeHidden();
 });

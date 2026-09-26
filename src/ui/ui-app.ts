@@ -710,6 +710,7 @@ export async function startApp(runningOn: Host): Promise<void> {
     log,
     languageNow: () => language,
     settingsNow: () => settings,
+    advancedNow: () => advanced,
     preview: (appearance) => showAppearanceOf(appearance),
     keep: (appearance) => {
       settings = { ...settings, ...appearance };

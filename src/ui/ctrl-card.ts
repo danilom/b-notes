@@ -90,8 +90,19 @@ export function createCtrlCard(parts: CtrlCardParts): CtrlCard {
     // Away from where he is working: high when the caret is low, low when it
     // is high.
     card.dataset['where'] = caretIsLow(editor) ? 'high' : 'low';
+    delete card.dataset['mouse'];
     card.hidden = false;
   }
+
+  /*
+    A mouse that moves while the card is up is a mouse looking for the way out
+    — nothing else would be reaching for it. Movement rather than hover: his
+    pointer is often already resting where the card lands, and a button that
+    is simply there whenever it appears is a button he might press by mistake.
+  */
+  const onMouseMove = (): void => {
+    if (!card.hidden) card.dataset['mouse'] = 'yes';
+  };
 
   /*
     Either Ctrl. What keeps this from appearing mid-word is the rule below —
@@ -129,6 +140,7 @@ export function createCtrlCard(parts: CtrlCardParts): CtrlCard {
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
   window.addEventListener('mousedown', hide);
+  window.addEventListener('mousemove', onMouseMove);
   /*
     The keyup that never arrives. He holds Ctrl, moves to another window, and
     the release lands there — leaving this up over a program he has left. The
@@ -143,6 +155,7 @@ export function createCtrlCard(parts: CtrlCardParts): CtrlCard {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('mousedown', hide);
+      window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('blur', hide);
       document.removeEventListener('visibilitychange', hide);
       card.remove();

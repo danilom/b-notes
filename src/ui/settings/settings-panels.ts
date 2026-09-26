@@ -2,6 +2,7 @@ import type { Language } from '../../language/wording.ts';
 import type { Host } from '../../platform/host.ts';
 import { type Log, describeError } from '../../platform/logging.ts';
 import { openAdvancedPanel } from './advanced-panel.ts';
+import { type AdvancedSettings, writeAdvanced } from './advanced-settings.ts';
 import type { Appearance } from './appearance.ts';
 import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
 import type { Settings } from './app-settings.ts';
@@ -15,6 +16,8 @@ export interface SettingsPanelsParts {
   button: HTMLButtonElement;
   host: Host;
   log: Log;
+  /** What the advanced panel starts from, and hands back changed. */
+  advancedNow: () => AdvancedSettings;
   languageNow: () => Language;
   settingsNow: () => Settings;
   /** Shown, not kept: what he is trying out goes on screen and nowhere else. */
@@ -67,11 +70,11 @@ export function createSettingsPanels(parts: SettingsPanelsParts): SettingsPanels
   function showAdvanced(): void {
     if (advancedPane.open) return;
 
-    const close = openAdvancedPanel(advancedPane, host, {
+    const close = openAdvancedPanel(advancedPane, host, parts.advancedNow(), {
       onClose: () => {
         close();
       },
-      onKeep: (folders) => {
+      onKeep: (settings) => {
         close();
         /*
           Started again rather than applied in place. Everything the app is
@@ -80,14 +83,15 @@ export function createSettingsPanels(parts: SettingsPanelsParts): SettingsPanels
           app the folders are settled before a window exists, so a reload alone
           would be handed the old ones anyway.
         */
-        void host
-          .rememberFolders(folders)
+        const { ctrlCardAfterMs, ...folders } = settings;
+        void writeAdvanced(host.files, host.appFolder, { ctrlCardAfterMs })
+          .then(() => host.rememberFolders(folders))
           .then(() => host.restart())
           .catch((error: unknown) => {
             // English, like the panel it came from: the only person who can
             // have pressed that button reads English.
-            parts.say('Could not save the folders. See the log.');
-            log.error('Could not remember the folders', describeError(error));
+            parts.say('Could not save the settings. See the log.');
+            log.error('Could not keep the advanced settings', describeError(error));
           });
       },
     });
