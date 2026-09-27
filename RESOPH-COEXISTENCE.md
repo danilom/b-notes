@@ -129,6 +129,25 @@ b-notes brings the change in, and nothing is lost either way.
 
 ## 4. Stage 0
 
+**Built** on branch `stage-0-resoph-source` (2026-09-27), as below, with these
+differences from what follows:
+
+- **Line endings (§5 Q5) were left as they were.** b-notes still writes `\n`,
+  a deliberate earlier choice, until the Windows builds on his machines are
+  known.
+- **Knowing a Resoph file under a new name (§4.6) is not built.** A text he
+  retitles in Resoph after b-notes has copied it shows as a second text — an
+  untidy duplicate, never a hidden one.
+- **A change Resoph makes to a text he has put away** is not brought in; only
+  texts in his list are compared.
+- **Search is not re-ranked**; that is its own item in `TODO.md`.
+- **The copy's link** is written as §4.4 says, but hiding the Resoph original
+  also works from the copy's name alone, so a link lost after its copy was
+  written can never hide a text.
+- **Closing the other editors** asks each one first. Resoph, which only hides,
+  is then ended after its database is copied into `userData/resoph-copies`
+  and it has stopped writing; on the VM this took about ten seconds in all.
+
 ### 4.1 Two folders — *decided*
 
 - **His Resoph folder**, read and never written. Only its top level: Resoph

@@ -36,11 +36,11 @@ When the tradeoff is between "powerful" and "impossible to get wrong", choose im
 
 He writes in ResophNotes and will keep doing so until b-notes is clearly
 better. Years of moving him to Simplenote, Notepad, GMail drafts and Obsidian
-didn't stick. So b-notes shares his Resoph folder with Resoph itself, often with
-both open at once, on three or four machines that sync through Dropbox after
-long offline stretches. **b-notes is not the only writer of these files, and
-won't be for the foreseeable future.** The evidence behind everything in this
-section is in `CORPUS-ANALYSIS.md`.
+didn't stick. So b-notes lives beside Resoph — reading its folder, keeping its
+own texts in a folder next to it — on three or four machines that sync through
+Dropbox after long offline stretches. **Resoph goes on writing his texts, and
+will for the foreseeable future.** The evidence behind everything in this
+section is in `CORPUS-ANALYSIS.md`; the design is in `RESOPH-COEXISTENCE.md`.
 
 **Resoph keeps a note's title in the filename and writes only the rest into the
 file.** In Resoph the title shows as the first line of the note, and editing
@@ -53,11 +53,23 @@ hand in Resoph, on one file so far.
 
 What follows:
 
+- **b-notes reads his Resoph folder and writes only its own.** Every text in
+  Resoph's folder is in his b-notes list, shown straight from Resoph's file.
+  The first time anything changes one — an edit, a kept copy, deleting it —
+  b-notes copies it into its own folder and works on the copy from then on;
+  the Resoph file is left exactly as it was. Whatever he writes in Resoph turns
+  up in b-notes, so b-notes is always the place that has everything, which is
+  the reason to use it. Nothing goes back to Resoph. The design, and why not
+  one shared folder, is in `RESOPH-COEXISTENCE.md`.
 - **A Resoph note is its filename plus its file.** The title is the filename
   read through Resoph's escapes: `%2A` is `*`, `%3F` `?`, `%2F` `/`, `%5C` `\`,
-  `%3A` `:`, `%09` a tab. The text is what the file holds. Taking the title
-  from the file's first line shows him 1,200 opening sentences and a list he
-  doesn't recognise, which is what 0.7.0 did.
+  `%3A` `:`, `%09` a tab — shown as the first line, the way Resoph shows it,
+  with the file's text under it. Taking the title from the file's first line
+  shows him 1,200 opening sentences and a list he doesn't recognise, which is
+  what 0.7.0 did.
+- **In b-notes' own folder the title is simply the first line**, and a file
+  keeps the name it was made with. So he can retitle freely — leading spaces
+  and all — and nothing is ever renamed.
 - **Every name on disk is valid.** More than a quarter of his names begin or end
   with spaces, and many carry escapes and marks. Explorer can't make these
   names, Windows 11 Notepad shows them as blank tabs, and Windows' own zip
@@ -75,17 +87,27 @@ What follows:
   otherwise. A rename or delete made anywhere can be undone by any machine's
   Resoph. In the 0.7.0 test b-notes renumbered eight names at each start,
   Resoph wrote them back each time, and his list grew by nineteen texts in two
-  hours. So **b-notes never renames, moves or deletes anything in his folder**
-  — not while Resoph runs, and not while it's closed. His own title edits in
-  Resoph, undone by another machine's Resoph, are where most of his identical
-  copies come from.
-- **b-notes and the other editors take turns.** While Resoph, Notepad or
-  Obsidian is running, b-notes stops behind one plain modal message and a
-  button that closes them for him — Resoph's own close button only hides it in
-  the tray.
-- **Files change underneath b-notes.** Resoph, Notepad and Dropbox all write
-  them. Before writing a file, check it is still what b-notes last read; if it
-  isn't, keep both.
+  hours. So **b-notes never writes anything in his Resoph folder**, and renames
+  nothing anywhere. His own title edits in Resoph, undone by another machine's
+  Resoph, are where most of his identical copies come from.
+- **A name is made once, and made to mean one text on every machine.** Several
+  machines work offline and Dropbox matches files by path alone. So a copy of
+  a Resoph text is named from the Resoph file's exact name (the same on every
+  machine), and a new text from the moment and machine it was started on
+  (different on every machine) — `Pismo ~K3F9A2`, `Pismo ~2026-09-27 14-32-10
+  Dell`. Never ` (n)`, and never decided by looking at what is in the folder.
+- **What Resoph changes is brought in.** A Resoph text b-notes has copied is
+  compared with its Resoph file whenever b-notes comes back to the front.
+  Anything b-notes has already seen for that text is not news — which stops
+  another machine's Resoph rolling it back. If only Resoph changed it,
+  Resoph's becomes the text; if both did, the newer does, the other is kept
+  as a version, and a line over the text says so until he has looked.
+- **b-notes starts only once the other editors are closed.** While Resoph,
+  Notepad or Obsidian is running, it waits behind one plain modal message and
+  a button that closes them for him — Resoph's own close button only hides it
+  in the tray, so Resoph is ended, once its database has been copied into
+  `userData`. Not during a session: nothing b-notes writes is where Resoph
+  looks, so running together costs at most a text changed in both.
 - **His filenames will have to be cleaned up eventually**, and not by renaming
   in place, for the reason above. The shape recorded in `CORPUS-ANALYSIS.md`
   §9 is copying out into a folder of b-notes' own, once Resoph no longer
@@ -140,12 +162,17 @@ whether the sentence is about the screen, about a thing on it, or about an act
 
 | file | folder | why there |
 | --- | --- | --- |
-| his texts | writing folder (Dropbox) | backed up and synced; he never sees the path |
-| `settings.json` | writing folder | which letters and which colour are taste, and travel with him |
-| `Obrisano/` | writing folder | texts he has deleted, with what he wrote in them |
-| `Verzije/` | writing folder | what a text said before he emptied it; `Obrisano/Verzije/` once the text itself is put away |
+| his texts, as Resoph keeps them | his Resoph folder (Dropbox) | read and never written: Resoph puts back anything changed there |
+| his texts b-notes has written | b-notes' folder, beside Resoph's (Dropbox) | backed up and synced; he never sees the path |
+| `settings.json` | b-notes' folder | which letters and which colour are taste, and travel with him |
+| `Obrisano/` | b-notes' folder | texts he has deleted, with what he wrote in them |
+| `Verzije/` | b-notes' folder | what a text said before he emptied it or Resoph changed it; `Obrisano/Verzije/` once the text itself is put away |
+| `Iz Resopha/` | b-notes' folder | which Resoph file each copy came from; outlives the copy, so a text he destroyed does not come back from Resoph |
+| `Menjano na dva mesta/` | b-notes' folder | texts changed in Resoph and b-notes at once, until he has looked |
 | `screen.json` | `userData` | how big the letters are is the screen in front of him, not taste — syncing it would have one machine keep undoing the other |
 | `session.json` | `userData` | which text he had open, on this machine |
+| `folders.json` | `userData` | where his Resoph folder and b-notes' are, if someone chose; otherwise Resoph's own settings say, and b-notes' goes beside it |
+| `resoph-copies/` | `userData` | Resoph's database, copied before b-notes ends Resoph; the ten newest |
 | `logs/` | `userData` | ours, per machine, safe to delete |
 
 Emptying the text is how he deletes — he never found Resoph's delete command —
