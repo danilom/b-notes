@@ -255,35 +255,64 @@ the b-notes copy: a duplicate, which is untidy but can be fixed later. Linking
 two different texts would file one out of sight as a version of the other. So
 **link only when sure**.
 
-### 4.7 New texts — *proposed*
+### 4.7 New texts, and what b-notes names its files — *proposed*
 
-- Written into b-notes' folder only.
+- New texts are written into b-notes' folder only.
 - **Named once, when the first line is finished** — he presses Enter or leaves
   it — and never renamed. Before that the draft is kept under a temporary name
   in b-notes' folder, so nothing he types is ever only in memory.
-- **The name is safe everywhere and never needs changing**, and he never sees
-  it. The rule, *proposed*, replacing today's:
-  - **Cleaned title**: diacritics folded to plain letters (the fold search
-    already uses), anything but letters, digits, spaces and plain punctuation
-    replaced by a space, spaces collapsed, edges trimmed, no trailing dot, cut
-    at a word near 50 characters, Windows' reserved names avoided, *Bez
-    naslova* if nothing is left.
-  - **A copied Resoph text** takes the cleaned Resoph title. If cleaning changed
-    anything, it also takes ` ~` and six characters worked out from the Resoph
-    filename. The same Resoph file therefore gets the same name on every
-    machine, and two Resoph names that clean to the same thing — his
-    spacing variants — still get two files.
-  - **A new text** takes the cleaned first line plus ` ~` and six characters
-    from the moment and machine it was created on. Always unique. That
-    matters more than it looks: two machines both starting a text called
-    *Pismo* offline would otherwise write one file, and Dropbox's conflicted
-    copy would then pass two different texts off as one text edited twice —
-    and file one out of sight as a version of the other.
-  - **Never ` (n)`**, and nothing is ever renumbered.
 
-  What goes from today's code: numbering on collision, which renamed *other*
-  texts to make room; stripping his own ` (1)`; and keeping Serbian letters in
-  names, which Windows' own zip mangles.
+**What a filename has to do.** He never sees it; to b-notes it *is* the text.
+So one name must mean one text, on every machine, forever:
+
+1. **Same text, same name, everywhere.** If the Dell and the Asus both copy the
+   same Resoph text while offline, they must pick the same name. Dropbox then
+   sees one file changed in two places, which is exactly true, and §4.5
+   handles it.
+2. **Different texts, different names, everywhere.** If two different texts
+   ever get the same name on two machines, Dropbox sees one file changed in
+   two places, which is false. §4.5 would then file one text out of sight as
+   a version of the other.
+3. **Decided without looking at the folder.** Each offline machine sees a
+   different folder, so "take the next free number" gives different answers
+   on different machines and breaks both rules above.
+
+**Where the danger is, concretely:**
+
+- *His spacing variants.* Resoph has `Pismo`, `   Pismo` and `         Pismo`
+  as three separate texts. Cleaned for a safe filename, all three become
+  `Pismo`. If he edits two of them, their copies must still be two files
+  (rule 2).
+- *Common first lines.* Two new texts that both begin `Pismo` — or `1`, which
+  34 of his texts begin with — started on two machines while offline. Each
+  machine sees no `Pismo` yet and picks `Pismo`. Rule 2 again.
+- *Numbering doesn't save either case*, because each machine numbers against
+  its own folder (rule 3).
+
+**The rule: a readable part, and a tag that makes it unique.**
+
+- **Readable part**: the title, cleaned — diacritics folded to plain letters
+  (the fold search already uses), anything but letters, digits, spaces and
+  plain punctuation replaced, spaces collapsed, edges trimmed, cut near 50
+  characters, Windows' reserved names avoided, *Bez naslova* if nothing is
+  left. Only there so a person looking in the folder can tell what's what.
+- **Tag for a copy of a Resoph text**: six characters computed from its exact
+  Resoph filename, spaces and all — a checksum. The same Resoph file gives the
+  same six characters on every machine (rule 1). `   Pismo` and `         Pismo`
+  give different ones (rule 2).
+  `Pismo ~k3f9a2.txt`, `Pismo ~p81xq0.txt`.
+- **Tag for a new text**: when and where it was started, e.g.
+  `Pismo ~2026-09-27 14-32-10 Dell.txt`. No two machines can produce the same
+  one (rule 2), and nothing else could have made that name, so there's never a
+  first copy to collide with.
+- **Always tagged.** An earlier draft of this left the tag off when cleaning
+  changed nothing. That's prettier, but it's one more rule to get right, for
+  names nobody reads.
+- **Never ` (n)`**, and nothing is ever renumbered.
+
+What goes from today's code: numbering on collision, which renamed *other*
+texts to make room; stripping his own ` (1)`; and Serbian letters in names,
+which Windows' own zip mangles.
 
 ### 4.8 Versions and deleting — *proposed*
 
@@ -394,8 +423,7 @@ folder, both through Dropbox, often after long offline stretches.
    - **b. Trimmed, with a small mark for rank** — a dot or a bar, heavier for
      more spaces.
    - **c. Kept, collapsed** to one fixed indent.
-3. **Filenames** (§4.7): plain ASCII agreed? And the ` ~` plus six characters,
-   or another shape?
+3. **Filenames** (§4.7): plain ASCII agreed? Tags as proposed, or another shape?
 4. **Where b-notes' folder lives** — `Dropbox/b-notes/`? — and what happens to
    0.7.0's leftovers (see *Cleanup*).
 5. **Which Windows builds**, for Notepad and line endings. b-notes' files could
