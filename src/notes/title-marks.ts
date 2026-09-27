@@ -41,9 +41,11 @@ const MARKS: readonly Mark[] = [
   { typed: 'ZZ' },
   { typed: 'ZZZ' },
   { typed: 'ZZZZ' },
+  { typed: 'ZZZZZ' },
   { typed: 'zz' },
   { typed: 'zzz' },
   { typed: 'zzzz' },
+  { typed: 'zzzzz' },
   { typed: 'y' },
 ];
 

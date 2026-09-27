@@ -861,6 +861,11 @@ button svg {
   flex: none;
   color: var(--quiet);
   font-size: 0.7em;
+  /* Up off the baseline, level with the middle of the name's capitals, where
+     it reads as a mark on the title rather than a letter of it. In em, so it
+     keeps its place at whatever size he sets his text. */
+  position: relative;
+  top: -0.33em;
 }
 
 /* Italic because it is not a title yet — it is the app describing what he

@@ -49,6 +49,13 @@ describe('reading his marks off the front of a title', () => {
     assert.deepEqual(titlePartsOf('AAA Pismo'), { mark: 'AAA', position: null, starred: false, name: 'Pismo' });
     assert.deepEqual(titlePartsOf('AAKafana'), { mark: 'AA', position: null, starred: false, name: 'Kafana' });
     assert.deepEqual(titlePartsOf('zz staro'), { mark: 'zz', position: null, starred: false, name: 'staro' });
+    assert.deepEqual(titlePartsOf('ZZZZZ   ZABORAVI'), { mark: 'ZZZZZ', position: null, starred: false, name: 'ZABORAVI' });
+    assert.deepEqual(titlePartsOf('zzzzzMedicinske sestre'), {
+      mark: 'zzzzz',
+      position: null,
+      starred: false,
+      name: 'Medicinske sestre',
+    });
   });
 
   it('reads (UP) run straight into a name', () => {
