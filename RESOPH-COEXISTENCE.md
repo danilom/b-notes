@@ -165,9 +165,16 @@ differences from what follows:
   It is kept quietly; no mark says so yet.
 - **b-notes' folder can never be Resoph's or inside it**: such a choice in the
   advanced panel is set aside for the default beside Resoph's, and logged.
-- **Closing the other editors** asks each one first. Resoph, which only hides,
-  is then ended after its database is copied into `userData/resoph-copies`
-  and it has stopped writing; on the VM this took about ten seconds in all.
+- **Closing the other editors** asks each one first. Resoph, if that only hid
+  it, is then ended once its files have stopped changing and been copied into
+  `userData/resoph-copies` — copied after the polite close, because hiding is
+  when Resoph saves its database. About ten seconds on the VM.
+- **b-notes switches off Resoph's minimize-to-tray itself** — at every start
+  when Resoph is not running, and right after ending it otherwise — by setting
+  `<systray>` to `false` in Resoph's settings, with the file copied aside first
+  and every other byte left alone. Tried on the VM: Resoph starts normally with
+  the edited settings, and asked to close the way its X does, it now quits.
+  So closing it needs force at most once per machine.
 
 ### 4.1 Two folders — *decided*
 
@@ -447,19 +454,22 @@ folder, both through Dropbox, often after long offline stretches.
   common.
 - **How the button closes them** — *open*, to be tried on a real machine:
   - **Resoph can't be asked while `<systray>` is on**, since its close button
-    only hides it. The simplest fix is to turn *minimize to tray* off in
-    Resoph's options on each of his machines, by hand, at install. Then a
-    polite close quits it, and he can't lose its window to the tray either.
-    b-notes could flip the setting itself, but only while Resoph is closed —
-    Resoph probably writes its config back on exit — and a by-hand change is
-    easier to undo. If that isn't enough, the fallback is ending it by force,
-    which risks the database if it's mid-write — possibly how he lost
-    everything before. So: first copy both files into b-notes' folder, wait
-    until the data file stops changing, end it, and check afterwards that the
-    database still reads as XML.
-  - **Notepad is asked**, never forced. Classic Notepad asks about unsaved changes
-    in its own window, and b-notes waits. Windows 11 Notepad may close without
-    asking and restore its tabs next time.
+    only hides it. *Decided and built:* b-notes switches the setting off
+    itself, only while Resoph is closed (a running Resoph writes its settings
+    back when it quits) — at every start when Resoph is not running, and just
+    after ending it otherwise. Then a polite close quits it, and he can't lose
+    its window to the tray either. Until then, the fallback is ending it by
+    force, which risks the database if it's mid-write — possibly how he lost
+    everything before. So: ask first (hiding saves its database), wait until
+    its files stop changing, copy them into `userData`, end it, and check
+    afterwards that they still read as whole XML, putting the copy back if
+    not.
+  - **Notepad is asked**, never forced. Classic Notepad (Windows 10, as on the
+    VM) asks about unsaved changes in its own window, and b-notes waits.
+    Windows 11 Notepad keeps the unsaved changes of every open tab, new files
+    and edited ones, and brings them back next time without asking — so
+    nothing is lost by closing it, but the file does not have those edits, and
+    saving that tab later writes over whatever the file holds by then.
   - **Obsidian is asked.** It saves as it goes.
   - Seeing them: Windows' own `tasklist`, no new dependency. Processes:
     `ResophNotes.exe`, `Notepad.exe`, `Obsidian.exe`.

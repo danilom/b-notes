@@ -104,10 +104,12 @@ What follows:
   as a version, and a line over the text says so until he has looked.
 - **b-notes starts only once the other editors are closed.** While Resoph,
   Notepad or Obsidian is running, it waits behind one plain modal message and
-  a button that closes them for him — Resoph's own close button only hides it
-  in the tray, so Resoph is ended, once its database has been copied into
-  `userData`. Not during a session: nothing b-notes writes is where Resoph
-  looks, so running together costs at most a text changed in both.
+  a button that closes them for him. Resoph's close button only hides it in
+  the tray while its *minimize to tray* is on, so b-notes switches that off in
+  Resoph's settings whenever Resoph is closed; until it has, Resoph is ended,
+  once its files have been copied into `userData`. Not during a session:
+  nothing b-notes writes is where Resoph looks, so running together costs at
+  most a text changed in both.
 - **His filenames will have to be cleaned up eventually**, and not by renaming
   in place, for the reason above. The shape recorded in `CORPUS-ANALYSIS.md`
   §9 is copying out into a folder of b-notes' own, once Resoph no longer
