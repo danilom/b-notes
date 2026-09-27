@@ -4,7 +4,15 @@ import path from 'node:path';
 
 /** The browser build, which is the one carrying the mock store. */
 const root = path.resolve('dist-browser');
-const port = Number(process.env['PORT'] ?? 5173);
+/** `--port <n>`, and `--resoph <json>` to serve his folder in place of the invented corpus. */
+const args = new Map();
+for (let i = 2; i < process.argv.length; i += 2) args.set(process.argv[i].replace(/^--/, ''), process.argv[i + 1]);
+
+const port = Number(args.get('port') ?? process.env['PORT'] ?? 5173);
+const corpora =
+  args.get('resoph') === undefined
+    ? new Map([['corpus.json', path.resolve('testdata/corpus.json')]])
+    : new Map([['resoph-corpus.json', path.resolve(args.get('resoph'))]]);
 
 const CONTENT_TYPES = new Map([
   ['.html', 'text/html; charset=utf-8'],
@@ -19,10 +27,20 @@ const server = createServer((request, response) => {
   const requested = new URL(request.url ?? '/', 'http://localhost');
   const relative = requested.pathname === '/' ? 'index.html' : requested.pathname.slice(1);
 
-  // The generated corpus lives outside dist/, so the browser can be filled with
-  // six hundred texts while the UI is being worked on.
-  if (relative === 'corpus.json') {
-    readFile(path.resolve('testdata/corpus.json')).then(
+  // Empties this origin's storage and starts again, so an empty browser fills
+  // afresh from the corpus — after regenerating it, or to undo a session.
+  if (relative === 'reset') {
+    response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    response.end('<script>localStorage.clear(); sessionStorage.clear(); location.replace("/");</script>');
+    return;
+  }
+
+  // The corpora live outside dist/, so the browser can be filled with hundreds
+  // of texts while the UI is being worked on. Only one is served at a time, so
+  // his texts and the invented ones can never be mixed in one browser.
+  const corpus = corpora.get(relative);
+  if (corpus !== undefined) {
+    readFile(corpus).then(
       (body) => {
         response.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
         response.end(body);

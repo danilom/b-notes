@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "ui"],
       "port": 5173
+    },
+    {
+      "name": "b-notes, his corpus",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "ui:his-corpus"],
+      "port": 5174
     }
   ]
 }

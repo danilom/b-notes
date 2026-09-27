@@ -196,17 +196,18 @@ export function everyFile(): { path: string; bytes: number }[] {
 export async function seedIfEmpty(): Promise<void> {
   if (load().size > 0) return;
 
-  let response: Response;
-  try {
-    response = await fetch('corpus.json');
-  } catch {
-    // Not being served is the ordinary case outside development, and the app
-    // starts empty rather than not at all.
+  // His own folder, when `npm run ui:his-corpus` serves it: taken as it is,
+  // with nothing invented added.
+  const his = await fetchCorpus('resoph-corpus.json');
+  if (his !== null) {
+    const files = his as { name: string; body: string; updatedAt: number }[];
+    store(new Map(files.map((file) => [`${MOCK_RESOPH_FOLDER}/${file.name}`, { text: file.body, updatedAt: file.updatedAt }])));
     return;
   }
-  if (!response.ok) return;
 
-  const entries = (await response.json()) as { id: string; text: string; updatedAt: number }[];
+  const invented = await fetchCorpus('corpus.json');
+  if (invented === null) return;
+  const entries = invented as { id: string; text: string; updatedAt: number }[];
 
   /*
     The corpus is written the way b-notes writes, title inside, and his texts
@@ -234,4 +235,18 @@ export async function seedIfEmpty(): Promise<void> {
     seeded.set(file.path, { text: file.text, updatedAt: file.updatedAt });
   }
   store(seeded);
+}
+
+/** A corpus the dev server offers, or null when it offers none by that name. */
+async function fetchCorpus(name: string): Promise<unknown> {
+  let response: Response;
+  try {
+    response = await fetch(name);
+  } catch {
+    // Not being served is the ordinary case outside development, and the app
+    // starts empty rather than not at all.
+    return null;
+  }
+  if (!response.ok) return null;
+  return (await response.json()) as unknown;
 }

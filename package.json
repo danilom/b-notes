@@ -10,6 +10,7 @@
     "build": "node scripts/build.mjs",
     "start": "npm run build && electron .",
     "ui": "node scripts/build.mjs && node scripts/serve.mjs",
+    "ui:his-corpus": "node scripts/build.mjs && node scripts/make-resoph-corpus.mts && node scripts/serve.mjs --resoph testdata/resoph-corpus.json --port 5174",
     "typecheck": "tsc",
     "test": "node --test",
     "test:gui": "node scripts/build.mjs && playwright test",
