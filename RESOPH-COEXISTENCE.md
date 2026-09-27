@@ -311,6 +311,10 @@ A Resoph change that is new:
   - **Resoph changed a text he had put away in b-notes**: Resoph's version
     comes back into his list as the other version; what he put away stays put
     away.
+  - **Resoph changed a text while it sat open in b-notes, before he first
+    typed in it** — a machine asleep with the text open, the same text edited
+    in Resoph on another: his first words build on what he saw, and Resoph's
+    new ones become the other version.
 
   Dropbox's conflicted copies already work this way on their own. A feature
   that groups similar texts in the list is meant to pull such pairs together

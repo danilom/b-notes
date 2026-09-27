@@ -433,6 +433,50 @@ describe('a text changed in both Resoph and b-notes', () => {
   });
 });
 
+describe('a Resoph text that changes in Resoph while it sits open, before he first types in it', () => {
+  /*
+    The Dell asleep with the text open; the same text changed in Resoph on the
+    Asus; the Dell woken, and a sentence added before anything looked again.
+  */
+  async function changedWhileOpen() {
+    const found = await library({ Pismo: 'Prvo.' });
+    await found.store.list();
+    await resophWrites(found.resoph, 'Pismo', 'Prvo, dopisano na drugom racunaru.', LATER);
+    await found.store.save(resophIdOf('Pismo'), 'Pismo\n\nPrvo. Dopisano ovde.');
+    return found;
+  }
+
+  it('builds his text on the words he saw, and keeps Resoph\'s new ones as the other version', async () => {
+    const { store } = await changedWhileOpen();
+
+    const notes = await store.list();
+
+    assert.equal(notes.find((note) => note.id === copyNameFor('Pismo'))?.text, 'Pismo\n\nPrvo. Dopisano ovde.');
+    const other = notes.find((note) => note.otherVersion === true);
+    assert.equal(other?.text, 'Pismo\n\nPrvo, dopisano na drugom racunaru.');
+    assert.equal(notes.length, 2);
+  });
+
+  it("sends Resoph's next change to the other version", async () => {
+    const { store, resoph } = await changedWhileOpen();
+    await store.list();
+
+    await resophWrites(resoph, 'Pismo', 'Prvo, dopisano na drugom racunaru, pa jos.', new Date(LATER.getTime() + 60_000));
+
+    const texts = (await store.list()).map((note) => note.text).sort();
+    assert.deepEqual(texts, ['Pismo\n\nPrvo, dopisano na drugom racunaru, pa jos.', 'Pismo\n\nPrvo. Dopisano ovde.']);
+  });
+
+  it('makes one text as ever when Resoph has not changed it', async () => {
+    const { store } = await library({ Pismo: 'Prvo.' });
+    await store.list();
+
+    await store.save(resophIdOf('Pismo'), 'Pismo\n\nPrvo. Dopisano ovde.');
+
+    assert.deepEqual((await store.list()).map((note) => note.text), ['Pismo\n\nPrvo. Dopisano ovde.']);
+  });
+});
+
 describe('a change made in Resoph to a text he has put away in b-notes', () => {
   it('comes back into his list as a text of its own, and what he put away stays put away', async () => {
     const { store, resoph } = await library({ Zima: 'Snijeg.' });

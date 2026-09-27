@@ -158,10 +158,26 @@ export function createNoteLibrary(
     const original = await resoph?.read(stem);
     if (original === null || original === undefined) throw new Error(`No such Resoph text: ${stem}`);
 
-    await own.keepLabelledCopy(copy, original.text, FROM_RESOPH);
-    await own.save(copy, original.text);
-    await files.write(`${linksFolder}/${copy}${EXTENSION}`, stem);
-    log.info('Took a text from Resoph into b-notes', { from: stem, to: copy });
+    /*
+      Taken in as he saw it: the words b-notes last listed, which are the ones
+      in front of him. Resoph can have changed the file since — on another
+      machine, while this one slept with the text open — and his words build
+      on what he read, not on what arrived unseen. What Resoph has now becomes
+      the other version, and carries the Resoph file on.
+    */
+    const seen = described.get(stem)?.note.text ?? original.text;
+    await own.keepLabelledCopy(copy, seen, FROM_RESOPH);
+    await own.save(copy, seen);
+    if (seen === original.text) {
+      await files.write(`${linksFolder}/${copy}${EXTENSION}`, stem);
+      log.info('Took a text from Resoph into b-notes', { from: stem, to: copy });
+    } else {
+      const other = await own.keepOtherVersion(original.text, FROM_RESOPH);
+      await own.keepLabelledCopy(other, original.text, FROM_RESOPH);
+      await files.write(`${linksFolder}/${other}${EXTENSION}`, stem);
+      linkRead.set(other, stem);
+      log.warn('Resoph changed a text while it was open; each kept its own words', { from: stem, his: copy, resophs: other });
+    }
     renamed(resophIdOf(stem), copy);
     return copy;
   }
