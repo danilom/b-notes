@@ -144,6 +144,16 @@ differences from what follows:
 - **The copy's link** is written as §4.4 says, but hiding the Resoph original
   also works from the copy's name alone, so a link lost after its copy was
   written can never hide a text.
+- **A new text is named from its first line as it stands at the first save**,
+  about a second after he starts typing, rather than once the line is
+  finished (§4.7). The name can hold half a title. Nothing reads it and it is
+  never renamed, but someone looking in the folder may be misled.
+- **Never writing blind** is built for b-notes' own folder: a file changed
+  behind b-notes — another machine through Dropbox, Notepad — is kept as a
+  version labelled `izmenjeno drugde` before his words are written over it.
+  It is kept quietly; no mark says so yet.
+- **b-notes' folder can never be Resoph's or inside it**: such a choice in the
+  advanced panel is set aside for the default beside Resoph's, and logged.
 - **Closing the other editors** asks each one first. Resoph, which only hides,
   is then ended after its database is copied into `userData/resoph-copies`
   and it has stopped writing; on the VM this took about ten seconds in all.
