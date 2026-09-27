@@ -824,6 +824,31 @@ button svg {
 }
 
 /*
+  Across the top of the page he is writing on, in the accent colour, because
+  it is about the text in front of him and asks for one look. Plain for now:
+  how loud this should be is his to judge once he has seen it.
+*/
+#changed-in-both {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.55rem 1rem;
+  background: var(--chosen-soft);
+  color: var(--chosen-ink);
+  border-bottom: 1px solid var(--chosen);
+  font-size: 0.95em;
+}
+
+#changed-in-both[hidden] {
+  display: none;
+}
+
+#changed-in-both-see {
+  flex: none;
+  margin-left: auto;
+}
+
+/*
   Said out loud rather than in the status line, because the one time he
   needs to read it is the one time the page is blank — there is nothing
   for it to talk over, and nothing else on screen to compete with.

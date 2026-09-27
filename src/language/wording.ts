@@ -341,6 +341,15 @@ const TEXT = {
     lostAdvice: 'Nemoj ništa da menjaš. Pozovi za pomoć i pročitaj ovo:',
     lostSettings: 'Napredna podešavanja',
     emptiedHint: 'Tekst je prazan. Obriši ga ako ti više ne treba.',
+    /*
+      Over a text that changed in Resoph and in b-notes since they last agreed.
+      The newer is the text and the other is kept, so nothing is lost — this
+      says so, and leads to the other one. How loud it should be is still open
+      (TODO.md): loud enough that he stops editing one text in two places, and
+      never so loud it reads as b-notes having lost something.
+    */
+    changedInBoth: 'Ovaj tekst je menjan i u Resoph-u. Druga verzija je sačuvana.',
+    changedInBothSee: 'Pogledaj verzije',
   },
   en: {
     newNote: 'New text',
@@ -501,6 +510,8 @@ const TEXT = {
     lostAdvice: 'Do not change anything. Call for help and read this out:',
     lostSettings: 'Advanced settings',
     emptiedHint: 'This text is empty. Delete it if you no longer need it.',
+    changedInBoth: 'This text was also changed in Resoph. The other version is kept.',
+    changedInBothSee: 'See the versions',
   },
 } satisfies Record<
   Language,
