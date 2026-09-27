@@ -1,4 +1,4 @@
-import { clipboard, contextBridge, ipcRenderer, webFrame } from 'electron';
+import { contextBridge, ipcRenderer, webFrame } from 'electron';
 
 import type { FileSystem } from '../../platform/file-system.ts';
 import type { ChosenPlaces } from '../../platform/host.ts';
@@ -66,17 +66,19 @@ const onBeforeClose = (finish: () => Promise<void>): void => {
 };
 
 /**
- * Here rather than over IPC, the way `setZoom` is: Electron's clipboard works
- * in this process, and a round trip to the main process to reach the same
- * object would only be a second thing to go wrong.
+ * Over IPC, to the main process's clipboard.
+ *
+ * It used to be Electron's `clipboard` straight from here, on the reasoning
+ * that a round trip is one more thing to go wrong. But this preload runs
+ * sandboxed, and a sandboxed preload is not given `clipboard` at all: every
+ * press of the button in his first hour failed on `undefined`. The test beside
+ * this file now holds the preload to what the sandbox provides.
  *
  * `navigator.clipboard` is deliberately not used. It wants a secure context,
  * which the packaged app loading its page off disk is not, and it would work
  * in the browser build and fail in the one he runs.
  */
-const copyToClipboard = async (text: string): Promise<void> => {
-  clipboard.writeText(text);
-};
+const copyToClipboard = (text: string): Promise<void> => ipcRenderer.invoke('app:copyToClipboard', text);
 
 const log = {
   info: (message: string, detail?: unknown) => ipcRenderer.send('log:write', 'info', message, detail),

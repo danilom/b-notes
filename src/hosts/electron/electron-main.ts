@@ -1,4 +1,4 @@
-import { BrowserWindow, Menu, app, dialog, ipcMain, screen, shell } from 'electron';
+import { BrowserWindow, Menu, app, clipboard, dialog, ipcMain, screen, shell } from 'electron';
 import { hostname, homedir } from 'node:os';
 import path from 'node:path';
 
@@ -222,6 +222,10 @@ handle('app:restart', async () => {
   log.warn('Starting again so the folders take effect');
   app.relaunch();
   app.exit(0);
+});
+// The window's copy button. Here because the sandboxed preload has no clipboard.
+handle('app:copyToClipboard', async (args) => {
+  clipboard.writeText(asString(args[0], 'text'));
 });
 handle('editors:running', () => otherEditors.running());
 handle('editors:close', (args) => otherEditors.close(asEditors(args[0])));

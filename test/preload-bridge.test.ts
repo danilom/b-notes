@@ -44,3 +44,21 @@ describe('the bridge between the window and the main process', () => {
     assert.deepEqual(missing, []);
   });
 });
+
+describe('what the preload may use', () => {
+  it('takes from Electron only what a sandboxed preload is given', async () => {
+    /*
+      A sandboxed preload gets a handful of Electron's modules and `undefined`
+      for the rest. The copy button reached for `clipboard` here, which worked
+      nowhere: eight presses in his first hour, each one "Cannot read properties
+      of undefined (reading 'writeText')". Anything else has to go to the main
+      process over IPC.
+    */
+    const SANDBOXED = new Set(['contextBridge', 'ipcRenderer', 'webFrame', 'crashReporter', 'nativeImage', 'webUtils']);
+    const preload = await readFile(PRELOAD, 'utf8');
+    const imported = /import\s*\{([^}]*)\}\s*from\s*'electron'/.exec(preload)?.[1] ?? '';
+    const names = imported.split(',').map((name) => name.trim()).filter((name) => name.length > 0);
+
+    assert.deepEqual(names.filter((name) => !SANDBOXED.has(name)), []);
+  });
+});
