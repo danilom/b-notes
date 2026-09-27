@@ -130,13 +130,15 @@ one exception worth considering later is a single signpost note (§4.11).
 ## 3. The idea in one paragraph
 
 His list in b-notes is every text in his Resoph folder, plus every text b-notes
-holds itself. A Resoph text is shown straight from Resoph's file, read-only
-underneath, and looks exactly like any other text. **The first time he changes
-one, b-notes quietly copies it into its own folder and saves the change
-there**, and from then on that copy is the text. The Resoph file is left
-exactly as it was. Nothing is imported in bulk, so there are no 1,200
-duplicates to keep in step. If Resoph later changes a text b-notes has copied,
-b-notes brings the change in, and nothing is lost either way.
+holds itself — **but each text lives in one of the two at a time**. A Resoph
+text is shown straight from Resoph's file, with a small grey R. **The first
+time he types in one, b-notes takes it over**: the text is copied into b-notes'
+folder, and in Resoph's file a short, loud stub takes the place of his words,
+saying where they went. From then on the text is b-notes', and Resoph can no
+longer be written in by mistake. Nothing is kept in step between the two:
+there is nothing to keep in step. "Premesti u Resoph" moves a text the other
+way. *Decided and built on branch `resoph-transfer`, replacing the one-way
+sync the rest of this section was first written for (§4.4, §4.5).*
 
 ## 4. Stage 0
 
@@ -149,12 +151,11 @@ differences from what follows:
 - **Knowing a Resoph file under a new name (§4.6) is not built.** A text he
   retitles in Resoph after b-notes has copied it shows as a second text — an
   untidy duplicate, never a hidden one.
-- **When both sides changed a text, each keeps its own words** (branch
-  `both-changed`, replacing §4.5's "the newer becomes the text"). See §4.5.
+- **One program at a time** (branch `resoph-transfer`) replaces copying on
+  first touch and bringing Resoph's changes in: see §4.4 and §4.5. What
+  `both-changed` built for Resoph — texts split into a "druga verzija" — went
+  with it; and so did the `Iz Resopha/` and `Menjano na dva mesta/` folders.
 - **Search is not re-ranked**; that is its own item in `TODO.md`.
-- **The copy's link** is written as §4.4 says, but hiding the Resoph original
-  also works from the copy's name alone, so a link lost after its copy was
-  written can never hide a text.
 - **A new text is named from its first line as it stands at the first save**,
   about a second after he starts typing, rather than once the line is
   finished (§4.7). The name can hold half a title. Nothing reads it and it is
@@ -272,59 +273,66 @@ first line was often a fragment. Now the first line is his real title,
 exactly as Resoph shows it, even when it's `i` or `Ana1`. So: the first
 non-empty line, as it is. Length is cut only on screen, by the list itself.
 
-### 4.4 Copy on first touch — *proposed*
+### 4.4 Taking a text over — *decided and built*
 
-- **The first edit to a Resoph text copies it** into b-notes' folder — the title
-  line, then the text — and saves the edit into the copy. Nothing on screen
-  changes; he just keeps typing.
-- **A link records where it came from**: the Resoph filename, its text at the
-  moment of copying, the file's modification time, and this machine's file ID.
-  Written once and never changed, so two machines can't disagree about it.
-- **The same goes for anything else that acts on a Resoph text.** Deleting
-  one copies it into *Obrisano*, and a kept version needs a copy to belong to.
-  Every action starts by making the text b-notes' own.
+- **His first keystroke in a Resoph text takes it over**, and so does
+  deleting one. Nothing else does: reading, copying it to the clipboard or
+  looking at it leave it in Resoph.
+- **In order**: the copy is made of the words he saw (what b-notes last
+  listed, which is what the editor shows); Resoph's words as they are now are
+  kept among its versions, labelled `Resoph`; the copy is read back whole; and
+  only then is the stub written into Resoph's file — and only if that file
+  still holds exactly what was copied. If another machine's Resoph changed it
+  meanwhile, it is left as it is and shows as a text of its own.
+- **The copy's name** is worked out from the Resoph file's, the same on every
+  machine (§4.7). Taken over a second time, it gets a number.
+- **He is told**, every time, by a quiet toast that stays while he types:
+  "Tekst je prenet iz Resopha u b-notes." The R on its row fades out.
+- **The stub**, in place of his words under the same file name, so Resoph
+  still lists the title:
 
-### 4.5 When Resoph changes a text b-notes has copied — *proposed*
+  ```
+  !!! OVAJ TEKST JE PREMEŠTEN U B-NOTES !!!
+  NE PIŠI OVDE — ovde ga više nema.
+  Otvori b-notes i nađi ga po naslovu.
 
-b-notes compares the Resoph file with everything it already holds for that
-text — the text itself and its versions. Anything it has already seen isn't
-news. That quietly handles another machine's Resoph putting an old version
-back.
+  [b-notes] 2026-09-27 14:32, ASUS
+  [b-notes] D:\Dropbox\b-notes\GRAD Kilim ~K3F9A2.txt
+  [b-notes] https://github.com/danilom/b-notes/releases
+  ```
 
-A Resoph change that is new:
+  For a deleted text, "OBRISAN U B-NOTES" and "Vrati ga u b-notes, iz
+  „Obrisani tekstovi"." The marked lines are for whoever has to recover a
+  text: when, on which machine, where the file went, and where b-notes can be
+  had on a machine that lacks it.
 
-- **If b-notes hasn't changed the text since**, Resoph's version becomes the
-  text, and b-notes' previous one becomes a version. He wrote in Resoph, and
-  b-notes shows what he wrote.
-- **If both changed**, each keeps its own words — *decided and built*. His
-  text stays as he left it; Resoph's becomes a text of its own beside it, with
-  a quiet "druga verzija" after its name until he writes in it. The Resoph
-  link moves to that text, so Resoph's next change goes there instead of
-  splitting again. Resoph's words are also kept among the versions of his
-  text, as the net under everything — but nothing leads him there.
+### 4.5 After a text is taken over — *decided and built*
 
-  The same rule, whoever the other side is:
+- **A stub is not listed.** It is known by its marks — the loud first line,
+  the `[b-notes]` lines — and forgiving of up to 20 stray characters anywhere,
+  which he is likely to leave. More than that is his writing: the file shows
+  as a Resoph text again, beside b-notes' copy. So does a stub that another
+  machine's Resoph writes the old text back over. Two texts, nothing hidden.
+- **Dropbox's conflicted copies** are two texts too. Nothing is done about
+  them.
+- **A file changed behind b-notes' back** in its own folder — Notepad, another
+  machine — is kept quietly as a version labelled `izmenjeno drugde` before
+  his words are written.
+- **"Premesti u Resoph"** — in the strip, only while a text of b-notes' is
+  open — moves one back: into a Resoph file named from its first line exactly
+  as Resoph names files (`%2A` for `*`, and the rest; spaces kept), with the
+  text below the title. It goes back over its own stub. It is refused, and
+  says why in the status line, when a text of his in Resoph already has that
+  name, when there is no title, when the name would be over 96 characters —
+  his longest are exactly that, which looks like Resoph's own limit — and on a
+  machine without Resoph. What was written is read back before b-notes lets
+  go of its file; its versions stay in b-notes.
 
-  - **The file changed behind b-notes while he had words waiting to be
-    written** — Notepad, or another machine through Dropbox: his words go
-    where he is typing, what was on disk becomes the other version.
-  - **Resoph changed a text he had put away in b-notes**: Resoph's version
-    comes back into his list as the other version; what he put away stays put
-    away.
-  - **Resoph changed a text while it sat open in b-notes, before he first
-    typed in it** — a machine asleep with the text open, the same text edited
-    in Resoph on another: his first words build on what he saw, and Resoph's
-    new ones become the other version.
+### 4.6 Knowing a Resoph file under a new name — *no longer needed*
 
-  Dropbox's conflicted copies already work this way on their own. A feature
-  that groups similar texts in the list is meant to pull such pairs together
-  later.
-
-Versions that came from Resoph are named as such, so all of this can be
-worked out from the files themselves, with no extra record to keep in step
-across machines.
-
-### 4.6 Knowing a Resoph file under a new name — *proposed*
+*With one program at a time there is no link to follow: a retitle in Resoph of
+a text still there is just a Resoph text, and a retitled stub is still a stub.
+Kept for the record of what Resoph does.*
 
 When he retitles a text in Resoph that b-notes has copied, its link points at a
 filename that has gone, and a new one has appeared.

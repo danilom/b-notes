@@ -87,8 +87,10 @@ What follows:
   otherwise. A rename or delete made anywhere can be undone by any machine's
   Resoph. In the 0.7.0 test b-notes renumbered eight names at each start,
   Resoph wrote them back each time, and his list grew by nineteen texts in two
-  hours. So **b-notes never writes anything in his Resoph folder**, and renames
-  nothing anywhere. His own title edits in Resoph, undone by another machine's
+  hours. So **b-notes never renames, moves or deletes anything in his Resoph
+  folder**, and renames nothing anywhere. What it does write there, it writes
+  in place, which Resoph reads as it is: a stub over a text it takes over, and
+  a text he moves back. His own title edits in Resoph, undone by another machine's
   Resoph, are where most of his identical copies come from.
 - **A name is made once, and made to mean one text on every machine.** Several
   machines work offline and Dropbox matches files by path alone. So a copy of
@@ -173,8 +175,6 @@ whether the sentence is about the screen, about a thing on it, or about an act
 | `settings.json` | b-notes' folder | which letters and which colour are taste, and travel with him |
 | `Obrisano/` | b-notes' folder | texts he has deleted, with what he wrote in them |
 | `Verzije/` | b-notes' folder | what a text said before he emptied it or Resoph changed it; `Obrisano/Verzije/` once the text itself is put away |
-| `Iz Resopha/` | b-notes' folder | which Resoph file each copy came from; outlives the copy, so a text he destroyed does not come back from Resoph |
-| `Menjano na dva mesta/` | b-notes' folder | marks the other version of a text both sides changed, until he writes in it; says where it came from |
 | `screen.json` | `userData` | how big the letters are is the screen in front of him, not taste — syncing it would have one machine keep undoing the other |
 | `session.json` | `userData` | which text he had open, on this machine |
 | `folders.json` | `userData` | where his Resoph folder and b-notes' are, if someone chose; otherwise Resoph's own settings say, and b-notes' goes beside it |
