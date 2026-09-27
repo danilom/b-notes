@@ -7,7 +7,7 @@ import { describe, it } from 'node:test';
 
 import { createFileSystem } from '../src/hosts/electron/disk-file-system.ts';
 import type { FileSystem } from '../src/platform/file-system.ts';
-import { createNoteStore } from '../src/notes/note-store.ts';
+import { CHANGED_ELSEWHERE, createNoteStore } from '../src/notes/note-store.ts';
 import { silentLog } from './silent-log.ts';
 import {
   DELETED_FOLDER,
@@ -1060,3 +1060,31 @@ describe('writing brought in from somewhere else', () => {
   });
 });
 
+
+describe('a text changed on disk behind b-notes', () => {
+  it('keeps what was there before writing his words over it', async () => {
+    // Another machine's edit arriving through Dropbox while b-notes is open,
+    // or Notepad saving: his words in the box win, the other is kept.
+    const { dir, store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nPrvo.');
+    await store.list();
+    await writeFile(path.join(dir, `${id ?? ''}.txt`), 'O zimi\n\nNapisano na drugom racunaru.', 'utf8');
+
+    await store.save(id, 'O zimi\n\nPrvo, pa jos.');
+
+    const kept = await store.listVersions(id ?? '');
+    assert.ok(kept.some((version) => version.text === 'O zimi\n\nNapisano na drugom racunaru.'), 'the other text was lost');
+    assert.ok(kept.some((version) => version.id.endsWith(CHANGED_ELSEWHERE)));
+    assert.equal(await store.read(id ?? ''), 'O zimi\n\nPrvo, pa jos.');
+  });
+
+  it('keeps nothing when the file is as b-notes left it', async () => {
+    const { store } = await emptyStore();
+    const id = await store.save(null, 'O zimi\n\nPrvo.');
+    await store.list();
+
+    await store.save(id, 'O zimi\n\nPrvo, pa jos.');
+
+    assert.deepEqual(await store.listVersions(id ?? ''), []);
+  });
+});

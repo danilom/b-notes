@@ -85,6 +85,9 @@ export interface Naming {
 
 const REAL_NAMING: Naming = { machine: 'PC', now: () => new Date() };
 
+/** What a copy is labelled when something other than b-notes changed the file. */
+export const CHANGED_ELSEWHERE = 'izmenjeno drugde';
+
 /**
  * The store over b-notes' own folder, with what the library over it needs to
  * take a Resoph text in: which names are in use, and a way to keep a copy
@@ -110,6 +113,16 @@ export function createNoteStore(
   naming: Naming = REAL_NAMING,
 ): OwnNoteStore {
   const at = (...parts: string[]): string => [folder, ...parts].join('/');
+
+  /**
+   * Each text as b-notes last saw it on disk: read, listed or written.
+   *
+   * So a save can tell when the file changed behind b-notes' back — another
+   * machine's edit arriving through Dropbox, Notepad — and keep what was there
+   * before writing over it. His words in the box still win: he is typing them
+   * now. But the other text is not lost, only put among the versions.
+   */
+  const lastSeen = new Map<string, string>();
 
   /**
    * What is in a folder we may never have made.
@@ -352,6 +365,7 @@ export function createNoteStore(
 
     async list(): Promise<Note[]> {
       const notes = await Promise.all([...(await noteFiles())].map(([id, file]) => noteFrom(id, file)));
+      for (const note of notes) lastSeen.set(note.id, note.text);
       return notes.sort(newestFirst);
     },
 
@@ -442,7 +456,9 @@ export function createNoteStore(
     async read(id: string): Promise<string> {
       const file = (await noteFiles()).get(requireNoteId(id));
       if (file === undefined) throw new Error(`No such note: ${id}`);
-      return asWritten(await files.read(file.path));
+      const text = asWritten(await files.read(file.path));
+      lastSeen.set(id, text);
+      return text;
     },
 
     async save(id: string | null, text: string): Promise<string | null> {
@@ -472,7 +488,18 @@ export function createNoteStore(
       // again; his text stays on disk in the meantime.
       if (action.snapshot !== undefined) await keepVersion(action.id, action.snapshot);
 
+      // Never written blind: what something else put there is kept first.
+      const seen = id === null ? undefined : lastSeen.get(id);
+      if (id !== null && seen !== undefined) {
+        const onDisk = await previousText();
+        if (onDisk !== seen && onDisk !== action.snapshot && !isEmptyText(onDisk)) {
+          await keepVersion(id, onDisk, CHANGED_ELSEWHERE);
+          log.warn('A text changed on disk behind b-notes; kept what was there before writing', { id });
+        }
+      }
+
       await files.write(at(`${action.id}${EXTENSION}`), text);
+      lastSeen.set(action.id, text);
       return action.id;
     },
 
