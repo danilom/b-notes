@@ -19,6 +19,30 @@ export const RESOPH_CONFIG = path.join('.ResophNotes', RESOPH_CONFIG_FILE);
  * where he never finds it again, and where b-notes cannot ask it to quit.
  * Everything else in the file is left exactly as it was, byte for byte.
  */
+/** Whether Resoph's settings have *minimize to tray* on; null when the setting is not there. */
+export function trayIsOn(configXml: string): boolean | null {
+  const value = /<systray>\s*(true|false)\s*<\/systray>/.exec(configXml)?.[1];
+  return value === undefined ? null : value === 'true';
+}
+
+/**
+ * When b-notes switched the setting off on this machine, from the small record
+ * it keeps in `userData`, or null. Checked, since it is read off disk: anything
+ * that is not a sensible time counts as "never".
+ */
+export function switchedOffAtIn(recordJson: string): number | null {
+  try {
+    const held: unknown = JSON.parse(recordJson);
+    if (typeof held !== 'object' || held === null) return null;
+    const at = (held as Record<string, unknown>)['switchedOffAt'];
+    return typeof at === 'number' && Number.isFinite(at) && at > 0 ? at : null;
+  } catch {
+    // A record that does not read is a record that is not there: b-notes
+    // switches the setting off again, which is harmless, and says so in the log.
+    return null;
+  }
+}
+
 export function withoutTray(configXml: string): string | null {
   const on = /<systray>\s*true\s*<\/systray>/;
   return on.test(configXml) ? configXml.replace(on, '<systray>false</systray>') : null;

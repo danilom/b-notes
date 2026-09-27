@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
-import { RESOPH_CONFIG, findResophFolder, resophFolderIn, withoutTray } from '../src/hosts/electron/resoph-config.ts';
+import { RESOPH_CONFIG, findResophFolder, resophFolderIn, switchedOffAtIn, trayIsOn, withoutTray } from '../src/hosts/electron/resoph-config.ts';
 
 const encoded = (text: string): string => Buffer.from(text, 'utf8').toString('base64');
 
@@ -79,5 +79,20 @@ describe("switching off Resoph's minimize to tray", () => {
   it('leaves alone a file where it is already off, or not there', () => {
     assert.equal(withoutTray('<config><systray>false</systray></config>'), null);
     assert.equal(withoutTray('<config></config>'), null);
+  });
+});
+
+describe("reading Resoph's tray setting, and b-notes' record of switching it off", () => {
+  it('reads whether it is on', () => {
+    assert.equal(trayIsOn('<config><systray>true</systray></config>'), true);
+    assert.equal(trayIsOn('<config><systray>false</systray></config>'), false);
+    assert.equal(trayIsOn('<config></config>'), null);
+  });
+
+  it('reads when b-notes switched it off, and nothing else as a time', () => {
+    assert.equal(switchedOffAtIn('{"switchedOffAt":1790000000000}'), 1790000000000);
+    assert.equal(switchedOffAtIn('{"switchedOffAt":"yesterday"}'), null);
+    assert.equal(switchedOffAtIn('not json'), null);
+    assert.equal(switchedOffAtIn('null'), null);
   });
 });

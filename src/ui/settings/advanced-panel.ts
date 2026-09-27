@@ -1,6 +1,7 @@
 import { type Shown, showAsModal } from '../dialogs/modal.ts';
 import { APP_VERSION, BUILD_STAMP } from '../../platform/build-info.ts';
 import type { ChosenPlaces, Host } from '../../platform/host.ts';
+import type { ResophTray } from '../../platform/other-editors.ts';
 import { type AdvancedSettings, DEFAULT_CTRL_CARD_AFTER_MS } from './advanced-settings.ts';
 import { icon } from '../icons.ts';
 
@@ -110,6 +111,55 @@ function folderRow(
  * patience — a thing to find by watching him, which is why it is reachable at
  * all rather than compiled in.
  */
+/** A day, as the panel says it: `2026-10-02`, in this machine's time. */
+function dayOf(at: number): string {
+  const when = new Date(at);
+  const two = (value: number): string => String(value).padStart(2, '0');
+  return `${when.getFullYear()}-${two(when.getMonth() + 1)}-${two(when.getDate())}`;
+}
+
+/**
+ * What the panel says about Resoph's minimize-to-tray, and whether it is
+ * trouble. On is trouble: Resoph then only hides when closed, so b-notes has
+ * to end it by force at every start, and he can lose its window in the tray.
+ */
+export function describeResophTray(tray: ResophTray): { said: string; trouble: boolean } {
+  const by = tray.switchedOffAt === null ? null : `switched off by b-notes ${dayOf(tray.switchedOffAt)}`;
+  if (tray.on === null) return { said: 'no Resoph settings on this machine', trouble: false };
+  if (!tray.on) return { said: by === null ? 'off' : `off (${by})`, trouble: false };
+  if (by !== null) return { said: `on — turned back on since it was ${by}`, trouble: true };
+  return { said: 'on — b-notes switches it off the next time Resoph is closed', trouble: true };
+}
+
+/** Resoph's minimize-to-tray, read when the panel opens. */
+function trayRow(host: Host): HTMLElement {
+  const row = document.createElement('div');
+  row.className = 'advanced-row';
+
+  const name = document.createElement('span');
+  name.className = 'advanced-label';
+  name.textContent = 'Resoph tray';
+
+  const state = document.createElement('span');
+  state.className = 'advanced-state';
+  state.textContent = '…';
+  row.append(name, state);
+
+  void host.otherEditors
+    .resophTray()
+    .then((tray) => {
+      const { said, trouble } = describeResophTray(tray);
+      state.textContent = said;
+      state.classList.toggle('trouble', trouble);
+    })
+    .catch((failure: unknown) => {
+      state.textContent = 'could not be read';
+      host.log.warn("Could not read Resoph's tray setting", { failure });
+    });
+
+  return row;
+}
+
 function waitRow(value: number | null, change: (to: number | null) => void): HTMLElement {
   const row = document.createElement('div');
   row.className = 'advanced-row';
@@ -221,6 +271,7 @@ export function openAdvancedPanel(
       // Not changeable: it is where the file naming these two lives, so it has
       // to be somewhere the app can find without being told.
       folderRow('Settings', host.appFolder, host, null),
+      trayRow(host),
       waitRow(wait, (to) => {
         wait = to;
       }),

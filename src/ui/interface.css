@@ -1460,6 +1460,16 @@ dialog::backdrop {
   letter-spacing: 0.04em;
 }
 
+/* A state the panel reports. Grey like the rest of it, red when it is trouble. */
+.advanced-state {
+  color: var(--quiet);
+}
+
+.advanced-state.trouble {
+  color: var(--danger);
+  font-weight: 600;
+}
+
 .advanced-missing[hidden] {
   display: none;
 }

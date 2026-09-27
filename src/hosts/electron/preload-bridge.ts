@@ -46,6 +46,7 @@ const restart = () => ipcRenderer.invoke('app:restart');
 /** The programs b-notes asks him to close before it starts. Seen and closed by the main process. */
 const otherEditors: OtherEditors = {
   running: () => ipcRenderer.invoke('editors:running'),
+  resophTray: () => ipcRenderer.invoke('editors:resophTray'),
   close: (which: readonly OtherEditor[]) => ipcRenderer.invoke('editors:close', [...which]),
 };
 

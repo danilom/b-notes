@@ -96,6 +96,7 @@ const files = createFileSystem(path.join(appFolder, 'saving'));
 const otherEditors = createOtherEditors(
   path.join(homedir(), '.ResophNotes'),
   path.join(appFolder, 'resoph-copies'),
+  path.join(appFolder, 'resoph-tray.json'),
   log.scoped('editors'),
 );
 
@@ -225,6 +226,7 @@ handle('app:copyToClipboard', async (args) => {
   clipboard.writeText(asString(args[0], 'text'));
 });
 handle('editors:running', () => otherEditors.running());
+handle('editors:resophTray', () => otherEditors.resophTray());
 handle('editors:close', (args) => otherEditors.close(asEditors(args[0])));
 handle('files:list', (args) => files.list(asString(args[0], 'folder')));
 handle('files:listFolders', (args) => files.listFolders(asString(args[0], 'folder')));

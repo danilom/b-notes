@@ -4,8 +4,8 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 
 import type { Log } from '../../platform/logging.ts';
-import { OTHER_EDITORS, type OtherEditor, type OtherEditors } from '../../platform/other-editors.ts';
-import { RESOPH_CONFIG_FILE, withoutTray } from './resoph-config.ts';
+import { OTHER_EDITORS, type OtherEditor, type OtherEditors, type ResophTray } from '../../platform/other-editors.ts';
+import { RESOPH_CONFIG_FILE, switchedOffAtIn, trayIsOn, withoutTray } from './resoph-config.ts';
 
 const run = promisify(execFile);
 
@@ -60,15 +60,27 @@ const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(
 /** The other editors on Windows, and one thing only Windows needs doing about Resoph. */
 export interface WindowsEditors extends OtherEditors {
   /**
-   * Switches off Resoph's *minimize to tray*, if Resoph is not running. At every
-   * start of b-notes, so every machine is seen to on its first, whether or not
-   * Resoph happened to be open — something done by hand at install is exactly
-   * what gets forgotten on the fourth laptop.
+   * Switches off Resoph's *minimize to tray*, if Resoph is not running and
+   * b-notes has not already done so on this machine. Asked at every start, so
+   * every machine is seen to on its first, whether or not Resoph happened to be
+   * open — something done by hand at install is exactly what gets forgotten on
+   * the fourth laptop.
    */
   turnOffResophTrayIfClosed(): Promise<void>;
 }
 
-export function createOtherEditors(resophHome: string, copiesFolder: string, log: Log): WindowsEditors {
+/**
+ * @param resophHome the folder Resoph keeps its settings and database in.
+ * @param copiesFolder where Resoph's files are copied before b-notes touches them.
+ * @param trayRecord a small file of b-notes' own, per machine, saying when it
+ * switched Resoph's minimize-to-tray off.
+ */
+export function createOtherEditors(
+  resophHome: string,
+  copiesFolder: string,
+  trayRecord: string,
+  log: Log,
+): WindowsEditors {
   async function running(): Promise<OtherEditor[]> {
     try {
       const { stdout } = await run('tasklist', ['/FO', 'CSV', '/NH'], { windowsHide: true });
@@ -162,7 +174,24 @@ export function createOtherEditors(resophHome: string, copiesFolder: string, log
    * not running, since a running Resoph writes its settings back when it quits.
    * The file is copied aside first, and written whole or not at all.
    */
+  async function switchedOffAt(): Promise<number | null> {
+    try {
+      return switchedOffAtIn(await readFile(trayRecord, 'utf8'));
+    } catch (failure: unknown) {
+      // Not there until b-notes has switched the setting off, which is the
+      // ordinary answer; anything else is said.
+      if ((failure as NodeJS.ErrnoException).code !== 'ENOENT') log.warn('Could not read the tray record', String(failure));
+      return null;
+    }
+  }
+
+  /**
+   * Once per machine. If someone turns it back on afterwards, that is a
+   * choice, and b-notes does not argue with it at every start; the advanced
+   * panel shows it on again.
+   */
   async function turnOffTray(): Promise<void> {
+    if ((await switchedOffAt()) !== null) return;
     const at = path.join(resophHome, RESOPH_CONFIG_FILE);
     let now: string;
     try {
@@ -179,6 +208,8 @@ export function createOtherEditors(resophHome: string, copiesFolder: string, log
     const temp = `${at}.b-notes`;
     await writeFile(temp, changed, 'utf8');
     await rename(temp, at);
+    await mkdir(path.dirname(trayRecord), { recursive: true });
+    await writeFile(trayRecord, `${JSON.stringify({ switchedOffAt: Date.now() })}\n`, 'utf8');
     log.info("Switched off Resoph's minimize-to-tray, so its close button closes it");
   }
 
@@ -215,6 +246,15 @@ export function createOtherEditors(resophHome: string, copiesFolder: string, log
 
   return {
     running,
+    async resophTray(): Promise<ResophTray> {
+      let on: boolean | null = null;
+      try {
+        on = trayIsOn(await readFile(path.join(resophHome, RESOPH_CONFIG_FILE), 'utf8'));
+      } catch (failure: unknown) {
+        if ((failure as NodeJS.ErrnoException).code !== 'ENOENT') log.warn("Could not read Resoph's settings", String(failure));
+      }
+      return { on, switchedOffAt: await switchedOffAt() };
+    },
     async turnOffResophTrayIfClosed(): Promise<void> {
       if (await stillRunning('ResophNotes')) return;
       await turnOffTray();

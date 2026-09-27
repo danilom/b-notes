@@ -16,8 +16,22 @@ export const OTHER_EDITORS = ['ResophNotes', 'Notepad', 'Obsidian'] as const;
 
 export type OtherEditor = (typeof OTHER_EDITORS)[number];
 
+/**
+ * Resoph's *minimize to tray* on this machine, as the advanced panel reports
+ * it: for whoever sets the machine up, to see at a glance that b-notes has
+ * switched it off.
+ */
+export interface ResophTray {
+  /** Whether Resoph's close button only hides it. Null where there are no Resoph settings to read. */
+  on: boolean | null;
+  /** When b-notes switched it off on this machine, or null if it never has. */
+  switchedOffAt: number | null;
+}
+
 /** What a host provides: seeing them, and closing them. */
 export interface OtherEditors {
+  /** Resoph's tray setting, and whether b-notes has switched it off here. */
+  resophTray(): Promise<ResophTray>;
   /**
    * Which of them are running now. Answers "none" when it cannot tell: not
    * knowing must never stop him getting to his writing.

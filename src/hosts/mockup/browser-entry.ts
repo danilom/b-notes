@@ -2,7 +2,7 @@ import type { ChosenPlaces, Host } from '../../platform/host.ts';
 import type { Log } from '../../platform/logging.ts';
 import { startApp } from '../../ui/ui-app.ts';
 import { addMockFileList } from './mock-file-list.ts';
-import { createMockOtherEditors, pretendRunning } from './mock-other-editors.ts';
+import { createMockOtherEditors, pretendRunning, pretendTray } from './mock-other-editors.ts';
 import {
   MOCK_APP_FOLDER,
   MOCK_NOTES_FOLDER,
@@ -76,6 +76,12 @@ function offerTheFileList(): void {
   // Resoph, Notepad or Obsidian "running", for the message b-notes starts behind.
   Object.defineProperty(window, 'pretendRunning', {
     value: pretendRunning,
+    writable: true,
+  });
+
+  // Resoph's minimize-to-tray as the advanced panel would read it.
+  Object.defineProperty(window, 'pretendTray', {
+    value: pretendTray,
     writable: true,
   });
 
