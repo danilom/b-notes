@@ -28,12 +28,12 @@ export interface Whereabouts {
   resophStem: string | null;
   /** For a copy, that Resoph file, or null where it is no longer there. */
   resophPath: string | null;
-  /** A copy known only by its name: the link naming its original was never written. */
+  /** A copy known only by its name: no link names its original, for it or for any other text. */
   unlinked: boolean;
   /** A copy whose Resoph file is gone — deleted there, or retitled, which Resoph does by writing a new file. */
   resophGone: boolean;
-  /** Changed in both Resoph and b-notes, and not yet looked at. */
-  changedInBoth: boolean;
+  /** The other side's version of a text both sides changed, until he writes in it. */
+  otherVersion: boolean;
   /** Changed behind b-notes' back at least once, which kept a version of it. */
   changedElsewhere: boolean;
   /** A file Dropbox made when two machines changed one at the same time. */
@@ -52,7 +52,7 @@ export interface WhereaboutsRead {
   links: ReadonlyMap<string, string>;
   /** Every name that means a Resoph text has a copy, and so is not listed itself. */
   taken: ReadonlySet<string>;
-  changedInBoth: ReadonlySet<string>;
+  otherVersion: ReadonlySet<string>;
   changedElsewhere: ReadonlySet<string>;
 }
 
@@ -70,7 +70,10 @@ export function whereaboutsOf(read: WhereaboutsRead): Map<string, Whereabouts> {
   const found = new Map<string, Whereabouts>();
   const byCopyName = new Map(read.resophTexts.map((text) => [copyNameFor(text.stem), text]));
   const resophPaths = new Map(read.resophTexts.map((text) => [text.stem, text.path]));
-  const plain = { unlinked: false, resophGone: false, changedInBoth: false, changedElsewhere: false };
+  const plain = { unlinked: false, resophGone: false, otherVersion: false, changedElsewhere: false };
+  // After both sides changed a text, its link moves to the other version: the
+  // copy it left is still a copy, and nothing is missing.
+  const carried = new Set(read.links.values());
 
   for (const text of read.resophTexts) {
     if (read.taken.has(copyNameFor(text.stem))) continue;
@@ -92,9 +95,9 @@ export function whereaboutsOf(read: WhereaboutsRead): Map<string, Whereabouts> {
       path: `${read.folder}/${id}${EXTENSION}`,
       resophStem: stem,
       resophPath,
-      unlinked: stem !== null && !read.links.has(id),
+      unlinked: stem !== null && !read.links.has(id) && !carried.has(stem),
       resophGone: stem !== null && resophPath === null,
-      changedInBoth: read.changedInBoth.has(id),
+      otherVersion: read.otherVersion.has(id),
       changedElsewhere: read.changedElsewhere.has(id),
       conflictedCopy: CONFLICTED.test(id),
     });
@@ -118,7 +121,7 @@ export async function readWhereabouts(
   notesFolder: string,
   resophFolder: string | null,
 ): Promise<Map<string, Whereabouts>> {
-  const [resophTexts, ownIds, putAway, links, changedInBoth, changedElsewhere] = await Promise.all([
+  const [resophTexts, ownIds, putAway, links, otherVersion, changedElsewhere] = await Promise.all([
     resophFolder === null ? Promise.resolve([]) : textFiles(files, resophFolder),
     namesIn(files, notesFolder),
     namesIn(files, `${notesFolder}/${DELETED_FOLDER}`),
@@ -132,7 +135,7 @@ export async function readWhereabouts(
     ownIds,
     links,
     taken: new Set([...links.keys(), ...ownIds, ...putAway]),
-    changedInBoth,
+    otherVersion,
     changedElsewhere,
   });
 }

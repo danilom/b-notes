@@ -1091,6 +1091,20 @@ describe('a text changed on disk behind b-notes', () => {
     assert.equal(await store.read(id ?? ''), 'O zimi\n\nPrvo, pa jos.');
   });
 
+  it('keeps what was there as a text of its own beside his, marked as the other version', async () => {
+    const { dir, store } = await emptyStore();
+    const id = (await store.save(null, 'O zimi\n\nPrvo.')) ?? '';
+    await store.list();
+    await writeFile(path.join(dir, `${id}.txt`), 'O zimi\n\nNapisano na drugom racunaru.', 'utf8');
+
+    await store.save(id, 'O zimi\n\nPrvo, pa jos.');
+
+    const texts = (await store.list()).map((note) => note.text).sort();
+    assert.deepEqual(texts, ['O zimi\n\nNapisano na drugom racunaru.', 'O zimi\n\nPrvo, pa jos.']);
+    const other = (await store.list()).find((note) => note.id !== id)?.id ?? '';
+    assert.deepEqual(await readdir(path.join(dir, 'Menjano na dva mesta')), [`${other}.txt`]);
+  });
+
   it('keeps nothing when the file is as b-notes left it', async () => {
     const { store } = await emptyStore();
     const id = await store.save(null, 'O zimi\n\nPrvo.');
@@ -1099,5 +1113,6 @@ describe('a text changed on disk behind b-notes', () => {
     await store.save(id, 'O zimi\n\nPrvo, pa jos.');
 
     assert.deepEqual(await store.listVersions(id ?? ''), []);
+    assert.equal((await store.list()).length, 1);
   });
 });

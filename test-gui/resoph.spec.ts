@@ -126,15 +126,17 @@ test("tells him where Notepad's question is, when Notepad will not close", async
   await expect(page.locator('#list .note').first()).toBeVisible();
 });
 
-test('says so over a text that changed in both Resoph and b-notes, and leads to the versions', async ({ page }) => {
+test('keeps both when a text changed in Resoph and in b-notes: his, and Resoph\'s marked beside it', async ({
+  page,
+}) => {
   await start(page);
-  const row = page.locator('#list .note').filter({ hasText: 'Pismo prijatelju' }).first();
-  await row.click();
+  const rows = page.locator('#list .section-block').last().locator('.note').filter({ hasText: 'Pismo prijatelju' });
+  await rows.first().click();
   await page.locator('#editor').press('End');
   await page.locator('#editor').pressSequentially(' Iz b-notes.');
   await page.clock.runFor(1200);
 
-  // Resoph writes the same text meanwhile, later than b-notes did.
+  // Resoph writes the same text meanwhile.
   await page.evaluate(() => {
     const all = JSON.parse(localStorage.getItem('b-notes:mock-files') ?? '{}') as Record<string, unknown>;
     all['ResophNotes/         Pismo prijatelju.txt'] = {
@@ -145,13 +147,21 @@ test('says so over a text that changed in both Resoph and b-notes, and leads to 
     window.dispatchEvent(new Event('focus'));
   });
 
-  const bar = page.locator('#changed-in-both');
-  await expect(bar).toBeVisible();
-  await expect(bar).toContainText('Ovaj tekst je menjan i u Resoph-u. Druga verzija je sačuvana.');
+  // Two texts of that name now, and only Resoph's says it is the other version.
+  await expect(rows).toHaveCount(2);
+  await expect(rows.locator('.note-other')).toHaveCount(1);
+  await expect(rows.locator('.note-other')).toHaveText('druga verzija');
 
-  await bar.getByRole('button', { name: 'Pogledaj verzije' }).click();
-  await expect(page.locator('#versions')).toBeVisible();
-  await expect(bar).toBeHidden();
+  // His own stays as he left it, in front of him.
+  await expect(page.locator('#editor')).toHaveValue(/Iz b-notes\.$/);
+
+  // Resoph's opens with Resoph's words; once he writes in it, it is simply his.
+  await rows.filter({ has: page.locator('.note-other') }).click();
+  await expect(page.locator('#editor')).toHaveValue(/Iz Resopha\.$/);
+  await page.locator('#editor').press('End');
+  await page.locator('#editor').pressSequentially(' Moje.');
+  await page.clock.runFor(1200);
+  await expect(rows.locator('.note-other')).toHaveCount(0);
 });
 
 test('checks again whenever he comes back, saving what he typed first', async ({ page }) => {

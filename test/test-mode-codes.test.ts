@@ -12,7 +12,7 @@ const PLAIN: Whereabouts = {
   resophPath: null,
   unlinked: false,
   resophGone: false,
-  changedInBoth: false,
+  otherVersion: false,
   changedElsewhere: false,
   conflictedCopy: false,
 };
@@ -36,17 +36,17 @@ describe("a row's badge", () => {
 
   it('adds only the flags that apply, in one order', () => {
     assert.equal(
-      shown({ ...COPY, changedInBoth: true, resophGone: true, changedElsewhere: true, conflictedCopy: true }),
+      shown({ ...COPY, otherVersion: true, resophGone: true, changedElsewhere: true, conflictedCopy: true }),
       'R→b ⇄ R✕ ext cc',
     );
     assert.equal(shown({ ...COPY, changedElsewhere: true }), 'R→b ext');
   });
 
   it('spells out each of its codes when hovered', () => {
-    const legend = legendOf(codesFor({ ...COPY, changedInBoth: true }));
+    const legend = legendOf(codesFor({ ...COPY, otherVersion: true }));
     assert.equal(legend.split('\n')[0], '[test-mode]');
     assert.match(legend, /^R→b {2}b-notes' copy of a Resoph text$/m);
-    assert.match(legend, /^⇄ {2}changed in both/m);
+    assert.match(legend, /^⇄ {2}the other version of a text both sides changed/m);
   });
 });
 

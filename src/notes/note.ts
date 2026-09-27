@@ -26,10 +26,11 @@ export interface Note {
   updatedAt: number;
   bytes: number;
   /**
-   * Changed in Resoph and in b-notes since they last agreed. The newer is the
-   * text and the other is kept as a version; this says so until he has looked.
+   * The other side's version of a text both sides changed — Resoph's, or what
+   * was on disk when b-notes was about to write over it — kept as a text of its
+   * own beside his. Until he writes in it, at which point it is simply his.
    */
-  changedInBoth?: true;
+  otherVersion?: true;
 }
 
 /**

@@ -54,6 +54,8 @@ export interface Row {
   rank: 0 | 1 | 2 | 3;
   /** His marks, read off the front of the title so they can be drawn as marks. */
   parts: TitleParts;
+  /** The other side's version of a text both sides changed, until he writes in it. */
+  otherVersion: boolean;
   /** How full a page to draw beside it, from empty to four lines. */
   length: LengthBand;
   /** Folded, so `macka` finds `mačka` and `mačka` finds `macka`. */
@@ -92,6 +94,7 @@ function toRow(note: LiveNote, words: ReturnType<typeof strings>, lengths: Lengt
     sortTitle: note.sortTitle,
     rank: note.rank,
     parts: titlePartsOf(note.sortTitle),
+    otherVersion: note.otherVersion === true,
     searchable: note.searchable,
     updatedAt: note.updatedAt,
     length: bandOf(note.bytes, lengths),
@@ -127,6 +130,7 @@ export function openRowFor(view: ListView): Row | null {
     sortTitle: '',
     rank: 0,
     parts: { mark: null, position: null, starred: false, name: words.untitledNew },
+    otherVersion: false,
     searchable: '',
     updatedAt: view.draft.startedAt,
     // Nothing written in it yet, which is exactly what an empty page says.
@@ -192,7 +196,7 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
   when.className = 'note-when';
   when.textContent = describeWhen(row.updatedAt, view.language);
 
-  element.append(pageGlyph(row.length), headingOf(row), when);
+  element.append(pageGlyph(row.length), headingOf(row, strings(view.language)), when);
   return element;
 }
 
@@ -203,7 +207,7 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
  * Beside the name rather than in it, so a name long enough to be cut short
  * never takes a mark with it.
  */
-function headingOf(row: Row): HTMLElement {
+function headingOf(row: Row, words: ReturnType<typeof strings>): HTMLElement {
   const heading = span('note-heading', '');
   const { mark, position, starred, name } = row.parts;
   const marked = mark !== null || starred;
@@ -225,6 +229,9 @@ function headingOf(row: Row): HTMLElement {
     heading.append(star);
   }
   heading.append(span('note-title', marked ? name : row.title));
+  // Straight after the name, quietly: beside the text it is the other version
+  // of, which reads the same.
+  if (row.otherVersion) heading.append(span('note-other', words.otherVersion));
   return heading;
 }
 

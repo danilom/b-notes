@@ -149,8 +149,8 @@ differences from what follows:
 - **Knowing a Resoph file under a new name (§4.6) is not built.** A text he
   retitles in Resoph after b-notes has copied it shows as a second text — an
   untidy duplicate, never a hidden one.
-- **A change Resoph makes to a text he has put away** is not brought in; only
-  texts in his list are compared.
+- **When both sides changed a text, each keeps its own words** (branch
+  `both-changed`, replacing §4.5's "the newer becomes the text"). See §4.5.
 - **Search is not re-ranked**; that is its own item in `TODO.md`.
 - **The copy's link** is written as §4.4 says, but hiding the Resoph original
   also works from the copy's name alone, so a link lost after its copy was
@@ -296,8 +296,25 @@ A Resoph change that is new:
 - **If b-notes hasn't changed the text since**, Resoph's version becomes the
   text, and b-notes' previous one becomes a version. He wrote in Resoph, and
   b-notes shows what he wrote.
-- **If both changed**, the newer becomes the text and the other a version.
-  Nothing is lost. *Open:* how he's told — the choices are in §5.
+- **If both changed**, each keeps its own words — *decided and built*. His
+  text stays as he left it; Resoph's becomes a text of its own beside it, with
+  a quiet "druga verzija" after its name until he writes in it. The Resoph
+  link moves to that text, so Resoph's next change goes there instead of
+  splitting again. Resoph's words are also kept among the versions of his
+  text, as the net under everything — but nothing leads him there.
+
+  The same rule, whoever the other side is:
+
+  - **The file changed behind b-notes while he had words waiting to be
+    written** — Notepad, or another machine through Dropbox: his words go
+    where he is typing, what was on disk becomes the other version.
+  - **Resoph changed a text he had put away in b-notes**: Resoph's version
+    comes back into his list as the other version; what he put away stays put
+    away.
+
+  Dropbox's conflicted copies already work this way on their own. A feature
+  that groups similar texts in the list is meant to pull such pairs together
+  later.
 
 Versions that came from Resoph are named as such, so all of this can be
 worked out from the files themselves, with no extra record to keep in step

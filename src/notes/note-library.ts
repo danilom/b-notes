@@ -1,6 +1,6 @@
 import { type FileSystem, FolderMissing } from '../platform/file-system.ts';
 import type { Log } from '../platform/logging.ts';
-import { type Note, type NoteStore, type NoteVersion, noteOf } from './note.ts';
+import { type Note, type NoteStore, type NoteVersion, isEmptyText, noteOf } from './note.ts';
 import { CHANGED_IN_BOTH_FOLDER, EXTENSION, RESOPH_LINKS_FOLDER, copyNameFor, idOf } from './note-naming.ts';
 import type { NoteRenamed, OwnNoteStore } from './note-store.ts';
 import type { ResophFolder, ResophText } from './resoph-folder.ts';
@@ -22,8 +22,6 @@ function isFromResoph(version: NoteVersion): boolean {
 
 /** The store over both folders, and what only it can answer. */
 export interface NoteLibrary extends NoteStore {
-  /** He has looked at a text that changed in both places: stop saying so. */
-  seenChangedInBoth(id: string): Promise<void>;
 }
 
 /**
@@ -70,6 +68,67 @@ export function createNoteLibrary(
       if (!(failure instanceof FolderMissing)) throw failure;
       return new Set();
     }
+  }
+
+  /** What each link names, read once: a link is written once and never changed. */
+  const linkRead = new Map<string, string>();
+
+  /** Each link: the text that carries a Resoph file on, and the Resoph file it names. */
+  async function links(): Promise<Map<string, string>> {
+    const found = new Map<string, string>();
+    for (const carrier of await linkedNames()) {
+      let stem = linkRead.get(carrier);
+      if (stem === undefined) {
+        stem = await files.read(`${linksFolder}/${carrier}${EXTENSION}`);
+        linkRead.set(carrier, stem);
+      }
+      found.set(carrier, stem);
+    }
+    return found;
+  }
+
+  /**
+   * For each Resoph file, the text of b-notes' that carries it on: the one its
+   * link names. Usually the copy, named from the Resoph file; after both sides
+   * changed it, the other version, which took the link over.
+   */
+  function carriersOf(linked: ReadonlyMap<string, string>): Map<string, string> {
+    const carriers = new Map<string, string>();
+    for (const [carrier, stem] of linked) {
+      // Two links naming one file are a move of the link cut short: the one it
+      // was moving to is the one that counts.
+      if (carriers.has(stem) && carrier === copyNameFor(stem)) continue;
+      carriers.set(stem, carrier);
+    }
+    return carriers;
+  }
+
+  /**
+   * Hands the link for a Resoph file from one text of b-notes' to another, so
+   * that from now on Resoph's changes go to the second. The new link first: a
+   * Resoph file with two links is carried on twice, which is untidy; one with
+   * none would walk back into his list.
+   */
+  async function moveLink(from: string, to: string, stem: string): Promise<void> {
+    await files.write(`${linksFolder}/${to}${EXTENSION}`, stem);
+    linkRead.set(to, stem);
+    if ((await linkedNames()).has(from)) await files.removeFile(`${linksFolder}/${from}${EXTENSION}`);
+    linkRead.delete(from);
+  }
+
+  /**
+   * Resoph's words, when both it and b-notes changed a text: a text of their
+   * own beside his, which carries the Resoph file on from now on. Resoph's are
+   * kept on it as coming from Resoph, so its next change is told apart from
+   * his like any other. Null when Resoph emptied it: there is nothing of
+   * Resoph's to keep, and his words stay as they are.
+   */
+  async function keepResophsVersion(fromResoph: ResophText, from: string): Promise<string | null> {
+    if (isEmptyText(fromResoph.text)) return null;
+    const other = await own.keepOtherVersion(fromResoph.text, FROM_RESOPH);
+    await own.keepLabelledCopy(other, fromResoph.text, FROM_RESOPH);
+    await moveLink(from, other, fromResoph.stem);
+    return other;
   }
 
   /**
@@ -124,9 +183,10 @@ export function createNoteLibrary(
    * Resoph, putting an old version back, from rolling the text back here.
    *
    * News, when b-notes has not changed the text since it last took Resoph's:
-   * Resoph's becomes the text. News when both have changed: the newer becomes
-   * the text, the other is kept as a version, and the text says so until he
-   * has looked. Nothing is lost either way; Resoph's is always kept.
+   * Resoph's becomes the text. News when both have changed: each keeps its own
+   * words. His text stays as he left it, and Resoph's becomes a text of its own
+   * beside it, marked as the other version. Nothing is lost either way, and
+   * Resoph's is kept among the versions besides.
    */
   async function bringIn(fromResoph: ResophText, copy: string, copyUpdatedAt: number): Promise<boolean> {
     const seenAs = `${fromResoph.file.updatedAt}|${fromResoph.file.bytes}`;
@@ -148,17 +208,37 @@ export function createNoteLibrary(
       return true;
     }
 
-    if (fromResoph.file.updatedAt > copyUpdatedAt) {
-      await own.keepCopy(copy, current);
-      await own.save(copy, fromResoph.text);
-    }
-    await files.write(`${changedFolder}/${copy}${EXTENSION}`, fromResoph.stem);
-    log.warn('A text changed in both Resoph and b-notes; the newer is the text, the other kept', {
+    const other = await keepResophsVersion(fromResoph, copy);
+    log.warn('A text changed in both Resoph and b-notes; each kept its own words', {
       from: fromResoph.stem,
-      to: copy,
-      newer: fromResoph.file.updatedAt > copyUpdatedAt ? 'Resoph' : 'b-notes',
+      his: copy,
+      resophs: other,
     });
     return true;
+  }
+
+  /**
+   * A change made in Resoph to a text he has put away in b-notes: back in his
+   * list, as a text of its own, since what he put away is not what Resoph now
+   * holds. What he put away stays where he put it.
+   *
+   * Not news, as ever, when it is something b-notes has already seen: the text
+   * he put away, or any version of it — which is where Resoph's words from the
+   * day it was taken in are kept.
+   */
+  async function bringBack(fromResoph: ResophText, putAway: string): Promise<boolean> {
+    const seenAs = `${fromResoph.file.updatedAt}|${fromResoph.file.bytes}`;
+    if (compared.get(putAway) === seenAs) return false;
+    compared.set(putAway, seenAs);
+
+    if ((await own.putAwayTexts(putAway)).includes(fromResoph.text)) return false;
+    const back = await keepResophsVersion(fromResoph, putAway);
+    log.info('Resoph changed a text he had put away; Resoph\'s version is back in his list', {
+      from: fromResoph.stem,
+      putAway,
+      back,
+    });
+    return back !== null;
   }
 
   /**
@@ -166,17 +246,18 @@ export function createNoteLibrary(
    * so two never write over each other, and one failing leaves the rest.
    */
   async function bringInEverything(texts: ResophText[], mine: Note[]): Promise<boolean> {
-    const copies = new Map(mine.map((note) => [note.id, note.updatedAt]));
+    const live = new Map(mine.map((note) => [note.id, note.updatedAt]));
+    const [carriers, putAway] = await Promise.all([links().then(carriersOf), own.putAwayIds()]);
     let changed = false;
     for (const text of texts) {
-      const copy = copyNameFor(text.stem);
-      const copyUpdatedAt = copies.get(copy);
-      if (copyUpdatedAt === undefined) continue;
+      const carrier = carriers.get(text.stem) ?? copyNameFor(text.stem);
+      const updatedAt = live.get(carrier);
       try {
-        if (await bringIn(text, copy, copyUpdatedAt)) changed = true;
+        if (updatedAt !== undefined && (await bringIn(text, carrier, updatedAt))) changed = true;
+        else if (updatedAt === undefined && putAway.has(carrier) && (await bringBack(text, carrier))) changed = true;
       } catch (failure: unknown) {
-        compared.delete(copy);
-        log.error('Could not bring in a change made in Resoph', { from: text.stem, to: copy, failure });
+        compared.delete(carrier);
+        log.error('Could not bring in a change made in Resoph', { from: text.stem, to: carrier, failure });
       }
     }
     return changed;
@@ -201,13 +282,25 @@ export function createNoteLibrary(
     return note;
   }
 
-  /** The Resoph texts with no copy, as notes. */
+  /**
+   * The Resoph texts with no copy, as notes. One with a copy is not listed by
+   * the copy's name, nor while any link names it — which, once both sides have
+   * changed it, is the other version's.
+   */
   async function resophNotes(): Promise<Note[]> {
     if (resoph === null) return [];
-    const [texts, taken] = await Promise.all([resoph.list(), takenIn()]);
+    const [texts, taken, linked] = await Promise.all([resoph.list(), takenIn(), links()]);
     const present = new Set(texts.map(({ stem }) => stem));
     for (const stem of described.keys()) if (!present.has(stem)) described.delete(stem);
-    return texts.filter(({ stem }) => !taken.has(copyNameFor(stem))).map(noteFor);
+    const carried = new Set(linked.values());
+    return texts.filter(({ stem }) => !taken.has(copyNameFor(stem)) && !carried.has(stem)).map(noteFor);
+  }
+
+  /** He wrote in the other version of a text: it is his now, and says so no longer. */
+  async function claim(id: string): Promise<void> {
+    if (!(await namesIn(changedFolder)).has(id)) return;
+    await files.removeFile(`${changedFolder}/${id}${EXTENSION}`);
+    log.info('He wrote in the other version of a text; it is no longer marked', { id });
   }
 
   return {
@@ -215,14 +308,8 @@ export function createNoteLibrary(
       let mine = await own.list();
       if (resoph !== null && (await bringInEverything(await resoph.list(), mine))) mine = await own.list();
       const [fromResoph, changed] = await Promise.all([resophNotes(), namesIn(changedFolder)]);
-      const marked = mine.map((note): Note => (changed.has(note.id) ? { ...note, changedInBoth: true } : note));
+      const marked = mine.map((note): Note => (changed.has(note.id) ? { ...note, otherVersion: true } : note));
       return [...marked, ...fromResoph].sort((first, second) => second.updatedAt - first.updatedAt);
-    },
-
-    async seenChangedInBoth(id: string): Promise<void> {
-      if (!(await namesIn(changedFolder)).has(id)) return;
-      await files.removeFile(`${changedFolder}/${id}${EXTENSION}`);
-      log.info('He looked at a text that changed in both places', { id });
     },
 
     async read(id: string): Promise<string> {
@@ -235,8 +322,9 @@ export function createNoteLibrary(
 
     async save(id: string | null, text: string): Promise<string | null> {
       const stem = id === null ? null : resophStemOf(id);
-      if (stem === null) return own.save(id, text);
-      return own.save(await takeIn(stem), text);
+      const saved = await own.save(stem === null ? id : await takeIn(stem), text);
+      if (saved !== null) await claim(saved);
+      return saved;
     },
 
     async keepCopy(id: string, text: string): Promise<string> {

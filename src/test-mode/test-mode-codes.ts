@@ -15,8 +15,8 @@ const ORIGIN: Record<Whereabouts['origin'], Code> = {
 /** The flags, in the order they are shown, each only where it applies. */
 const FLAGS: readonly { applies: (where: Whereabouts) => boolean; code: Code }[] = [
   {
-    applies: (where) => where.changedInBoth,
-    code: { code: '⇄', means: 'changed in both Resoph and b-notes; the other version is kept' },
+    applies: (where) => where.otherVersion,
+    code: { code: '⇄', means: 'the other version of a text both sides changed, until he writes in it' },
   },
   {
     applies: (where) => where.resophGone,

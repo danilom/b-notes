@@ -111,7 +111,7 @@ describe('where each text lives, for test mode', () => {
     assert.equal(all.has(copy), false);
   });
 
-  it('marks texts changed in both places, changed behind its back, and Dropbox conflicted copies', async () => {
+  it('marks the other version of a text both sides changed, texts changed behind its back, and Dropbox conflicted copies', async () => {
     const conflicted = "Pismo (Brano's conflicted copy 2026-09-26)";
     const { store, notes, whereabouts } = await folders({ [conflicted]: 'Drugo.' });
     const id = (await store.save(null, 'Novo\n\nTekst.')) ?? '';
@@ -121,7 +121,7 @@ describe('where each text lives, for test mode', () => {
     await writeFile(path.join(notes, VERSIONS_FOLDER, id, '2026-09-27 10-00-00 izmenjeno drugde.txt'), 'Staro.');
 
     const all = await whereabouts();
-    assert.equal(all.get(id)?.changedInBoth, true);
+    assert.equal(all.get(id)?.otherVersion, true);
     assert.equal(all.get(id)?.changedElsewhere, true);
     assert.equal(all.get(id)?.conflictedCopy, false);
     assert.equal(all.get(resophIdOf(conflicted))?.conflictedCopy, true);

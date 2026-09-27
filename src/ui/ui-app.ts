@@ -93,10 +93,7 @@ function element<T extends Element>(id: string, kind: new () => T): T {
 
 const listPane = element('list', HTMLDivElement);
 const editor = element('editor', HTMLTextAreaElement);
-const changedInBoth = element('changed-in-both', HTMLDivElement);
 const closeEditorsPane = element('close-editors', HTMLDialogElement);
-const changedInBothSaid = element('changed-in-both-said', HTMLSpanElement);
-const changedInBothSee = element('changed-in-both-see', HTMLButtonElement);
 const editorMarks = element('editor-marks', HTMLDivElement);
 const writingBox = element('writing', HTMLDivElement);
 const foundPane = element('found', HTMLDivElement);
@@ -350,30 +347,6 @@ async function reloadAfterWriting(): Promise<void> {
 }
 
 /**
- * The line over a text that changed in Resoph and in b-notes at once, while it
- * is the one in front of him and until he has looked at its versions.
- */
-function showChangedInBoth(): void {
-  const open = openHandle === NO_NOTE ? undefined : notes.find((note) => note.handle === openHandle);
-  changedInBoth.hidden = open?.changedInBoth !== true;
-  changedInBothSaid.textContent = words.changedInBoth;
-  changedInBothSee.textContent = words.changedInBothSee;
-}
-
-changedInBothSee.addEventListener('click', () => {
-  if (openHandle === NO_NOTE) return;
-  const handle = openHandle;
-  log.info('Looked at the versions of a text that changed in both places', { id: openName() });
-  keptCopies.show();
-  // Seen once is seen: the mark goes as the versions open, not when they close.
-  notes = notes.map((note): LiveNote => (note.handle === handle ? { ...note, changedInBoth: undefined } : note));
-  changedInBoth.hidden = true;
-  writing.seenChangedInBoth(handle).catch((error: unknown) => {
-    log.warn('Could not take the mark off a text that changed in both places', describeError(error));
-  });
-});
-
-/**
  * Set once his texts have been read at startup. A window gains focus while it
  * is still opening, and reading both folders twice at once would be a race.
  */
@@ -461,7 +434,6 @@ function showStatus(): void {
   emptyHint.hidden = !emptyHintShows(now);
   if (!emptyHint.hidden) pointHintAtDeleteButton();
 
-  showChangedInBoth();
   statusText.textContent = statusFor(now, language);
   // Shown is said: a thing that has just happened stops being news once he has
   // been told it.

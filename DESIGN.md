@@ -174,7 +174,7 @@ whether the sentence is about the screen, about a thing on it, or about an act
 | `Obrisano/` | b-notes' folder | texts he has deleted, with what he wrote in them |
 | `Verzije/` | b-notes' folder | what a text said before he emptied it or Resoph changed it; `Obrisano/Verzije/` once the text itself is put away |
 | `Iz Resopha/` | b-notes' folder | which Resoph file each copy came from; outlives the copy, so a text he destroyed does not come back from Resoph |
-| `Menjano na dva mesta/` | b-notes' folder | texts changed in Resoph and b-notes at once, until he has looked |
+| `Menjano na dva mesta/` | b-notes' folder | marks the other version of a text both sides changed, until he writes in it; says where it came from |
 | `screen.json` | `userData` | how big the letters are is the screen in front of him, not taste — syncing it would have one machine keep undoing the other |
 | `session.json` | `userData` | which text he had open, on this machine |
 | `folders.json` | `userData` | where his Resoph folder and b-notes' are, if someone chose; otherwise Resoph's own settings say, and b-notes' goes beside it |
