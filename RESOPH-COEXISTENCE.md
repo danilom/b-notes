@@ -42,7 +42,10 @@ From his folder, the 0.7.0 test log, and Danilo trying it by hand:
   filename as the note's first line. Editing that line renames the file.
 - **It puts back whatever it remembers.** Delete or rename a note's file, even
   with Resoph closed, and on its next start Resoph writes it back — sometimes
-  more than once. While it runs it does the same within minutes: the test log
+  more than once. A rename becomes two notes: tried on the VM with his corpus
+  loaded, Resoph wrote the file back under its old name *and* took the renamed
+  file in as a new note. That is a duplicate from a single rename, on a single
+  machine. While it runs it does the same within minutes: the test log
   shows eight files renamed by b-notes being rewritten twice.
 - **This is almost certainly where his identical copies come from.** Retitle a
   note on one machine and that Resoph writes a new file. The other machines'
