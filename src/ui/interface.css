@@ -873,9 +873,17 @@ button svg {
 }
 
 /*
-  A text still in Resoph: Resoph's own icon before the date, the one he knows
+  A text still in Resoph: Resoph's own icon after the date, the one he knows
   it by, greyed and half there so it stays quieter than anything of his.
   Typing in the text takes it over, and the icon fades out.
+
+  After the date so the icons make one column at the edge while most of his
+  texts are still in Resoph. No room is kept for it on rows without one: the
+  dates there end further right, which was judged better than every title
+  giving up the width for good.
+
+  Drawn in closer than the row's gap on both sides, so it reads as belonging
+  to its date rather than as a column of its own.
 
   Its own file rather than a data URI, so the CSP needn't be loosened for it.
   Sized in em rather than at Resoph's 16px, so it grows with the rest of the
@@ -885,7 +893,8 @@ button svg {
   flex: none;
   width: 1em;
   height: 1em;
-  margin-right: 0.15em;
+  margin-left: -0.35rem;
+  margin-right: -0.35rem;
   background: url(resoph-mark.png) center / contain no-repeat;
   filter: grayscale(1);
   opacity: 0.55;

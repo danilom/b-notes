@@ -200,12 +200,12 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
   when.textContent = describeWhen(row.updatedAt, view.language);
 
   const words = strings(view.language);
-  element.append(pageGlyph(row.length), headingOf(row, words), ...resophMarkOf(row, view, words), when);
+  element.append(pageGlyph(row.length), headingOf(row, words), when, ...resophMarkOf(row, view, words));
   return element;
 }
 
 /**
- * Resoph's icon before the date on a text still in Resoph, so he has some sense
+ * Resoph's icon after the date on a text still in Resoph, so he has some sense
  * of which ones are: typing in one takes it over. On the row just taken over,
  * the icon once more, going. The picture itself is the stylesheet's.
  */
