@@ -64,7 +64,8 @@ export type Settings = SharedSettings & LocalSettings;
 
 /** Where each half lives. Both come off the host; neither is ever shown to him. */
 export interface SettingsFolders {
-  readonly writingFolder: string;
+  /** b-notes' own folder, where the half that travels with him is kept. */
+  readonly notesFolder: string;
   readonly appFolder: string;
 }
 
@@ -140,7 +141,7 @@ export async function readSettings(
   folders: SettingsFolders,
 ): Promise<Settings> {
   const [shared, local] = await Promise.all([
-    readRaw(files, `${folders.writingFolder}/${SHARED_FILE}`),
+    readRaw(files, `${folders.notesFolder}/${SHARED_FILE}`),
     readRaw(files, `${folders.appFolder}/${LOCAL_FILE}`),
   ]);
   return settingsFrom(shared, local);
@@ -161,7 +162,7 @@ async function writeSettings(
 ): Promise<void> {
   const { language, font, accent, writingFont, writingSize, recentCount, zoom, mode } =
     settings;
-  const sharedPath = `${folders.writingFolder}/${SHARED_FILE}`;
+  const sharedPath = `${folders.notesFolder}/${SHARED_FILE}`;
   const localPath = `${folders.appFolder}/${LOCAL_FILE}`;
 
   const [shared, local] = await Promise.all([

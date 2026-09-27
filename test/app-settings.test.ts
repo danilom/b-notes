@@ -17,7 +17,7 @@ import {
   settingsFrom,
 } from '../src/ui/settings/app-settings.ts';
 
-const FOLDERS = { writingFolder: 'Tekstovi', appFolder: 'Podaci' };
+const FOLDERS = { notesFolder: 'Tekstovi', appFolder: 'Podaci' };
 
 /** A filesystem whose writes finish in whatever order the test asks for. */
 function slowFiles() {

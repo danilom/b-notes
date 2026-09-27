@@ -1,6 +1,14 @@
 import type { FileSystem } from './file-system.ts';
 import type { Log } from './logging.ts';
 
+/** The folders someone can point the app at, from the advanced panel. */
+export interface ChosenPlaces {
+  /** Empty for "this machine has no Resoph". */
+  resoph: string;
+  notes: string;
+  logs: string;
+}
+
 /** What a copy of the app is: installed, built to work on, or the mock. */
 export type RunMode = 'installed' | 'dev' | 'browser';
 
@@ -27,8 +35,18 @@ export interface Host {
    */
   readonly runMode: RunMode;
   readonly files: FileSystem;
-  /** Where his texts live. He must never be shown this. */
-  readonly writingFolder: string;
+  /**
+   * His ResophNotes folder, which b-notes reads and never writes, or null on a
+   * machine without one. He must never be shown this.
+   */
+  readonly resophFolder: string | null;
+  /** b-notes' own folder: every text it writes, and its versions and settings. */
+  readonly notesFolder: string;
+  /**
+   * This machine's name, which goes into the name of every text started here —
+   * so two machines starting a text at the same second never write one file.
+   */
+  readonly machineName: string;
   /** Ours: the log, what he had open, how he likes the app set up. */
   readonly appFolder: string;
   /** Where the log files go. Separable from `appFolder` so they can be put
@@ -91,7 +109,7 @@ export interface Host {
    * a file — which is why this comes paired with `restart` below, and why the
    * logs folder cannot take effect without it.
    */
-  readonly rememberFolders: (folders: { writing: string; logs: string }) => Promise<void>;
+  readonly rememberFolders: (folders: ChosenPlaces) => Promise<void>;
   /**
    * Says what to do before the window goes, and is given the chance to finish.
    *

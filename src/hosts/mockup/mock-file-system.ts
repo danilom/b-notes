@@ -4,11 +4,13 @@ import {
   FileMissing,
   FolderMissing,
 } from '../../platform/file-system.ts';
+import { resophSample } from './mock-resoph-sample.ts';
 
 const KEY = 'b-notes:mock-files';
 
-/** Where the browser host pretends his writing and our own files live. */
-export const MOCK_WRITING_FOLDER = 'Tekstovi';
+/** Where the browser host pretends his Resoph folder, b-notes' own and ours are. */
+export const MOCK_RESOPH_FOLDER = 'ResophNotes';
+export const MOCK_NOTES_FOLDER = 'b-notes';
 export const MOCK_APP_FOLDER = 'Podaci';
 
 interface StoredFile {
@@ -204,12 +206,32 @@ export async function seedIfEmpty(): Promise<void> {
   }
   if (!response.ok) return;
 
+  const entries = (await response.json()) as { id: string; text: string; updatedAt: number }[];
+
+  /*
+    The corpus is written the way b-notes writes, title inside, and his texts
+    now arrive from Resoph. So each text goes into the pretend Resoph folder
+    the way Resoph would write it — title in the name, the rest in the file —
+    except the few samples that come with versions or sit in an archive, which
+    are b-notes' own and go into its folder as they are.
+  */
+  const hasVersions = new Set(
+    entries.map((entry) => /^Verzije\/([^/]+)\//.exec(entry.id)?.[1]).filter((id) => id !== undefined),
+  );
   const seeded = new Map<string, StoredFile>();
-  for (const entry of (await response.json()) as { id: string; text: string; updatedAt: number }[]) {
-    seeded.set(`${MOCK_WRITING_FOLDER}/${entry.id}`, {
-      text: entry.text,
-      updatedAt: entry.updatedAt,
-    });
+  for (const entry of entries) {
+    const stem = entry.id.replace(/\.txt$/, '');
+    const own = entry.id.includes('/') || hasVersions.has(stem);
+    if (own) {
+      seeded.set(`${MOCK_NOTES_FOLDER}/${entry.id}`, { text: entry.text, updatedAt: entry.updatedAt });
+      continue;
+    }
+    // Resoph drops the title line and the blank line under it.
+    const body = entry.text.split('\n').slice(1).join('\n').replace(/^\n/, '');
+    seeded.set(`${MOCK_RESOPH_FOLDER}/${entry.id}`, { text: body, updatedAt: entry.updatedAt });
+  }
+  for (const file of resophSample(MOCK_RESOPH_FOLDER, Date.now())) {
+    seeded.set(file.path, { text: file.text, updatedAt: file.updatedAt });
   }
   store(seeded);
 }

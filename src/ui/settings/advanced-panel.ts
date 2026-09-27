@@ -1,6 +1,6 @@
 import { type Shown, showAsModal } from '../dialogs/modal.ts';
 import { APP_VERSION, BUILD_STAMP } from '../../platform/build-info.ts';
-import type { Host } from '../../platform/host.ts';
+import type { ChosenPlaces, Host } from '../../platform/host.ts';
 import { type AdvancedSettings, DEFAULT_CTRL_CARD_AFTER_MS } from './advanced-settings.ts';
 import { icon } from '../icons.ts';
 
@@ -25,7 +25,7 @@ import { icon } from '../icons.ts';
  */
 export interface AdvancedHandlers {
   onClose: () => void;
-  onKeep: (settings: { writing: string; logs: string; ctrlCardAfterMs: number | null }) => void;
+  onKeep: (settings: ChosenPlaces & { ctrlCardAfterMs: number | null }) => void;
 }
 
 /** A path, and the way to look at it. */
@@ -48,7 +48,9 @@ function folderRow(
   open.type = 'button';
   open.className = 'advanced-path';
   open.title = 'Open in Explorer';
-  open.textContent = path;
+  // A machine without Resoph has no folder here, and says so.
+  open.textContent = path.length > 0 ? path : 'none';
+  open.disabled = path.length === 0;
   open.addEventListener('click', () => {
     void host.openFolder(path).catch((failure: unknown) => {
       host.log.warn('Could not open a folder', { path, failure });
@@ -67,7 +69,7 @@ function folderRow(
   missing.className = 'advanced-missing';
   missing.textContent = 'not found';
   missing.hidden = true;
-  void host.files
+  if (path.length > 0) void host.files
     .folderExists(path)
     .then((there) => {
       missing.hidden = there;
@@ -145,7 +147,8 @@ export function openAdvancedPanel(
   advanced: AdvancedSettings,
   handlers: AdvancedHandlers,
 ): () => void {
-  let writing = host.writingFolder;
+  let resoph = host.resophFolder ?? '';
+  let notes = host.notesFolder;
   let logs = host.logsFolder;
   let wait: number | null = advanced.ctrlCardAfterMs;
 
@@ -202,8 +205,13 @@ export function openAdvancedPanel(
     const folders = document.createElement('div');
     folders.className = 'advanced-folders';
     folders.append(
-      folderRow('Writing', writing, host, (to) => {
-        writing = to;
+      // Read and never written: his texts as Resoph keeps them.
+      folderRow('Resoph', resoph, host, (to) => {
+        resoph = to;
+        fill();
+      }),
+      folderRow('b-notes texts', notes, host, (to) => {
+        notes = to;
         fill();
       }),
       folderRow('Logs', logs, host, (to) => {
@@ -227,7 +235,7 @@ export function openAdvancedPanel(
     keep.type = 'button';
     keep.className = 'keep';
     keep.textContent = 'Apply and restart';
-    keep.addEventListener('click', () => handlers.onKeep({ writing, logs, ctrlCardAfterMs: wait }));
+    keep.addEventListener('click', () => handlers.onKeep({ resoph, notes, logs, ctrlCardAfterMs: wait }));
 
     const cancel = document.createElement('button');
     cancel.type = 'button';

@@ -1,10 +1,11 @@
-import type { Host } from '../../platform/host.ts';
+import type { ChosenPlaces, Host } from '../../platform/host.ts';
 import type { Log } from '../../platform/logging.ts';
 import { startApp } from '../../ui/ui-app.ts';
 import { addMockFileList } from './mock-file-list.ts';
 import {
   MOCK_APP_FOLDER,
-  MOCK_WRITING_FOLDER,
+  MOCK_NOTES_FOLDER,
+  MOCK_RESOPH_FOLDER,
   createMockFileSystem,
   everyFile,
   refuseTheNextWrites,
@@ -99,7 +100,9 @@ async function main(): Promise<void> {
   const host: Host = {
     runMode: 'browser',
     files: createMockFileSystem(),
-    writingFolder: MOCK_WRITING_FOLDER,
+    resophFolder: MOCK_RESOPH_FOLDER,
+    notesFolder: MOCK_NOTES_FOLDER,
+    machineName: 'Browser',
     appFolder: MOCK_APP_FOLDER,
     log: consoleLog,
     /*
@@ -121,7 +124,7 @@ async function main(): Promise<void> {
 ${path}`);
     },
     chooseFolder: async (from: string) => window.prompt('Folder', from),
-    rememberFolders: async (next: { writing: string; logs: string }) => {
+    rememberFolders: async (next: ChosenPlaces) => {
       window.localStorage.setItem('b-notes:mock-folders', JSON.stringify(next));
     },
     // The tab's own equivalent. Nothing is settled outside the page here, so

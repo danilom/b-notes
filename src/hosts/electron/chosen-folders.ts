@@ -2,7 +2,8 @@ import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 /**
- * Where his writing and our logs have been pointed, if anyone has pointed them.
+ * Where his Resoph folder, b-notes' own folder and our logs have been pointed,
+ * if anyone has pointed them.
  *
  * Kept beside the log rather than with the rest of the settings, because the
  * writing folder cannot be configured from inside the writing folder — and read
@@ -15,9 +16,21 @@ import path from 'node:path';
  * startup with no log to say why.
  */
 export interface ChosenFolders {
-  writing: string | null;
+  /** His ResophNotes folder, which b-notes reads and never writes. */
+  resoph: string | null;
+  /** b-notes' own folder: its texts, versions, Obrisano, settings. */
+  notes: string | null;
   logs: string | null;
 }
+
+/*
+  The key 0.7.0 kept, `writing`, is not read. It named one folder b-notes both
+  read and wrote, and on two of his machines it points at his Resoph folder —
+  so honouring it would have the first start of this version writing straight
+  into the folder Resoph mirrors. Discarded on purpose; the next write of this
+  file drops it.
+*/
+const NOTHING_CHOSEN: ChosenFolders = { resoph: null, notes: null, logs: null };
 
 const FILE = 'folders.json';
 
@@ -31,14 +44,14 @@ function asFolder(value: unknown): string | null {
 export function readChosenFolders(appFolder: string): ChosenFolders {
   try {
     const raw: unknown = JSON.parse(readFileSync(path.join(appFolder, FILE), 'utf8'));
-    if (typeof raw !== 'object' || raw === null) return { writing: null, logs: null };
+    if (typeof raw !== 'object' || raw === null) return NOTHING_CHOSEN;
     const held = raw as Record<string, unknown>;
-    return { writing: asFolder(held['writing']), logs: asFolder(held['logs']) };
+    return { resoph: asFolder(held['resoph']), notes: asFolder(held['notes']), logs: asFolder(held['logs']) };
   } catch {
     // Missing is the ordinary case and unreadable is the same answer: fall back
     // to where things go by default. There is nowhere to report this yet — the
     // log's own folder is one of the things being decided here.
-    return { writing: null, logs: null };
+    return NOTHING_CHOSEN;
   }
 }
 

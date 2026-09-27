@@ -1,5 +1,5 @@
 import type { FileSystem } from '../../platform/file-system.ts';
-import type { Host, RunMode } from '../../platform/host.ts';
+import type { ChosenPlaces, Host, RunMode } from '../../platform/host.ts';
 import type { Log } from '../../platform/logging.ts';
 import { startApp } from '../../ui/ui-app.ts';
 import { withAbsences } from './ipc-file-system.ts';
@@ -7,12 +7,19 @@ import { withAbsences } from './ipc-file-system.ts';
 declare global {
   interface Window {
     files?: FileSystem;
-    folders?: () => Promise<{ writing: string; app: string; logs: string; mode: RunMode }>;
+    folders?: () => Promise<{
+      resoph: string | null;
+      notes: string;
+      app: string;
+      logs: string;
+      machine: string;
+      mode: RunMode;
+    }>;
     openFolder?: (path: string) => Promise<void>;
     copyToClipboard?: (text: string) => Promise<void>;
     onBeforeClose?: (finish: () => Promise<void>) => void;
     chooseFolder?: (from: string) => Promise<string | null>;
-    rememberFolders?: (next: { writing: string; logs: string }) => Promise<void>;
+    rememberFolders?: (next: ChosenPlaces) => Promise<void>;
     restart?: () => Promise<void>;
     log?: Log;
     setZoom?: (factor: number) => void;
@@ -64,7 +71,9 @@ async function main(): Promise<void> {
     // an ordinary failure and every catch built on telling the two apart lets
     // it through. See `withAbsences`.
     files: withAbsences(files),
-    writingFolder: where.writing,
+    resophFolder: where.resoph,
+    notesFolder: where.notes,
+    machineName: where.machine,
     appFolder: where.app,
     logsFolder: where.logs,
     openFolder,

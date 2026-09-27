@@ -16,7 +16,7 @@
 import { mkdir, readFile, rm, utimes, writeFile } from 'node:fs/promises';
 
 import { BORROWED_COUNT, archiveSample } from '../src/hosts/mockup/mock-archive-sample.ts';
-import { MOCK_WRITING_FOLDER } from '../src/hosts/mockup/mock-file-system.ts';
+import { MOCK_NOTES_FOLDER as MOCK_WRITING_FOLDER } from '../src/hosts/mockup/mock-file-system.ts';
 import { longDiffSample } from '../src/hosts/mockup/mock-long-diff-sample.ts';
 import { versionsSample } from '../src/hosts/mockup/mock-versions-sample.ts';
 import path from 'node:path';

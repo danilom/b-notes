@@ -1,4 +1,5 @@
 import { BrowserWindow, Menu, app, dialog, ipcMain, screen, shell } from 'electron';
+import { hostname, homedir } from 'node:os';
 import path from 'node:path';
 
 import { BUILD_STAMP } from '../../platform/build-info.ts';
@@ -6,6 +7,7 @@ import { LOG_LEVELS, createFileLogger } from './log-file.ts';
 import { createFileSystem } from './disk-file-system.ts';
 import { absenceReply } from '../../platform/file-system.ts';
 import { readChosenFolders, whereToOpen, writeChosenFolders } from './chosen-folders.ts';
+import { findResophFolder } from './resoph-config.ts';
 import { startUpdateChecks } from './app-updates.ts';
 import { type Rect, deskAround, keptOnTheDesk } from './window-bounds.ts';
 
@@ -63,18 +65,30 @@ const rendererLog = log.scoped('renderer');
 process.on('uncaughtException', (error) => log.error('Uncaught exception', error));
 process.on('unhandledRejection', (reason) => log.error('Unhandled rejection', reason));
 
-// Where his writing lives is not settled: it belongs in the Dropbox folder,
-// which needs detecting at first run. Documents keeps this runnable until then.
 // Forward slashes throughout, which is what the filesystem contract expects and
 // which Windows accepts perfectly well.
 const asPath = (value: string): string => value.replaceAll('\\', '/');
 
+/*
+  His Resoph folder is found in Resoph's own settings unless someone chose one.
+  b-notes' folder goes beside it — in his Dropbox on his machines, so it is
+  synced and backed up like the rest — or in Documents where there is no Resoph.
+*/
+const detectedResoph = chosen.resoph === null ? findResophFolder(homedir()) : null;
+const resophFolder = chosen.resoph ?? detectedResoph;
+
 const folders = {
   // The renderer cannot ask whether this was packaged; only this process can.
   mode: runMode,
-  writing: chosen.writing ?? asPath(path.join(app.getPath('documents'), 'b-notes')),
+  resoph: resophFolder,
+  notes:
+    chosen.notes ??
+    (resophFolder === null
+      ? asPath(path.join(app.getPath('documents'), 'b-notes'))
+      : `${path.posix.dirname(resophFolder)}/b-notes`),
   app: asPath(appFolder),
   logs: chosen.logs ?? asPath(path.join(appFolder, 'logs')),
+  machine: hostname(),
 };
 const files = createFileSystem(path.join(appFolder, 'saving'));
 
@@ -173,8 +187,10 @@ handle('app:rememberFolders', async (args) => {
   const next = args[0];
   if (typeof next !== 'object' || next === null) throw new TypeError('folders must be an object');
   const held = next as Record<string, unknown>;
+  const resoph = asString(held['resoph'], 'resoph').trim();
   writeChosenFolders(appFolder, {
-    writing: asString(held['writing'], 'writing'),
+    resoph: resoph.length > 0 ? resoph : null,
+    notes: asString(held['notes'], 'notes'),
     logs: asString(held['logs'], 'logs'),
   });
   log.warn('The folders were pointed somewhere else', held);
@@ -410,7 +426,9 @@ async function start(): Promise<void> {
     version: app.getVersion(),
     build: BUILD_STAMP,
     electron: process.versions.electron,
-    writing: folders.writing,
+    resoph: folders.resoph,
+    resophFrom: chosen.resoph !== null ? 'chosen' : detectedResoph !== null ? "Resoph's settings" : 'none',
+    notes: folders.notes,
   });
   await app.whenReady();
   const window = await createWindow();

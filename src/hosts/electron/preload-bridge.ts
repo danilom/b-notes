@@ -1,6 +1,7 @@
 import { clipboard, contextBridge, ipcRenderer, webFrame } from 'electron';
 
 import type { FileSystem } from '../../platform/file-system.ts';
+import type { ChosenPlaces } from '../../platform/host.ts';
 
 /**
  * Everything the packaged app hands the interface: somewhere to keep files, and
@@ -38,8 +39,7 @@ const folders = () => ipcRenderer.invoke('app:folders');
 /** The advanced panel's three, and nothing else in the app uses them. */
 const openFolder = (path: string) => ipcRenderer.invoke('app:openFolder', path);
 const chooseFolder = (from: string) => ipcRenderer.invoke('app:chooseFolder', from);
-const rememberFolders = (next: { writing: string; logs: string }) =>
-  ipcRenderer.invoke('app:rememberFolders', next);
+const rememberFolders = (next: ChosenPlaces) => ipcRenderer.invoke('app:rememberFolders', next);
 const restart = () => ipcRenderer.invoke('app:restart');
 
 /**

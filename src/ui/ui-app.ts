@@ -782,7 +782,7 @@ export async function startApp(runningOn: Host): Promise<void> {
   });
 
   const folders: SettingsFolders = {
-    writingFolder: host.writingFolder,
+    notesFolder: host.notesFolder,
     appFolder: host.appFolder,
   };
   settings = await readSettings(host.files, folders);
@@ -817,7 +817,10 @@ export async function startApp(runningOn: Host): Promise<void> {
     }
   };
 
-  writing = createWriting(host.files, host.writingFolder, log, afterWriting);
+  writing = createWriting(host.files, host.notesFolder, log, afterWriting, undefined, {
+    resophFolder: host.resophFolder,
+    naming: { machine: host.machineName, now: () => new Date() },
+  });
   newNoteLabel.textContent = words.newNote;
   // Read at startup, like everything else in that file. Editing it takes
   // effect next time the app opens, which is when whoever edited it is there.
@@ -1010,7 +1013,7 @@ export async function startApp(runningOn: Host): Promise<void> {
   }
 
   function cannotReachHisWriting(because?: string): void {
-    showLostTexts(document.body, { folder: host.writingFolder, because }, language, {
+    showLostTexts(document.body, { folder: host.resophFolder ?? host.notesFolder, because }, language, {
       // Straight in, with no word to type. The guard is there to stop idle
       // curiosity, and a man staring at this screen is not idly curious.
       onAdvanced: () => panels.showAdvanced(),
@@ -1030,9 +1033,13 @@ export async function startApp(runningOn: Host): Promise<void> {
 
     What this gives up is the folder that is still there and has been emptied.
     That looks exactly like a first run and the app genuinely cannot tell.
+
+    Asked of his Resoph folder, where his writing is. b-notes' own folder is
+    not asked about: it comes into being with the first text b-notes writes,
+    so on every machine's first start it is rightly not there yet.
   */
-  if (!(await host.files.folderExists(host.writingFolder))) {
-    log.error('There is no folder where his writing should be', { folder: host.writingFolder });
+  if (host.resophFolder !== null && !(await host.files.folderExists(host.resophFolder))) {
+    log.error('There is no Resoph folder where his writing should be', { folder: host.resophFolder });
     cannotReachHisWriting();
     return;
   }

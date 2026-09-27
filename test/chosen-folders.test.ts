@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-import { mkdtemp } from 'node:fs/promises';
+import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
-import { whereToOpen } from '../src/hosts/electron/chosen-folders.ts';
+import { readChosenFolders, whereToOpen, writeChosenFolders } from '../src/hosts/electron/chosen-folders.ts';
 
 describe('where the folder picker should open', () => {
   it('opens at the folder itself when it is there', async () => {
@@ -41,5 +41,38 @@ describe('where the folder picker should open', () => {
     const nowhere = path.join(path.parse(process.cwd()).root, 'definitely-not-here-at-all');
 
     assert.equal(whereToOpen(nowhere), path.parse(process.cwd()).root);
+  });
+});
+
+describe('the folders someone chose', () => {
+  it('reads back the Resoph folder, b-notes folder and logs', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
+    writeChosenFolders(dir, { resoph: 'C:/Dropbox/ResophNotes', notes: 'C:/Dropbox/b-notes', logs: null });
+
+    assert.deepEqual(readChosenFolders(dir), {
+      resoph: 'C:/Dropbox/ResophNotes',
+      notes: 'C:/Dropbox/b-notes',
+      logs: null,
+    });
+  });
+
+  it('ignores the folder 0.7.0 kept, which points at his Resoph folder', async () => {
+    // Honouring it would have the first start write straight into the folder
+    // Resoph mirrors.
+    const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
+    await writeFile(
+      path.join(dir, 'folders.json'),
+      JSON.stringify({ writing: 'C:/Users/Brano/Dropbox/ResophNotes_Brano', logs: 'C:/logs' }),
+      'utf8',
+    );
+
+    assert.deepEqual(readChosenFolders(dir), { resoph: null, notes: null, logs: 'C:/logs' });
+  });
+
+  it('starts from nothing chosen when the file is unreadable', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
+    await writeFile(path.join(dir, 'folders.json'), '{ not json', 'utf8');
+
+    assert.deepEqual(readChosenFolders(dir), { resoph: null, notes: null, logs: null });
   });
 });
