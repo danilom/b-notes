@@ -1,210 +1,235 @@
 # Living beside Resoph
 
 How b-notes shares his texts with ResophNotes: what Resoph does, where b-notes
-keeps its own things, how the two take turns, and what a title is. **Design in
-progress** — each part is marked *decided*, *proposed* or *open*. The evidence
-is in `CORPUS-ANALYSIS.md`; the settled parts move into `DESIGN.md` once
-decided.
+keeps its own things, how the two take turns, what a title is, and what the
+next build does. Each part is marked *decided*, *proposed* or *open*. The
+evidence is in `CORPUS-ANALYSIS.md`. Decided parts move into `DESIGN.md` as
+they're built.
 
 He will keep using Resoph until b-notes is clearly better, on three or four
 machines, each offline for long stretches, all syncing one Dropbox folder. That
-is the condition, not a phase.
+is the condition, not a phase. Some day, once he's comfortable, a switch in
+b-notes moves his texts into b-notes' own folder (§6). Until then, b-notes is a
+guest in Resoph's folder.
 
 ## 1. What Resoph does
 
-Known, from his folder, the 0.7.0 test log, and Danilo trying it by hand:
+From his folder, the 0.7.0 test log, and Danilo trying it by hand:
 
-- **Title in the filename, body in the file.** Resoph shows the filename as the
-  note's first line and writes only what's under it into the file. Editing that
-  first line renames the file. Toward Simplenote it joins them as title, blank
-  line, body (14 of 15 matched notes). Simplenote stores one piece of text, so
-  a Simplenote export has the title inside every file. That's why his ~300
-  Simplenote-era files carry it, and Resoph presumably shows it twice for them.
-- **Always, as far as can be seen.** "Since 2023" in the analysis is only the
-  limit of the evidence: the September 2023 import reset every older file's
-  time. Resoph hasn't changed since 2018, so it has almost certainly always
-  stored notes this way.
+- **Resoph keeps every note in a database of its own, one per machine**, at
+  `%USERPROFILE%\.ResophNotes\`: two XML files, one for settings and one for
+  the data. They live outside Dropbox, so each machine's Resoph has its own copy
+  of everything. The content isn't encrypted but base64: each note's full text,
+  title as the first line and a single newline after it, plus created and
+  modified times, a deleted flag, a Simplenote key, and tags — `pinned` among
+  them.
+- **The database is live, not left over** from before `.txt` storage was
+  switched on. In Danilo's sample, a note created 2026-09-19 carries a
+  `<modify>` of 2026-09-26 23:18 and a `<filemodify>` of 23:57 the same night.
+  Resoph is still writing it, and it records each file's modification time,
+  which only makes sense for keeping the two in step. The notes coming back
+  after their files were deleted are the same behaviour. To confirm on each of
+  his machines: edit a note in Resoph and see whether the data file's
+  modification time moves.
+- **The `.txt` folder is a mirror of that database.** Each note is written as a
+  file named after its title, holding the rest of its text. Resoph shows the
+  filename as the note's first line. Editing that line renames the file.
+- **It puts back whatever it remembers.** Delete or rename a note's file, even
+  with Resoph closed, and on its next start Resoph writes it back — sometimes
+  more than once. While it runs it does the same within minutes: the test log
+  shows eight files renamed by b-notes being rewritten twice.
+- **This is almost certainly where his identical copies come from.** Retitle a
+  note on one machine and that Resoph writes a new file. The other machines'
+  Resophs still hold the old title: they write the old file back, and take the
+  new file in as a new note. Both names then live on in every database.
+- **It reads files changed on disk** — when it next saves. What happens when its
+  own copy has also been edited isn't known, and may not arise in practice.
+- **It saves as it goes**, not only on closing.
+- **Its close button hides it in the tray**, probably behind the tray's arrow,
+  where he'd never find it.
+- **It lists `.txt` files in subfolders**, live, and makes an empty note in the
+  main folder for each one, titled with that file's name. So nothing of b-notes'
+  may sit inside his folder.
+- **Toward Simplenote** it joins title and body with a blank line between.
+  Simplenote keeps one piece of text per note, so a Simplenote export carries
+  the title inside every file. That's why his ~300 Simplenote-era files do.
 - **Characters it can't put in a filename** become `%2A` (`*`), `%3F` (`?`),
   `%2F` (`/`), `%5C` (`\`), `%3A` (`:`), `%09` (tab). Leading and trailing spaces
   are kept.
-- **It lists `.txt` files in subfolders**, live, while running. For each one it
-  makes an empty file in the main folder: a note whose title is that file's
-  name. So nothing of b-notes' may sit inside his folder.
-- **It rewrites from memory any note whose file has gone.** b-notes renamed
-  eight files at each start of the test; Resoph wrote all eight back within
-  minutes, twice.
-- **It minimizes to the system tray**, where he can't find it.
+- **Process name:** `ResophNotes.exe`.
+- "Since 2023" in the analysis is only where the evidence stops. Resoph hasn't
+  changed since 2018, so it has almost certainly always worked this way.
 
-Not known yet — each changes a decision below:
+**What follows: b-notes can never safely rename, move or delete anything in his
+Resoph folder.** Any Resoph on any machine that remembers a note will put it
+back. *Decided.*
 
-1. **Does it resurrect after a restart?** Close Resoph, rename or delete a note's
-   file in Explorer, start Resoph. If the old one comes back, Resoph keeps an
-   index of its own, and taking turns (§3) won't make renames or deletes safe.
-2. **Where does it keep its own state** — pins, tags, Simplenote keys, window?
-   Probably under `%APPDATA%`. That's the index question from the other side.
-3. **Does it reload a file changed on disk while it runs**, or keep its own
-   copy and later write that back over the change?
-4. **Its close button, with "minimize to tray" on**: quit or hide? And does it
-   save everything when asked to close?
-5. **Its process name**, for §3.
+**What the database offers.** Read-only, it is the best record there is: his
+real Resoph pins, when each note was created (lost from the files), notes that
+exist in a database but not as files, and the notes each machine has that the
+others don't. A census of each machine's database — counts, dates, pins,
+deleted flags, never content — would show how far the machines have diverged.
+It's also where the eventual switch (§6) should read from. *Proposed.*
 
-## 2. Two folders — *proposed*
-
-Danilo's suggestion, and the only arrangement Resoph's subfolder habit allows:
+## 2. Two folders — *decided*
 
 - **His texts folder** is his Resoph folder, shared with Resoph. It holds his
   texts and nothing else of b-notes'.
 - **b-notes' own folder** sits beside it in Dropbox — say `Dropbox/b-notes/` —
-  holding `settings.json`, `Verzije/`, `Obrisano/`, `Arhiva/`. Still synced and
-  backed up, still plain text that opens in Notepad, and invisible to Resoph.
-
-Deleting in b-notes then means moving a file out of Resoph's reach. That only
-sticks if Resoph doesn't resurrect after a restart (unknown 1).
+  and holds `settings.json`, `Verzije/` and whatever else b-notes keeps. Still
+  synced and backed up, still plain text that opens in Notepad, and out of
+  Resoph's sight.
 
 The table *Where his things are kept* in `DESIGN.md` changes with this.
 
-## 3. Taking turns with Resoph and Notepad — *proposed*
+## 3. Taking turns — *decided in outline*
 
-Danilo's position: having three editors open on the same notes is a habit no
-cleverness can make safe, so b-notes should enforce turns rather than try to
-survive them.
+No modes. b-notes doesn't work alongside the other editors; it stops until
+they're gone:
 
-**It can be done.** Electron has no process API, but Node can run Windows' own
-`tasklist` and read which programs are running, with no new dependency. One
-call costs a fraction of a second, even on his slowest laptop. Checking every
-few seconds is affordable; measure it there.
+- **While Resoph, Notepad or Obsidian is running, b-notes shows one big, plain,
+  modal message**, over the whole window: close them, then carry on. There's
+  no reduced mode that half-works. (Obsidian is on the list because he was
+  once moved to it, not because he's known to use it.)
+- **A button closes them for him.** Resoph hides in the tray, so telling him to
+  close it would send him hunting for something he can't find.
+- **Only when they're gone does b-notes read his folder**, fresh, so anything
+  they wrote on the way out is what he sees.
+- **If one starts while he's writing**, b-notes writes what he has at once, then
+  shows the same message.
+- **b-notes can see them.** Electron has no API for it, but Windows' own
+  `tasklist` names every running program, with no new dependency. It costs a
+  fraction of a second, so checking every few seconds is affordable — measure
+  on his slowest laptop. Programs: `ResophNotes.exe`, `Notepad.exe` (the
+  Windows 11 Notepad too — confirm), `Obsidian.exe` (several processes).
+- **Log every detection, closing and wait.**
 
-What b-notes would do:
+How the button closes each one — *open*, each needs trying on a real machine:
 
-- **While Resoph or Notepad is running, he can read, search and copy, but not
-  write.** The text stays on screen. In place of the caret, one plain sentence
-  says what to do, next to a button that does it — e.g. *Zatvori ResophNotes i
-  Notepad da bi pisao ovde* and *[Zatvori ih]*. The button matters because
-  Resoph hides in the tray, where he'd never find it to close. The lock can't
-  be dismissed; there is no wrong state to dismiss it into. (Wording to be
-  proposed, not invented.)
-- **If one of them starts while he's writing**, b-notes saves what he has
-  typed at once (nothing else has touched it yet), then locks.
-- **Closing them for him** means asking them to close, the way their own
-  close buttons do, and never killing either. Notepad may be holding unsaved
-  writing of his, and killing Resoph could lose whatever it hasn't saved. If
-  asking isn't enough — Resoph hiding in the tray instead of quitting
-  (unknown 4) — this needs rethinking, not force.
-- **Any Notepad counts.** Nothing can tell which file a Notepad window holds.
-  A false alarm — Notepad open on a shopping list — costs him one click on the
-  button.
-- **Log every detection, lock and closing.** The next phone call will be about
-  this.
+- **Resoph can't be asked**: its close button only hides it. Ending it by
+  force is the only way, and forcing it out while it writes its database could
+  damage that database — which may be how he "lost everything" before. So:
+  copy both database files into b-notes' folder first, wait until the data file
+  has stopped changing for a few seconds, then end it. Afterwards check the
+  database still reads as XML, and put the copy back if not. Worth checking
+  first whether Windows' shutdown message (the one it sends when logging off)
+  makes Resoph save and quit on its own.
+- **Notepad is asked to close**, never forced. Classic Notepad then asks him
+  about unsaved changes, in its own window, and b-notes waits. Windows 11
+  Notepad may close without asking and restore those tabs next time it opens.
+- **Obsidian is asked to close.** It saves continuously.
 
-What turns can't cover, and what still has to hold:
+What turns can't cover:
 
-- **Other machines.** Their Resophs write through Dropbox whenever they come
-  online, and nothing here can see them. So b-notes still renames nothing
-  (§4), and never writes a file without checking it's what it last read.
-- **Notepad's memory.** Windows 11 Notepad keeps unsaved tabs across restarts,
-  and he leaves tabs he can't see. A stale tab saved days later overwrites
-  newer writing while b-notes is closed. So b-notes should keep the last text
-  it wrote of every text it touched. Then anything written over it afterwards
-  is still recoverable, and b-notes can notice, on its next start, that a file
-  changed behind its back.
-- **Other editors.** Is Notepad the only one he opens texts in? WordPad,
-  Notepad++, Word? The list of programs to watch is his, not a guess.
+- **Other machines.** Their Resophs act through Dropbox whenever they sync, and
+  nothing here sees them. The no-rename rule is what protects against that.
+- **Notepad's memory.** Windows 11 Notepad brings back unsaved tabs, and a stale
+  one saved days later overwrites newer writing while b-notes is closed. So
+  b-notes keeps, in its own folder, the last text it wrote of every text it
+  touched. On its next start it can tell a file changed behind its back, and
+  what was there is still recoverable.
+- **Writing blind.** Even with turns, check before every write that the file is
+  still what b-notes last read. If it isn't, keep both.
 
-## 4. What a title is — *open*
+## 4. Titles — *decided for the next build*
 
-The central question left. What has to hold:
+- **The title is the filename**, read through Resoph's escapes, and it's shown
+  **outside the editor**, above the text. The editor holds the file, exactly as
+  it is on disk.
+- **No title can be edited in b-notes yet.**
+- **Nothing in his folder is ever renamed, and the renaming code comes out of
+  b-notes entirely** — rename on first-line change, the numbering of same-named
+  texts, conversion of `.md`, all of it — until there's a design that's safe
+  against §1.
+- **Search covers titles as well as text.**
 
-- **His existing titles are shown.** They're his filenames, and they carry all
-  his filing.
-- **b-notes and Resoph agree**, as far as possible. He goes back and forth, and
-  two apps showing two titles for one text is a new way to be lost.
-- **Renames are dangerous.** Any Resoph that remembers the old name can bring it
-  back — on this machine while it runs, and on the others whenever they sync.
-  His own title edits in Resoph are already the biggest source of his
-  duplicates.
-- **He retitles constantly.** 155 renames in 22 months, and ranking by leading
-  spaces *is* retitling. If b-notes can't retitle, it needs a rank of its own
-  from the start, or he'll go back to Resoph to do it.
+*Open, and needed for the next build:* **naming a new text.** It takes its name
+once, and never again. The questions:
 
-### How b-notes reads any file — *proposed*, whichever option below
+- **When.** Not on the first keystroke — 0.7.0 created `n` and renamed it on
+  every keystroke to `Naslov teksta`. Once he finishes the first line (presses
+  Enter or leaves it) seems right. Until then the draft waits in b-notes' own
+  folder, where Resoph can't see it.
+- **Where the title lives.** Danilo's instinct is to keep it inside the file as
+  well. Then Resoph shows it twice, as it does for his Simplenote-era texts.
+  And b-notes shows it twice too — heading and first line — unless the heading
+  is left out whenever it matches the first line.
+- **What happens when he later changes that first line.** The name stays, so
+  heading and first line part ways. Harmless, but visible.
 
-The title is the filename, read through Resoph's escapes. If the file's first
-line is already that title, the title is inside the file (Simplenote-era
-files, and any b-notes makes that way), so show the file as it is. Otherwise
-show the title as a line above the text, the way Resoph does. That gives him
-Resoph's view of every text, without Resoph's doubled title.
+*Open, for later:* whether titles ever become editable. Either the Resoph way
+(renaming, which §1 says can't be made safe) or with b-notes keeping titles
+itself (then Resoph shows the old ones). Probably decided at the switch, when
+Resoph stops mattering. Meanwhile he ranks by retitling, so b-notes needs a
+rank of its own before he'll stop.
 
-### How b-notes writes
+## 5. b-notes' own features until the switch — *proposed*
 
-**A. Resoph's way, fully.** The title is the first line on screen and the
-filename on disk; the file holds the rest. Editing the title renames the file.
+Every feature of b-notes' that touches his folder is another way to break the
+trust that keeps him out of Resoph. So until the switch:
 
-- \+ Resoph and b-notes agree, both ways, always.
-- \+ Renames carry no more risk than what Resoph already does.
-- − Every title edit is a rename. With turns in place (§3) this machine is
-  safe; other machines' Resophs, and unknown 1, are not.
-- − The rename has to happen once he's done — when he leaves the title line —
-  never per keystroke. Per-keystroke renaming is how Resoph left the half-typed
-  titles in his folder, and how 0.7.0 went `n` → `nA` → `Nas` → … → `Naslov
-  teksta` in the test.
-- − b-notes must make exactly the names Resoph makes, leading spaces and
-  escapes included, so the ugly names keep being made.
+**b-notes only reads files, writes their contents, and creates new ones.
+Nothing in his folder is moved, renamed or deleted.** Everything else of
+b-notes' lives in its own folder and only ever adds. The worst any of it can do
+is fail, never harm a text.
 
-**B. The title is fixed when a text is created, and never renamed.** New texts
-take their name from the first line and keep the whole text, title included,
-in the file (Danilo's instinct). Existing titles show as a heading and can't
-be edited in b-notes.
+- **Versions** keep working, unchanged in spirit: copies in b-notes' own folder,
+  taken before a big loss. Pure addition, invisible to Resoph.
+- **Deleting** can't work while any Resoph remembers the note: the file comes
+  back. For the next build, leave it out. He deletes by emptying the text
+  anyway, and that still works, with a version kept first. Later, perhaps
+  "hide from my list" — a note in b-notes' own folder, touching nothing of his.
+- **Obrisano** goes, with deleting.
+- **Arhiva** can wait. It's a view into b-notes' own folder, and bringing a
+  text back would be *creating* a file in his, which is allowed, but none of
+  it is needed to do no harm.
+- **Duplicate numbering** goes, with the renaming code.
 
-- \+ No renames, ever.
-- \+ Notepad shows the title for every text b-notes creates.
-- − He can't retitle in b-notes, and he will try.
-- − For a text b-notes created, changing its first line changes the file but
-  not the name. Resoph then shows the old title above the new first line, and
-  the two apps disagree.
+Less to build and less to go wrong. What he loses from 0.7.0 is deleting, and
+he may never have used b-notes' delete.
 
-**C. b-notes keeps titles itself.** b-notes records each text's title, and
-rank and status beside it, in its own folder, merged across machines.
-Filenames never change after creation.
+## 6. The switch — *later*
 
-- \+ He retitles freely in b-notes, and nothing is ever renamed.
-- − Anything retitled in b-notes keeps its old title in Resoph forever.
-- − A new store to keep consistent across three or four offline machines.
+Once he's comfortable, a switch in b-notes moves his texts into b-notes' own
+folder. It will have to:
 
-**Leaning:** B's reading side for the next build — show titles, allow no title
-edits, rename nothing. It's pure *do no harm*, and his list becomes his list.
-Whether A or C comes after depends on unknown 1: if Resoph resurrects old names
-after a restart, A can never be safe and C is the way. Either way, b-notes
-needs its own rank before he'll stop retitling to rank.
+- **Read every machine's Resoph database**, not only the folder. That's where the
+  pins, the creation dates, and the notes whose files are missing are.
+- **Take the other machines into account.** Their databases hold what this one
+  doesn't. Either the switch happens on each machine, or their databases are
+  read into it.
+- **Leave Resoph with nothing to fight over.** After the switch b-notes never
+  reads the old folder again, so a Resoph that keeps writing there can't hurt
+  b-notes. But anything he writes in that Resoph won't appear in b-notes, and
+  that looks like loss. Resoph has to be uninstalled everywhere at the same time.
+- **Clean up the names on the way**, which is when filenames become safe for
+  Notepad, zip and Explorer.
 
-**New texts, whichever option:** the name mustn't be taken until the first line
-is finished. Today's build creates the file on the first keystroke and renames
-on every one after. Until the title is settled — he presses Enter, or leaves
-that line — keep the draft in b-notes' own folder, where Resoph can't see it,
-and create his file once.
-
-## 5. Cleanup on his machines — *reminder for deployment*
+## 7. Cleanup on his machines — *reminder for deployment*
 
 To do by hand, before or while the next build goes in:
 
-- **Do it on the Dell before it next goes online, with Resoph closed.** The
-  test ran offline, so its debris hasn't reached Dropbox yet. Clean it there
-  and no other machine ever sees it; clean it after it syncs and another
-  machine's Resoph may already have it in memory.
+- **Do it on the Dell before it next goes online, with Resoph closed.** The test
+  ran offline, so nothing has reached Dropbox yet. But Resoph's database on the
+  Dell already holds the debris, and removing files won't remove it from there
+  (§1). Remove the files and they come back. The debris has to go through
+  Resoph itself, on the Dell: deleted as notes, in Resoph.
 - **Move b-notes' things out of his Resoph folder**: `settings.json`,
-  `Verzije/`, `Obrisano/`, and `Arhiva/`. They go wherever §2 lands.
-- **Remove what the test added to his list**, identified by the log, not by
-  looking: the numbered copies the start-up renaming and Resoph made between
-  them in eight groups, the version-named text `2026-09-26 18-23-43`, and
-  anything Resoph made from files in b-notes' subfolders. All from 2026-09-26.
+  `Verzije/`, `Obrisano/`, `Arhiva/`. Resoph has probably already taken copies of
+  the `.txt` files in `Verzije/` and `Obrisano/` in as notes of its own (§1), so
+  check its list for those too.
+- **Remove what the test added to his list**, identified by the log and by date
+  (2026-09-26), never by looking: the numbered copies in eight groups, the
+  version-named text `2026-09-26 18-23-43`, and the empty notes Resoph made from
+  b-notes' subfolders.
 - **Don't clean up empty files as such.** In Resoph's format an empty file is a
-  note with a title and nothing under it — an idea he jotted. Of the seven empty
-  files on the Dell, five date from 2023 and one from August 2026: his. Only
-  one appeared during the test, at 18:15:05. Go by date and by the log, never
-  by size.
+  note with a title and nothing under it — mostly ideas he jotted as a title and
+  never wrote up. Of the seven empty files in his live folder, five date from
+  2023 and one from August 2026, and those are his. One appeared during the
+  test; check it against the log before removing it.
 - **The three texts whose b-notes edits never saved** are the ones named in the
   log's *Could not save* lines. If he mentions writing something that isn't
   there, it's probably one of those.
 
-A script could list exactly the files in each group from the log and the
-folder, for a person to look over before anything is removed. It must never
-delete.
+A script could list exactly what's in each group, from the log and the folder,
+for a person to look over before anything is removed. It must never delete.

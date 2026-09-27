@@ -68,15 +68,21 @@ What follows:
   collection; `(E)` and `(P)` mark kinds; `zz` sinks; words in brackets give a
   status. It only works in title order. He does organise, constantly, but in
   his own way and never through a feature built for it.
-- **Resoph rewrites from memory any note whose file has gone.** A rename or
-  move made while Resoph runs is undone within minutes, and one made on any
-  machine can be undone later by another machine's Resoph. In the 0.7.0 test
-  b-notes renumbered eight names at each start, Resoph wrote them back each
-  time, and his list grew by nineteen texts in two hours. So **b-notes renames
-  nothing of his**, and anything that moves a file — deleting, restoring,
-  bringing back from the archive — waits until Resoph isn't running. His own
-  title edits in Resoph are the same kind of rename, and are where most of his
-  identical copies came from.
+- **The folder is a mirror of Resoph's own database, and Resoph puts back
+  whatever it remembers.** Each machine's Resoph keeps every note in a database
+  outside Dropbox (`%USERPROFILE%\.ResophNotes\`), and writes back any note whose
+  file has gone — within minutes while it runs, and on its next start
+  otherwise. A rename or delete made anywhere can be undone by any machine's
+  Resoph. In the 0.7.0 test b-notes renumbered eight names at each start,
+  Resoph wrote them back each time, and his list grew by nineteen texts in two
+  hours. So **b-notes never renames, moves or deletes anything in his folder**
+  — not while Resoph runs, and not while it's closed. His own title edits in
+  Resoph, undone by another machine's Resoph, are where most of his identical
+  copies come from.
+- **b-notes and the other editors take turns.** While Resoph, Notepad or
+  Obsidian is running, b-notes stops behind one plain modal message and a
+  button that closes them for him — Resoph's own close button only hides it in
+  the tray.
 - **Files change underneath b-notes.** Resoph, Notepad and Dropbox all write
   them. Before writing a file, check it is still what b-notes last read; if it
   isn't, keep both.
