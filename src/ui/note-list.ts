@@ -54,8 +54,6 @@ export interface Row {
   rank: 0 | 1 | 2 | 3;
   /** His marks, read off the front of the title so they can be drawn as marks. */
   parts: TitleParts;
-  /** The other side's version of a text both sides changed, until he writes in it. */
-  otherVersion: boolean;
   /** How full a page to draw beside it, from empty to four lines. */
   length: LengthBand;
   /** Folded, so `macka` finds `mačka` and `mačka` finds `macka`. */
@@ -94,7 +92,6 @@ function toRow(note: LiveNote, words: ReturnType<typeof strings>, lengths: Lengt
     sortTitle: note.sortTitle,
     rank: note.rank,
     parts: titlePartsOf(note.sortTitle),
-    otherVersion: note.otherVersion === true,
     searchable: note.searchable,
     updatedAt: note.updatedAt,
     length: bandOf(note.bytes, lengths),
@@ -130,7 +127,6 @@ export function openRowFor(view: ListView): Row | null {
     sortTitle: '',
     rank: 0,
     parts: { mark: null, position: null, starred: false, name: words.untitledNew },
-    otherVersion: false,
     searchable: '',
     updatedAt: view.draft.startedAt,
     // Nothing written in it yet, which is exactly what an empty page says.
@@ -229,9 +225,6 @@ function headingOf(row: Row, words: ReturnType<typeof strings>): HTMLElement {
     heading.append(star);
   }
   heading.append(span('note-title', marked ? name : row.title));
-  // Straight after the name, quietly: beside the text it is the other version
-  // of, which reads the same.
-  if (row.otherVersion) heading.append(span('note-other', words.otherVersion));
   return heading;
 }
 

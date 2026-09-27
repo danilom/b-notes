@@ -25,12 +25,6 @@ export interface Note {
   searchable: string;
   updatedAt: number;
   bytes: number;
-  /**
-   * The other side's version of a text both sides changed — Resoph's, or what
-   * was on disk when b-notes was about to write over it — kept as a text of its
-   * own beside his. Until he writes in it, at which point it is simply his.
-   */
-  otherVersion?: true;
 }
 
 /**

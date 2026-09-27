@@ -7,21 +7,13 @@ export interface Code {
 }
 
 const ORIGIN: Record<Whereabouts['origin'], Code> = {
-  resoph: { code: 'R', means: 'only in his Resoph folder, not copied yet' },
-  copy: { code: 'R→b', means: "b-notes' copy of a Resoph text" },
+  resoph: { code: 'R', means: 'still in his Resoph folder' },
+  copy: { code: 'R→b', means: 'taken over from Resoph into b-notes' },
   own: { code: 'b', means: 'begun in b-notes' },
 };
 
 /** The flags, in the order they are shown, each only where it applies. */
 const FLAGS: readonly { applies: (where: Whereabouts) => boolean; code: Code }[] = [
-  {
-    applies: (where) => where.otherVersion,
-    code: { code: '⇄', means: 'the other version of a text both sides changed, until he writes in it' },
-  },
-  {
-    applies: (where) => where.resophGone,
-    code: { code: 'R✕', means: 'its Resoph file is gone: deleted there, or retitled' },
-  },
   {
     applies: (where) => where.changedElsewhere,
     code: { code: 'ext', means: 'changed on disk behind b-notes at least once; a version was kept' },
@@ -47,14 +39,8 @@ export function legendOf(codes: readonly Code[]): string {
  * Explorer, and for a copy the Resoph file it came from.
  */
 export function pathsOf(where: Whereabouts): string {
-  const said = [`[test-mode] ${ORIGIN[where.origin].means}${where.unlinked ? ' (known by its name; its link is missing)' : ''}`];
-  said.push(shownPath(where.path));
-  if (where.origin !== 'copy') return said.join('\n');
-  said.push(
-    where.resophPath === null
-      ? `from ${dotted(`${where.resophStem ?? ''}.txt`)}, no longer in the Resoph folder`
-      : `from ${shownPath(where.resophPath)}`,
-  );
+  const said = [`[test-mode] ${ORIGIN[where.origin].means}`, shownPath(where.path)];
+  if (where.resophPath !== null) said.push(`from ${shownPath(where.resophPath)}`);
   return said.join('\n');
 }
 

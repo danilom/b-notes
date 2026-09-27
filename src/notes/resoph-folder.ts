@@ -10,6 +10,8 @@ export interface ResophText {
   file: FileInfo;
   /** Title and file together, as Resoph shows the note. Line endings `\n`. */
   text: string;
+  /** What the file holds, without the title Resoph shows above it. Line endings `\n`. */
+  body: string;
 }
 
 export interface ResophFolder {
@@ -17,18 +19,24 @@ export interface ResophFolder {
   list(): Promise<ResophText[]>;
   /** One note, or null when its file is not there. */
   read(stem: string): Promise<ResophText | null>;
+  /**
+   * Writes what a note's file holds, with Windows line endings as Resoph
+   * writes its own: the stub b-notes leaves when it takes a text over, or a
+   * text he has moved back.
+   */
+  write(stem: string, body: string): Promise<void>;
 }
 
 const nameOf = (path: string): string => path.split('/').at(-1) ?? path;
 
 /**
- * His Resoph folder, which b-notes reads and never writes.
+ * His Resoph folder: read, and written only in place.
  *
- * Never written because Resoph keeps every note in a database of its own on
- * each of his machines and puts back whatever it remembers: anything b-notes
- * renamed, moved or deleted here would come back, and anything it wrote would
- * live on in every Resoph's database. So b-notes copies a text out of here the
- * first time he changes it, and this file only ever reads.
+ * Never a file renamed, moved or deleted: Resoph keeps every note in a database
+ * of its own on each of his machines and puts back files that go missing. A
+ * file's contents changed from outside are another matter — Resoph reads them
+ * as they are (tried on his corpus) — which is how b-notes leaves a stub in a
+ * text it takes over, and puts a text back when he moves it there.
  *
  * Only the top level, and only `.txt`: Resoph lists subfolders too, but nothing
  * he writes lives in one, and the 0.7.0 leftovers do.
@@ -38,17 +46,19 @@ const nameOf = (path: string): string => path.split('/').at(-1) ?? path;
  * laptop, reading 11MB each time would be a pause he'd notice.
  */
 export function createResophFolder(files: FileSystem, folder: string, log: Log): ResophFolder {
-  const known = new Map<string, { updatedAt: number; bytes: number; text: string }>();
+  const known = new Map<string, { updatedAt: number; bytes: number; text: string; body: string }>();
   // Said once a run: it is asked about every time b-notes comes to the front.
   let saidMissing = false;
 
-  async function textOf(stem: string, file: FileInfo): Promise<string> {
+  async function readFile(stem: string, file: FileInfo): Promise<ResophText> {
     const held = known.get(file.path);
-    if (held !== undefined && held.updatedAt === file.updatedAt && held.bytes === file.bytes) return held.text;
+    if (held !== undefined && held.updatedAt === file.updatedAt && held.bytes === file.bytes) {
+      return { stem, file, text: held.text, body: held.body };
+    }
     const body = (await files.read(file.path)).replaceAll('\r\n', '\n');
     const text = composeResophText(titleOfResophName(stem), body);
-    known.set(file.path, { updatedAt: file.updatedAt, bytes: file.bytes, text });
-    return text;
+    known.set(file.path, { updatedAt: file.updatedAt, bytes: file.bytes, text, body });
+    return { stem, file, text, body };
   }
 
   async function filesInFolder(): Promise<FileInfo[]> {
@@ -70,18 +80,19 @@ export function createResophFolder(files: FileSystem, folder: string, log: Log):
       const found = await filesInFolder();
       const present = new Set(found.map((file) => file.path));
       for (const path of known.keys()) if (!present.has(path)) known.delete(path);
-      return Promise.all(
-        found.map(async (file): Promise<ResophText> => {
-          const stem = idOf(nameOf(file.path));
-          return { stem, file, text: await textOf(stem, file) };
-        }),
-      );
+      return Promise.all(found.map(async (file) => readFile(idOf(nameOf(file.path)), file)));
     },
 
     async read(stem: string): Promise<ResophText | null> {
       const file = (await filesInFolder()).find((each) => nameOf(each.path) === `${stem}${EXTENSION}`);
       if (file === undefined) return null;
-      return { stem, file, text: await textOf(stem, file) };
+      return readFile(stem, file);
+    },
+
+    async write(stem: string, body: string): Promise<void> {
+      const at = `${folder}/${stem}${EXTENSION}`;
+      await files.write(at, body.replaceAll('\r\n', '\n').replaceAll('\n', '\r\n'));
+      known.delete(at);
     },
   };
 }

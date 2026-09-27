@@ -189,6 +189,7 @@ export function createWriting(
     folder,
     log,
     renamed,
+    options.naming,
   );
 
   function remember(id: string): NoteHandle {

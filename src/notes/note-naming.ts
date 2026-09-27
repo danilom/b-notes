@@ -61,26 +61,6 @@ export const DELETED_FOLDER = 'Obrisano';
 export const VERSIONS_FOLDER = 'Verzije';
 
 /**
- * Where b-notes writes down which Resoph file each of its copies came from:
- * one small file per copy, named like the copy and holding the Resoph file's
- * name, readable in Notepad.
- *
- * The copy's name already says it — it is worked out from the Resoph name —
- * but a name cannot be read backwards, and this outlives the copy: once he
- * destroys one for good, this is what stops the Resoph original he threw away
- * turning up in his list again.
- */
-export const RESOPH_LINKS_FOLDER = 'Iz Resopha';
-
-/**
- * One small file per text that changed in Resoph and in b-notes at once, named
- * like the text, there until he has looked at the versions. A file rather than
- * a setting because it has to travel: a text that moved on in two places is
- * news on every machine, until it has been seen on one.
- */
-export const CHANGED_IN_BOTH_FOLDER = 'Menjano na dva mesta';
-
-/**
  * Where writing brought in from somewhere else is kept, one folder per source.
  *
  * Beside his texts rather than among them: an import is mostly older copies of

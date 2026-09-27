@@ -348,7 +348,6 @@ const TEXT = {
       (TODO.md): loud enough that he stops editing one text in two places, and
       never so loud it reads as b-notes having lost something.
     */
-    otherVersion: 'druga verzija',
     /*
       What b-notes starts behind while Resoph, Notepad or Obsidian is open. The
       line under the title says what to do; the line beside the button says
@@ -527,7 +526,6 @@ const TEXT = {
     lostAdvice: 'Do not change anything. Call for help and read this out:',
     lostSettings: 'Advanced settings',
     emptiedHint: 'This text is empty. Delete it if you no longer need it.',
-    otherVersion: 'other version',
     closeEditorsTitle: 'Close the other writing programs',
     closeEditorsWhy:
       "Don't write the same text in two programs at once — they write over each other's changes. " +

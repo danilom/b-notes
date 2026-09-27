@@ -6,7 +6,6 @@ import {
 } from '../platform/file-system.ts';
 import { type Log, describeError } from '../platform/logging.ts';
 import {
-  CHANGED_IN_BOTH_FOLDER,
   DELETED_FOLDER,
   EXTENSION,
   idOf,
@@ -84,7 +83,7 @@ export interface Naming {
   now: () => Date;
 }
 
-const REAL_NAMING: Naming = { machine: 'PC', now: () => new Date() };
+export const REAL_NAMING: Naming = { machine: 'PC', now: () => new Date() };
 
 /** What a copy is labelled when something other than b-notes changed the file. */
 export const CHANGED_ELSEWHERE = 'izmenjeno drugde';
@@ -104,17 +103,6 @@ export interface OwnNoteStore extends NoteStore {
    * came from — `2026-09-27 14-32-10 Resoph`.
    */
   keepLabelledCopy(id: string, text: string, label: string): Promise<string>;
-  /**
-   * The other side's words, when both sides changed one text: a text of their
-   * own, beside his, marked as the other version until he writes in it.
-   *
-   * @param from where the words came from, written into the mark for whoever
-   *   looks in the folder: `Resoph`, or `izmenjeno drugde`.
-   * @returns the new text's id.
-   */
-  keepOtherVersion(text: string, from: string): Promise<string>;
-  /** A text he has put away, and every copy kept of it: all it has been. */
-  putAwayTexts(id: string): Promise<string[]>;
 }
 
 export function createNoteStore(
@@ -358,17 +346,6 @@ export function createNoteStore(
     return new Map(counted);
   }
 
-  /** See `OwnNoteStore.keepOtherVersion`. Named the way a new text is, from its first line. */
-  async function keepOtherVersion(text: string, from: string): Promise<string> {
-    const taken = new Set((await noteFiles()).keys());
-    const id = unusedName(newNameFor(titleFrom(text), naming.now(), naming.machine), taken);
-    await files.write(at(`${id}${EXTENSION}`), text);
-    lastSeen.set(id, text);
-    await files.write(at(CHANGED_IN_BOTH_FOLDER, `${id}${EXTENSION}`), from);
-    log.warn('A text changed in two places; the other version is now a text of its own', { id, from });
-    return id;
-  }
-
   async function idsPutAway(): Promise<Set<string>> {
     const found = await filesIn(at(DELETED_FOLDER));
     return new Set(found.map((file) => idOf(nameOf(file.path))));
@@ -378,15 +355,6 @@ export function createNoteStore(
     liveIds: async () => new Set((await noteFiles()).keys()),
     putAwayIds: idsPutAway,
     keepLabelledCopy: (id, text, label) => keepVersion(requireNoteId(id), text, label),
-    keepOtherVersion,
-
-    async putAwayTexts(id: string): Promise<string[]> {
-      const held = await textOf(at(DELETED_FOLDER, `${requireNoteId(id)}${EXTENSION}`));
-      const kept = await Promise.all(
-        (await filesIn(at(putAwayVersionsFolderFor(id)))).map(async (file) => textOf(file.path)),
-      );
-      return [held, ...kept].filter((text) => text !== null).map(asWritten);
-    },
 
     async list(): Promise<Note[]> {
       const notes = await Promise.all([...(await noteFiles())].map(([id, file]) => noteFrom(id, file)));
@@ -513,19 +481,13 @@ export function createNoteStore(
       // again; his text stays on disk in the meantime.
       if (action.snapshot !== undefined) await keepVersion(action.id, action.snapshot);
 
-      /*
-        Never written blind. Something else changed the file since b-notes
-        last saw it — Notepad, or another machine through Dropbox — and he has
-        changed it too, so both sides have words in it. Each keeps its own:
-        his go where he is typing, and what was on disk becomes a text of its
-        own beside it. And a version besides, as the net under everything.
-      */
+      // Never written blind: what something else put there is kept first.
       const seen = id === null ? undefined : lastSeen.get(id);
       if (id !== null && seen !== undefined) {
         const onDisk = await previousText();
         if (onDisk !== seen && onDisk !== action.snapshot && !isEmptyText(onDisk)) {
           await keepVersion(id, onDisk, CHANGED_ELSEWHERE);
-          await keepOtherVersion(onDisk, CHANGED_ELSEWHERE);
+          log.warn('A text changed on disk behind b-notes; kept what was there before writing', { id });
         }
       }
 

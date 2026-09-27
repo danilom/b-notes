@@ -8,11 +8,7 @@ import type { Whereabouts } from '../src/test-mode/test-mode-whereabouts.ts';
 const PLAIN: Whereabouts = {
   origin: 'own',
   path: 'C:/Dropbox/b-notes/Pismo.txt',
-  resophStem: null,
   resophPath: null,
-  unlinked: false,
-  resophGone: false,
-  otherVersion: false,
   changedElsewhere: false,
   conflictedCopy: false,
 };
@@ -21,7 +17,6 @@ const COPY: Whereabouts = {
   ...PLAIN,
   origin: 'copy',
   path: 'C:/Dropbox/b-notes/GRAD Kilim ~K3F9A2.txt',
-  resophStem: '   *GRAD Kilim',
   resophPath: 'C:/Dropbox/ResophNotes/   *GRAD Kilim.txt',
 };
 
@@ -36,17 +31,17 @@ describe("a row's badge", () => {
 
   it('adds only the flags that apply, in one order', () => {
     assert.equal(
-      shown({ ...COPY, otherVersion: true, resophGone: true, changedElsewhere: true, conflictedCopy: true }),
-      'R→b ⇄ R✕ ext cc',
+      shown({ ...COPY, changedElsewhere: true, conflictedCopy: true }),
+      'R→b ext cc',
     );
     assert.equal(shown({ ...COPY, changedElsewhere: true }), 'R→b ext');
   });
 
   it('spells out each of its codes when hovered', () => {
-    const legend = legendOf(codesFor({ ...COPY, otherVersion: true }));
+    const legend = legendOf(codesFor({ ...COPY, changedElsewhere: true }));
     assert.equal(legend.split('\n')[0], '[test-mode]');
-    assert.match(legend, /^R→b {2}b-notes' copy of a Resoph text$/m);
-    assert.match(legend, /^⇄ {2}the other version of a text both sides changed/m);
+    assert.match(legend, /^R→b {2}taken over from Resoph into b-notes$/m);
+    assert.match(legend, /^ext {2}changed on disk behind b-notes/m);
   });
 });
 
@@ -57,16 +52,10 @@ describe("a row's paths", () => {
 
   it('says where a copy came from', () => {
     assert.deepEqual(pathsOf(COPY).split('\n'), [
-      "[test-mode] b-notes' copy of a Resoph text",
+      '[test-mode] taken over from Resoph into b-notes',
       'C:\\Dropbox\\b-notes\\GRAD·Kilim·~K3F9A2.txt',
       'from C:\\Dropbox\\ResophNotes\\···*GRAD·Kilim.txt',
     ]);
-  });
-
-  it('says so when the Resoph file it came from is gone, and when its link is missing', () => {
-    const lines = pathsOf({ ...COPY, resophPath: null, resophGone: true, unlinked: true }).split('\n');
-    assert.equal(lines[0], "[test-mode] b-notes' copy of a Resoph text (known by its name; its link is missing)");
-    assert.equal(lines[2], 'from ···*GRAD·Kilim.txt, no longer in the Resoph folder');
   });
 
   it('shows one path for a text that is not a copy', () => {

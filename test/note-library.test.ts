@@ -1,15 +1,16 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, readdir, rm, stat, utimes, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, stat, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
 import { createFileSystem } from '../src/hosts/electron/disk-file-system.ts';
 import { FROM_RESOPH, createNoteLibrary } from '../src/notes/note-library.ts';
-import { DELETED_FOLDER, RESOPH_LINKS_FOLDER, VERSIONS_FOLDER, copyNameFor } from '../src/notes/note-naming.ts';
+import { DELETED_FOLDER, VERSIONS_FOLDER, copyNameFor } from '../src/notes/note-naming.ts';
 import { createNoteStore } from '../src/notes/note-store.ts';
 import { createResophFolder } from '../src/notes/resoph-folder.ts';
 import { resophIdOf } from '../src/notes/resoph-note.ts';
+import { isStub } from '../src/notes/resoph-stub.ts';
 import { silentLog } from './silent-log.ts';
 
 const NAMING = { machine: 'Test', now: () => new Date(2026, 8, 27, 10, 0, 0) };
@@ -41,7 +42,15 @@ async function library(
     renames.push([from, to]);
   };
   const own = createNoteStore(files, slashed(notes), log, renamed, NAMING);
-  const store = createNoteLibrary(own, createResophFolder(files, slashed(resoph), log), files, slashed(notes), log, renamed);
+  const store = createNoteLibrary(
+    own,
+    createResophFolder(files, slashed(resoph), log),
+    files,
+    slashed(notes),
+    log,
+    renamed,
+    NAMING,
+  );
   return { root, notes, resoph, store, renames };
 }
 
@@ -124,8 +133,17 @@ describe('texts still only in Resoph', () => {
   });
 });
 
-describe('the first time he changes a Resoph text', () => {
-  it('saves his change into a copy of b-notes own, named from the Resoph file', async () => {
+/** What a Resoph file holds now. */
+const resophFile = (resoph: string, name: string): Promise<string> => readFile(path.join(resoph, `${name}.txt`), 'utf8');
+
+/** Rewrites a Resoph file the way Resoph would, dated `when`. */
+async function resophWrites(resoph: string, name: string, text: string, when = new Date()): Promise<void> {
+  await writeFile(path.join(resoph, `${name}.txt`), text, 'utf8');
+  await utimes(path.join(resoph, `${name}.txt`), when, when);
+}
+
+describe('the first time he types into a Resoph text', () => {
+  it('takes it over into a copy of b-notes own, named from the Resoph file', async () => {
     const { store, notes } = await library({ [RANKED]: 'Prvi red.' });
 
     const id = await store.save(resophIdOf(RANKED), '                *GRAD Kilim\nPrvi red, bolji.');
@@ -137,25 +155,27 @@ describe('the first time he changes a Resoph text', () => {
     );
   });
 
-  it('keeps what Resoph had as a version, labelled as coming from Resoph', async () => {
+  it('leaves a stub in the Resoph file, under the same name, saying where the text went', async () => {
+    const { store, resoph } = await library({ [RANKED]: 'Prvi red.' });
+
+    await store.save(resophIdOf(RANKED), '                *GRAD Kilim\nPrvi red, bolji.');
+
+    const stub = await resophFile(resoph, RANKED);
+    assert.equal(isStub(stub), true);
+    assert.match(stub, /PREMEŠTEN U B-NOTES/);
+    assert.ok(stub.includes(`${copyNameFor(RANKED)}.txt`), 'the stub does not say which file');
+    assert.ok(stub.includes('2026-09-27 10:00, Test'), 'the stub does not say when and where');
+    assert.ok(stub.includes('\r\n'), 'the stub is not written as Resoph writes its files');
+  });
+
+  it("keeps what Resoph had as a version, labelled as coming from Resoph", async () => {
     const { store } = await library({ Pismo: 'Prvi red.' });
 
     const id = await store.save(resophIdOf('Pismo'), 'Pismo\nNesto sasvim drugo.');
 
-    const [version] = await store.listVersions(id ?? '');
-    assert.equal(version?.text, 'Pismo\n\nPrvi red.');
-    assert.ok(version?.id.endsWith(` ${FROM_RESOPH}`), version?.id);
-  });
-
-  it('writes down which Resoph file the copy came from', async () => {
-    const { store, notes } = await library({ [RANKED]: 'Tekst.' });
-
-    await store.save(resophIdOf(RANKED), 'Izmijenjeno.');
-
-    assert.equal(
-      await readFile(path.join(notes, RESOPH_LINKS_FOLDER, `${copyNameFor(RANKED)}.txt`), 'utf8'),
-      RANKED,
-    );
+    const versions = await store.listVersions(id ?? '');
+    const fromResoph = versions.find((version) => version.id.endsWith(` ${FROM_RESOPH}`));
+    assert.equal(fromResoph?.text, 'Pismo\n\nPrvi red.');
   });
 
   it('says the text is now held under the copy name', async () => {
@@ -175,17 +195,7 @@ describe('the first time he changes a Resoph text', () => {
     assert.deepEqual(listed, [copyNameFor('Pismo'), resophIdOf('Zima')].sort());
   });
 
-  it('writes to the same copy when the same Resoph text is changed again', async () => {
-    const { store, notes } = await library({ Pismo: 'Tekst.' });
-
-    await store.save(resophIdOf('Pismo'), 'Pismo\nPrvo.');
-    await store.save(resophIdOf('Pismo'), 'Pismo\nDrugo.');
-
-    assert.equal(await readFile(path.join(notes, `${copyNameFor('Pismo')}.txt`), 'utf8'), 'Pismo\nDrugo.');
-    assert.equal((await store.listVersions(copyNameFor('Pismo'))).length, 1);
-  });
-
-  it('gives the same copy the same name on every machine, so two offline machines write one file', async () => {
+  it('gives the same copy the same name on every machine', async () => {
     const dell = await library({ '   Pismo': 'Tekst.' });
     const asus = await library({ '   Pismo': 'Tekst.' });
 
@@ -204,12 +214,88 @@ describe('the first time he changes a Resoph text', () => {
     assert.notEqual(first, second);
     assert.equal((await store.list()).length, 2);
   });
+
+  it('builds on the words he saw, and leaves a Resoph file that changed meanwhile as it is', async () => {
+    // The Dell asleep with the text open; the same text changed in Resoph on
+    // the Asus; the Dell woken, and a sentence added before anything looked.
+    const { store, resoph } = await library({ Pismo: 'Prvo.' });
+    await store.list();
+    await resophWrites(resoph, 'Pismo', 'Prvo, dopisano na drugom racunaru.', new Date(Date.now() + 60_000));
+
+    await store.save(resophIdOf('Pismo'), 'Pismo\n\nPrvo. Dopisano ovde.');
+
+    assert.equal(await resophFile(resoph, 'Pismo'), 'Prvo, dopisano na drugom racunaru.');
+    const texts = (await store.list()).map((note) => note.text).sort();
+    assert.deepEqual(texts, ['Pismo\n\nPrvo, dopisano na drugom racunaru.', 'Pismo\n\nPrvo. Dopisano ovde.']);
+  });
+});
+
+describe('when the copy cannot be trusted', () => {
+  it('leaves his words in Resoph when the copy does not read back whole', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'b-notes-library-'));
+    const notes = path.join(root, 'b-notes');
+    const resoph = path.join(root, 'ResophNotes');
+    await mkdir(notes);
+    await mkdir(resoph);
+    await writeFile(path.join(resoph, 'Pismo.txt'), 'Prvo.', 'utf8');
+    const disk = createFileSystem(path.join(tmpdir(), 'b-notes-staging'));
+    // A disk that loses the end of the copy, and only of the copy.
+    const lossy = {
+      ...disk,
+      write: (at: string, text: string) =>
+        disk.write(at, at.endsWith(`${copyNameFor('Pismo')}.txt`) && !at.includes(VERSIONS_FOLDER) ? text.slice(0, 5) : text),
+    };
+    const log = silentLog();
+    const own = createNoteStore(lossy, slashed(notes), log, () => undefined, NAMING);
+    const store = createNoteLibrary(own, createResophFolder(lossy, slashed(resoph), log), lossy, slashed(notes), log);
+
+    await assert.rejects(store.save(resophIdOf('Pismo'), 'Pismo\n\nPrvo. Dopisano.'));
+
+    assert.equal(await resophFile(resoph, 'Pismo'), 'Prvo.');
+  });
+});
+
+describe('a stub in Resoph', () => {
+  /** A Resoph text taken over, and what the stub says. */
+  async function takenOver() {
+    const found = await library({ Pismo: 'Prvo.' });
+    await found.store.save(resophIdOf('Pismo'), 'Pismo\n\nPrvo. Dopisano.');
+    return { ...found, stub: await resophFile(found.resoph, 'Pismo') };
+  }
+
+  it('stays hidden with a stray keystroke or two in it', async () => {
+    const { store, resoph, stub } = await takenOver();
+
+    await resophWrites(resoph, 'Pismo', `${stub}kk`);
+
+    assert.deepEqual((await store.list()).map((note) => note.id), [copyNameFor('Pismo')]);
+  });
+
+  it('is a text of his again once he writes in it, beside the copy', async () => {
+    const { store, resoph, stub } = await takenOver();
+
+    await resophWrites(resoph, 'Pismo', `${stub}\r\nIpak sam ovde dopisao celu jednu recenicu.`);
+
+    const ids = (await store.list()).map((note) => note.id).sort();
+    assert.deepEqual(ids, [copyNameFor('Pismo'), resophIdOf('Pismo')].sort());
+  });
+
+  it("is taken over into a copy of its own when he types in that in b-notes, and the first copy is left alone", async () => {
+    const { store, resoph } = await takenOver();
+    await resophWrites(resoph, 'Pismo', 'Prvo, pa napisano u Resophu posle.');
+    await store.list();
+
+    const second = await store.save(resophIdOf('Pismo'), 'Pismo\n\nPrvo, pa napisano u Resophu posle. I jos.');
+
+    assert.equal(second, `${copyNameFor('Pismo')} 2`);
+    assert.equal(await store.read(copyNameFor('Pismo')), 'Pismo\n\nPrvo. Dopisano.');
+  });
 });
 
 describe('what b-notes does to Resoph folder', () => {
-  it('nothing at all: not a save, a kept copy, a delete, a restore or a destroy', async () => {
-    const { store, resoph } = await library({ Pismo: 'Tekst.', [RANKED]: 'Rangiran.', Zima: 'Snijeg.' });
-    const before = await everything(resoph);
+  it('leaves a stub in each text it takes over, and renames, adds and removes nothing', async () => {
+    const { store, resoph } = await library({ Pismo: 'Tekst.', [RANKED]: 'Rangiran.', Zima: 'Snijeg.', Leto: 'Sunce.' });
+    const names = (await readdir(resoph)).sort();
 
     await store.save(resophIdOf('Pismo'), 'Pismo\nIzmijenjeno.');
     await store.keepCopy(resophIdOf(RANKED), 'Nesto.');
@@ -219,13 +305,15 @@ describe('what b-notes does to Resoph folder', () => {
     await store.destroy(copyNameFor('Zima'));
     await store.list();
 
-    assert.deepEqual(await everything(resoph), before);
+    assert.deepEqual((await readdir(resoph)).sort(), names);
+    for (const name of ['Pismo', RANKED, 'Zima']) assert.equal(isStub(await resophFile(resoph, name)), true, name);
+    assert.equal(await resophFile(resoph, 'Leto'), 'Sunce.');
   });
 });
 
 describe('putting away a Resoph text', () => {
-  it('puts away b-notes copy of it, and the Resoph original leaves his list', async () => {
-    const { store, notes } = await library({ Zima: 'Snijeg.' });
+  it("puts away b-notes' copy of it, and leaves a stub saying it was deleted", async () => {
+    const { store, notes, resoph } = await library({ Zima: 'Snijeg.' });
 
     await store.moveToDeleted(resophIdOf('Zima'));
 
@@ -235,6 +323,7 @@ describe('putting away a Resoph text', () => {
       [`${copyNameFor('Zima')}.txt`, VERSIONS_FOLDER].sort(),
     );
     assert.deepEqual((await store.listDeleted()).map((note) => note.text), ['Zima\n\nSnijeg.']);
+    assert.match(await resophFile(resoph, 'Zima'), /OBRISAN U B-NOTES/);
   });
 
   it('comes back as the copy, once only', async () => {
@@ -246,9 +335,7 @@ describe('putting away a Resoph text', () => {
     assert.deepEqual((await store.list()).map((note) => note.id), [copyNameFor('Zima')]);
   });
 
-  it('stays gone once destroyed, though the Resoph file is still there', async () => {
-    // The link outlives the copy. Without it, the text he destroyed would
-    // walk back into his list from Resoph's folder.
+  it('stays gone once destroyed: the stub is still in Resoph, and is not listed', async () => {
     const { store } = await library({ Zima: 'Snijeg.' });
     await store.moveToDeleted(resophIdOf('Zima'));
 
@@ -256,21 +343,10 @@ describe('putting away a Resoph text', () => {
 
     assert.deepEqual(await store.list(), []);
   });
-
-  it('shows the text again if its link was lost, rather than hiding it', async () => {
-    // Untidy is allowed; hidden is not.
-    const { store, notes } = await library({ Zima: 'Snijeg.' });
-    await store.moveToDeleted(resophIdOf('Zima'));
-    await store.destroy(copyNameFor('Zima'));
-
-    await rm(path.join(notes, RESOPH_LINKS_FOLDER), { recursive: true });
-
-    assert.deepEqual((await store.list()).map((note) => note.id), [resophIdOf('Zima')]);
-  });
 });
 
 describe('keeping a copy of a Resoph text', () => {
-  it('makes the text b-notes own first, then keeps the copy', async () => {
+  it('takes the text over first, then keeps the copy', async () => {
     const { store } = await library({ Pismo: 'Tekst.' });
 
     await store.keepCopy(resophIdOf('Pismo'), 'Pismo\nIz editora.');
@@ -287,215 +363,5 @@ describe('dates', () => {
     await utimes(path.join(resoph, 'Staro.txt'), longAgo, longAgo);
 
     assert.deepEqual((await store.list()).map((note) => note.title), ['Novo', 'Staro']);
-  });
-});
-
-/** Rewrites a Resoph file the way Resoph would, dated `when`. */
-async function resophWrites(resoph: string, name: string, text: string, when: Date): Promise<void> {
-  await writeFile(path.join(resoph, `${name}.txt`), text, 'utf8');
-  await utimes(path.join(resoph, `${name}.txt`), when, when);
-}
-
-const LATER = new Date(Date.now() + 60 * 60_000);
-const EARLIER = new Date(Date.now() - 60 * 60_000);
-
-describe('a change made in Resoph to a text b-notes has copied', () => {
-  it('becomes the text, when he has not changed it in b-notes since', async () => {
-    const { store, resoph } = await library({ Pismo: 'Prvo.' });
-    // Taken in by keeping a copy, which leaves the text as Resoph had it.
-    await store.keepCopy(resophIdOf('Pismo'), 'Pismo\n\nPrvo.');
-
-    await resophWrites(resoph, 'Pismo', 'Drugo, napisano u Resophu.', LATER);
-
-    const notes = await store.list();
-    assert.deepEqual(notes.map((note) => note.text), ['Pismo\n\nDrugo, napisano u Resophu.']);
-    assert.equal(notes[0]?.otherVersion, undefined);
-  });
-
-  it('is kept as a version either way, labelled as from Resoph', async () => {
-    const { store, resoph } = await library({ Pismo: 'Prvo.' });
-    await store.keepCopy(resophIdOf('Pismo'), 'Pismo\n\nPrvo.');
-
-    await resophWrites(resoph, 'Pismo', 'Drugo.', LATER);
-    await store.list();
-
-    const fromResoph = (await store.listVersions(copyNameFor('Pismo'))).filter((version) =>
-      version.id.includes(FROM_RESOPH),
-    );
-    assert.deepEqual(fromResoph.map((version) => version.text), ['Pismo\n\nDrugo.', 'Pismo\n\nPrvo.']);
-  });
-
-  it('is not news when it is something b-notes has already seen, however it came back', async () => {
-    // Another machine's Resoph putting the old version back must not roll his
-    // b-notes text back to it.
-    const { store, resoph } = await library({ Pismo: 'Prvo.' });
-    await store.save(resophIdOf('Pismo'), 'Pismo\nPrvo, pa dopisano u b-notes.');
-
-    await resophWrites(resoph, 'Pismo', 'Prvo.', LATER);
-
-    const notes = await store.list();
-    assert.deepEqual(notes.map((note) => note.text), ['Pismo\nPrvo, pa dopisano u b-notes.']);
-  });
-});
-
-describe('a text changed in both Resoph and b-notes', () => {
-  /** His copy, changed in b-notes, and then a change in Resoph dated `when`. */
-  async function changedInBoth(when: Date) {
-    const found = await library({ Pismo: 'Prvo.' });
-    await found.store.save(resophIdOf('Pismo'), 'Pismo\nPrvo, dopisano u b-notes.');
-    await resophWrites(found.resoph, 'Pismo', 'Prvo, dopisano u Resophu.', when);
-    return found;
-  }
-
-  it('keeps each side\'s words: his text as he left it, and Resoph\'s as a text of its own', async () => {
-    const { store } = await changedInBoth(LATER);
-
-    const notes = await store.list();
-
-    assert.equal(notes.find((note) => note.id === copyNameFor('Pismo'))?.text, 'Pismo\nPrvo, dopisano u b-notes.');
-    const other = notes.find((note) => note.id !== copyNameFor('Pismo'));
-    assert.equal(other?.text, 'Pismo\n\nPrvo, dopisano u Resophu.');
-    assert.equal(other?.otherVersion, true);
-    assert.equal(notes.length, 2);
-  });
-
-  it('does the same whichever side changed it last', async () => {
-    const { store } = await changedInBoth(EARLIER);
-
-    const texts = (await store.list()).map((note) => note.text).sort();
-
-    assert.deepEqual(texts, ['Pismo\n\nPrvo, dopisano u Resophu.', 'Pismo\nPrvo, dopisano u b-notes.']);
-  });
-
-  it('keeps Resoph\'s among the versions of his text besides', async () => {
-    const { store } = await changedInBoth(LATER);
-    await store.list();
-
-    const kept = (await store.listVersions(copyNameFor('Pismo'))).map((version) => version.text);
-    assert.ok(kept.includes('Pismo\n\nPrvo, dopisano u Resophu.'), 'the Resoph version was not kept');
-  });
-
-  it('sends Resoph\'s next change to the other version, rather than splitting again', async () => {
-    const { store, resoph } = await changedInBoth(LATER);
-    await store.list();
-
-    await resophWrites(resoph, 'Pismo', 'Prvo, dopisano u Resophu, pa jos.', new Date(LATER.getTime() + 60_000));
-
-    const texts = (await store.list()).map((note) => note.text).sort();
-    assert.deepEqual(texts, ['Pismo\n\nPrvo, dopisano u Resophu, pa jos.', 'Pismo\nPrvo, dopisano u b-notes.']);
-  });
-
-  it('splits again when he wrote in the other version too, and Resoph goes on with the newest', async () => {
-    const { store, resoph } = await changedInBoth(LATER);
-    const first = (await store.list()).find((note) => note.otherVersion === true)?.id ?? '';
-    await store.save(first, 'Pismo\n\nPrvo, dopisano u Resophu. I u b-notes.');
-    await resophWrites(resoph, 'Pismo', 'Drugi put u Resophu.', new Date(LATER.getTime() + 60_000));
-    await store.list();
-
-    await resophWrites(resoph, 'Pismo', 'Treci put u Resophu.', new Date(LATER.getTime() + 120_000));
-
-    const texts = (await store.list()).map((note) => note.text).sort();
-    assert.deepEqual(texts, [
-      'Pismo\n\nPrvo, dopisano u Resophu. I u b-notes.',
-      'Pismo\n\nTreci put u Resophu.',
-      'Pismo\nPrvo, dopisano u b-notes.',
-    ]);
-  });
-
-  it('says it is the other version until he writes in it', async () => {
-    const { store } = await changedInBoth(LATER);
-    const other = (await store.list()).find((note) => note.otherVersion === true)?.id ?? '';
-
-    await store.save(other, 'Pismo\n\nPrvo, dopisano u Resophu. I ovde.');
-
-    assert.equal((await store.list()).some((note) => note.otherVersion === true), false);
-  });
-
-  it('keeps the Resoph original out of his list, even once his own text is destroyed', async () => {
-    const { store } = await changedInBoth(LATER);
-    await store.list();
-
-    await store.moveToDeleted(copyNameFor('Pismo'));
-    await store.destroy(copyNameFor('Pismo'));
-
-    const ids = (await store.list()).map((note) => note.id);
-    assert.equal(ids.length, 1);
-    assert.equal(ids.includes(resophIdOf('Pismo')), false);
-  });
-
-  it('still leaves Resoph folder untouched', async () => {
-    const { store, resoph } = await changedInBoth(LATER);
-    const before = await everything(resoph);
-
-    await store.list();
-
-    assert.deepEqual(await everything(resoph), before);
-  });
-});
-
-describe('a Resoph text that changes in Resoph while it sits open, before he first types in it', () => {
-  /*
-    The Dell asleep with the text open; the same text changed in Resoph on the
-    Asus; the Dell woken, and a sentence added before anything looked again.
-  */
-  async function changedWhileOpen() {
-    const found = await library({ Pismo: 'Prvo.' });
-    await found.store.list();
-    await resophWrites(found.resoph, 'Pismo', 'Prvo, dopisano na drugom racunaru.', LATER);
-    await found.store.save(resophIdOf('Pismo'), 'Pismo\n\nPrvo. Dopisano ovde.');
-    return found;
-  }
-
-  it('builds his text on the words he saw, and keeps Resoph\'s new ones as the other version', async () => {
-    const { store } = await changedWhileOpen();
-
-    const notes = await store.list();
-
-    assert.equal(notes.find((note) => note.id === copyNameFor('Pismo'))?.text, 'Pismo\n\nPrvo. Dopisano ovde.');
-    const other = notes.find((note) => note.otherVersion === true);
-    assert.equal(other?.text, 'Pismo\n\nPrvo, dopisano na drugom racunaru.');
-    assert.equal(notes.length, 2);
-  });
-
-  it("sends Resoph's next change to the other version", async () => {
-    const { store, resoph } = await changedWhileOpen();
-    await store.list();
-
-    await resophWrites(resoph, 'Pismo', 'Prvo, dopisano na drugom racunaru, pa jos.', new Date(LATER.getTime() + 60_000));
-
-    const texts = (await store.list()).map((note) => note.text).sort();
-    assert.deepEqual(texts, ['Pismo\n\nPrvo, dopisano na drugom racunaru, pa jos.', 'Pismo\n\nPrvo. Dopisano ovde.']);
-  });
-
-  it('makes one text as ever when Resoph has not changed it', async () => {
-    const { store } = await library({ Pismo: 'Prvo.' });
-    await store.list();
-
-    await store.save(resophIdOf('Pismo'), 'Pismo\n\nPrvo. Dopisano ovde.');
-
-    assert.deepEqual((await store.list()).map((note) => note.text), ['Pismo\n\nPrvo. Dopisano ovde.']);
-  });
-});
-
-describe('a change made in Resoph to a text he has put away in b-notes', () => {
-  it('comes back into his list as a text of its own, and what he put away stays put away', async () => {
-    const { store, resoph } = await library({ Zima: 'Snijeg.' });
-    await store.save(resophIdOf('Zima'), 'Zima\nSnijeg, dopisano.');
-    await store.moveToDeleted(copyNameFor('Zima'));
-
-    await resophWrites(resoph, 'Zima', 'Snijeg, dopisano u Resophu.', LATER);
-
-    const notes = await store.list();
-    assert.deepEqual(notes.map((note) => note.text), ['Zima\n\nSnijeg, dopisano u Resophu.']);
-    assert.equal(notes[0]?.otherVersion, true);
-    assert.deepEqual((await store.listDeleted()).map((note) => note.id), [copyNameFor('Zima')]);
-  });
-
-  it('stays away while Resoph has not changed it', async () => {
-    const { store } = await library({ Zima: 'Snijeg.' });
-    await store.save(resophIdOf('Zima'), 'Zima\nSnijeg, dopisano.');
-    await store.moveToDeleted(copyNameFor('Zima'));
-
-    assert.deepEqual(await store.list(), []);
   });
 });
