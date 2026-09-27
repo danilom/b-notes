@@ -147,15 +147,29 @@ The table *Where his things are kept* in `DESIGN.md` changes with this.
   Resoph text shows once, as its b-notes copy.
 - **His titles, in his order.** Titles sort the way Resoph sorts them, so
   leading spaces, `*`, `(UP)`, `AA` and `zz` keep doing what he put them there
-  to do. *Nedavni* stays as it is.
-- **Search covers titles and text**, with and without diacritics, as now.
+  to do. *Nedavni* stays as it is. *Decided, for now* — the mess gets cleaned
+  up later (§6).
+- **Sorted as they are, not shown as they are** — *open*. A row starting with
+  thirty spaces looks broken. The order already carries his rank, so the list
+  can show a title without its leading spaces, with runs of spaces inside it
+  collapsed and Resoph's `%2A` shown as `*`. What he typed stays untouched in
+  the text itself. Options in §5.
+- **Search covers titles and text**, with and without diacritics, as now. Not
+  weighted by where a text comes from: on day one nearly all his writing is
+  untouched Resoph texts, so pushing those down would bury it. Better ranking
+  (title matches first, then recency) is its own item in `TODO.md`.
+- **Every text knows where it comes from**: untouched in Resoph, copied from
+  Resoph, or b-notes' own. It's in the log, and shown only to Danilo (a dev
+  build, or a switch in the advanced panel). A badge he'd see raises "what is
+  Resoph doing in here?", a question he can't answer. Whether he ever sees it
+  is P2.
 - **Refreshed whenever b-notes comes to the front**, and at start. A pass over
   1,200 files' names, sizes and times is cheap; only changed files are read.
 - **Nothing is hidden.** Resoph's identical copies show as they do in Resoph.
   Collapsing them waits for later. A Dropbox conflicted copy shows as a text
   of its own.
 
-### 4.3 What a title is — *proposed*
+### 4.3 What a title is — *decided*
 
 **The title is the first line, as it is in Resoph.** A Resoph text is shown as
 its title (its filename, read through Resoph's escapes), a line break, then the
@@ -170,7 +184,14 @@ spaces and all, and his ranking-by-retitling keeps working. Resoph keeps the
 old title, like everything else b-notes doesn't send back.
 
 Titles are kept exactly, leading spaces included, for sorting. How they are
-displayed is a separate question.
+displayed is a separate question (§4.2).
+
+**The title is the first line and nothing cleverer** — *proposed*. Today
+`titleFrom` keeps reading past a first line of four characters or fewer, and
+cuts at 50 characters. Both were built for his Simplenote export, where the
+first line was often a fragment. Now the first line is his real title,
+exactly as Resoph shows it, even when it's `i` or `Ana1`. So: the first
+non-empty line, as it is. Length is cut only on screen, by the list itself.
 
 ### 4.4 Copy on first touch — *proposed*
 
@@ -197,9 +218,7 @@ A Resoph change that is new:
   text, and b-notes' previous one becomes a version. He wrote in Resoph, and
   b-notes shows what he wrote.
 - **If both changed**, the newer becomes the text and the other a version.
-  Nothing is lost. *Open:* how he's told a text has two versions that each
-  moved on. A quiet mark on the text, leading to the versions dialog, is the
-  obvious shape. The wording and the look are still to be proposed.
+  Nothing is lost. *Open:* how he's told — the choices are in §5.
 
 Versions that came from Resoph are named as such, so all of this can be
 worked out from the files themselves, with no extra record to keep in step
@@ -242,11 +261,29 @@ two different texts would file one out of sight as a version of the other. So
 - **Named once, when the first line is finished** — he presses Enter or leaves
   it — and never renamed. Before that the draft is kept under a temporary name
   in b-notes' folder, so nothing he types is ever only in memory.
-- **The name is safe everywhere**: no edge spaces, no characters Notepad, zip or
-  Explorer choke on. It's made from the title and made unique, and he never sees
-  it. *Open:* the exact rule — plain ASCII, how uniqueness is made. It must be
-  the same on every machine for a copied Resoph text, so two machines copying
-  the same file offline write the same file rather than two.
+- **The name is safe everywhere and never needs changing**, and he never sees
+  it. The rule, *proposed*, replacing today's:
+  - **Cleaned title**: diacritics folded to plain letters (the fold search
+    already uses), anything but letters, digits, spaces and plain punctuation
+    replaced by a space, spaces collapsed, edges trimmed, no trailing dot, cut
+    at a word near 50 characters, Windows' reserved names avoided, *Bez
+    naslova* if nothing is left.
+  - **A copied Resoph text** takes the cleaned Resoph title. If cleaning changed
+    anything, it also takes ` ~` and six characters worked out from the Resoph
+    filename. The same Resoph file therefore gets the same name on every
+    machine, and two Resoph names that clean to the same thing — his
+    spacing variants — still get two files.
+  - **A new text** takes the cleaned first line plus ` ~` and six characters
+    from the moment and machine it was created on. Always unique. That
+    matters more than it looks: two machines both starting a text called
+    *Pismo* offline would otherwise write one file, and Dropbox's conflicted
+    copy would then pass two different texts off as one text edited twice —
+    and file one out of sight as a version of the other.
+  - **Never ` (n)`**, and nothing is ever renumbered.
+
+  What goes from today's code: numbering on collision, which renamed *other*
+  texts to make room; stripping his own ` (1)`; and keeping Serbian letters in
+  names, which Windows' own zip mangles.
 
 ### 4.8 Versions and deleting — *proposed*
 
@@ -334,14 +371,33 @@ folder, both through Dropbox, often after long offline stretches.
 
 ## 5. Open questions
 
-1. **Titles as the first line in the editor** (§4.3) rather than above it. It's
-   what he sees in Resoph, and it lets him retitle. Agreed?
-2. **The fork mark** (§4.5): what a text that moved on in two places looks like,
-   and what it says.
-3. **b-notes' filenames** (§4.7): the rule, and whether any trace of his title
-   should be readable in them.
-4. **Where b-notes' folder lives**, and what happens to 0.7.0's leftovers
-   (see *Cleanup*).
+1. **A text that moved on in two places** (§4.5). Newer is the text, the other
+   a version, nothing lost — that part is settled. What he's shown:
+   - **a. Nothing.** The other version waits in the versions dialog. Simplest,
+     but he may never know his other edit exists, which is hiding it.
+   - **b. A quiet mark on the text**, in the list and above the editor, with
+     one line saying the text was also changed elsewhere and the other version
+     is kept, and a button that opens the versions dialog on it. The mark goes
+     once he has looked. *Leaning this way.*
+   - **c. Both, side by side, as two texts.** Rules itself out: two
+     near-identical things and a choice he can't make is exactly what
+     `TARGET-USER.md` forbids.
+   - **d. Merge them** when the edits touch different paragraphs, keeping both
+     originals as versions. `paragraph-diff.ts` could do most of it. Clever,
+     so later if ever — a wrong merge is a new text nobody wrote.
+
+   Rare on one machine once Resoph is closed at startup. More likely across
+   machines after long offline stretches.
+2. **Leading spaces in the list** (§4.2):
+   - **a. Trimmed.** The order still shows his rank. *Leaning this way for
+     Stage 0.*
+   - **b. Trimmed, with a small mark for rank** — a dot or a bar, heavier for
+     more spaces.
+   - **c. Kept, collapsed** to one fixed indent.
+3. **Filenames** (§4.7): plain ASCII agreed? And the ` ~` plus six characters,
+   or another shape?
+4. **Where b-notes' folder lives** — `Dropbox/b-notes/`? — and what happens to
+   0.7.0's leftovers (see *Cleanup*).
 5. **Which Windows builds**, for Notepad and line endings. b-notes' files could
    be written with CRLF throughout.
 

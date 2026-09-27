@@ -12,6 +12,7 @@ testdata/
 
 # Notes to self, not part of the project.
 TODO.md
+NEXT-VISIT.md
 
 # Playwright output.
 test-results/
