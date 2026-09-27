@@ -203,7 +203,10 @@ test('moves a text back into Resoph from the strip, where it shows as a Resoph t
   expect(Object.keys(after).some((path) => /^b-notes\/GRADSKE PRICE, prva ~[0-9A-Z]{6}\.txt$/.test(path))).toBe(false);
   await expect(row).toHaveCount(1);
   await expect(row.locator('.note-in-resoph')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Premesti u Resoph' })).toBeHidden();
+  // Still in its place, greyed now the text is Resoph's again, and saying why.
+  const move = page.getByRole('button', { name: 'Premesti u Resoph' });
+  await expect(move).toBeDisabled();
+  await expect(move).toHaveAttribute('title', 'Tekst je već u Resophu.');
   await expect(page.locator('#editor')).toHaveValue(/Dopisano\./);
 });
 

@@ -518,24 +518,30 @@ button:hover:not(:disabled) svg {
   font-size: 0.92em;
 }
 
+/* The top row: what he does to the text in front of him. A row to
+   itself, at the right, under the text and where the toast appears. */
 #status-actions {
+  flex: 1 0 100%;
   display: flex;
   align-items: center;
-  /*
-    A gap far wider than the strip's own. Obriši tekst is pressed a few
-    times a year and Izgled rarely, but a miss between them costs him a
-    dialog he did not ask for — so they are not neighbours.
-  */
   gap: 0.4rem;
-  margin-left: auto;
   /* And again inside the group, for the largest text size, where even on
-     his own screen four of these will not sit on one line. */
+     his own screen these will not sit on one line. */
   flex-wrap: wrap;
   justify-content: flex-end;
 }
 
-#appearance-button {
-  margin-left: 1.2rem;
+/* The bottom row's right: the two that are not about this text's words. */
+#status-quiet {
+  flex: none;
+  display: flex;
+  align-items: center;
+  /*
+    Well apart. Izgled is harmless to miss, but Premesti u Resoph takes the
+    text out of b-notes, and a hand going for the corner should not land
+    on it.
+  */
+  gap: 1.2rem;
 }
 
 /* Greyed rather than gone when the text in front of him has no copies,
@@ -547,18 +553,16 @@ button:hover:not(:disabled) svg {
    colour: the accent is his to choose and could be anything, and this
    has to read as emphasis in his own writing rather than as a mark the
    app has painted on. */
-/* The one down here that is not a button to look at: it opens a panel
-   about the app rather than doing anything to his text. Only what
-   differs from the shape above. */
-#appearance-button {
-  gap: 0.35rem;
-  padding: 0.2rem 0.5rem;
+/* Izgled and Premesti u Resoph: not buttons to look at. One opens a
+   panel about the app; the other is rare, and there only while he lives
+   beside Resoph. Only what differs from the shape above. */
+.status-quiet {
   border-color: transparent;
   background: none;
   color: var(--quiet);
 }
 
-#appearance-button:hover:not(:disabled) {
+.status-quiet:hover:not(:disabled) {
   border-color: var(--line);
   color: var(--ink);
 }
@@ -1123,7 +1127,8 @@ body.holding > #main {
   /* What the toast hangs off. */
   position: relative;
   /*
-    What puts the status line on a row of its own, above the buttons.
+    What makes the two rows: the buttons for the text take a row to
+    themselves, and the status line and the quiet two share the next.
 
     It was first here for the buttons: without it the row grew past the
     edge and gave the whole app a horizontal scrollbar, with Izgled off the
@@ -1134,16 +1139,14 @@ body.holding > #main {
 }
 
 /*
-  A row of its own, above the buttons: two rows, always, rather than one
-  that becomes two when the sentence runs long. Beside the buttons there
-  was no room on his screens for more than "Sačuvano u…", which is there
-  and says nothing. On its own row it is whole at his sizes, and cut with
-  "…" (the whole of it on hover) only where the window is narrower still.
+  The bottom row's left, under the buttons and beside the two quiet ones,
+  which leave it room to be whole at his sizes. Where the window is
+  narrower still it is cut with "…", and the whole of it is on hover.
 
   A shade smaller than the buttons: it reports, they act.
 */
 #status-text {
-  flex: 1 0 100%;
+  flex: 1 1 0;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

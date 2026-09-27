@@ -66,7 +66,9 @@
         <!-- Above the strip rather than in it: what it reports is not a state,
              and it is over his writing because that is where his eye is. -->
         <div id="toast" hidden></div>
-        <span id="status-text"></span>
+        <!-- Two rows: what he does to the text in front of him on top, and
+             under it the line that reports, beside the two quiet buttons that
+             are not about this text's words. -->
         <div id="status-actions">
           <!-- Furthest from Obriši tekst, which is the one adjacency worth
                avoiding: this is a button he may press often and that one is a
@@ -77,15 +79,19 @@
           <button id="see-versions" class="status-action" type="button" disabled>
             <span id="see-versions-label"></span>
           </button>
-          <!-- A text of b-notes', back into Resoph. Rare: shown only where it
-               can be done, so it costs the strip no room the rest of the time. -->
-          <button id="move-to-resoph" class="status-action" type="button" hidden>
-            <span id="move-to-resoph-label"></span>
-          </button>
           <button id="delete-note" class="status-action" type="button" disabled>
             <span id="delete-note-label"></span>
           </button>
-          <button id="appearance-button" class="status-action" type="button">
+        </div>
+        <span id="status-text"></span>
+        <div id="status-quiet">
+          <!-- A text of b-notes', back into Resoph. Rare, so quiet; but always
+               here on a machine with a Resoph folder, greyed where it cannot
+               be done, so it has one place he can learn. -->
+          <button id="move-to-resoph" class="status-action status-quiet" type="button" hidden>
+            <span id="move-to-resoph-label"></span>
+          </button>
+          <button id="appearance-button" class="status-action status-quiet" type="button">
             <span id="appearance-label"></span>
           </button>
         </div>

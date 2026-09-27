@@ -327,11 +327,18 @@ function tookOver(id: string): void {
   }, TAKEN_OVER_FADES_MS);
 }
 
-/** Where the strip's "Premesti u Resoph" can be offered: a text of b-notes' own, on a machine with Resoph. */
+/** Where the strip's "Premesti u Resoph" can be pressed: a text of b-notes' own, on a machine with Resoph. */
 function canMoveToResoph(): boolean {
   if (host.resophFolder === null || openHandle === NO_NOTE || draft !== null) return false;
   const name = writing.tokenOf(openHandle);
   return name !== null && !isResophId(name);
+}
+
+/** Whether the text in front of him is one still in Resoph, which there is nowhere to move. */
+function openIsInResoph(): boolean {
+  if (openHandle === NO_NOTE || draft !== null) return false;
+  const name = writing.tokenOf(openHandle);
+  return name !== null && isResophId(name);
 }
 
 /** Why it could not go, in his words. */
@@ -513,7 +520,12 @@ function showStatus(): void {
   const now = whatIsHappening();
 
   deleteNote.disabled = !canDelete(now);
-  moveToResoph.hidden = !canMoveToResoph();
+  // Always there on a machine with a Resoph folder, and greyed where it
+  // cannot be done, so it keeps the one place he can learn. Greyed on a text
+  // still in Resoph, which is most of them for now, with a word on why.
+  moveToResoph.hidden = host.resophFolder === null;
+  moveToResoph.disabled = !canMoveToResoph();
+  moveToResoph.title = openIsInResoph() ? words.alreadyInResoph : '';
   // Nothing to put on the clipboard, which he reaches regularly: emptying a
   // text is how he deletes, and the copies he keeps are what recover it.
   copyAll.disabled = editor.value.trim().length === 0;

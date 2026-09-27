@@ -19,11 +19,11 @@ test.beforeEach(async ({ page }) => {
   await page.locator('#list .note').first().click();
   await expect(page.locator('#editor')).not.toHaveValue('');
   // Typed into, so it is b-notes' own — taken over from Resoph if it was
-  // there — and Premesti u Resoph is on the strip with the rest: the fullest
-  // the strip gets.
+  // there — and every button in the strip can be pressed, Premesti u Resoph
+  // too: the strip as he meets it most.
   await page.locator('#editor').press('End');
   await page.locator('#editor').pressSequentially('x');
-  await expect(page.locator('#move-to-resoph')).toBeVisible();
+  await expect(page.locator('#move-to-resoph')).toBeEnabled();
 });
 
 test('every button in the strip is the same size as the others', async ({ page }) => {
@@ -35,7 +35,7 @@ test('every button in the strip is the same size as the others', async ({ page }
     Measured against each other rather than against a number: what matters is
     that they match, and the numbers all move when he changes the text size.
   */
-  const shapes = await page.locator('#status-actions button').evaluateAll((buttons) =>
+  const shapes = await page.locator('#status .status-action').evaluateAll((buttons) =>
     buttons.map((button) => {
       const seen = getComputedStyle(button);
       return {
@@ -92,19 +92,20 @@ const HIS_WINDOWS = [
   { laptop: 'Asus', width: 1280, height: 650 },
 ];
 
-test('keeps the buttons on one row at the size of his own windows', async ({ page }) => {
-  // The strip is two rows, the status line over the buttons. Wrapping the
-  // buttons as well is the fallback, not the arrangement: if his own window
-  // starts needing a third row, the strip has outgrown the space and wants
-  // deciding about rather than quietly taking another line of his writing.
+test('keeps the strip to its two rows at the size of his own windows', async ({ page }) => {
+  // The buttons for his text on top; the status line, Premesti u Resoph and
+  // Izgled below. Wrapping further is the fallback, not the arrangement: if
+  // his own window starts needing a third row, the strip has outgrown the
+  // space and wants deciding about rather than quietly taking another line of
+  // his writing.
   for (const { laptop, width, height } of HIS_WINDOWS) {
     await page.setViewportSize({ width, height });
-    const rows = await page.locator('#status-actions button').evaluateAll((buttons) => {
+    const rows = await page.locator('#status .status-action').evaluateAll((buttons) => {
       const tops = buttons.map((button) => Math.round(button.getBoundingClientRect().top));
       return new Set(tops).size;
     });
 
-    expect(rows, `on his ${laptop}`).toBe(1);
+    expect(rows, `on his ${laptop}`).toBe(2);
   }
 });
 
