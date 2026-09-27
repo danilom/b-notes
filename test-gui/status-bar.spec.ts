@@ -82,15 +82,27 @@ test('never gives the window a sideways scrollbar, however narrow it is', async 
   }
 });
 
+/*
+  His b-notes window on each of his laptops, maximised: both 1920 pixels wide
+  at 150 %, so 1280 CSS pixels, less the title bar and taskbar in height. The
+  same sizes as tools/his-screens.html, where they are explained.
+*/
+const HIS_WINDOWS = [
+  { laptop: 'Dell', width: 1280, height: 721 },
+  { laptop: 'Asus', width: 1280, height: 641 },
+];
+
 test('keeps the strip on one row at the width he actually writes in', async ({ page }) => {
   // Wrapping is the fallback, not the arrangement. If his own window starts
   // needing two rows, the strip has outgrown the space and wants deciding
   // about rather than quietly taking another line of his writing.
-  await page.setViewportSize({ width: 1400, height: 900 });
-  const rows = await page.locator('#status-actions button').evaluateAll((buttons) => {
-    const tops = buttons.map((button) => Math.round(button.getBoundingClientRect().top));
-    return new Set(tops).size;
-  });
+  for (const { laptop, width, height } of HIS_WINDOWS) {
+    await page.setViewportSize({ width, height });
+    const rows = await page.locator('#status-actions button').evaluateAll((buttons) => {
+      const tops = buttons.map((button) => Math.round(button.getBoundingClientRect().top));
+      return new Set(tops).size;
+    });
 
-  expect(rows).toBe(1);
+    expect(rows, `on his ${laptop}`).toBe(1);
+  }
 });
