@@ -105,6 +105,27 @@ test('typing into a Resoph text takes it over, leaves a stub in Resoph, and says
   await expect(row.locator('.note-in-resoph')).toHaveCount(0);
 });
 
+test('emptying a Resoph text takes it over without saying so, and leaves the hint to press Obriši tekst in view', async ({
+  page,
+}) => {
+  /*
+    Emptying a text is how he deletes. The word that it moved to b-notes
+    landed on top of the hint that tells him what to do next, and said the
+    opposite of what he had just done.
+  */
+  await start(page);
+  const row = page.locator('#list .section-block').last().locator('.note').filter({ hasText: RANKED_NAME });
+  await row.first().click();
+  await page.locator('#editor').press('Control+a');
+  await page.locator('#editor').press('Delete');
+  await page.clock.runFor(1200);
+
+  // Taken over all the same: Resoph's file holds the stub.
+  expect((await held(page))[`ResophNotes/${RANKED}.txt`]?.text).toContain('PREMEŠTEN U B-NOTES');
+  await expect(page.locator('#empty-hint')).toBeVisible();
+  await expect(page.locator('#toast')).not.toContainText('Tekst je prenet iz Resopha u b-notes.');
+});
+
 test('the date moves smoothly into the place of the icon it loses, rather than jumping there', async ({ page }) => {
   /*
     The icon used to fade and keep its room until the list was next drawn, so

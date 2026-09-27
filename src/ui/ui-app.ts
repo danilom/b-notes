@@ -313,12 +313,21 @@ const TAKEN_OVER_FADES_MS = 2000;
 /**
  * His first keystroke took a text over from Resoph: said softly, without
  * stopping him — a toast that stays while he types — and its Resoph icon fades.
+ *
+ * Not said when what moved over is empty. Emptying a text is how he deletes,
+ * and the hint telling him to press Obriši tekst is what he needs then; this
+ * would land on top of it, and "moved to b-notes" is the opposite of what he
+ * just did. Where it lived stops mattering once he is getting rid of it.
  */
 function tookOver(id: string): void {
   openWasResophs = false;
   justTakenOver = id;
-  flashToast(toast, words.takenOver, words.takenOverHow, { throughTyping: true, quiet: true });
-  log.info('Told him a text moved from Resoph into b-notes', { id });
+  if (editor.value.trim().length === 0) {
+    log.info('A text moved from Resoph into b-notes emptied, so he was not told', { id });
+  } else {
+    flashToast(toast, words.takenOver, words.takenOverHow, { throughTyping: true, quiet: true });
+    log.info('Told him a text moved from Resoph into b-notes', { id });
+  }
   // Drawn again once faded, so the icon is gone from the row and not merely unseen.
   setTimeout(() => {
     if (justTakenOver !== id) return;
