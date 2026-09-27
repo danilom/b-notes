@@ -155,14 +155,16 @@
         Each screen after Windows' scaling, in CSS pixels, and the two bars
         that take height from a maximised window.
 
-        The bars are estimates until they are read off his log: every start
-        writes the window's inside size ("Ready", viewport) and the work area
-        ("Window open"). Put those in and the frame is exact.
+        Read off his log, where every start writes the work area ("Window
+        open") and the window's inside size ("Ready", viewport). The Dell's
+        are measured (2026-09-26): work area 1280 × 752, so a 48 taskbar, and
+        b-notes 1280 × 730, so a 22 title bar. The Asus and the VM are taken
+        to have the same bars until their logs say otherwise.
       */
       const SCREENS = [
-        { id: 'dell', name: 'Dell', pixels: '1920 × 1200', scale: 1.5, width: 1280, height: 800, taskbar: 48, titleBar: 31 },
-        { id: 'asus', name: 'Asus', pixels: '1920 × 1080', scale: 1.5, width: 1280, height: 720, taskbar: 48, titleBar: 31 },
-        { id: 'vm', name: 'Your VM', pixels: '2880 × 1692', scale: 1.75, width: 1646, height: 967, taskbar: 48, titleBar: 31 },
+        { id: 'dell', name: 'Dell', pixels: '1920 × 1200', scale: 1.5, width: 1280, height: 800, taskbar: 48, titleBar: 22 },
+        { id: 'asus', name: 'Asus', pixels: '1920 × 1080', scale: 1.5, width: 1280, height: 720, taskbar: 48, titleBar: 22 },
+        { id: 'vm', name: 'Your VM', pixels: '2880 × 1692', scale: 1.75, width: 1646, height: 967, taskbar: 48, titleBar: 22 },
       ];
 
       const choices = document.getElementById('choices');

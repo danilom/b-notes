@@ -88,8 +88,8 @@ test('never gives the window a sideways scrollbar, however narrow it is', async 
   same sizes as tools/his-screens.html, where they are explained.
 */
 const HIS_WINDOWS = [
-  { laptop: 'Dell', width: 1280, height: 721 },
-  { laptop: 'Asus', width: 1280, height: 641 },
+  { laptop: 'Dell', width: 1280, height: 730 },
+  { laptop: 'Asus', width: 1280, height: 650 },
 ];
 
 test('keeps the strip on one row at the width he actually writes in', async ({ page }) => {
