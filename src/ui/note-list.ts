@@ -1,3 +1,4 @@
+import { type TitleParts, compareTitles, titlePartsOf } from '../notes/note-title.ts';
 import { type LengthBand, type LengthBands, bandOf } from '../notes/text-length.ts';
 import type { LiveNote } from '../notes/writing.ts';
 import { toSearchable } from '../language/diacritics.ts';
@@ -50,6 +51,8 @@ export interface Row {
    * the spaces themselves, which make a row look broken.
    */
   rank: 0 | 1 | 2 | 3;
+  /** His marks, read off the front of the title so they can be drawn as marks. */
+  parts: TitleParts;
   /** How full a page to draw beside it, from empty to four lines. */
   length: LengthBand;
   /** Folded, so `macka` finds `mačka` and `mačka` finds `macka`. */
@@ -87,6 +90,7 @@ function toRow(note: LiveNote, words: ReturnType<typeof strings>, lengths: Lengt
     title: titleOf(note, words),
     sortTitle: note.sortTitle,
     rank: note.rank,
+    parts: titlePartsOf(note.sortTitle),
     searchable: note.searchable,
     updatedAt: note.updatedAt,
     length: bandOf(note.bytes, lengths),
@@ -121,6 +125,7 @@ export function openRowFor(view: ListView): Row | null {
     title: words.untitledNew,
     sortTitle: '',
     rank: 0,
+    parts: { mark: null, position: null, name: words.untitledNew },
     searchable: '',
     updatedAt: view.draft.startedAt,
     // Nothing written in it yet, which is exactly what an empty page says.
@@ -151,10 +156,11 @@ export function sectionsFor(view: ListView): Section[] {
   // order the folder was read in. Numerically, or `(10)` would sort above `(2)`.
   const all = [...rows].sort(
     (a, b) =>
-      // By his first line as he typed it: a space sorts before any letter,
-      // so the more leading spaces, the higher — his way of ranking a text,
-      // and why this is his order rather than an alphabet.
-      a.sortTitle.localeCompare(b.sortTitle, 'sr') ||
+      // By his first line as he typed it, in the order Resoph lists it: a
+      // space sorts before any letter, so the more leading spaces, the higher
+      // — his way of ranking a text, and why this is his order rather than an
+      // alphabet. His marks work the same way, by where they sort.
+      compareTitles(a.sortTitle, b.sortTitle) ||
       (a.id ?? '').localeCompare(b.id ?? '', 'sr', { numeric: true }),
   );
 
@@ -181,30 +187,47 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
   if (row.id !== null) element.dataset['id'] = row.id;
   if (row.id === view.openId) element.setAttribute('aria-current', 'true');
 
-  const title = document.createElement('span');
-  title.className = 'note-title';
-  title.textContent = row.title;
-
-  const length = pageGlyph(row.length);
-
   const when = document.createElement('span');
   when.className = 'note-when';
   when.textContent = describeWhen(row.updatedAt, view.language);
 
-  if (row.rank === 0) {
-    element.append(length, title, when);
+  element.append(pageGlyph(row.length), ...titleElements(row), when);
+  return element;
+}
+
+/**
+ * The title and the marks in front of it: the dots for his leading spaces,
+ * then his own mark and his place in a series, each where the one before it
+ * would start if it were not there — a row indents only by what it carries.
+ *
+ * Beside the title rather than in it, so a title long enough to be cut short
+ * never takes a mark with it.
+ */
+function titleElements(row: Row): HTMLElement[] {
+  const shown: HTMLElement[] = [];
+  const part = (className: string, text: string): HTMLElement => {
+    const element = document.createElement('span');
+    element.className = className;
+    element.textContent = text;
     return element;
+  };
+
+  if (row.rank > 0) {
+    const rank = part('note-rank', '');
+    rank.dataset['rank'] = String(row.rank);
+    rank.setAttribute('aria-hidden', 'true');
+    shown.push(rank);
   }
 
-  // Beside the title rather than in it, so a title long enough to be cut short
-  // never takes the mark with it.
-  const rank = document.createElement('span');
-  rank.className = 'note-rank';
-  rank.dataset['rank'] = String(row.rank);
-  rank.setAttribute('aria-hidden', 'true');
-
-  element.append(length, rank, title, when);
-  return element;
+  const { mark, position, name } = row.parts;
+  if (mark === null) return [...shown, part('note-title', row.title)];
+  shown.push(part('note-mark', mark));
+  if (position !== null) {
+    // The series beside the mark, the number set right in a column after it.
+    if (position.series !== null) shown.push(part('note-series', position.series));
+    shown.push(part('note-position', position.number));
+  }
+  return [...shown, part('note-title', name)];
 }
 
 export function renderList(container: HTMLElement, view: ListView): void {

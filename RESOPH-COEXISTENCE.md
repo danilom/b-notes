@@ -201,11 +201,25 @@ The table *Where his things are kept* in `DESIGN.md` changes with this.
   leading spaces, `*`, `(UP)`, `AA` and `zz` keep doing what he put them there
   to do. *Nedavni* stays as it is. *Decided, for now* — the mess gets cleaned
   up later (§6).
-- **Sorted as they are, not shown as they are** — *open*. A row starting with
-  thirty spaces looks broken. The order already carries his rank, so the list
-  can show a title without its leading spaces, with runs of spaces inside it
-  collapsed and Resoph's `%2A` shown as `*`. What he typed stays untouched in
-  the text itself. Options in §5.
+- **Sorted as they are, not shown as they are** — *decided and built* (branch
+  `list-title-marks`). A row starting with thirty spaces looks broken. The
+  order already carries his rank, so the list shows a title without its
+  leading spaces, runs of spaces inside it collapsed and Resoph's `%2A` shown
+  as `*`. What he typed stays untouched in the text itself.
+  - Leading spaces become one to three dots: 1–15 spaces, 16–23, 24 and more.
+    His widths bunch at 16 and 24.
+  - The marks at the front that he spells consistently — `(UP)`, `*(UP)`, the
+    kinds `A (E)`, `A(E)`, `AA(E)`, `yA (E)`, `ZA (E)`, `A(P)`, `AA(P)`, and
+    `AA`…`AAAA`, `ZZ`…, `zz`…, `y` — are drawn small in the dots' blue, still
+    as his letters. 536 of 1,215 titles carry one.
+  - The number after `(UP)`, with its series (`II`) if there is one, goes in
+    a right-aligned column, as his padding meant it; 205 titles have one.
+    Rows without one are not indented for it.
+  - Anything else — half-typed marks, one-off spellings — is left as text.
+  - The order is Resoph's, near enough: by character, ignoring case, so
+    spaces, then `(`, `*`, `-`, digits, letters. Only where two titles part
+    on a letter does the Serbian alphabet decide (`č` after `c`). Danilo
+    checked Resoph's order by eye.
 - **Search covers titles and text**, with and without diacritics, as now. Not
   weighted by where a text comes from: on day one nearly all his writing is
   untouched Resoph texts, so pushing those down would bury it. Better ranking
@@ -504,7 +518,7 @@ folder, both through Dropbox, often after long offline stretches.
   folder.
 - The archive strip and its four `.md` folders.
 - Reading Resoph's database.
-- Collapsing identical copies, and turning his marks into rank or status.
+- Collapsing identical copies, and reading status words (*konacna*, *radi*) out of his titles.
 - Anything written to Resoph's folder.
 - Stopping him mid-session when Resoph or Notepad opens, other than when he
   comes back to the window.

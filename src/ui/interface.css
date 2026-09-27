@@ -804,6 +804,39 @@ button svg {
   content: '•••';
 }
 
+/*
+  His marks, in the ink of the rank dots and smaller than his words, so the
+  name is what reads first. Letters as he typed them: shrunk and coloured,
+  never swapped for a symbol he would have to learn.
+*/
+.note-mark {
+  flex: none;
+  color: var(--chosen-ink);
+  font-size: 0.78em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/*
+  His place in a series: the series he names, if he names one, and the number
+  set right in a column as his padding meant it to be — three digits wide, his
+  longest — so the names after it line up. Only on rows that have one.
+*/
+.note-series,
+.note-position {
+  flex: none;
+  color: var(--quiet);
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+.note-position {
+  min-width: 1.9em;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
 .note.draft .note-title {
   font-style: italic;
 }
