@@ -27,7 +27,7 @@ const fileOf = (page: Page, id: string): Promise<string | null> =>
       string,
       { text: string }
     >;
-    return held[`Tekstovi/${wanted}.txt`]?.text ?? null;
+    return held[`b-notes/${wanted}.txt`]?.text ?? null;
   }, id);
 
 /** How far down the copy on the right the panel has scrolled. */
@@ -158,6 +158,6 @@ const keptTextsOf = (page: Page, id: string): Promise<string[]> =>
       { text: string }
     >;
     return Object.entries(held)
-      .filter(([path]) => path.startsWith(`Tekstovi/Verzije/${wanted}/`))
+      .filter(([path]) => path.startsWith(`b-notes/Verzije/${wanted}/`))
       .map(([, file]) => file.text);
   }, id);
