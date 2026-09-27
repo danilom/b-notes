@@ -218,8 +218,12 @@ The table *Where his things are kept* in `DESIGN.md` changes with this.
   - Anything else — half-typed marks, one-off spellings — is left as text.
   - The order is Resoph's, near enough: by character, ignoring case, so
     spaces, then `(`, `*`, `-`, digits, letters. Only where two titles part
-    on a letter does the Serbian alphabet decide (`č` after `c`). Danilo
-    checked Resoph's order by eye.
+    on a letter does the Serbian alphabet decide (`č` after `c`). Checked
+    against screenshots of Resoph's list on his corpus (2026-09-27): the same
+    order row for row, except that Resoph sorts `č ć š ž đ` after `z`. A text
+    starting with one is the last row of his list, where he doesn't look —
+    "ČAJ s ledom" looked lost until a search found it. b-notes keeps them in
+    the alphabet on purpose.
 - **Search covers titles and text**, with and without diacritics, as now. Not
   weighted by where a text comes from: on day one nearly all his writing is
   untouched Resoph texts, so pushing those down would bury it. Better ranking

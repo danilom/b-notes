@@ -125,6 +125,11 @@ const LETTER = /\p{L}/u;
  * as they are, and only where the two titles part on a letter does Serbian
  * alphabetical order take over — `č` after `c`, where by character it would
  * come after `z`.
+ *
+ * That is the one place this parts from Resoph, and on purpose. Checked
+ * against screenshots of his list, Resoph matches row for row except there: it
+ * sorts `č ć š ž đ` after `z`, so a text starting with one sits below all his
+ * `zzzz` texts, where he never scrolls. It is in his list and he cannot find it.
  */
 export function compareTitles(first: string, second: string): number {
   const a = first.toLowerCase();
