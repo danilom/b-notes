@@ -426,18 +426,29 @@ describe('the copies kept of one text', () => {
 describe('when a deleted text says it went', () => {
   const LONG_AGO = new Date(2019, 0, 1);
 
+  /*
+    "Recent" is judged against LONG_AGO, not against a reading of the clock
+    taken just before. This machine's clock has been seen to step, and a
+    sample of it taken a moment before a write came out more than a second
+    after the file's own time — so a test asking "is it at least as late as
+    just now" failed about one full run in eight, on nothing but the clock.
+    What is being checked is that the file was touched rather than left at its
+    old date, and a year is a margin no clock steps across.
+  */
+  const touchedSince = (updatedAt: number | undefined): boolean =>
+    (updatedAt ?? 0) > LONG_AGO.getTime() + 365 * 86_400_000;
+
   it('says when he put it away, not when he last wrote in it', async () => {
     const { dir, store } = await emptyStore();
     const id = await store.save(null, 'Stari\n\nPisan davno.');
     await utimes(path.join(dir, `${named('Stari')}.txt`), LONG_AGO, LONG_AGO);
-    const putAwayAt = Date.now();
 
     await store.moveToDeleted(id ?? '');
 
     const [put] = await store.listDeleted();
     assert.ok(
-      (put?.updatedAt ?? 0) >= putAwayAt - 1000,
-      `said ${new Date(put?.updatedAt ?? 0).toISOString()}, which is not when it was put away`,
+      touchedSince(put?.updatedAt),
+      `said ${new Date(put?.updatedAt ?? 0).toISOString()}, which is when it was written, not when it was put away`,
     );
   });
 
@@ -464,14 +475,16 @@ describe('when a deleted text says it went', () => {
   it('comes back as recently touched, since he has just asked for it', async () => {
     const { dir, store } = await emptyStore();
     const id = await store.save(null, 'Stari\n\nPisan davno.');
-    await utimes(path.join(dir, `${named('Stari')}.txt`), LONG_AGO, LONG_AGO);
     await store.moveToDeleted(id ?? '');
-    const restoredAt = Date.now();
+    // Aged where it lies in Obrisano, after the move: putting it away touches
+    // the file too, and aged before that, this would pass whether or not the
+    // restore touched anything.
+    await utimes(path.join(dir, DELETED_FOLDER, `${named('Stari')}.txt`), LONG_AGO, LONG_AGO);
 
     const back = await store.restore(id ?? '');
 
     const found = (await store.list()).find((note) => note.id === back);
-    assert.ok((found?.updatedAt ?? 0) >= restoredAt - 1000, 'a restored text is not stale');
+    assert.ok(touchedSince(found?.updatedAt), 'a restored text is not stale');
     assert.equal(found?.text, 'Stari\n\nPisan davno.');
   });
 });
