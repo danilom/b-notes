@@ -157,4 +157,8 @@ describe('putting titles in the order Resoph lists them in', () => {
   it('puts č and ć after c and before d, as his alphabet does', () => {
     assert.deepEqual(sorted(['Dan', 'Ćup', 'Čaj', 'Cvet']), ['Cvet', 'Čaj', 'Ćup', 'Dan']);
   });
+
+  it('keeps them in the alphabet inside a title too, where Resoph puts them after z', () => {
+    assert.deepEqual(sorted(['Vecina', 'VČAJ s ledom', 'VAZDUH']), ['VAZDUH', 'VČAJ s ledom', 'Vecina']);
+  });
 });
