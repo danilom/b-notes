@@ -1,8 +1,7 @@
 import {
   archiveFolderFor,
   archivedVersionsFolderFor,
-  baseOf,
-  claimName,
+  unusedName,
   versionName,
 } from '../../notes/note-naming.ts';
 
@@ -53,9 +52,9 @@ export function sampleFilesFor(
   ];
 }
 
-/** One text standing in an archive, before that folder's numbering is applied. */
+/** One text standing in an archive. */
 export interface ArchivedSample {
-  /** The name it arrives under, which may collide with another in the folder. */
+  /** The name it arrives under, which may be one another text also wants. */
   wants: string;
   text: string;
   updatedAt: number;
@@ -66,12 +65,8 @@ export interface ArchivedSample {
 /**
  * Every file one archive folder is made of.
  *
- * An archive numbers within itself, like every other folder: a name borrowed
- * from his list arrives carrying the number it has *there*, which is about a
- * collision that happened somewhere else, so it comes off and any collision in
- * here is settled in here. Which is the whole reason this lives beside the
- * version paths rather than in the sample — it is the app's naming rule, and
- * the fixture is not allowed a second copy of it.
+ * Two texts wanting one name are told apart the way the app does it, with
+ * `unusedName`, rather than by a second rule kept in the fixture.
  */
 export function archiveFilesFor(
   writingFolder: string,
@@ -83,18 +78,7 @@ export function archiveFilesFor(
   const taken = new Set<string>();
 
   for (const text of texts) {
-    const { id, displaced } = claimName(baseOf(text.wants), null, taken);
-    if (displaced !== null) {
-      // The one already holding the bare name takes a number, and the file
-      // written for it earlier in this loop has to follow.
-      for (const written of files) {
-        if (written.path === `${folder}/${displaced.from}.txt`) {
-          written.path = `${folder}/${displaced.to}.txt`;
-        }
-      }
-      taken.delete(displaced.from);
-      taken.add(displaced.to);
-    }
+    const id = unusedName(text.wants, taken);
     taken.add(id);
 
     files.push({ path: `${folder}/${id}.txt`, text: text.text, updatedAt: text.updatedAt });

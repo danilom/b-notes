@@ -157,12 +157,7 @@ describe('when his writing reaches disk', () => {
 });
 
 describe('a text that keeps the same name for itself', () => {
-  it('is the same text after his first line changes', async () => {
-    /*
-      The whole reason a handle exists. The file is renamed under it, and the
-      handle does not move — where before, everything holding the old name was
-      quietly pointing at a file that had gone.
-    */
+  it('keeps its name when his first line changes, since nothing is renamed', async () => {
     const { writing } = await writingIn();
     const handle = writing.begin();
 
@@ -172,16 +167,13 @@ describe('a text that keeps the same name for itself', () => {
 
     writing.save(handle, 'Esej\n\nDragi brate');
     await writing.flush();
-    const second = writing.tokenOf(handle);
 
-    assert.notEqual(first, second);
+    assert.equal(writing.tokenOf(handle), first);
     assert.equal((await writing.list()).length, 1);
-    assert.equal(writing.handleFor(second ?? ''), handle);
+    assert.equal(writing.handleFor(first ?? ''), handle);
   });
 
-  it('is the same text after another text takes its name', async () => {
-    // The rename nobody was told about: a second `Pismo` makes the first one
-    // `Pismo (1)`, and the first text never asked for anything.
+  it('leaves the first text alone when a second one opens the same way', async () => {
     const { writing } = await writingIn();
     const first = writing.begin();
     writing.save(first, 'Pismo\n\nPrvi');
@@ -192,8 +184,8 @@ describe('a text that keeps the same name for itself', () => {
     writing.save(second, 'Pismo\n\nDrugi');
     await writing.flush();
 
-    assert.notEqual(writing.tokenOf(first), wasCalled);
-    assert.equal(writing.handleFor(writing.tokenOf(first) ?? ''), first);
+    assert.equal(writing.tokenOf(first), wasCalled);
+    assert.notEqual(writing.tokenOf(second), wasCalled);
     assert.equal((await writing.list()).length, 2);
   });
 });

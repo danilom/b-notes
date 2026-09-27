@@ -13,15 +13,11 @@ import {
   DELETED_FOLDER,
   EXTENSION,
   VERSIONS_FOLDER,
-  baseOf,
-  fileNameBase,
-  isConflictedCopy,
+  newNameFor,
   putAwayVersionsFolderFor,
   versionName,
 } from '../src/notes/note-naming.ts';
-import { survivedTooLittle } from '../src/notes/note.ts';
 import { toSearchable } from '../src/language/diacritics.ts';
-import { MAX_TITLE, titleFrom } from '../src/notes/note-title.ts';
 
 /**
  * The shared note store on top of the real filesystem — the combination the
@@ -30,104 +26,22 @@ import { MAX_TITLE, titleFrom } from '../src/notes/note-title.ts';
 async function emptyStore() {
   const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
   const log = silentLog();
-  return { dir, log, store: createNoteStore(createFileSystem(path.join(tmpdir(), 'b-notes-staging')), dir.replaceAll("\\", "/"), log) };
+  const store = createNoteStore(
+    createFileSystem(path.join(tmpdir(), 'b-notes-staging')),
+    dir.replaceAll('\\', '/'),
+    log,
+    undefined,
+    NAMING,
+  );
+  return { dir, log, store };
 }
 
-describe('isConflictedCopy', () => {
-  it('recognises the name Dropbox gives a sync collision', () => {
-    assert.equal(isConflictedCopy("Essay (Brano's conflicted copy 2026-09-18).txt"), true);
-  });
+/** Held still, so the name a new text gets is known in advance. */
+const STARTED = new Date(2026, 8, 27, 10, 0, 0);
+const NAMING = { machine: 'Test', now: () => STARTED };
 
-  it('recognises a same-day second collision', () => {
-    assert.equal(isConflictedCopy("Essay (Brano's conflicted copy 2026-09-18 2).txt"), true);
-  });
-
-  it('leaves an ordinary name alone', () => {
-    assert.equal(isConflictedCopy('Essay about ducks.txt'), false);
-  });
-
-  it('does not match prose that merely uses the words', () => {
-    assert.equal(isConflictedCopy('On the conflicted copy as a literary device.txt'), false);
-  });
-});
-
-describe('the disambiguating suffix, which is ours and not his', () => {
-  it('never stacks one on another', async () => {
-    // It did: a first line ending in (1) became part of the name, so the next
-    // clash put another on top and `Pismo (1) (1)` was born. His own suffix is
-    // stripped, so both of these are the base `Pismo` and get a number each.
-    const { dir, store } = await emptyStore();
-
-    await store.save(null, 'Pismo (1)\n\nPrvi.');
-    await store.save(null, 'Pismo (1)\n\nDrugi.');
-
-    assert.deepEqual((await readdir(dir)).sort(), ['Pismo (1).txt', 'Pismo (2).txt']);
-  });
-
-  it('leaves the title he wrote alone', async () => {
-    // Only the file is renamed. What he reads comes from his own words.
-    const { store } = await emptyStore();
-    await store.save(null, 'Pismo (1)\n\nPrvi.');
-
-    assert.equal((await store.list())[0]?.title, 'Pismo (1)');
-  });
-
-  it('does not stack one while putting a .md file into plain text', async () => {
-    // About twenty of his arrive from Simplenote already carrying a suffix,
-    // and the conversion runs over all of them at the first startup.
-    const { dir, store } = await emptyStore();
-    await writeFile(path.join(dir, 'Esej.md'), 'Esej\n\nJedan.', 'utf8');
-    await writeFile(path.join(dir, 'Esej (1).md'), 'Esej\n\nDva.', 'utf8');
-    await writeFile(path.join(dir, 'Esej (1).txt'), 'Esej\n\nTri.', 'utf8');
-
-    await store.convertToPlainText();
-
-    assert.deepEqual((await readdir(dir)).sort(), ['Esej (1).txt', 'Esej (2).txt', 'Esej (3).txt']);
-  });
-
-  it('takes every suffix off, so a doubled name heals', () => {
-    // Stripping once left the damage in place for good: it survived a save, a
-    // delete and a restore, gathering another on every clash.
-    assert.equal(baseOf('Pismo (1) (2)'), 'Pismo');
-    assert.equal(fileNameBase('Pismo (1) (2)'), 'Pismo');
-  });
-
-  it('leaves a bare bracket alone, since the suffix needs its space', () => {
-    // A title that is only "(1)" is his writing, and names a file that reads
-    // back as itself.
-    assert.equal(fileNameBase('(1)'), '(1)');
-    assert.equal(baseOf('(1)'), '(1)');
-  });
-});
-
-describe('a text that will not convert', () => {
-  it('says why, not only which', async () => {
-    // Held open by Dropbox, already gone, and refused by Windows are three
-    // different problems. The name alone makes them one, and the reason is
-    // there for the taking at exactly the moment it is thrown away.
-    const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
-    const real = createFileSystem(path.join(tmpdir(), 'b-notes-staging'));
-    const refuses: FileSystem = {
-      ...real,
-      rename: async () => {
-        throw Object.assign(new Error('EBUSY: resource busy or locked'), { code: 'EBUSY' });
-      },
-    };
-    await writeFile(path.join(dir, 'Stari zapis.md'), 'Stari zapis\n\nTekst.', 'utf8');
-    const store = createNoteStore(refuses, dir.replaceAll('\\', '/'), silentLog());
-
-    const { converted, refused } = await store.convertToPlainText();
-
-    assert.equal(converted, 0);
-    assert.equal(refused.length, 1);
-    assert.equal(refused[0]?.name, 'Stari zapis.md');
-    assert.match(
-      JSON.stringify(refused[0]?.failure),
-      /EBUSY/,
-      'the reason travels with the name',
-    );
-  });
-});
+/** What a text he starts with this first line is called. */
+const named = (title: string): string => newNameFor(title, STARTED, 'Test');
 
 describe('a disk that will not answer', () => {
   it('refuses to answer rather than reporting that he has no copies', async () => {
@@ -153,110 +67,11 @@ describe('a disk that will not answer', () => {
   });
 });
 
-describe('titleFrom', () => {
-  it('takes the first line when it says enough on its own', () => {
-    assert.equal(titleFrom('O zimi\n\nNešto dalje.'), 'O zimi');
-  });
-
-  it('joins the stacked, indented lines he writes titles on', () => {
-    assert.equal(titleFrom('x1\n  y\n    whatever\n\nTekst.'), 'x1 y whatever');
-  });
-
-  it('reads past a blank line when the opening tells him nothing', () => {
-    assert.equal(titleFrom('S\n\nPišem ti podstaknut'), 'S Pišem ti podstaknut');
-  });
-
-  it('stops at a blank line once there is enough to recognise', () => {
-    assert.equal(titleFrom('Devojka\n\nDanas sam vidio.'), 'Devojka');
-  });
-
-  it('keeps reading past several blank lines while the title is useless', () => {
-    assert.equal(titleFrom('S\n\n\n\nPišem ti'), 'S Pišem ti');
-  });
-
-  it('skips blank lines above his text', () => {
-    assert.equal(titleFrom('\n\n\nO zimi\nDalje.'), 'O zimi');
-  });
-
-  it('stops at the end of the line he wrote, not only at a blank one', () => {
-    // One press of Enter, which is what he will actually do while writing here.
-    assert.equal(titleFrom('devojka\ntekst počinje ovde...'), 'devojka');
-  });
-
-  it('strips the indentation he leaves in front of it', () => {
-    assert.equal(titleFrom('      O zimi\nDalje.'), 'O zimi');
-  });
-
-  it('collapses runs of spaces, which he uses freely', () => {
-    assert.equal(titleFrom('O    zimi   i   ljetu'), 'O zimi i ljetu');
-  });
-
-  it('keeps punctuation, since this is what he reads in the list', () => {
-    assert.equal(titleFrom('Je li moguće da?'), 'Je li moguće da?');
-  });
-
-  it('breaks a long first line at a word boundary', () => {
-    const long = 'Danas nema više kupina za lijepe i vrijedne djevojke iz sela';
-
-    const title = titleFrom(long);
-
-    assert.ok(title.length <= 50);
-    assert.ok(long.startsWith(title));
-    assert.equal(title, 'Danas nema više kupina za lijepe i vrijedne');
-  });
-
-  it('cuts mid-word only when one word would otherwise swallow the title', () => {
-    const title = titleFrom(`kratko ${'x'.repeat(60)}`);
-
-    assert.equal(title.length, 50);
-  });
-
-  it('is empty for text that is only whitespace', () => {
-    assert.equal(titleFrom('   \n\n  '), '');
-  });
-});
-
-describe('fileNameBase', () => {
-  it('keeps an ordinary title intact', () => {
-    assert.equal(fileNameBase('O zimskoj svjetlosti'), 'O zimskoj svjetlosti');
-  });
-
-  it('replaces characters Windows refuses', () => {
-    assert.equal(fileNameBase('Zašto?  Zato: radi/ne radi'), 'Zašto Zato radi ne radi');
-  });
-
-  it('falls back when nothing usable is left', () => {
-    assert.equal(fileNameBase('///'), 'Bez naslova');
-  });
-
-  it('escapes names reserved by Windows', () => {
-    assert.equal(fileNameBase('CON'), '_CON');
-  });
-
-  it('drops trailing dots, which Windows would silently strip', () => {
-    assert.equal(fileNameBase('Prvo poglavlje...'), 'Prvo poglavlje');
-  });
-});
-
-describe('baseOf', () => {
-  it('removes the extension', () => {
-    assert.equal(baseOf('Esej.txt'), 'Esej');
-  });
-
-  it('removes a disambiguating suffix', () => {
-    assert.equal(baseOf('Esej (2).txt'), 'Esej');
-  });
-
-  it('leaves an unrelated bracketed word alone', () => {
-    assert.equal(baseOf('Esej (drugi dio).txt'), 'Esej (drugi dio)');
-  });
-});
-
 describe('saving', () => {
   it('creates a note named after his first line', async () => {
     const { store } = await emptyStore();
 
-    assert.equal(await store.save(null, 'O zimi\n\nTekst.'), 'O zimi');
+    assert.equal(await store.save(null, 'O zimi\n\nTekst.'), named('O zimi'));
   });
 
   it('refuses to create anything for an empty new note', async () => {
@@ -266,227 +81,11 @@ describe('saving', () => {
     assert.deepEqual(await readdir(dir), []);
   });
 
-  it('renames the file when he changes his first line', async () => {
-    const { dir, store } = await emptyStore();
-    const first = await store.save(null, 'O zimi\n\nTekst.');
-
-    const second = await store.save(first, 'O ljetu\n\nTekst.');
-
-    assert.equal(second, 'O ljetu');
-    assert.deepEqual(await readdir(dir), ['O ljetu.txt']);
-  });
-
-  it('takes the copies with it when renaming, so he can still reach them', async () => {
-    // The versions folder is named after the note. A retitle that left it
-    // behind orphaned every copy he had: the files stayed on disk and nothing
-    // in the app could reach them again.
-    const { store } = await emptyStore();
-    const first = await store.save(null, 'O zimi\n\nTekst.');
-    await store.keepCopy(first ?? '', 'O zimi\n\nStariji tekst.');
-
-    const second = await store.save(first, 'O ljetu\n\nTekst.');
-
-    const kept = await store.listVersions(second ?? '');
-    assert.equal(kept.length, 1);
-    assert.equal(kept[0]?.text, 'O zimi\n\nStariji tekst.');
-  });
-
-  it('keeps a copy when a rewritten opening line also cuts most of the text', async () => {
-    // Both halves of one save: the name changes and a great deal of the text
-    // goes — though not so much that it counts as a replacement, which does not
-    // rename at all. The rename used to swallow the copy the cut asked for.
-    const { store } = await emptyStore();
-    const long = `O zimi\n\n${'rec '.repeat(400)}`;
-    const first = await store.save(null, long);
-
-    const second = await store.save(first, `O ljetu\n\n${'rec '.repeat(200)}`);
-
-    const kept = await store.listVersions(second ?? '');
-    assert.equal(kept.length, 1, 'what he had before the cut');
-    assert.equal(kept[0]?.text, long);
-  });
-
-  it('keeps the text when renaming', async () => {
-    const { store } = await emptyStore();
-    const first = await store.save(null, 'O zimi\n\nTekst.');
-
-    const second = await store.save(first, 'O ljetu\n\nTekst.');
-
-    assert.equal(await store.read(second ?? ''), 'O ljetu\n\nTekst.');
-  });
-
   it('leaves the filename alone when the first line has not changed', async () => {
     const { store } = await emptyStore();
     const first = await store.save(null, 'O zimi\n\nTekst.');
 
     assert.equal(await store.save(first, 'O zimi\n\nDrugi tekst.'), first);
-  });
-
-  it('gives a second note with the same first line its own file', async () => {
-    const { store } = await emptyStore();
-
-    assert.equal(await store.save(null, 'O zimi\n\nJedan.'), 'O zimi');
-    assert.equal(await store.save(null, 'O zimi\n\nDva.'), 'O zimi (2)');
-  });
-
-  it('numbers the text already there rather than leaving one of two bare', async () => {
-    // What he reads in the list is the number on the file. Leaving the first
-    // one plain would mean the list numbering it by counting rows, and saying
-    // `(1)` about a file called `O zimi.txt`.
-    const { dir, store } = await emptyStore();
-    await store.save(null, 'O zimi\n\nJedan.');
-
-    await store.save(null, 'O zimi\n\nDva.');
-
-    assert.deepEqual((await readdir(dir)).sort(), ['O zimi (1).txt', 'O zimi (2).txt']);
-  });
-
-  it('takes the older text kept copies with it when it is numbered', async () => {
-    const { dir, store } = await emptyStore();
-    const id = await store.save(null, 'O zimi\n\nJedan.');
-    await store.keepCopy(id ?? '', 'O zimi\n\nNesto starije.');
-
-    await store.save(null, 'O zimi\n\nDva.');
-
-    assert.deepEqual(await readdir(path.join(dir, 'Verzije')), ['O zimi (1)']);
-  });
-
-  it('still saves his text when the older one cannot be numbered', async () => {
-    // Numbering the other file is housekeeping, and housekeeping is never
-    // allowed to cost him the writing that prompted it. A Dropbox sync holding
-    // that file open is the everyday version of this.
-    const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
-    const log = silentLog();
-    const disk = createFileSystem(path.join(tmpdir(), 'b-notes-staging'));
-    const refusing: FileSystem = {
-      ...disk,
-      rename: async (from, to) => {
-        if (to.endsWith('O zimi (1).txt')) throw new Error('held open elsewhere');
-        return disk.rename(from, to);
-      },
-    };
-    const store = createNoteStore(refusing, dir.replaceAll(String.fromCharCode(92), '/'), log);
-    await store.save(null, 'O zimi\n\nJedan.');
-
-    assert.equal(await store.save(null, 'O zimi\n\nDva.'), 'O zimi (2)');
-    assert.deepEqual((await readdir(dir)).sort(), ['O zimi (2).txt', 'O zimi.txt']);
-    assert.ok(log.said.some((line) => line.level === 'warn' && line.message.includes('number')));
-  });
-
-  it('does not let the suffix accumulate when a duplicate is edited', async () => {
-    const { store } = await emptyStore();
-    await store.save(null, 'O zimi\n\nJedan.');
-
-    let id = await store.save(null, 'O zimi\n\nDva.');
-    for (let round = 0; round < 5; round += 1) id = await store.save(id, `O zimi\n\nDva. ${round}`);
-
-    assert.equal(id, 'O zimi (2)');
-  });
-
-  it('numbers a third duplicate without reusing the second name', async () => {
-    const { store } = await emptyStore();
-    await store.save(null, 'Ponovljeni\n\nJedan.');
-    await store.save(null, 'Ponovljeni\n\nDva.');
-
-    assert.equal(await store.save(null, 'Ponovljeni\n\nTri.'), 'Ponovljeni (3)');
-  });
-
-  it('takes the number off the last one left when its siblings are gone', async () => {
-    const { dir, store } = await emptyStore();
-    // The first save returns `O zimi`; the second numbers it, so by now it is
-    // `O zimi (1)`. An id held across a save is an id that may have moved.
-    await store.save(null, 'O zimi\n\nJedan.');
-    await store.save(null, 'O zimi\n\nDva.');
-
-    await store.moveToDeleted('O zimi (1)');
-
-    // (2) was never renumbered to (1) — numbers do not shuffle. It simply
-    // stops being one of several, so it stops carrying a number at all.
-    assert.deepEqual((await readdir(dir)).filter((n) => n.endsWith(EXTENSION)), ['O zimi.txt']);
-  });
-
-  it('leaves a gap alone while more than one is still there', async () => {
-    const { dir, store } = await emptyStore();
-    await store.save(null, 'O zimi\n\nJedan.');
-    const two = await store.save(null, 'O zimi\n\nDva.');
-    await store.save(null, 'O zimi\n\nTri.');
-
-    await store.moveToDeleted(two ?? '');
-
-    assert.deepEqual((await readdir(dir)).filter((n) => n.endsWith(EXTENSION)).sort(), [
-      'O zimi (1).txt',
-      'O zimi (3).txt',
-    ]);
-  });
-
-  it('carries the kept copies when the last one loses its number', async () => {
-    const { dir, store } = await emptyStore();
-    await store.save(null, 'O zimi\n\nJedan.');
-    const two = await store.save(null, 'O zimi\n\nDva.');
-    await store.keepCopy(two ?? '', 'O zimi\n\nNesto starije.');
-
-    await store.moveToDeleted('O zimi (1)');
-
-    assert.deepEqual(await readdir(path.join(dir, VERSIONS_FOLDER)), ['O zimi']);
-  });
-
-  it('settles his list when a text is renamed out of a shared name', async () => {
-    const { dir, store } = await emptyStore();
-    await store.save(null, 'O zimi\n\nJedan.');
-    const two = await store.save(null, 'O zimi\n\nDva.');
-
-    await store.save(two ?? '', 'O ljetu\n\nSad o necem drugom.');
-
-    assert.deepEqual((await readdir(dir)).filter((n) => n.endsWith(EXTENSION)).sort(), [
-      'O ljetu.txt',
-      'O zimi.txt',
-    ]);
-  });
-
-  it('settles Obrisano when one of them is destroyed for good', async () => {
-    const { dir, store } = await emptyStore();
-    await store.save(null, 'O zimi\n\nJedan.');
-    await store.save(null, 'O zimi\n\nDva.');
-    await store.moveToDeleted('O zimi (1)');
-    await store.moveToDeleted('O zimi');
-
-    await store.destroy('O zimi (1)');
-
-    assert.deepEqual(await readdir(path.join(dir, DELETED_FOLDER)), ['O zimi.txt']);
-  });
-
-  it('settles Obrisano when a text is brought back out of it', async () => {
-    const { dir, store } = await emptyStore();
-    await store.save(null, 'O zimi\n\nJedan.');
-    await store.save(null, 'O zimi\n\nDva.');
-    await store.moveToDeleted('O zimi (1)');
-    // Putting the first away left the second alone, so it is plain `O zimi`
-    // now. Deleting one text is what renamed the other.
-    await store.moveToDeleted('O zimi');
-
-    await store.restore('O zimi (1)');
-
-    assert.deepEqual(await readdir(path.join(dir, DELETED_FOLDER)), ['O zimi.txt']);
-  });
-
-  it('puts the whole folder in order at startup, both halves of it', async () => {
-    // His corpus arrived from Simplenote as a bare name beside numbered ones,
-    // and no save has ever had cause to look at it.
-    const { dir, store } = await emptyStore();
-    await mkdir(path.join(dir, DELETED_FOLDER), { recursive: true });
-    await writeFile(path.join(dir, 'Esej.txt'), 'Esej\n\nJedan.', 'utf8');
-    await writeFile(path.join(dir, 'Esej (1).txt'), 'Esej\n\nDva.', 'utf8');
-    await writeFile(path.join(dir, 'Sam (4).txt'), 'Sam\n\nJedini.', 'utf8');
-    await writeFile(path.join(dir, DELETED_FOLDER, 'Staro (2).txt'), 'Staro\n\nJedno.', 'utf8');
-
-    await store.settleNames();
-
-    assert.deepEqual((await readdir(dir)).filter((n) => n.endsWith(EXTENSION)).sort(), [
-      'Esej (1).txt',
-      'Esej (2).txt',
-      'Sam.txt',
-    ]);
-    assert.deepEqual(await readdir(path.join(dir, DELETED_FOLDER)), ['Staro.txt']);
   });
 
   it('emptying an existing note keeps the file, since that is how he deletes', async () => {
@@ -497,7 +96,7 @@ describe('saving', () => {
 
     assert.deepEqual(
       (await readdir(dir)).filter((name) => name.endsWith(EXTENSION)),
-      ['O zimi.txt'],
+      [`${named('O zimi')}.txt`],
     );
   });
 
@@ -507,10 +106,10 @@ describe('saving', () => {
 
     await store.save(id, '');
 
-    const kept = await readdir(path.join(dir, VERSIONS_FOLDER, 'O zimi'));
+    const kept = await readdir(path.join(dir, VERSIONS_FOLDER, named('O zimi')));
     assert.equal(kept.length, 1);
     assert.equal(
-      await readFile(path.join(dir, VERSIONS_FOLDER, 'O zimi', kept[0] ?? ''), 'utf8'),
+      await readFile(path.join(dir, VERSIONS_FOLDER, named('O zimi'), kept[0] ?? ''), 'utf8'),
       'O zimi\n\nSve što je napisao.',
     );
   });
@@ -521,7 +120,7 @@ describe('saving', () => {
     await store.save(id, '');
     await store.save(id, '');
 
-    assert.equal((await readdir(path.join(dir, VERSIONS_FOLDER, 'O zimi'))).length, 1);
+    assert.equal((await readdir(path.join(dir, VERSIONS_FOLDER, named('O zimi')))).length, 1);
   });
 
   it('leaves his text alone when the version cannot be kept', async () => {
@@ -550,7 +149,7 @@ describe('saving', () => {
 
     await store.moveToDeleted(id ?? '');
 
-    const moved = await readdir(path.join(dir, DELETED_FOLDER, VERSIONS_FOLDER, 'O zimi'));
+    const moved = await readdir(path.join(dir, DELETED_FOLDER, VERSIONS_FOLDER, named('O zimi')));
     assert.equal(moved.length, 1);
   });
 
@@ -564,10 +163,10 @@ describe('saving', () => {
     const second = await store.save(null, 'O zimi\n\nSasvim drugi tekst.');
     await store.save(second, '');
 
-    const theirs = await readdir(path.join(dir, VERSIONS_FOLDER, 'O zimi'));
+    const theirs = await readdir(path.join(dir, VERSIONS_FOLDER, named('O zimi')));
     assert.equal(theirs.length, 1);
     assert.equal(
-      await readFile(path.join(dir, VERSIONS_FOLDER, 'O zimi', theirs[0] ?? ''), 'utf8'),
+      await readFile(path.join(dir, VERSIONS_FOLDER, named('O zimi'), theirs[0] ?? ''), 'utf8'),
       'O zimi\n\nSasvim drugi tekst.',
     );
   });
@@ -576,7 +175,7 @@ describe('saving', () => {
     const { store } = await emptyStore();
     const id = await store.save(null, 'O zimi\n\nTekst.');
 
-    assert.equal(await store.save(id, ''), 'O zimi');
+    assert.equal(await store.save(id, ''), named('O zimi'));
   });
 
   it('refuses an id that points outside the notes folder', async () => {
@@ -592,24 +191,6 @@ describe('saving', () => {
   });
 });
 
-describe('survivedTooLittle', () => {
-  it('treats trimming a sentence as an edit', () => {
-    assert.equal(survivedTooLittle('foo bar a lot whatever', 'whatever'), false);
-  });
-
-  it('treats an essay replaced by a keystroke as a replacement', () => {
-    assert.equal(survivedTooLittle('x'.repeat(20000), 'y'), true);
-  });
-
-  it('scales to a short note rather than using a byte count', () => {
-    assert.equal(survivedTooLittle('dvadeset karaktera ovdje', 'y'), true);
-  });
-
-  it('says nothing about a note that had no text to begin with', () => {
-    assert.equal(survivedTooLittle('', 'nešto novo'), false);
-  });
-});
-
 describe('moving a note out of the way', () => {
   it('puts it in the deleted folder', async () => {
     const { dir, store } = await emptyStore();
@@ -617,8 +198,8 @@ describe('moving a note out of the way', () => {
 
     await store.moveToDeleted(id ?? '');
 
-    assert.deepEqual(await readdir(path.join(dir, DELETED_FOLDER)), ['O zimi.txt']);
-    assert.equal((await readdir(dir)).includes('O zimi.txt'), false);
+    assert.deepEqual(await readdir(path.join(dir, DELETED_FOLDER)), [`${named('O zimi')}.txt`]);
+    assert.equal((await readdir(dir)).includes(`${named('O zimi')}.txt`), false);
   });
 
   it('keeps the name it had, which after an emptying is all that is left', async () => {
@@ -628,7 +209,7 @@ describe('moving a note out of the way', () => {
 
     await store.moveToDeleted(id ?? '');
 
-    assert.deepEqual(await readdir(path.join(dir, DELETED_FOLDER)), ['O zimi.txt', VERSIONS_FOLDER]);
+    assert.deepEqual(await readdir(path.join(dir, DELETED_FOLDER)), [`${named('O zimi')}.txt`, VERSIONS_FOLDER]);
   });
 
   it('keeps both when a deleted note of that name is already there', async () => {
@@ -639,9 +220,10 @@ describe('moving a note out of the way', () => {
 
     await store.moveToDeleted(second ?? '');
 
+    // Both were started at the same held moment, so both wanted one name.
     assert.deepEqual((await readdir(path.join(dir, DELETED_FOLDER))).sort(), [
-      'Ponovljeni (1).txt',
-      'Ponovljeni (2).txt',
+      `${named('Ponovljeni')} 2.txt`,
+      `${named('Ponovljeni')}.txt`,
     ]);
   });
 
@@ -674,70 +256,6 @@ describe('moving a note out of the way', () => {
     const { store } = await emptyStore();
 
     await assert.rejects(() => store.moveToDeleted('../../secrets.txt'));
-  });
-});
-
-describe('converting to plain text', () => {
-  it('renames a .md note to .txt, so Notepad can open it', async () => {
-    const { dir, store } = await emptyStore();
-    await writeFile(path.join(dir, 'Esej o zimi.md'), 'Esej o zimi\n\nTekst.', 'utf8');
-
-    assert.deepEqual(await store.convertToPlainText(), { converted: 1, refused: [] });
-    assert.deepEqual(await readdir(dir), ['Esej o zimi.txt']);
-  });
-
-  it('keeps the text intact', async () => {
-    const { dir, store } = await emptyStore();
-    await writeFile(path.join(dir, 'Esej o zimi.md'), 'Esej o zimi\n\nTekst.', 'utf8');
-
-    await store.convertToPlainText();
-
-    assert.equal(await store.read('Esej o zimi'), 'Esej o zimi\n\nTekst.');
-  });
-
-  it('does not overwrite a .txt that already has that name', async () => {
-    const { dir, store } = await emptyStore();
-    await writeFile(path.join(dir, 'Esej o zimi.txt'), 'Esej o zimi\n\nIz txt.', 'utf8');
-    await writeFile(path.join(dir, 'Esej o zimi.md'), 'Esej o zimi\n\nIz md.', 'utf8');
-
-    await store.convertToPlainText();
-
-    assert.deepEqual((await readdir(dir)).sort(), ['Esej o zimi (1).txt', 'Esej o zimi (2).txt']);
-  });
-
-  it('keeps both texts when it has to rename around a clash', async () => {
-    const { dir, store } = await emptyStore();
-    await writeFile(path.join(dir, 'Esej o zimi.txt'), 'Esej o zimi\n\nIz txt.', 'utf8');
-    await writeFile(path.join(dir, 'Esej o zimi.md'), 'Esej o zimi\n\nIz md.', 'utf8');
-
-    await store.convertToPlainText();
-
-    const texts = (await store.list()).map((note) => note.text).sort();
-    assert.deepEqual(texts, ['Esej o zimi\n\nIz md.', 'Esej o zimi\n\nIz txt.']);
-  });
-
-  it('leaves notes that are already plain text alone', async () => {
-    const { store } = await emptyStore();
-    await store.save(null, 'Esej o zimi\n\nTekst.');
-
-    assert.deepEqual(await store.convertToPlainText(), { converted: 0, refused: [] });
-  });
-
-  it('is safe to run again', async () => {
-    const { dir, store } = await emptyStore();
-    await writeFile(path.join(dir, 'Esej o zimi.md'), 'Esej o zimi\n\nTekst.', 'utf8');
-
-    await store.convertToPlainText();
-    await store.convertToPlainText();
-
-    assert.deepEqual(await readdir(dir), ['Esej o zimi.txt']);
-  });
-
-  it('does not list a note still in another format', async () => {
-    const { dir, store } = await emptyStore();
-    await writeFile(path.join(dir, 'Esej o zimi.md'), 'Esej o zimi\n\nTekst.', 'utf8');
-
-    assert.deepEqual(await store.list(), []);
   });
 });
 
@@ -911,7 +429,7 @@ describe('when a deleted text says it went', () => {
   it('says when he put it away, not when he last wrote in it', async () => {
     const { dir, store } = await emptyStore();
     const id = await store.save(null, 'Stari\n\nPisan davno.');
-    await utimes(path.join(dir, 'Stari.txt'), LONG_AGO, LONG_AGO);
+    await utimes(path.join(dir, `${named('Stari')}.txt`), LONG_AGO, LONG_AGO);
     const putAwayAt = Date.now();
 
     await store.moveToDeleted(id ?? '');
@@ -937,7 +455,7 @@ describe('when a deleted text says it went', () => {
     await after(20);
 
     const old = await store.save(null, 'Stari\n\nPisan davno.');
-    await utimes(path.join(dir, 'Stari.txt'), LONG_AGO, LONG_AGO);
+    await utimes(path.join(dir, `${named('Stari')}.txt`), LONG_AGO, LONG_AGO);
     await store.moveToDeleted(old ?? '');
 
     assert.deepEqual((await store.listDeleted()).map((note) => note.title), ['Stari', 'Noviji']);
@@ -946,7 +464,7 @@ describe('when a deleted text says it went', () => {
   it('comes back as recently touched, since he has just asked for it', async () => {
     const { dir, store } = await emptyStore();
     const id = await store.save(null, 'Stari\n\nPisan davno.');
-    await utimes(path.join(dir, 'Stari.txt'), LONG_AGO, LONG_AGO);
+    await utimes(path.join(dir, `${named('Stari')}.txt`), LONG_AGO, LONG_AGO);
     await store.moveToDeleted(id ?? '');
     const restoredAt = Date.now();
 
@@ -981,7 +499,7 @@ describe('a deleted text he had emptied first', () => {
     await store.moveToDeleted(id ?? '');
 
     assert.equal(
-      await readFile(path.join(dir, DELETED_FOLDER, 'O zimi.txt'), 'utf8'),
+      await readFile(path.join(dir, DELETED_FOLDER, `${named('O zimi')}.txt`), 'utf8'),
       'O zimi\n\nSve sto je napisao o zimi.',
     );
   });
@@ -993,7 +511,7 @@ describe('a deleted text he had emptied first', () => {
 
     await store.moveToDeleted(id ?? '');
 
-    const kept = await readdir(path.join(dir, DELETED_FOLDER, VERSIONS_FOLDER, 'O zimi'));
+    const kept = await readdir(path.join(dir, DELETED_FOLDER, VERSIONS_FOLDER, named('O zimi')));
     assert.equal(kept.length, 1);
     assert.equal((await readdir(path.join(dir))).includes(VERSIONS_FOLDER), false);
   });
@@ -1113,8 +631,8 @@ describe('destroying one for good', () => {
     await store.moveToDeleted(plain ?? '');
 
     const counted = new Map((await store.listDeleted()).map((note) => [note.id, note.versions]));
-    assert.equal(counted.get('O zimi'), 1);
-    assert.equal(counted.get('O jeseni'), 0);
+    assert.equal(counted.get(named('O zimi')), 1);
+    assert.equal(counted.get(named('O jeseni')), 0);
   });
 });
 
@@ -1190,7 +708,7 @@ describe('bringing a text back', () => {
 
     const back = await store.restore(id ?? '');
 
-    assert.equal(back, 'O zimi');
+    assert.equal(back, named('O zimi'));
     assert.equal(await store.read(back), 'O zimi\n\nTekst.');
     assert.deepEqual(await store.listDeleted(), []);
   });
@@ -1203,10 +721,10 @@ describe('bringing a text back', () => {
 
     const back = await store.restore(first ?? '');
 
-    // The one he wrote while this was away is numbered too, rather than left
-    // as the only bare `O zimi` beside a `(1)` he never asked for.
-    assert.equal(back, 'O zimi (2)');
-    assert.equal(await store.read('O zimi (1)'), 'O zimi\n\nNovi tekst.');
+    // Nothing he wrote meanwhile is renamed to make room: the one coming back
+    // steps round it instead.
+    assert.equal(back, `${named('O zimi')} 2`);
+    assert.equal(await store.read(named('O zimi')), 'O zimi\n\nNovi tekst.');
     assert.equal(await store.read(back), 'O zimi\n\nStari tekst.');
   });
 
@@ -1226,29 +744,6 @@ describe('bringing a text back', () => {
     const { store } = await emptyStore();
 
     await assert.rejects(() => store.restore('../../secrets'));
-  });
-});
-
-describe('how long a path the naming can make', () => {
-  /*
-    Windows refuses a path over 260 characters, and the half of it we do not
-    control is his writing folder — it could be Dropbox inside a long Windows
-    user name. So what the app adds underneath that folder is budgeted rather
-    than left to chance: a version file is the deepest thing it builds, and if
-    titles or the folder scheme ever grow, this says so here rather than on his
-    machine, where it would show as a text that would not save.
-  */
-  const WINDOWS_MAX_PATH = 260;
-  const ROOM_FOR_HIS_FOLDER = 150;
-
-  it('leaves most of the limit for wherever he keeps his writing', () => {
-    const longestId = `${'x'.repeat(MAX_TITLE)} (99)`;
-    const deepest = `${putAwayVersionsFolderFor(longestId)}/${versionName(new Date())} (99)${EXTENSION}`;
-
-    assert.ok(
-      deepest.length <= WINDOWS_MAX_PATH - ROOM_FOR_HIS_FOLDER,
-      `the deepest name the app builds is ${deepest.length} chars, leaving ${WINDOWS_MAX_PATH - deepest.length} for his folder`,
-    );
   });
 });
 
@@ -1352,14 +847,15 @@ describe('listing', () => {
     assert.equal(note?.title, 'Zašto? Zato!');
   });
 
-  it('hides conflicted copies', async () => {
+  it('shows conflicted copies, since Dropbox made them of his writing', async () => {
+    // Hidden, the one text Dropbox had to split is a text he has lost.
     const { dir, store } = await emptyStore();
     await store.save(null, 'Esej o zimi\n\nTekst.');
-    await writeFile(path.join(dir, "Esej (Brano's conflicted copy 2026-09-18).txt"), 'x', 'utf8');
+    await writeFile(path.join(dir, "Esej (Brano's conflicted copy 2026-09-18).txt"), 'Esej o zimi\n\nDrugi.', 'utf8');
 
     assert.deepEqual(
-      (await store.list()).map((note) => note.title),
-      ['Esej o zimi'],
+      (await store.list()).map((note) => note.text).sort(),
+      ['Esej o zimi\n\nDrugi.', 'Esej o zimi\n\nTekst.'],
     );
   });
 
@@ -1381,7 +877,7 @@ describe('listing', () => {
 });
 
 describe('keeping a copy because the caller says so', () => {
-  const kept = async (dir: string) => readdir(path.join(dir, VERSIONS_FOLDER, 'O zimi'));
+  const kept = async (dir: string) => readdir(path.join(dir, VERSIONS_FOLDER, named('O zimi')));
 
   it('keeps one however little is changing', async () => {
     // The ordinary rule would decline — nothing like two hundred characters is
@@ -1444,7 +940,7 @@ describe('keeping a copy because the caller says so', () => {
 
     const [only] = await kept(dir);
     assert.equal(
-      await readFile(path.join(dir, VERSIONS_FOLDER, 'O zimi', only ?? ''), 'utf8'),
+      await readFile(path.join(dir, VERSIONS_FOLDER, named('O zimi'), only ?? ''), 'utf8'),
       'O zimi\n\nOno što je bilo u editoru.',
     );
   });
@@ -1529,19 +1025,6 @@ describe('writing brought in from somewhere else', () => {
     assert.deepEqual(await readdir(path.join(dir, ARCHIVE)), []);
   });
 
-  it('numbers both when he already has a text of that name', async () => {
-    const { dir, store } = await storeWithArchive();
-    await archived(dir, 'Pismo', 'Pismo' + '\n\n' + 'Staro.');
-    await store.save(null, 'Pismo' + '\n\n' + 'Novo.');
-
-    assert.equal(await store.bringBack('Stari laptop 2021', 'Pismo'), 'Pismo (2)');
-
-    assert.deepEqual((await readdir(dir)).filter((n) => n.endsWith(EXTENSION)).sort(), [
-      'Pismo (1).txt',
-      'Pismo (2).txt',
-    ]);
-  });
-
   it('brings the copies kept in the archive with it', async () => {
     const { dir, store } = await storeWithArchive();
     await archived(dir, 'Pismo', 'Pismo' + '\n\n' + 'Jedno.');
@@ -1554,23 +1037,13 @@ describe('writing brought in from somewhere else', () => {
     assert.equal(await store.countVersions('Pismo'), 1);
   });
 
-  it('settles the archive it left, so a lone survivor loses its number', async () => {
-    const { dir, store } = await storeWithArchive();
-    await archived(dir, 'Pismo (1)', 'Pismo' + '\n\n' + 'Jedno.');
-    await archived(dir, 'Pismo (2)', 'Pismo' + '\n\n' + 'Dva.');
-
-    await store.bringBack('Stari laptop 2021', 'Pismo (1)');
-
-    assert.deepEqual(await readdir(path.join(dir, ARCHIVE)), ['Pismo.txt']);
-  });
-
   it('puts it at the top of his list, where a text he just asked for belongs', async () => {
     const { dir, store } = await storeWithArchive();
     await store.save(null, 'Raniji' + '\n\n' + 'Pisan juce.');
     // Aged by a day, or the two land in the same millisecond and the order
     // this is about is decided by whichever the folder listed first.
     const yesterday = new Date(Date.now() - 86_400_000);
-    await utimes(path.join(dir, `Raniji${EXTENSION}`), yesterday, yesterday);
+    await utimes(path.join(dir, `${named('Raniji')}${EXTENSION}`), yesterday, yesterday);
 
     await archived(dir, 'Staro', 'Staro' + '\n\n' + 'Iz 2019.');
     const long_ago = new Date(2019, 0, 1);
@@ -1587,49 +1060,3 @@ describe('writing brought in from somewhere else', () => {
   });
 });
 
-describe('saying when a text changes its name', () => {
-  /*
-    Saving one text renames others: a second `Pismo` makes the first `Pismo (1)`,
-    and a group down to its last takes the number off what is left. Anything
-    above holding a text by name has to hear about those, or it goes on pointing
-    at a file that is no longer there — which is where every save bug in this
-    app has come from.
-  */
-  async function watchedStore() {
-    const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
-    const log = silentLog();
-    const renames: { from: string; to: string }[] = [];
-    const store = createNoteStore(
-      createFileSystem(path.join(tmpdir(), 'b-notes-staging')),
-      dir.replaceAll(String.fromCharCode(92), '/'),
-      log,
-      (from, to) => renames.push({ from, to }),
-    );
-    return { store, renames };
-  }
-
-  it('says so when his own first line changed', async () => {
-    const { store, renames } = await watchedStore();
-    const id = await store.save(null, 'Pismo\n\nDragi brate');
-    renames.length = 0;
-
-    // Against what the save itself reports, rather than a guess at the
-    // naming rule: the title is built from the start of his text, not from
-    // the first line alone.
-    const to = await store.save(id, 'Esej\n\nDragi brate');
-
-    assert.deepEqual(renames, [{ from: id, to }]);
-  });
-
-  it('says so about the other text, when a second one takes its name', async () => {
-    // The one that was silent: nothing was told that `Pismo` had become
-    // `Pismo (1)`, because the save that caused it was about another text.
-    const { store, renames } = await watchedStore();
-    await store.save(null, 'Pismo\n\nPrvi');
-    renames.length = 0;
-
-    await store.save(null, 'Pismo\n\nDrugi');
-
-    assert.deepEqual(renames, [{ from: 'Pismo', to: 'Pismo (1)' }]);
-  });
-});

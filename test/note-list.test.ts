@@ -1,5 +1,4 @@
 import { bandsFrom } from '../src/notes/text-length.ts';
-import { copyNumberOf } from '../src/notes/note-naming.ts';
 import type { NoteHandle } from '../src/notes/note-handle.ts';
 import type { LiveNote } from '../src/notes/writing.ts';
 import assert from 'node:assert/strict';
@@ -22,9 +21,6 @@ function note(title: string, text: string, updatedAt: number): LiveNote {
     updatedAt,
     bytes: text.length,
     handle: minted as NoteHandle,
-    // These are titles with no number on them, which is what a text alone in
-    // its name looks like.
-    copyNumber: null,
   };
 }
 
@@ -147,104 +143,5 @@ describe('the list of texts', () => {
     const sections = sectionsFor(view({ query: 'nepostojeće' }));
     assert.deepEqual(titlesIn(sections, 'Pronađeni'), []);
     assert.deepEqual(titlesIn(sections, 'Svi tekstovi'), ['Amsterdam', 'Ponta', 'Zima']);
-  });
-});
-
-function alike(id: string, title: string, updatedAt: number): LiveNote {
-  minted += 1;
-  return {
-    id,
-    title,
-    text: title,
-    searchable: toSearchable(title),
-    updatedAt,
-    bytes: title.length,
-    handle: minted as NoteHandle,
-    // Off the filename, which is the whole point of these: what the list shows
-    // and what the folder says cannot be allowed to disagree.
-    copyNumber: copyNumberOf(id),
-  };
-}
-
-const marksIn = (sections: ReturnType<typeof sectionsFor>, heading: string) =>
-  sections.find((section) => section.heading === heading)?.rows.map((row) => row.mark);
-
-describe('texts that read the same in the list', () => {
-  it('leaves a text alone when no other reads like it', () => {
-    const sections = sectionsFor(view());
-    assert.deepEqual(marksIn(sections, 'Svi tekstovi'), [null, null, null]);
-  });
-
-  it('shows each one the number its own file carries', () => {
-    const notes = [
-      alike('4 klozeta (1)', '4 klozeta', 3000),
-      alike('4 klozeta (2)', '4 klozeta', 2000),
-    ];
-    assert.deepEqual(marksIn(sectionsFor(view({ notes })), 'Svi tekstovi'), ['(1)', '(2)']);
-  });
-
-  it('shows the gap a deleted one left, rather than closing it up', () => {
-    // The files are still called (1) and (3). Renumbering the rows would make
-    // the list say (2) about a file named (3).
-    const notes = [
-      alike('Pismo (1)', 'Pismo', 3000),
-      alike('Pismo (3)', 'Pismo', 2000),
-    ];
-    assert.deepEqual(marksIn(sectionsFor(view({ notes })), 'Svi tekstovi'), ['(1)', '(3)']);
-  });
-
-  it('shows a number on a lone text too, because the file still carries one', () => {
-    // Not a state the store leaves standing — the last of a group is renamed
-    // back to a plain name. Until that lands, the list says what the file says.
-    const notes = [alike('Pismo (1)', 'Pismo', 3000), alike('Zima', 'Zima', 2000)];
-    assert.deepEqual(marksIn(sectionsFor(view({ notes })), 'Svi tekstovi'), ['(1)', null]);
-  });
-
-  it('shows his own number and the one on the file, when his line ends in one', () => {
-    // `fileNameBase` strips his trailing (1), so the file is `Pismo (1).txt`
-    // and the row reads `Pismo (1) (1)`. Ugly, true, and not a regression:
-    // his words are his, and the number beside them is the file's.
-    const notes = [alike('Pismo (1)', 'Pismo (1)', 3000), alike('Pismo (2)', 'Pismo', 2000)];
-    const sections = sectionsFor(view({ notes }));
-    assert.deepEqual(titlesIn(sections, 'Svi tekstovi'), ['Pismo', 'Pismo (1)']);
-    assert.deepEqual(marksIn(sections, 'Svi tekstovi'), ['(2)', '(1)']);
-  });
-
-  it('invents no number for copies that arrived under unrelated names', () => {
-    // Two texts, one title, and neither file says which is which. Counting
-    // rows would put a number on screen that is on no file in his folder.
-    const notes = [
-      alike('4 klozeta', '4 klozeta', 3000),
-      alike('klozeti-stari-laptop', '4 klozeta', 2000),
-    ];
-    assert.deepEqual(marksIn(sectionsFor(view({ notes })), 'Svi tekstovi'), [null, null]);
-  });
-
-  it('gives a text the same number in Nedavni as in Svi tekstovi', () => {
-    const notes = [
-      alike('Pismo (1)', 'Pismo', 1000),
-      alike('Pismo (2)', 'Pismo', 3000),
-      alike('Zima', 'Zima', 2000),
-    ];
-    const sections = sectionsFor(view({ notes }));
-    assert.deepEqual(marksIn(sections, 'Nedavni'), ['(2)', null, '(1)']);
-    assert.deepEqual(marksIn(sections, 'Svi tekstovi'), ['(1)', '(2)', null]);
-  });
-
-  it('counts a long group in order, so (10) does not sort above (2)', () => {
-    const notes = [2, 10, 1].map((n) => alike(`Bez naslova (${n})`, '', 3000 - n));
-    assert.deepEqual(marksIn(sectionsFor(view({ notes })), 'Svi tekstovi'), ['(1)', '(2)', '(10)']);
-  });
-
-  it('marks texts he has emptied, which all read as Bez naslova', () => {
-    const notes = [alike('Prazan (1)', '', 2000), alike('Prazan (2)', '', 1000)];
-    const sections = sectionsFor(view({ notes }));
-    assert.deepEqual(titlesIn(sections, 'Svi tekstovi'), ['Bez naslova', 'Bez naslova']);
-    assert.deepEqual(marksIn(sections, 'Svi tekstovi'), ['(1)', '(2)']);
-  });
-
-  it('leaves the text he has just started unmarked', () => {
-    const notes = [alike('Pismo (1)', 'Pismo', 2000), alike('Pismo (2)', 'Pismo', 1000)];
-    assert.equal(openRowFor(view({ notes, draft: { startedAt: 9000 } }))?.mark, null);
   });
 });

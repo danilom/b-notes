@@ -48,12 +48,6 @@ export interface Row {
   /** Folded, so `macka` finds `mačka` and `mačka` finds `macka`. */
   searchable: string;
   updatedAt: number;
-  /**
-   * `(2)` when other texts read the same in the list, null when this one is
-   * alone. Not part of his title and never searched — it is the list saying
-   * which of several it is talking about.
-   */
-  mark: string | null;
 }
 
 export interface Section {
@@ -80,18 +74,6 @@ function titleOf(note: LiveNote, words: ReturnType<typeof strings>): string {
   return note.title.length > 0 ? note.title : words.untitled;
 }
 
-/**
- * The number shown beside a title, or nothing.
- *
- * Only the brackets are decided here. Which number it is, and whether there is
- * one at all, is read off the filename where the filenames live — a text alone
- * in its name has none, because the store takes it away when a group drops to
- * its last.
- */
-function markOf(note: LiveNote): string | null {
-  return note.copyNumber === null ? null : `(${note.copyNumber})`;
-}
-
 function toRow(note: LiveNote, words: ReturnType<typeof strings>, lengths: LengthBands): Row {
   return {
     id: note.id,
@@ -99,7 +81,6 @@ function toRow(note: LiveNote, words: ReturnType<typeof strings>, lengths: Lengt
     searchable: note.searchable,
     updatedAt: note.updatedAt,
     length: bandOf(note.bytes, lengths),
-    mark: markOf(note),
   };
 }
 
@@ -133,7 +114,6 @@ export function openRowFor(view: ListView): Row | null {
     updatedAt: view.draft.startedAt,
     // Nothing written in it yet, which is exactly what an empty page says.
     length: 0,
-    mark: null,
   };
 }
 
@@ -197,19 +177,7 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
   when.className = 'note-when';
   when.textContent = describeWhen(row.updatedAt, view.language);
 
-  if (row.mark === null) {
-    element.append(length, title, when);
-    return element;
-  }
-
-  // Its own element rather than part of the title, so a title long enough to
-  // be cut short doesn't take the mark with it — the longer the title, the
-  // more alike two of them read, and the more the mark is what he needs.
-  const mark = document.createElement('span');
-  mark.className = 'note-mark';
-  mark.textContent = row.mark;
-
-  element.append(length, title, mark, when);
+  element.append(length, title, when);
   return element;
 }
 

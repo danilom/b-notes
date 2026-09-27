@@ -5,28 +5,15 @@ import { NO_NOTE, type NoNote, createHandles } from './note-handle.ts';
 import type {
   Archive,
   ArchivedNote,
-  Converted,
   DeletedNote,
   Note,
   NoteVersion,
 } from './note.ts';
-import { copyNumberOf } from './note-naming.ts';
-import { createNoteStore } from './note-store.ts';
+import { type Naming, createNoteStore } from './note-store.ts';
 
 /** A text of his, and what it is called while the app runs. */
 export interface LiveNote extends Note {
   handle: NoteHandle;
-  /**
-   * Which of several texts sharing a name this one is — read off its filename,
-   * never counted, and null when it is alone in its name.
-   *
-   * Carried here rather than worked out where the list is drawn, which had the
-   * interface taking a filename apart to find it. `Pismo (2)` in the list is
-   * `Pismo (2).txt` in his folder, always: the one moment the number has to be
-   * right is the one where the app is not there to explain itself — him in the
-   * folder, on the telephone, opening his writing in Notepad.
-   */
-  copyNumber: number | null;
 }
 
 /** What the strip along the bottom needs to know about one text. */
@@ -74,13 +61,8 @@ interface Waiting {
 }
 
 export interface Writing {
-  /**
-   * Everything of his, read once, with whatever the conversion had to say.
-   *
-   * Converting what is not plain text and settling the numbering happen here
-   * rather than being two calls a caller has to know to make, in that order.
-   */
-  load(): Promise<{ notes: LiveNote[]; converted: Converted }>;
+  /** Everything of his, read once at startup. */
+  load(): Promise<{ notes: LiveNote[] }>;
   /** Read again, keeping the handle each text already had. */
   list(): Promise<LiveNote[]>;
   /** A text he has begun that has no file yet. */
@@ -165,6 +147,7 @@ export function createWriting(
   log: Log,
   changed: (written: NoteHandle[]) => void = () => undefined,
   timers: Timers = realTimers,
+  naming?: Naming,
 ): Writing {
   const nextHandle = createHandles();
   /** Where each text lives now. Null for one he has begun and not yet saved. */
@@ -177,11 +160,8 @@ export function createWriting(
   let retry: unknown;
 
   /**
-   * A text renaming itself, or being renamed by someone else's save.
-   *
-   * The second is the one that was invisible: a second `Pismo` makes the first
-   * `Pismo (1)`, and whatever held that first text by name was wrong from that
-   * moment. Here it is three lines, because a handle is not a name.
+   * A text now held under another name — a Resoph text that has just become
+   * b-notes' own copy. Three lines, because a handle is not a name.
    */
   function renamed(from: string, to: string): void {
     const handle = byToken.get(from);
@@ -191,7 +171,7 @@ export function createWriting(
     livesAt.set(handle, to);
   }
 
-  const store = createNoteStore(files, folder, log, renamed);
+  const store = createNoteStore(files, folder, log, renamed, naming);
 
   function remember(id: string): NoteHandle {
     const known = byToken.get(id);
@@ -256,10 +236,6 @@ export function createWriting(
               turns out to be about.
             */
             if (was === null) log.info('Created a text', { id });
-            else if (was !== id) log.info('Renamed a text, since his first line changed', {
-              from: was,
-              to: id,
-            });
           }
           wrote.push(handle);
         } catch (error: unknown) {
@@ -299,17 +275,8 @@ export function createWriting(
   }
 
   return {
-    async load(): Promise<{ notes: LiveNote[]; converted: Converted }> {
-      /*
-        Both of these are startup housekeeping in a fixed order that a caller
-        should not have to know: what is not plain text is converted first,
-        since that hands out names of its own, and the numbering is settled
-        before anything is listed, so the numbers he reads are the ones on the
-        files.
-      */
-      const converted = await store.convertToPlainText();
-      await store.settleNames();
-      return { notes: await this.list(), converted };
+    async load(): Promise<{ notes: LiveNote[] }> {
+      return { notes: await this.list() };
     },
 
     putAway: () => store.listDeleted(),
@@ -343,11 +310,7 @@ export function createWriting(
 
     async list(): Promise<LiveNote[]> {
       const notes = await store.list();
-      return notes.map((note) => ({
-        ...note,
-        handle: remember(note.id),
-        copyNumber: copyNumberOf(note.id),
-      }));
+      return notes.map((note) => ({ ...note, handle: remember(note.id) }));
     },
 
     begin(): NoteHandle {

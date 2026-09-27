@@ -6,34 +6,28 @@ import {
 } from '../platform/file-system.ts';
 import { type Log, describeError } from '../platform/logging.ts';
 import {
-  baseOf,
   DELETED_FOLDER,
   EXTENSION,
   idOf,
-  isConflictedCopy,
-  isConvertibleNoteFile,
-  type Renaming,
   ARCHIVE_FOLDER,
   archiveFolderFor,
   archivedVersionsFolderFor,
   isNoteFile,
-  baseGroupOf,
-  claimName,
+  newNameFor,
   nextFreeId,
-  settleGroup,
   putAwayVersionsFolderFor,
   requireNoteId,
+  unusedName,
   VERSIONS_FOLDER,
   versionName,
   versionsFolderFor,
 } from './note-naming.ts';
-import { deletedIdFor, planSave } from './note-saving.ts';
+import { planSave } from './note-saving.ts';
 import { toSearchable } from '../language/diacritics.ts';
 import { titleFrom } from './note-title.ts';
 import {
   type Archive,
   type ArchivedNote,
-  type Converted,
   type DeletedNote,
   type Note,
   type NoteStore,
@@ -73,20 +67,30 @@ const asWritten = (text: string): string => text.replaceAll('\r\n', '\n');
 /**
  * Told whenever a text he can edit changes its name.
  *
- * Saving one text renames others: a second `Pismo` makes the first `Pismo (1)`,
- * and a group dropping to one takes the number off what is left. Those renames
- * are the point of the rule, but until now only the saved text's new name came
- * back — so anything above holding the *other* text by name was quietly wrong
- * from that moment. Announcing them costs one line at the single place a live
- * text is ever renamed.
+ * Nothing is renamed any more, but a text can still change which name the app
+ * holds it by — a Resoph text becoming b-notes' own copy the first time he
+ * edits it — and anything above holding it by the old name would be quietly
+ * wrong from that moment.
  */
 export type NoteRenamed = (from: string, to: string) => void;
+
+/**
+ * What a new text's name is made from besides its title: when, and on which
+ * machine. See `newNameFor`.
+ */
+export interface Naming {
+  machine: string;
+  now: () => Date;
+}
+
+const REAL_NAMING: Naming = { machine: 'PC', now: () => new Date() };
 
 export function createNoteStore(
   files: FileSystem,
   folder: string,
   log: Log,
   renamed: NoteRenamed = () => undefined,
+  naming: Naming = REAL_NAMING,
 ): NoteStore {
   const at = (...parts: string[]): string => [folder, ...parts].join('/');
 
@@ -134,7 +138,9 @@ export function createNoteStore(
     const byId = new Map<string, FileInfo>();
     for (const file of await files.list(from)) {
       const name = nameOf(file.path);
-      if (!isNoteFile(name) || isConflictedCopy(name)) continue;
+      // Conflicted copies included. Dropbox made them of his writing, and a
+      // text hidden because of how it is named is a text he has lost.
+      if (!isNoteFile(name)) continue;
       byId.set(idOf(name), file);
     }
     return byId;
@@ -267,100 +273,6 @@ export function createNoteStore(
     await files.removeEmptyFolder(at(from.slice(0, from.lastIndexOf('/'))));
   }
 
-  /** A text and the copies kept of it move together, or neither moves. */
-  async function renameNote(from: string, to: string): Promise<void> {
-    await moveVersions(versionsFolderFor(from), versionsFolderFor(to));
-    await files.rename(at(`${from}${EXTENSION}`), at(`${to}${EXTENSION}`));
-    // After the move, so nothing is told about a rename that did not happen.
-    renamed(from, to);
-  }
-
-  /** The same, for a text that has been put away. Obrisano numbers its own. */
-  async function renamePutAway(from: string, to: string): Promise<void> {
-    await moveVersions(putAwayVersionsFolderFor(from), putAwayVersionsFolderFor(to));
-    await files.rename(
-      at(DELETED_FOLDER, `${from}${EXTENSION}`),
-      at(DELETED_FOLDER, `${to}${EXTENSION}`),
-    );
-  }
-
-  type Move = (from: string, to: string) => Promise<void>;
-
-  /**
-   * Moves an older text out of the bare name, so that neither of two texts
-   * reading the same is left unnumbered.
-   *
-   * Always after his own text has landed, and never able to fail the save that
-   * asked for it. This is housekeeping on a second file — one he is not in and
-   * did not touch — while the writing that prompted it is already on disk. A
-   * failure leaves `Pismo` beside `Pismo (2)`, which costs a number in the list
-   * and loses nothing, so it is logged and the save stands. The next settle of
-   * that name puts it right.
-   */
-  async function makeRoom(displaced: Renaming | null | undefined, move: Move = renameNote): Promise<boolean> {
-    if (displaced === undefined || displaced === null) return false;
-    try {
-      await move(displaced.from, displaced.to);
-      log.info('Numbered an older text so a new one of the same name could be told apart', displaced);
-      return true;
-    } catch (failure: unknown) {
-      log.warn('Could not number an older text of the same name', {
-        ...displaced,
-        failure: describeError(failure),
-      });
-      return false;
-    }
-  }
-
-  /**
-   * Puts one group of same-named texts back in order, wherever they live.
-   *
-   * Housekeeping, like `makeRoom`, and held to the same rule: it runs after
-   * whatever he asked for has already happened, and a failure is reported
-   * rather than thrown. Whoever calls this has finished their work.
-   */
-  async function settleIn(base: string, ids: () => Promise<ReadonlySet<string>>, move: Move): Promise<void> {
-    try {
-      const needed = settleGroup(base, await ids());
-      if (needed === null) return;
-      await move(needed.from, needed.to);
-      log.info('Settled the numbers on texts sharing a name', needed);
-    } catch (failure: unknown) {
-      log.warn('Could not settle the numbers on texts sharing a name', {
-        base,
-        failure: describeError(failure),
-      });
-    }
-  }
-
-  const liveIds = async (): Promise<ReadonlySet<string>> => new Set((await noteFiles()).keys());
-  const settle = (base: string): Promise<void> => settleIn(base, liveIds, renameNote);
-  const settlePutAway = (base: string): Promise<void> => settleIn(base, idsPutAway, renamePutAway);
-
-  /**
-   * Every group in one folder, from a single listing.
-   *
-   * One listing rather than one per group: at six hundred texts that is six
-   * hundred directory reads against one. Safe to plan from a snapshot because
-   * a group's rename only ever lands inside that same group, so no two of
-   * these can be planning the same name.
-   */
-  async function settleEvery(ids: ReadonlySet<string>, move: Move): Promise<void> {
-    for (const base of new Set([...ids].map(baseGroupOf))) {
-      const needed = settleGroup(base, ids);
-      if (needed === null) continue;
-      try {
-        await move(needed.from, needed.to);
-        log.info('Settled the numbers on texts sharing a name', needed);
-      } catch (failure: unknown) {
-        log.warn('Could not settle the numbers on texts sharing a name', {
-          base,
-          failure: describeError(failure),
-        });
-      }
-    }
-  }
-
   /** Files in one archive folder, by id. Absence is ordinary: most folders have none. */
   async function archivedFiles(archive: string): Promise<Map<string, FileInfo>> {
     try {
@@ -387,27 +299,6 @@ export function createNoteStore(
       return [];
     }
   }
-
-  /** The same rename, for a text in one archive. */
-  const renameArchived =
-    (archive: string) =>
-    async (from: string, to: string): Promise<void> => {
-      await moveVersions(
-        archivedVersionsFolderFor(archive, from),
-        archivedVersionsFolderFor(archive, to),
-      );
-      await files.rename(
-        at(archiveFolderFor(archive), `${from}${EXTENSION}`),
-        at(archiveFolderFor(archive), `${to}${EXTENSION}`),
-      );
-    };
-
-  const settleArchived = (archive: string, base: string): Promise<void> =>
-    settleIn(
-      base,
-      async () => new Set((await archivedFiles(archive)).keys()),
-      renameArchived(archive),
-    );
 
   /**
    * Which texts in a folder have copies kept beside them, and how many.
@@ -445,69 +336,6 @@ export function createNoteStore(
   }
 
   return {
-    /**
-     * Renames anything he has in another format to `.txt`, and reports what it
-     * couldn't.
-     *
-     * Windows opens `.txt` in Notepad on a double-click and has no handler for
-     * `.md`, so an unconverted file is one he cannot read without this app —
-     * which is the one guarantee the format was chosen for. Converting on sight
-     * also means the folder settles on a single extension rather than tolerating
-     * two forever.
-     *
-     * The content isn't inspected, on purpose. If a file does turn out to hold
-     * real Markdown, nothing is lost by renaming it — the bytes are untouched
-     * and nothing here renders Markdown anyway.
-     *
-     * A file that won't move is reported rather than skipped silently: it would
-     * otherwise be invisible in the list, which reads to him as loss.
-     */
-    async convertToPlainText(): Promise<Converted> {
-      const all = await files.list(folder);
-      const taken = new Set(
-        all.filter((file) => isNoteFile(nameOf(file.path))).map((file) => idOf(nameOf(file.path))),
-      );
-
-      let converted = 0;
-      const refused: Converted['refused'] = [];
-
-      for (const file of all) {
-        const name = nameOf(file.path);
-        if (!isConvertibleNoteFile(name) || isConflictedCopy(name)) continue;
-
-        // `baseOf` rather than `idOf`: a file that arrives already carrying
-        // our suffix — and about twenty of his do, from Simplenote — would
-        // otherwise be the base for another one on the next clash.
-        const taking = claimName(baseOf(name), null, taken);
-        const id = taking.id;
-        try {
-          await files.rename(file.path, at(`${id}${EXTENSION}`));
-          taken.add(id);
-          converted += 1;
-          // Only once it has actually moved. A name still on disk that this
-          // believed was free would be displaced a second time by the next
-          // file, against a file that is no longer there.
-          if (taking.displaced !== null && (await makeRoom(taking.displaced))) {
-            taken.delete(taking.displaced.from);
-            taken.add(taking.displaced.to);
-          }
-        } catch (failure: unknown) {
-          // One file held open elsewhere shouldn't stop the rest converting —
-          // but why it was refused goes with it. Held open by Dropbox, already
-          // gone, and refused by Windows are three different problems, and the
-          // name alone makes them one.
-          refused.push({ name, failure: describeError(failure) });
-        }
-      }
-
-      return { converted, refused };
-    },
-
-    async settleNames(): Promise<void> {
-      await settleEvery(await liveIds(), renameNote);
-      await settleEvery(await idsPutAway(), renamePutAway);
-    },
-
     async list(): Promise<Note[]> {
       const notes = await Promise.all([...(await noteFiles())].map(([id, file]) => noteFrom(id, file)));
       return notes.sort(newestFirst);
@@ -559,10 +387,9 @@ export function createNoteStore(
       const file = (await archivedFiles(archive)).get(requireNoteId(id));
       if (file === undefined) throw new Error(`No such archived note: ${archive}/${id}`);
 
-      // Claimed in his list, by the rule everything there is named by — which
-      // may mean numbering a text already holding the name.
-      const taking = claimName(baseOf(id), null, new Set((await noteFiles()).keys()));
-      const back = taking.id;
+      // Under its own name. Nothing in his list is renamed to make room: a name
+      // built to be unique meeting itself is rare enough to count on past it.
+      const back = unusedName(id, new Set((await noteFiles()).keys()));
       await files.rename(file.path, at(`${back}${EXTENSION}`));
 
       /*
@@ -579,9 +406,6 @@ export function createNoteStore(
       // early draft survives, and that is the reason to keep archives at all.
       await moveVersions(archivedVersionsFolderFor(archive, id), versionsFolderFor(back));
 
-      await makeRoom(taking.displaced);
-      // The archive is one text lighter under that name.
-      await settleArchived(archive, baseGroupOf(id));
       return back;
     },
 
@@ -620,7 +444,8 @@ export function createNoteStore(
       };
 
       const action = await planSave(id, text, {
-        takenIds: async () => new Set(existing.keys()),
+        newName: async (written) =>
+          unusedName(newNameFor(titleFrom(written), naming.now(), naming.machine), new Set(existing.keys())),
         previousText,
         lastKept: async () => (id === null ? null : newestCopy(id)),
       });
@@ -631,36 +456,10 @@ export function createNoteStore(
       // is about to destroy the only copy, so a version he cannot keep is a
       // reason not to proceed. He sees "not saved" and the next autosave tries
       // again; his text stays on disk in the meantime.
-      //
-      // Under the name the note still has, so that a rename below carries it
-      // across with every other copy rather than leaving today's behind.
       if (action.snapshot !== undefined) await keepVersion(action.id, action.snapshot);
 
       await files.write(at(`${action.id}${EXTENSION}`), text);
-      if (action.kind === 'write') {
-        await makeRoom(action.displaced);
-        return action.id;
-      }
-
-      /*
-        His copies move with the text they are copies of. `Verzije/` is named
-        after the note, so a retitle that left the folder behind orphaned every
-        copy he had — the files stayed on disk and nothing in the app could
-        reach them again.
-
-        Before the file is renamed rather than after. Moving them afterwards
-        would put a failure between the rename and the id this returns, leaving
-        his text under a name the app does not believe in — the one arrangement
-        here that nothing recovers from. Done first, a failure leaves everything
-        where it stood and the next autosave plans the same rename and tries
-        again.
-      */
-      await renameNote(action.id, action.to);
-      await makeRoom(action.displaced);
-      // It has just left a group, which may now be down to its last text — and
-      // a lone text carries no number.
-      await settle(baseGroupOf(action.id));
-      return action.to;
+      return action.id;
     },
 
     async moveToDeleted(id: string): Promise<void> {
@@ -690,8 +489,9 @@ export function createNoteStore(
 
       const kept = text === null ? null : await lastKeptCopy(id, text);
 
-      const filing = deletedIdFor(id, await idsPutAway());
-      const name = filing.id;
+      // Under the name it had. Only another text put away under that very name
+      // — the same text deleted on two machines — needs telling apart.
+      const name = unusedName(id, await idsPutAway());
       const putAway = at(DELETED_FOLDER, `${name}${EXTENSION}`);
       await files.rename(file.path, putAway);
 
@@ -717,10 +517,6 @@ export function createNoteStore(
       // a dead note's versions.
       await moveVersions(versionsFolderFor(id), putAwayVersionsFolderFor(name));
 
-      // Obrisano numbers its own by the same rule, and his list has one text
-      // fewer under the name this one was using.
-      await makeRoom(filing.displaced, renamePutAway);
-      await settle(baseGroupOf(id));
     },
 
     async destroy(id: string): Promise<void> {
@@ -740,10 +536,6 @@ export function createNoteStore(
       }
       await files.removeEmptyFolder(at(folder));
       await files.removeEmptyFolder(at(DELETED_FOLDER, VERSIONS_FOLDER));
-
-      // Obrisano is one text lighter under this name, and may be down to its
-      // last — which carries no number.
-      await settlePutAway(baseGroupOf(id));
     },
 
     async keepCopy(id: string, text: string): Promise<string> {
@@ -777,15 +569,11 @@ export function createNoteStore(
       const file = (await putAwayFiles()).get(requireNoteId(id));
       if (file === undefined) throw new Error(`No such deleted note: ${id}`);
 
-      // He may have written something new under the same opening words while
-      // this one was away. It comes back as "Naslov (1)" rather than refusing,
-      // because a text he asked for and did not get is the worse surprise.
-      const taking = claimName(baseOf(id), null, new Set((await noteFiles()).keys()));
-      const back = taking.id;
+      // Back under its own name, which nothing else will have taken — names are
+      // unique by construction. Guarded anyway: a text he asked for and did not
+      // get is the worse surprise.
+      const back = unusedName(id, new Set((await noteFiles()).keys()));
       await files.rename(file.path, at(`${back}${EXTENSION}`));
-      // After it is back, for the same reason a save displaces after its write:
-      // the text he asked for must not depend on a second file being tidied.
-      await makeRoom(taking.displaced);
 
       // Touched on the way back, for the same reason it was touched on the way
       // out. Its old time is the moment he deleted it, which would be a strange
@@ -798,9 +586,6 @@ export function createNoteStore(
       // The copies come with it and are not spent: throwing away the only other
       // copy at the moment of recovery is the opposite of the point.
       await moveVersions(putAwayVersionsFolderFor(id), versionsFolderFor(back));
-
-      // And Obrisano is one text lighter under the name this one was filed as.
-      await settlePutAway(baseGroupOf(id));
       return back;
     },
   };

@@ -81,9 +81,8 @@ describe('what he was last reading', () => {
     ['climbing out the Windows way', '..\\..\\secrets'],
     ['naming a folder below', 'Obrisano/O zimi'],
     ['a filename rather than a name', 'O zimi.txt'],
-    ['a filename in another format', 'O zimi.md'],
-    ['padded with space', ' O zimi '],
     ['empty', ''],
+    ['only spaces', '   '],
   ] as const) {
     it(`refuses a name ${what}`, async () => {
       const saved = JSON.stringify({ openNoteId: id });
@@ -91,6 +90,14 @@ describe('what he was last reading', () => {
       assert.deepEqual(await readSession(holding(saved), FOLDER), { openNoteId: null, place: null });
     });
   }
+
+  it('takes back a name padded with spaces, which is how he ranks his texts', async () => {
+    // 0.7.0 refused these, and with them the text he had open among his
+    // highest-ranked ones.
+    const saved = JSON.stringify({ openNoteId: '        %2AGRAD Kilim ' });
+
+    assert.equal((await readSession(holding(saved), FOLDER)).openNoteId, '        %2AGRAD Kilim ');
+  });
 
   it('reads back what it wrote', async () => {
     const { files } = filesHolding({});

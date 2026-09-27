@@ -82,26 +82,7 @@ export interface Archive {
   texts: number;
 }
 
-export interface Converted {
-  converted: number;
-  refused: { name: string; failure: unknown }[];
-}
-
 export interface NoteStore {
-  /**
-   * Puts anything he has in another format into `.txt`, and reports what it
-   * couldn't move. Run once at startup, before anything is listed.
-   */
-  convertToPlainText(): Promise<Converted>;
-  /**
-   * Puts every group of same-named texts back in order, in his folder and in
-   * Obrisano alike. Run once at startup, after `convertToPlainText`.
-   *
-   * Every other path settles the one or two groups it touched, so this is for
-   * what no path saw: the corpus as it arrived, and anything moved in the
-   * folder while the app was shut.
-   */
-  settleNames(): Promise<void>;
   /**
    * Every note, text included. His whole corpus is under 3MB, so holding it in
    * memory makes searching instant and costs nothing worth measuring.
@@ -109,8 +90,8 @@ export interface NoteStore {
   list(): Promise<Note[]>;
   read(id: string): Promise<string>;
   /**
-   * Writes the text, creating the note when `id` is null and renaming it when
-   * his opening lines changed. Returns the note's id, which may differ from the
+   * Writes the text, creating the note when `id` is null. Never renames: a
+   * text keeps the name it was made with. Returns the note's id, which may differ from the
    * one passed in, or null when there was nothing worth creating.
    */
   save(id: string | null, text: string): Promise<string | null>;
@@ -194,17 +175,4 @@ export function isEmptied(note: Note): boolean {
 /** The same test, for a save that hasn't become a note yet. */
 export function isEmptyText(text: string): boolean {
   return text.trim().length === 0;
-}
-
-/**
- * Whether a save replaced the text rather than edited it.
- *
- * A proportion rather than a byte count, so it means the same thing for a
- * 200-byte jot and a 145KB essay. Trimming a sentence is an edit and should
- * still rename the file; an essay replaced by one keystroke should not, because
- * the old filename is then the last evidence of what the note was.
- */
-export function survivedTooLittle(previous: string, next: string): boolean {
-  if (previous.length === 0) return false;
-  return next.trim().length < previous.trim().length * 0.1;
 }

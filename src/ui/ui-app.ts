@@ -995,23 +995,7 @@ export async function startApp(runningOn: Host): Promise<void> {
    * he was left looking at the frame of an app that never filled in.
    */
   async function readEverything(): Promise<{ notes: LiveNote[] }> {
-    // Before anything is listed: a note still in another format is one he can't
-    // open without this app, which is the guarantee .txt was chosen for.
-    const { notes: live, converted } = await writing.load();
-    if (converted.converted > 0) {
-      log.info('Put texts into plain text', { count: converted.converted });
-    }
-    if (converted.refused.length > 0) {
-      // One line each, with the reason. A list of names told us a file was not
-      // in his list and left us guessing at why, which is the whole of what a
-      // log is for.
-      for (const { name, failure } of converted.refused) {
-        log.warn('Could not put a text into plain text, so it is not in the list', {
-          name,
-          failure,
-        });
-      }
-    }
+    const { notes: live } = await writing.load();
     /*
       The archives are counted, not read. What is in them is six hundred texts
       he mostly already has, and reading that at startup would spend the second
