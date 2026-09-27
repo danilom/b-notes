@@ -24,7 +24,7 @@ import {
 } from './note-naming.ts';
 import { planSave } from './note-saving.ts';
 import { toSearchable } from '../language/diacritics.ts';
-import { titleFrom } from './note-title.ts';
+import { rankOf, titleFrom, titleLineOf } from './note-title.ts';
 import {
   type Archive,
   type ArchivedNote,
@@ -164,11 +164,14 @@ export function createNoteStore(
   /** Everything about a note that the app works with, read off one file. */
   async function noteFrom(id: string, file: FileInfo): Promise<Note> {
     const text = asWritten(await files.read(file.path));
+    const titleLine = titleLineOf(text);
     return {
       id,
-      // From the text, not the name: the name is sanitised and may carry a
-      // disambiguating suffix he never wrote.
+      // From the text, not the name: the name is made safe and carries a tag
+      // he never wrote.
       title: titleFrom(text),
+      sortTitle: titleLine,
+      rank: rankOf(titleLine),
       text,
       searchable: toSearchable(text),
       updatedAt: file.updatedAt,

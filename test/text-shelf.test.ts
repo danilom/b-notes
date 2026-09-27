@@ -8,6 +8,8 @@ import { toSearchable } from '../src/language/diacritics.ts';
 const noteOf = (text: string, title: string, versions = 0) => ({
   id: title,
   title,
+  sortTitle: title,
+  rank: 0 as const,
   text,
   searchable: text.toLowerCase(),
   updatedAt: 0,

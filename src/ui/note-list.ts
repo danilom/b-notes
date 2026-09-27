@@ -43,6 +43,13 @@ export interface Draft {
 export interface Row {
   id: string | null;
   title: string;
+  /** What the rows are put in order by: his first line, leading spaces kept. */
+  sortTitle: string;
+  /**
+   * How high he ranked it with leading spaces. Shown as a mark rather than as
+   * the spaces themselves, which make a row look broken.
+   */
+  rank: 0 | 1 | 2 | 3;
   /** How full a page to draw beside it, from empty to four lines. */
   length: LengthBand;
   /** Folded, so `macka` finds `mačka` and `mačka` finds `macka`. */
@@ -78,6 +85,8 @@ function toRow(note: LiveNote, words: ReturnType<typeof strings>, lengths: Lengt
   return {
     id: note.id,
     title: titleOf(note, words),
+    sortTitle: note.sortTitle,
+    rank: note.rank,
     searchable: note.searchable,
     updatedAt: note.updatedAt,
     length: bandOf(note.bytes, lengths),
@@ -110,6 +119,8 @@ export function openRowFor(view: ListView): Row | null {
   return {
     id: null,
     title: words.untitledNew,
+    sortTitle: '',
+    rank: 0,
     searchable: '',
     updatedAt: view.draft.startedAt,
     // Nothing written in it yet, which is exactly what an empty page says.
@@ -140,7 +151,10 @@ export function sectionsFor(view: ListView): Section[] {
   // order the folder was read in. Numerically, or `(10)` would sort above `(2)`.
   const all = [...rows].sort(
     (a, b) =>
-      a.title.localeCompare(b.title, 'sr') ||
+      // By his first line as he typed it: a space sorts before any letter,
+      // so the more leading spaces, the higher — his way of ranking a text,
+      // and why this is his order rather than an alphabet.
+      a.sortTitle.localeCompare(b.sortTitle, 'sr') ||
       (a.id ?? '').localeCompare(b.id ?? '', 'sr', { numeric: true }),
   );
 
@@ -177,7 +191,19 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
   when.className = 'note-when';
   when.textContent = describeWhen(row.updatedAt, view.language);
 
-  element.append(length, title, when);
+  if (row.rank === 0) {
+    element.append(length, title, when);
+    return element;
+  }
+
+  // Beside the title rather than in it, so a title long enough to be cut short
+  // never takes the mark with it.
+  const rank = document.createElement('span');
+  rank.className = 'note-rank';
+  rank.dataset['rank'] = String(row.rank);
+  rank.setAttribute('aria-hidden', 'true');
+
+  element.append(length, rank, title, when);
   return element;
 }
 

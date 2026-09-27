@@ -777,6 +777,33 @@ button svg {
 
 /* Italic because it is not a title yet — it is the app describing what he
    is looking at until his own first line takes over. */
+/*
+  How high he ranked a text with leading spaces, as one to three dots in the
+  accent colour: the one part of the row that is the app's reading of what he
+  did, rather than his words. The spaces themselves are not shown — a row
+  starting with thirty of them looks broken — but the order still follows
+  them, and this says why a text sits where it does.
+*/
+.note-rank {
+  flex: none;
+  color: var(--chosen-ink);
+  font-size: 0.8em;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+}
+
+.note-rank[data-rank='1']::before {
+  content: '•';
+}
+
+.note-rank[data-rank='2']::before {
+  content: '••';
+}
+
+.note-rank[data-rank='3']::before {
+  content: '•••';
+}
+
 .note.draft .note-title {
   font-style: italic;
 }

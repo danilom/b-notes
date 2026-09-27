@@ -1,8 +1,15 @@
 export interface Note {
   /** The filename. Storage detail — he never sees it. */
   id: string;
-  /** Built from the start of his text; there is no title anywhere else. */
+  /** His first line, edges trimmed and spaces made one: what the list shows. */
   title: string;
+  /**
+   * His first line exactly as typed, for sorting: the leading spaces he ranks
+   * his texts by are kept, so a list in title order is his order.
+   */
+  sortTitle: string;
+  /** How high those leading spaces rank it, in steps the list can mark. */
+  rank: 0 | 1 | 2 | 3;
   text: string;
   /**
    * The same text, lower case and without diacritics, ready to be searched.

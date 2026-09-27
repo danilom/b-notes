@@ -11,6 +11,8 @@ import {
 const noteOf = (title: string, text: string): Note => ({
   id: title,
   title,
+  sortTitle: title,
+  rank: 0,
   text,
   searchable: text.toLowerCase(),
   updatedAt: 0,

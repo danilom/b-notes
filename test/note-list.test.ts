@@ -8,6 +8,7 @@ import { DEFAULT_APPEARANCE } from '../src/ui/settings/appearance.ts';
 import { toSearchable } from '../src/language/diacritics.ts';
 import type { Note } from '../src/notes/note.ts';
 import { type ListView, openRowFor, sectionsFor } from '../src/ui/note-list.ts';
+import { rankOf, titleFrom, titleLineOf } from '../src/notes/note-title.ts';
 
 let minted = 0;
 
@@ -16,6 +17,8 @@ function note(title: string, text: string, updatedAt: number): LiveNote {
   return {
     id: title,
     title,
+    sortTitle: title,
+    rank: 0,
     text,
     searchable: toSearchable(text),
     updatedAt,
@@ -143,5 +146,43 @@ describe('the list of texts', () => {
     const sections = sectionsFor(view({ query: 'nepostojeće' }));
     assert.deepEqual(titlesIn(sections, 'Pronađeni'), []);
     assert.deepEqual(titlesIn(sections, 'Svi tekstovi'), ['Amsterdam', 'Ponta', 'Zima']);
+  });
+});
+
+/** A text as his Resoph titles come: ranked by the spaces in front. */
+function ranked(line: string, updatedAt: number): LiveNote {
+  const text = `${line}\nTekst.`;
+  return {
+    ...note(titleFrom(text), text, updatedAt),
+    sortTitle: titleLineOf(text),
+    rank: rankOf(titleLineOf(text)),
+  };
+}
+
+describe('his order, which is his titles as he typed them', () => {
+  const notes = [
+    ranked('Ana', 3000),
+    ranked('                        Muskulus', 1000),
+    ranked('zz Zbunjen', 4000),
+    ranked('         Pismo', 2000),
+  ];
+
+  it('puts the texts he ranked with more spaces higher', () => {
+    assert.deepEqual(titlesIn(sectionsFor(view({ notes })), 'Svi tekstovi'), [
+      'Muskulus',
+      'Pismo',
+      'Ana',
+      'zz Zbunjen',
+    ]);
+  });
+
+  it('shows how high each is ranked, rather than the spaces', () => {
+    const rows = sectionsFor(view({ notes })).find((section) => section.heading === 'Svi tekstovi')?.rows;
+    assert.deepEqual(rows?.map((row) => [row.title, row.rank]), [
+      ['Muskulus', 3],
+      ['Pismo', 1],
+      ['Ana', 0],
+      ['zz Zbunjen', 0],
+    ]);
   });
 });

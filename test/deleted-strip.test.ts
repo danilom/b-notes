@@ -8,6 +8,8 @@ import { deletedStripFor } from '../src/ui/deleted-and-archived/deleted-strip.ts
 const noteOf = (title: string, text: string): DeletedNote => ({
   id: title,
   title,
+  sortTitle: title,
+  rank: 0,
   text,
   searchable: toSearchable(text),
   updatedAt: 0,
