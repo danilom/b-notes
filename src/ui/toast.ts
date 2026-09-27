@@ -19,6 +19,21 @@
 /** Long enough to read twice without hurrying, for a message of two lines. */
 const STAYS = 6000;
 
+/** Longer for one he meets while typing: his eyes are on his words, not on it. */
+const STAYS_THROUGH_TYPING = 9000;
+
+/** How a toast may differ from the ordinary one. */
+export interface ToastManner {
+  /**
+   * Stays while he types. For something that happened *because* he typed: an
+   * ordinary toast goes at the next keystroke, which here is before he could
+   * have seen it. A click still takes it down.
+   */
+  throughTyping?: boolean;
+  /** Said more softly: news of something b-notes did, not an answer to something he pressed. */
+  quiet?: boolean;
+}
+
 /**
  * How the one on screen is taken down, if there is one.
  *
@@ -35,7 +50,7 @@ let takeDown: (() => void) | null = null;
  * the moment he is typing or clicking again he has moved on, and a message
  * about what he did before is in the way rather than in hand.
  */
-export function flashToast(element: HTMLElement, said: string, how: string): void {
+export function flashToast(element: HTMLElement, said: string, how: string, manner: ToastManner = {}): void {
   takeDown?.();
 
   const loud = document.createElement('strong');
@@ -43,6 +58,7 @@ export function flashToast(element: HTMLElement, said: string, how: string): voi
   const quiet = document.createElement('span');
   quiet.textContent = how;
   element.replaceChildren(loud, quiet);
+  element.classList.toggle('quiet', manner.quiet === true);
 
   element.hidden = false;
   /*
@@ -61,11 +77,11 @@ export function flashToast(element: HTMLElement, said: string, how: string): voi
     document.removeEventListener('keydown', hide, true);
     if (takeDown === hide) takeDown = null;
   };
-  const timer = setTimeout(hide, STAYS);
+  const timer = setTimeout(hide, manner.throughTyping === true ? STAYS_THROUGH_TYPING : STAYS);
   takeDown = hide;
 
   // Captured, so a click on something that stops the event still puts this
   // away. It is a message, not a control, and it never swallows the click.
   document.addEventListener('pointerdown', hide, true);
-  document.addEventListener('keydown', hide, true);
+  if (manner.throughTyping !== true) document.addEventListener('keydown', hide, true);
 }

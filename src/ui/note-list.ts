@@ -1,5 +1,6 @@
 import { compareTitles } from '../notes/note-title.ts';
 import { type LengthBand, type LengthBands, bandOf } from '../notes/text-length.ts';
+import { isResophId } from '../notes/resoph-note.ts';
 import { type TitleParts, titlePartsOf } from '../notes/title-marks.ts';
 import type { LiveNote } from '../notes/writing.ts';
 import { toSearchable } from '../language/diacritics.ts';
@@ -28,6 +29,8 @@ export interface ListView {
    * second later when the first autosave lands.
    */
   draft: Draft | null;
+  /** A text just taken over from Resoph, whose R is shown once more, going. */
+  justTakenOver?: string | null;
   language: Language;
 }
 
@@ -54,6 +57,8 @@ export interface Row {
   rank: 0 | 1 | 2 | 3;
   /** His marks, read off the front of the title so they can be drawn as marks. */
   parts: TitleParts;
+  /** Still in Resoph: typing in it will take it over. */
+  inResoph: boolean;
   /** How full a page to draw beside it, from empty to four lines. */
   length: LengthBand;
   /** Folded, so `macka` finds `mačka` and `mačka` finds `macka`. */
@@ -92,6 +97,7 @@ function toRow(note: LiveNote, words: ReturnType<typeof strings>, lengths: Lengt
     sortTitle: note.sortTitle,
     rank: note.rank,
     parts: titlePartsOf(note.sortTitle),
+    inResoph: isResophId(note.id),
     searchable: note.searchable,
     updatedAt: note.updatedAt,
     length: bandOf(note.bytes, lengths),
@@ -127,6 +133,7 @@ export function openRowFor(view: ListView): Row | null {
     sortTitle: '',
     rank: 0,
     parts: { mark: null, position: null, starred: false, name: words.untitledNew },
+    inResoph: false,
     searchable: '',
     updatedAt: view.draft.startedAt,
     // Nothing written in it yet, which is exactly what an empty page says.
@@ -192,8 +199,22 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
   when.className = 'note-when';
   when.textContent = describeWhen(row.updatedAt, view.language);
 
-  element.append(pageGlyph(row.length), headingOf(row, strings(view.language)), when);
+  const words = strings(view.language);
+  element.append(pageGlyph(row.length), headingOf(row, words), ...resophMarkOf(row, view, words), when);
   return element;
+}
+
+/**
+ * A small R before the date on a text still in Resoph, so he has some sense of
+ * which ones are: typing in one takes it over. On the row just taken over, the
+ * R once more, going.
+ */
+function resophMarkOf(row: Row, view: ListView, words: ReturnType<typeof strings>): HTMLElement[] {
+  const leaving = row.id !== null && row.id === view.justTakenOver;
+  if (!row.inResoph && !leaving) return [];
+  const mark = span(leaving ? 'note-in-resoph leaving' : 'note-in-resoph', 'R');
+  mark.title = words.inResophHint;
+  return [mark];
 }
 
 /**

@@ -15,6 +15,8 @@ import { type Log, describeError } from '../platform/logging.ts';
 import { DEFAULT_CTRL_CARD_AFTER_MS, readAdvanced } from './settings/advanced-settings.ts';
 import { type Place, readSession, writeSession } from './settings/app-session.ts';
 import { writingStartsAt } from '../notes/note-title.ts';
+import { type ResophMoveRefusal, ResophMoveRefused } from '../notes/note-library.ts';
+import { isResophId } from '../notes/resoph-note.ts';
 import {
   type Settings,
   type SettingsFolders,
@@ -121,6 +123,8 @@ const deletedPane = element('deleted', HTMLDialogElement);
 const versionsPane = element('versions', HTMLDialogElement);
 const advancedPane = element('advanced', HTMLDialogElement);
 const seeVersions = element('see-versions', HTMLButtonElement);
+const moveToResoph = element('move-to-resoph', HTMLButtonElement);
+const moveToResophLabel = element('move-to-resoph-label', HTMLSpanElement);
 const seeVersionsLabel = element('see-versions-label', HTMLSpanElement);
 
 /** Built here from whatever filesystem the host provides. */
@@ -227,6 +231,7 @@ function draw(): void {
     recentCount: shownRecent,
     openId: openName(),
     draft,
+    justTakenOver,
     language,
   });
   putAway.drawStrip();
@@ -295,6 +300,83 @@ function whatIsHappening(): WhatIsHappening {
 }
 
 /**
+ * Whether the text in front of him was still Resoph's when he opened it, so
+ * the save that takes it over — his first keystroke — can be told to him.
+ */
+let openWasResophs = false;
+
+/** A text just taken over from Resoph, whose R fades out on its row. */
+let justTakenOver: string | null = null;
+
+/** Long enough for the R to be seen going, and no longer. */
+const TAKEN_OVER_FADES_MS = 2000;
+
+/**
+ * His first keystroke took a text over from Resoph: said softly, without
+ * stopping him — a toast that stays while he types — and its R fades.
+ */
+function tookOver(id: string): void {
+  openWasResophs = false;
+  justTakenOver = id;
+  flashToast(toast, words.takenOver, words.takenOverHow, { throughTyping: true, quiet: true });
+  log.info('Told him a text moved from Resoph into b-notes', { id });
+  setTimeout(() => {
+    if (justTakenOver === id) justTakenOver = null;
+  }, TAKEN_OVER_FADES_MS);
+}
+
+/** Where the strip's "Premesti u Resoph" can be offered: a text of b-notes' own, on a machine with Resoph. */
+function canMoveToResoph(): boolean {
+  if (host.resophFolder === null || openHandle === NO_NOTE || draft !== null) return false;
+  const name = writing.tokenOf(openHandle);
+  return name !== null && !isResophId(name);
+}
+
+/** Why it could not go, in his words. */
+function refusalSaid(reason: ResophMoveRefusal): string {
+  switch (reason) {
+    case 'title-taken':
+      return words.notMovedTitleTaken;
+    case 'title-too-long':
+      return words.notMovedTitleTooLong;
+    case 'no-title':
+      return words.notMovedNoTitle;
+    case 'no-resoph':
+      return words.notMovedNoResoph;
+  }
+}
+
+/**
+ * The text in front of him, moved into Resoph from the strip. It stays open,
+ * as a Resoph text now, and typing in it again brings it back.
+ */
+async function moveOpenToResoph(): Promise<void> {
+  if (openHandle === NO_NOTE) return;
+  moveToResoph.disabled = true;
+  try {
+    await writing.moveToResoph(openHandle);
+  } catch (failure: unknown) {
+    // Said in the status line rather than floated: it is an answer he needs
+    // to read, and nothing of his is at risk, since nothing moved.
+    notice = failure instanceof ResophMoveRefused ? refusalSaid(failure.reason) : words.notMoved;
+    log.warn('A text was not moved to Resoph', describeError(failure));
+    return;
+  } finally {
+    moveToResoph.disabled = false;
+    showStatus();
+  }
+  openWasResophs = true;
+  // Its name changed with the move, and the session file must follow it.
+  void remember(writing.tokenOf(openHandle));
+  flashToast(toast, words.movedToResoph, words.movedToResophHow);
+  await reloadAfterWriting();
+}
+
+moveToResoph.addEventListener('click', () => {
+  void moveOpenToResoph();
+});
+
+/**
  * He typed, or something put words in front of him that count as typing.
  *
  * A text he has begun has no file and so no name; it gets a handle the moment
@@ -324,6 +406,9 @@ function afterWriting(written: NoteHandle[]): void {
       came back as nothing the next morning.
     */
     void remember(writing.tokenOf(openHandle));
+
+    const name = writing.tokenOf(openHandle);
+    if (openWasResophs && name !== null && !isResophId(name)) tookOver(name);
   }
   // Always, even when nothing was written: a failure is the other thing the
   // strip has to hear about, and it says so on the second one in a row.
@@ -426,6 +511,7 @@ function showStatus(): void {
   const now = whatIsHappening();
 
   deleteNote.disabled = !canDelete(now);
+  moveToResoph.hidden = !canMoveToResoph();
   // Nothing to put on the clipboard, which he reaches regularly: emptying a
   // text is how he deletes, and the copies he keeps are what recover it.
   copyAll.disabled = editor.value.trim().length === 0;
@@ -513,6 +599,7 @@ async function open(handle: NoteHandle): Promise<void> {
   if (openHandle !== NO_NOTE) placeInText.set(openHandle, placeInEditor());
 
   openHandle = handle;
+  openWasResophs = isResophId(note.id);
   editor.value = note.text;
   savedAt = note.updatedAt;
   savedWords = countWords(note.text);
@@ -1071,6 +1158,8 @@ export async function startApp(runningOn: Host): Promise<void> {
   // A clock turning back, beside the bin: both mark what the button does to the
   // text in front of him.
   seeVersions.prepend(icon('versions'));
+  moveToResophLabel.textContent = words.moveToResoph;
+  moveToResoph.prepend(icon('move-out'));
   appearanceButton.prepend(icon('appearance'));
   search.placeholder = words.searchPlaceholder;
   search.setAttribute('aria-label', words.searchLabel);

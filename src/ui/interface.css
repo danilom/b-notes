@@ -493,6 +493,11 @@ button:hover:not(:disabled) svg {
   command when he does — and something he goes looking for should not be
   the quietest thing in front of him.
 */
+/* The strip's buttons set a display of their own, which `hidden` must still beat. */
+.status-action[hidden] {
+  display: none;
+}
+
 .status-action {
   flex: none;
   white-space: nowrap;
@@ -867,6 +872,34 @@ button svg {
   top: -0.33em;
 }
 
+/*
+  A text still in Resoph: a small grey R before the date, quieter than
+  anything of his. Typing in the text takes it over, and the R fades out.
+*/
+.note-in-resoph {
+  flex: none;
+  color: var(--quiet);
+  font-size: 0.72em;
+  cursor: default;
+}
+
+.note-in-resoph.leaving {
+  animation: resoph-mark-leaves 1.6s ease-in forwards;
+}
+
+@keyframes resoph-mark-leaves {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .note-in-resoph.leaving {
+    animation: none;
+    visibility: hidden;
+  }
+}
+
 /* Italic because it is not a title yet — it is the app describing what he
    is looking at until his own first line takes over. */
 .note.draft .note-title {
@@ -1108,6 +1141,19 @@ body.holding > #main {
 
 #toast.up {
   opacity: 1;
+}
+
+/*
+  News of something b-notes did rather than an answer to something he
+  pressed: smaller, and turned down a little, so it tells without stopping.
+*/
+#toast.quiet {
+  padding: 0.5rem 1rem;
+  font-size: 0.92em;
+}
+
+#toast.quiet.up {
+  opacity: 0.85;
 }
 
 @media (prefers-reduced-motion: no-preference) {
