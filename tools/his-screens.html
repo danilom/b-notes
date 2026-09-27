@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>His screens</title>
+    <!--
+      The app as it lays out on his two laptops, for tuning how it looks without
+      his machines in front of you. Not part of the app: served by
+      scripts/serve.mjs at /his-screens, from the same address as the app, so
+      on the his-corpus server the frame shows his texts.
+
+      What decides how much fits is the screen after Windows' scaling, in CSS
+      pixels. An iframe of the same size lays the app out exactly as his
+      window does: the same rows fit, the same titles are cut short. What it
+      cannot show is how sharp text is at his 150 %, or his screen's size in
+      inches.
+    -->
+    <style>
+      :root {
+        --desk: #3a3d42;
+        --bar: #f3f3f3;
+        --bar-ink: #1f1f1f;
+        --taskbar: #e9edf2;
+        --control: #ffffff;
+        --control-ink: #202124;
+        --chosen: #2a6ec7;
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+      }
+
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background: var(--desk);
+        color: #e8e8e8;
+        overflow: hidden;
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+      }
+
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        font-size: 13px;
+      }
+
+      header button {
+        font: inherit;
+        padding: 4px 12px;
+        border: 1px solid #777;
+        border-radius: 5px;
+        background: var(--control);
+        color: var(--control-ink);
+        cursor: pointer;
+      }
+
+      header button[aria-pressed='true'] {
+        background: var(--chosen);
+        border-color: var(--chosen);
+        color: #fff;
+      }
+
+      #about {
+        margin-left: 8px;
+        opacity: 0.85;
+      }
+
+      #stage {
+        flex: 1;
+        position: relative;
+      }
+
+      /* The whole screen, at its size in CSS pixels, shrunk to fit if need be.
+         Placed by hand: a transform does not shrink the room a box takes, so
+         centring it in the layout would centre the unshrunk screen. */
+      #screen {
+        position: absolute;
+        transform-origin: 0 0;
+        box-shadow: 0 0 0 1px #000, 0 8px 30px rgb(0 0 0 / 0.5);
+        background: var(--taskbar);
+      }
+
+      /* Windows 11's title bar over a maximised window: the icon, the name, the three buttons. */
+      #title-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-left: 10px;
+        background: var(--bar);
+        color: var(--bar-ink);
+        font-size: 12px;
+        box-sizing: border-box;
+      }
+
+      #title-bar img {
+        width: 16px;
+        height: 16px;
+      }
+
+      #title-bar .controls {
+        margin-left: auto;
+        display: flex;
+        height: 100%;
+      }
+
+      #title-bar .controls span {
+        width: 46px;
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+      }
+
+      iframe {
+        display: block;
+        border: 0;
+        background: #fff;
+      }
+
+      #taskbar {
+        box-sizing: border-box;
+        border-top: 1px solid #d0d4da;
+        display: grid;
+        place-items: center;
+        color: #8a8f96;
+        font-size: 11px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span>His screens:</span>
+      <span id="choices"></span>
+      <button id="reload" type="button" title="Load the app in the frame again">Reload</button>
+      <span id="about"></span>
+    </header>
+    <div id="stage">
+      <div id="screen">
+        <div id="title-bar">
+          <img src="/icon.svg" alt="" />
+          <span>b-notes</span>
+          <span class="controls"><span>─</span><span>☐</span><span>✕</span></span>
+        </div>
+        <iframe id="app" title="b-notes" src="/"></iframe>
+        <div id="taskbar">taskbar</div>
+      </div>
+    </div>
+    <script>
+      /*
+        Each screen after Windows' scaling, in CSS pixels, and the two bars
+        that take height from a maximised window.
+
+        The bars are estimates until they are read off his log: every start
+        writes the window's inside size ("Ready", viewport) and the work area
+        ("Window open"). Put those in and the frame is exact.
+      */
+      const SCREENS = [
+        { id: 'dell', name: 'Dell', pixels: '1920 × 1200', scale: 1.5, width: 1280, height: 800, taskbar: 48, titleBar: 31 },
+        { id: 'asus', name: 'Asus', pixels: '1920 × 1080', scale: 1.5, width: 1280, height: 720, taskbar: 48, titleBar: 31 },
+        { id: 'vm', name: 'Your VM', pixels: '2880 × 1692', scale: 1.75, width: 1646, height: 967, taskbar: 48, titleBar: 31 },
+      ];
+
+      const choices = document.getElementById('choices');
+      const about = document.getElementById('about');
+      const screenBox = document.getElementById('screen');
+      const titleBar = document.getElementById('title-bar');
+      const frame = document.getElementById('app');
+      const taskbar = document.getElementById('taskbar');
+      const stage = document.getElementById('stage');
+
+      let shown = SCREENS[0];
+
+      function remembered() {
+        const wanted = location.hash.slice(1);
+        return SCREENS.find((screen) => screen.id === wanted) ?? SCREENS[0];
+      }
+
+      function windowSize(screen) {
+        return { width: screen.width, height: screen.height - screen.taskbar - screen.titleBar };
+      }
+
+      /** Shrunk to fit this browser window, never enlarged: the layout is the same either way. */
+      function fit() {
+        const room = stage.getBoundingClientRect();
+        const shrink = Math.min(1, (room.width - 24) / shown.width, (room.height - 24) / shown.height);
+        screenBox.style.transform = `scale(${shrink})`;
+        screenBox.style.left = `${(room.width - shown.width * shrink) / 2}px`;
+        screenBox.style.top = `${(room.height - shown.height * shrink) / 2}px`;
+        const inside = windowSize(shown);
+        about.textContent =
+          `${shown.pixels} at ${Math.round(shown.scale * 100)} % → screen ${shown.width} × ${shown.height}, ` +
+          `b-notes ${inside.width} × ${inside.height}` +
+          (shrink < 1 ? ` · shown at ${Math.round(shrink * 100)} %` : ' · shown at full size');
+      }
+
+      function show(screen) {
+        shown = screen;
+        history.replaceState(null, '', `#${screen.id}`);
+        const inside = windowSize(screen);
+        screenBox.style.width = `${screen.width}px`;
+        screenBox.style.height = `${screen.height}px`;
+        titleBar.style.height = `${screen.titleBar}px`;
+        frame.style.width = `${inside.width}px`;
+        frame.style.height = `${inside.height}px`;
+        taskbar.style.height = `${screen.taskbar}px`;
+        for (const button of choices.children) {
+          button.setAttribute('aria-pressed', String(button.dataset.id === screen.id));
+        }
+        fit();
+      }
+
+      for (const screen of SCREENS) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = screen.name;
+        button.dataset.id = screen.id;
+        button.addEventListener('click', () => show(screen));
+        choices.append(button);
+      }
+
+      document.getElementById('reload').addEventListener('click', () => {
+        frame.contentWindow?.location.reload();
+      });
+      window.addEventListener('resize', fit);
+      show(remembered());
+    </script>
+  </body>
+</html>

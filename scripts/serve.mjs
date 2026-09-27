@@ -35,6 +35,23 @@ const server = createServer((request, response) => {
     return;
   }
 
+  // The app framed at the size of his screens, for tuning how it looks. A
+  // tool, not part of the app, so it lives outside dist/ and is served from
+  // the same address, which puts whichever corpus this server has in its frame.
+  if (relative === 'his-screens') {
+    readFile(path.resolve('tools/his-screens.html')).then(
+      (body) => {
+        response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+        response.end(body);
+      },
+      (error) => {
+        console.error('Failed to serve the his-screens page', error);
+        response.writeHead(500).end('Server error');
+      },
+    );
+    return;
+  }
+
   // The corpora live outside dist/, so the browser can be filled with hundreds
   // of texts while the UI is being worked on. Only one is served at a time, so
   // his texts and the invented ones can never be mixed in one browser.
