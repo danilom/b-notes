@@ -386,3 +386,72 @@ describe('a change made in Resoph to a text b-notes has copied', () => {
     assert.deepEqual(await everything(resoph), before);
   });
 });
+
+describe('where each text lives, for test mode', () => {
+  it('says a text still only in Resoph is there, at its own file', async () => {
+    const { store } = await library({ [RANKED]: 'Tekst.' });
+
+    const found = (await store.whereabouts()).get(resophIdOf(RANKED));
+
+    assert.equal(found?.origin, 'resoph');
+    assert.ok(found?.path.endsWith(`ResophNotes/${RANKED}.txt`), found?.path);
+  });
+
+  it('says a text he has typed into is a copy, and where its Resoph original is', async () => {
+    const { store } = await library({ Pismo: 'Prvo.' });
+    const copy = await store.save(resophIdOf('Pismo'), 'Pismo\n\nPrvo. Dopisano.');
+
+    const found = (await store.whereabouts()).get(copy ?? '');
+
+    assert.equal(found?.origin, 'copy');
+    assert.equal(found?.resophStem, 'Pismo');
+    assert.ok(found?.resophPath?.endsWith('ResophNotes/Pismo.txt'), found?.resophPath ?? 'no Resoph path');
+    assert.equal(found?.unlinked, false);
+    assert.equal(found?.resophGone, false);
+    assert.equal((await store.whereabouts()).has(resophIdOf('Pismo')), false);
+  });
+
+  it('says a text begun in b-notes is its own', async () => {
+    const { store } = await library();
+    const id = await store.save(null, 'Novo\n\nTekst.');
+
+    assert.equal((await store.whereabouts()).get(id ?? '')?.origin, 'own');
+  });
+
+  it('notices a copy whose Resoph file has gone: deleted there, or retitled', async () => {
+    const { store, resoph } = await library({ Pismo: 'Prvo.' });
+    const copy = (await store.save(resophIdOf('Pismo'), 'Pismo\n\nPrvo. Dopisano.')) ?? '';
+    await rm(path.join(resoph, 'Pismo.txt'));
+
+    const gone = (await store.whereabouts()).get(copy);
+    assert.equal(gone?.origin, 'copy');
+    assert.equal(gone?.resophGone, true);
+    assert.equal(gone?.resophPath, null);
+  });
+
+  it('knows a copy by its name when its link is missing, while the Resoph file is still there', async () => {
+    const { store, notes } = await library({ Pismo: 'Prvo.' });
+    const copy = (await store.save(resophIdOf('Pismo'), 'Pismo\n\nPrvo. Dopisano.')) ?? '';
+    await rm(path.join(notes, RESOPH_LINKS_FOLDER, `${copy}.txt`));
+
+    const found = (await store.whereabouts()).get(copy);
+    assert.equal(found?.origin, 'copy');
+    assert.equal(found?.unlinked, true);
+  });
+
+  it('marks texts changed in both places, changed behind its back, and Dropbox conflicted copies', async () => {
+    const conflicted = "Pismo (Brano's conflicted copy 2026-09-26)";
+    const { store, notes } = await library({ [conflicted]: 'Drugo.' });
+    const id = (await store.save(null, 'Novo\n\nTekst.')) ?? '';
+    await mkdir(path.join(notes, 'Menjano na dva mesta'), { recursive: true });
+    await writeFile(path.join(notes, 'Menjano na dva mesta', `${id}.txt`), 'Pismo');
+    await mkdir(path.join(notes, VERSIONS_FOLDER, id), { recursive: true });
+    await writeFile(path.join(notes, VERSIONS_FOLDER, id, '2026-09-27 10-00-00 izmenjeno drugde.txt'), 'Staro.');
+
+    const all = await store.whereabouts();
+    assert.equal(all.get(id)?.changedInBoth, true);
+    assert.equal(all.get(id)?.changedElsewhere, true);
+    assert.equal(all.get(id)?.conflictedCopy, false);
+    assert.equal(all.get(resophIdOf(conflicted))?.conflictedCopy, true);
+  });
+});

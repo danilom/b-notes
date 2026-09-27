@@ -10,6 +10,7 @@ import type {
   NoteVersion,
 } from './note.ts';
 import { createNoteLibrary } from './note-library.ts';
+import type { Whereabouts } from './note-whereabouts.ts';
 import { type Naming, createNoteStore } from './note-store.ts';
 import { createResophFolder } from './resoph-folder.ts';
 
@@ -127,6 +128,8 @@ export interface Writing {
   versionsOf(handle: NoteHandle): Promise<NoteVersion[]>;
   /** He has looked at a text that changed in both Resoph and b-notes. */
   seenChangedInBoth(handle: NoteHandle): Promise<void>;
+  /** Where each text's files are, by the name the list knows it by. For test mode alone. */
+  whereabouts(): Promise<Map<string, Whereabouts>>;
   /** Resolves once nothing is being written. Waiting, unstarted work stays waiting. */
   idle(): Promise<void>;
   /** Timers down, nothing further attempted. */
@@ -328,6 +331,7 @@ export function createWriting(
     countVersions: (handle) => store.countVersions(nameOf(handle)),
     versionsOf: (handle) => store.listVersions(nameOf(handle)),
     seenChangedInBoth: (handle) => store.seenChangedInBoth(nameOf(handle)),
+    whereabouts: () => store.whereabouts(),
 
     async list(): Promise<LiveNote[]> {
       const notes = await store.list();
