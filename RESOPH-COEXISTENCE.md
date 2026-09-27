@@ -232,6 +232,33 @@ bringing in whatever Resoph has, until one day there's nothing new to bring.
     the other is kept as a version of it. Which one, and what he's told, is
     *open*.
   - Nothing is ever deleted because it disappeared from Resoph's folder.
+- **Which Resoph file is which b-notes text** — *open*. Resoph gives a file no
+  identity: its database object carries no filename (the name comes from the
+  title), and a retitle writes a file under the new name. Candidates, weakest
+  first:
+  - the name, which a retitle breaks;
+  - the text, which an edit breaks;
+  - **a rename seen as a pair**: one file leaving and one arriving in the same
+    import, with mostly the same text. Importing every time b-notes comes to
+    the front keeps these pairs small and clean;
+  - **the NTFS file ID** (`ino` in Node's `stat`), which survives a real rename
+    on one machine — if Resoph renames rather than rewrites (experiment 7);
+  - **Resoph's database object**, stable on its own machine across retitles,
+    but a separate object on every machine.
+
+  The costs are lopsided. Failing to link two files leaves a duplicate in
+  b-notes: untidy, and fixable later. Linking two different texts files one
+  as a version of the other: hidden. So link only when sure.
+- **A signpost in Resoph instead of write-back.** One note b-notes writes into
+  Resoph's folder once, never renames or deletes, and may rewrite the text of.
+  Titled with his own trick — leading spaces — so it sits at the top of his
+  Resoph list, and saying plainly that his newest writing is in b-notes.
+  Anything else written there becomes permanent: every Resoph that ever sees a
+  file keeps it. So write-back of any kind, warning copies included, adds to
+  his debris forever. One signpost is the least of that.
+- **Nudge, don't uninstall.** Take Resoph off startup, the taskbar and the
+  desktop, and put b-notes where it was. It's still installed if he asks for
+  it, and because b-notes keeps importing, going back costs him nothing.
 - **The switch becomes a setting**, not a migration: stop reading Resoph's
   folder.
 - **The hard part is the import**, which now becomes a small sync engine. It
@@ -255,6 +282,9 @@ Experiments on Resoph that decide details (Danilo can run them):
 5. Is Simplenote sync on, on his machines? Which way does it win?
 6. A census of each machine's database — counts, dates, pins, deleted flags,
    never content. A small script run on his machine could produce it.
+7. Retitle a note in Resoph and compare the file's ID before and after
+   (`fsutil file queryfileid "<file>"`). Same ID: Resoph renames. New ID: it
+   writes a new file. And does the database object keep its `<create>` time?
 
 ## 8. Cleanup on his machines — *reminder for deployment*
 
