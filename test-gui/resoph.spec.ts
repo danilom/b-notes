@@ -36,7 +36,7 @@ test('shows his Resoph titles without their spaces, marked by how high he ranked
   const row = page.locator('#list .note').filter({ hasText: RANKED_NAME }).first();
   await expect(row.locator('.note-title')).toHaveText(RANKED_NAME);
   await expect(row.locator('.note-rank')).toHaveAttribute('data-rank', '3');
-  await expect(row.locator('.note-star:not(.unstarred)')).toHaveCount(1);
+  await expect(row.locator('.note-star')).toHaveCount(1);
 
   // His order: the text he ranked highest comes first in the whole list.
   const all = page.locator('#list .section-block').last();

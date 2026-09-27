@@ -216,13 +216,11 @@ function headingOf(row: Row): HTMLElement {
   }
   if (mark !== null) heading.append(span('note-mark', mark));
   if (position !== null) {
-    // The series beside the mark, the number set right in a column after it.
     if (position.series !== null) heading.append(span('note-series', position.series));
     heading.append(span('note-position', position.number));
   }
-  // On every row that carries a mark, starred or not, so a star never moves a name.
-  if (marked || row.rank > 0) {
-    const star = span(starred ? 'note-star' : 'note-star unstarred', '\u2605');
+  if (starred) {
+    const star = span('note-star', '\u2605');
     star.setAttribute('aria-hidden', 'true');
     heading.append(star);
   }

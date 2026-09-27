@@ -217,12 +217,12 @@ The table *Where his things are kept* in `DESIGN.md` changes with this.
     just before the name. The `A` he floats it with (`A (E) A* Avdo`) only
     sorted, and isn't shown. Stars inside or after a name (`Sorabi**`) stay as
     he typed them.
-  - Each kind of mark has a slot of the same width on every row that carries
-    it, on the name's baseline, so rows marked alike start their names at one
-    edge. The marks are the one part in colour; dots, series and star are grey.
-  - The number after `(UP)`, with its series (`II`) if there is one, goes in
-    a right-aligned column, as his padding meant it; 205 titles have one.
-    Rows without one are not indented for it.
+  - Everything in front of the name is one space's width apart, on the name's
+    baseline, and every row starts at the same place. No columns: his padding
+    is for sorting. The marks are the one part in colour; dots, series and
+    star are grey.
+  - The number after `(UP)`, with its series (`II`) if there is one, is drawn
+    grey after the mark; 205 titles have one.
   - Anything else — half-typed marks, one-off spellings — is left as text.
   - The order is Resoph's, near enough: by character, ignoring case, so
     spaces, then `(`, `*`, `-`, digits, letters. Only where two titles part
