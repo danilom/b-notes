@@ -130,7 +130,10 @@ him to decide:
   an I-beam, and a sentence saying so again is a line he reads every visit for
   something he learns once.
 - **A line beside a button says what pressing it will do.** *Ova verzija
-  postaje aktivni tekst.*
+  postaje aktivni tekst.* Directly above it instead where he must not skim
+  past it — a line to the side of a button reads as a footnote. The message
+  b-notes holds him at while Resoph is open does this: *Klikni dugme ispod:
+  b-notes će ih zatvoriti umesto tebe…*
 
 Each of the three had drifted into the wrong slot at least once. The test is
 whether the sentence is about the screen, about a thing on it, or about an act
