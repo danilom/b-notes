@@ -267,28 +267,30 @@ across machines.
 ### 4.6 Knowing a Resoph file under a new name — *proposed*
 
 When he retitles a text in Resoph that b-notes has copied, its link points at a
-filename that has gone, and a new one has appeared. The signals, in the order
-they are trusted:
+filename that has gone, and a new one has appeared.
 
-- **The same text under a new name.** Exact match only.
-- **A rename seen as a pair**: in one refresh, the linked file left and one
-  arrived with the same modification time and mostly the same text.
-  Refreshing on every return to b-notes keeps the pairs small.
-- **This machine's file ID**, if experiment 7 shows Resoph renames rather than
-  rewrites.
+**What a retitle in Resoph does to the file** — tried on the VM with his
+corpus loaded, by adding a word to one note's title: Resoph wrote a *new* file
+under the new name and deleted the old one. The new file had a new ID, new
+modified and created times, and exactly the same bytes — the title lives in
+the name, so the file's text did not change. Nothing else in the folder
+changed, and no half-typed names were left behind.
 
-On timestamps:
+So the signals, in the order they are trusted:
 
-- **Modification times** survive renames, and the evidence says they also
-  survive Resoph and Dropbox: his byte-identical copies share their
-  modification time to the second. That makes them a good *pairing* signal,
-  but not an identity — every edit changes them, and identical copies share
-  them.
-- **Creation times** are local to one machine. Dropbox creates the file afresh
-  on every other machine, and copying resets them, as it did for this corpus.
-- **File IDs** survive a real rename on one machine and nothing more. Another
-  machine has its own. Whether Dropbox keeps a machine's ID when it carries a
-  rename across is untested.
+- **The file's text, unchanged under a new name.** In one refresh, the linked
+  file left and one arrived whose file text is byte-for-byte the same. That is
+  exactly what a retitle leaves; refreshing on every return to b-notes keeps
+  the pairs small.
+- **File IDs: useless.** Resoph writes a new file, so a retitle gets a new ID.
+- **Modification times: useless for this.** The new file is dated the moment
+  of the retitle. (His byte-identical copies sharing a time to the second must
+  come from something else — another machine's Resoph writing its database
+  out, or Dropbox — and are not evidence about retitles.)
+- **Creation times** are local to one machine, and reset by any copy.
+
+A retitle combined with an edit to the text in one sitting leaves nothing to
+pair by, and shows as a second text.
 
 When no signal is sure, the new Resoph file shows as a text of its own beside
 the b-notes copy: a duplicate, which is untidy but can be fixed later. Linking
@@ -500,11 +502,10 @@ folder, both through Dropbox, often after long offline stretches.
 
 Experiments on Resoph (Danilo can run them), still useful:
 
-- **Rename detection:** retitle a note in Resoph, then compare the file's ID
-  (`fsutil file queryfileid "<file>"`), modification time and creation time
-  before and after. Same ID: Resoph renames. New ID: it writes a new file.
-- **Resurrection:** with Resoph closed, rename a file. Which names come back,
-  and how many times? (Deleting is already known to come back.)
+- ~~Rename detection~~ — done: a retitle writes a new file (new ID, new times,
+  same bytes) and deletes the old one. See §4.6.
+- ~~Resurrection~~ — done: a file renamed behind Resoph's back comes back under
+  its old name, and the renamed one is taken in too — two notes. See §1.
 - **His machines' Resoph configs**: `<enablesync>`, `<sorttype>`, `<systray>`, and the folder in `<userdata9>` — one copy of `resophnotesconfig.xml` from each is enough.
 - **Census of each machine's database** — counts, dates, pins, deleted flags,
   never content. A small script run on his machine could produce it.
