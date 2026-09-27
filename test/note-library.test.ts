@@ -20,11 +20,14 @@ const slashed = (dir: string): string => dir.replaceAll('\\', '/');
  * the Resoph folder holding what it is handed — name on disk to file content,
  * exactly as Resoph writes them: title in the name, the rest in the file.
  */
-async function library(resophFiles: Record<string, string> = {}, options: { resoph?: boolean } = {}) {
+async function library(
+  resophFiles: Record<string, string> = {},
+  options: { resoph?: boolean; ownFolder?: boolean } = {},
+) {
   const root = await mkdtemp(path.join(tmpdir(), 'b-notes-library-'));
   const notes = path.join(root, 'b-notes');
   const resoph = path.join(root, 'ResophNotes');
-  await mkdir(notes);
+  if (options.ownFolder !== false) await mkdir(notes);
   if (options.resoph !== false) {
     await mkdir(resoph);
     for (const [name, text] of Object.entries(resophFiles)) {
@@ -78,6 +81,17 @@ describe('texts still only in Resoph', () => {
 
     assert.equal(note?.sortTitle, '                *GRAD Kilim');
     assert.equal(note?.rank, 2);
+  });
+
+  it("are listed on a machine's first start, before b-notes has a folder of its own", async () => {
+    // It comes into being with the first text b-notes writes, so on every
+    // machine's first start it is rightly not there yet.
+    const { store, notes } = await library({ [RANKED]: 'Tekst.' }, { ownFolder: false });
+
+    assert.deepEqual((await store.list()).map((note) => note.title), ['*GRAD Kilim']);
+
+    await store.save(resophIdOf(RANKED), '                *GRAD Kilim\n\nTekst. Dopisano.');
+    assert.equal((await readdir(notes)).some((name) => name.endsWith('.txt')), true);
   });
 
   it('show an empty file as the idea it is: a title with nothing under it', async () => {

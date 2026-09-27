@@ -129,7 +129,10 @@ export function createNoteStore(
    *
    * `Verzije/` and `Obrisano/` come into being the first time they are used, so
    * asking about one that is not there yet is an ordinary question with an
-   * empty answer.
+   * empty answer. So does b-notes' folder itself: his writing is Resoph's, and
+   * this one is made by the first text b-notes writes — on every machine's
+   * first start it is rightly not there yet. Whether his writing can be
+   * reached is asked of the Resoph folder, before anything is read.
    *
    * Everything else — a drive that has gone, a permission Windows changed —
    * comes out as empty too, and should not. That is a gap rather than a
@@ -141,10 +144,10 @@ export function createNoteStore(
     try {
       return await files.list(folder);
     } catch (failure: unknown) {
-      // Only the folder we have not made yet. `Verzije/` and `Obrisano/` come
-      // into being the first time they are used, so asking about one before
-      // then is an ordinary question with an empty answer — and nothing else
-      // is, which is why everything else goes up to somebody who can say so.
+      // Only the folder we have not made yet: it comes into being the first
+      // time it is used, so asking about one before then is an ordinary
+      // question with an empty answer — and nothing else is, which is why
+      // everything else goes up to somebody who can say so.
       if (!(failure instanceof FolderMissing)) throw failure;
       return [];
     }
@@ -166,7 +169,7 @@ export function createNoteStore(
    */
   async function noteFiles(from: string = folder): Promise<Map<string, FileInfo>> {
     const byId = new Map<string, FileInfo>();
-    for (const file of await files.list(from)) {
+    for (const file of await filesIn(from)) {
       const name = nameOf(file.path);
       // Conflicted copies included. Dropbox made them of his writing, and a
       // text hidden because of how it is named is a text he has lost.
@@ -176,19 +179,9 @@ export function createNoteStore(
     return byId;
   }
 
-  /**
-   * The same, for the folder of texts he has put away.
-   *
-   * That one comes into being the first time he deletes something, so not being
-   * there is an ordinary answer where for the writing folder it is the alarm.
-   */
+  /** The same, for the folder of texts he has put away. */
   async function putAwayFiles(): Promise<Map<string, FileInfo>> {
-    try {
-      return await noteFiles(at(DELETED_FOLDER));
-    } catch (failure: unknown) {
-      if (!(failure instanceof FolderMissing)) throw failure;
-      return new Map();
-    }
+    return noteFiles(at(DELETED_FOLDER));
   }
 
   /** Everything about a note that the app works with, read off one file. */
