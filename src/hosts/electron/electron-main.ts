@@ -466,6 +466,10 @@ async function start(): Promise<void> {
     scale: screen.getPrimaryDisplay().scaleFactor,
   });
   startUpdateChecks(log);
+  // Never waited on and never fatal: a Resoph setting is not worth a start.
+  otherEditors.turnOffResophTrayIfClosed().catch((failure: unknown) => {
+    log.warn("Could not switch off Resoph's minimize-to-tray", failure);
+  });
 }
 
 /**

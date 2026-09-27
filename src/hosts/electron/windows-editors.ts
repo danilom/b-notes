@@ -1,10 +1,11 @@
 import { execFile } from 'node:child_process';
-import { copyFile, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
 import type { Log } from '../../platform/logging.ts';
 import { OTHER_EDITORS, type OtherEditor, type OtherEditors } from '../../platform/other-editors.ts';
+import { RESOPH_CONFIG_FILE, withoutTray } from './resoph-config.ts';
 
 const run = promisify(execFile);
 
@@ -56,7 +57,18 @@ const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(
  * @param resophHome the folder Resoph keeps its settings and database in.
  * @param copiesFolder where Resoph's database is copied before Resoph is ended.
  */
-export function createOtherEditors(resophHome: string, copiesFolder: string, log: Log): OtherEditors {
+/** The other editors on Windows, and one thing only Windows needs doing about Resoph. */
+export interface WindowsEditors extends OtherEditors {
+  /**
+   * Switches off Resoph's *minimize to tray*, if Resoph is not running. At every
+   * start of b-notes, so every machine is seen to on its first, whether or not
+   * Resoph happened to be open — something done by hand at install is exactly
+   * what gets forgotten on the fourth laptop.
+   */
+  turnOffResophTrayIfClosed(): Promise<void>;
+}
+
+export function createOtherEditors(resophHome: string, copiesFolder: string, log: Log): WindowsEditors {
   async function running(): Promise<OtherEditor[]> {
     try {
       const { stdout } = await run('tasklist', ['/FO', 'CSV', '/NH'], { windowsHide: true });
@@ -101,7 +113,7 @@ export function createOtherEditors(resophHome: string, copiesFolder: string, log
     for (const old of kept.slice(0, Math.max(0, kept.length - COPIES_KEPT))) {
       await rm(path.join(copiesFolder, old), { recursive: true, force: true });
     }
-    log.info("Kept a copy of Resoph's database before closing it", { into, files: names });
+    log.info("Kept a copy of Resoph's files before touching them", { into, files: names });
     return into;
   }
 
@@ -146,18 +158,49 @@ export function createOtherEditors(resophHome: string, copiesFolder: string, log
   }
 
   /**
-   * Resoph first asked, as its own close button would; with minimize-to-tray on
-   * that only hides it. Then, if it is still there: its database copied aside,
-   * a wait until it is not writing, ended, and its files checked.
+   * Switches off *minimize to tray* in Resoph's settings — only while Resoph is
+   * not running, since a running Resoph writes its settings back when it quits.
+   * The file is copied aside first, and written whole or not at all.
+   */
+  async function turnOffTray(): Promise<void> {
+    const at = path.join(resophHome, RESOPH_CONFIG_FILE);
+    let now: string;
+    try {
+      now = await readFile(at, 'utf8');
+    } catch (failure: unknown) {
+      // No Resoph settings on this machine is the ordinary answer on most of
+      // them; anything else is said.
+      if ((failure as NodeJS.ErrnoException).code !== 'ENOENT') log.warn("Could not read Resoph's settings", String(failure));
+      return;
+    }
+    const changed = withoutTray(now);
+    if (changed === null || !isWholeXml(changed)) return;
+    await keepResophDatabase([RESOPH_CONFIG_FILE]);
+    const temp = `${at}.b-notes`;
+    await writeFile(temp, changed, 'utf8');
+    await rename(temp, at);
+    log.info("Switched off Resoph's minimize-to-tray, so its close button closes it");
+  }
+
+  /**
+   * Resoph asked first, as its own close button would. With minimize-to-tray
+   * on that only hides it — and saves its database, which is why the copy is
+   * taken after this and not before: taken before, putting it back would undo
+   * the save. Then a wait until its files are quiet, the copy, the end, and a
+   * check that its files are whole. Last, with Resoph certainly closed,
+   * minimize-to-tray is switched off, so next time asking is enough.
    */
   async function closeResoph(): Promise<void> {
-    const names = await databaseFiles();
-    const copy = names.length > 0 ? await keepResophDatabase(names) : null;
     await askToClose('ResophNotes');
     await wait(3_000);
-    if (!(await stillRunning('ResophNotes'))) return;
+    if (!(await stillRunning('ResophNotes'))) {
+      await turnOffTray();
+      return;
+    }
 
+    const names = await databaseFiles();
     if (names.length > 0) await untilSettled(names);
+    const copy = names.length > 0 ? await keepResophDatabase(names) : null;
     try {
       await run('taskkill', ['/F', '/IM', IMAGE.ResophNotes], { windowsHide: true });
       log.warn('Ended Resoph, which would only hide itself when asked to close');
@@ -167,10 +210,15 @@ export function createOtherEditors(resophHome: string, copiesFolder: string, log
     }
     await wait(1_000);
     if (copy !== null) await checkResophDatabase(names, copy);
+    await turnOffTray();
   }
 
   return {
     running,
+    async turnOffResophTrayIfClosed(): Promise<void> {
+      if (await stillRunning('ResophNotes')) return;
+      await turnOffTray();
+    },
     async close(which: readonly OtherEditor[]): Promise<void> {
       log.info('Closing the other writing programs', { which });
       for (const editor of which) {

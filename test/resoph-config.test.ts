@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
-import { RESOPH_CONFIG, findResophFolder, resophFolderIn } from '../src/hosts/electron/resoph-config.ts';
+import { RESOPH_CONFIG, findResophFolder, resophFolderIn, withoutTray } from '../src/hosts/electron/resoph-config.ts';
 
 const encoded = (text: string): string => Buffer.from(text, 'utf8').toString('base64');
 
@@ -64,5 +64,20 @@ describe('finding Resoph on this machine', () => {
     const home = await mkdtemp(path.join(tmpdir(), 'b-notes-home-'));
 
     assert.equal(findResophFolder(home), null);
+  });
+});
+
+describe("switching off Resoph's minimize to tray", () => {
+  it('turns the one setting off and leaves every other byte as it was', () => {
+    const before = config(encoded('D:/Tekstovi'));
+    const after = withoutTray(before);
+
+    assert.equal(after, before.replace('<systray>true</systray>', '<systray>false</systray>'));
+    assert.ok(after?.includes('\r\n'), 'the line endings changed');
+  });
+
+  it('leaves alone a file where it is already off, or not there', () => {
+    assert.equal(withoutTray('<config><systray>false</systray></config>'), null);
+    assert.equal(withoutTray('<config></config>'), null);
   });
 });
