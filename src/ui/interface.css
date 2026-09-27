@@ -902,19 +902,34 @@ button svg {
 }
 
 .note-in-resoph.leaving {
-  animation: resoph-mark-leaves 1.6s ease-in forwards;
+  animation: resoph-mark-leaves 1.8s ease-in forwards;
 }
 
+/*
+  Fades, then gives its room back, so the date slides over to the edge
+  rather than jumping there when the list is next drawn without it. Closed
+  up means nothing at all left of it: no width, and a margin that cancels
+  the row's gap before it.
+*/
 @keyframes resoph-mark-leaves {
+  65% {
+    opacity: 0;
+    width: 1em;
+    margin-left: -0.35rem;
+    margin-right: -0.35rem;
+  }
   to {
     opacity: 0;
+    width: 0;
+    margin-left: -0.6rem;
+    margin-right: 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .note-in-resoph.leaving {
     animation: none;
-    visibility: hidden;
+    display: none;
   }
 }
 

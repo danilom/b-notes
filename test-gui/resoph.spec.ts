@@ -105,6 +105,34 @@ test('typing into a Resoph text takes it over, leaves a stub in Resoph, and says
   await expect(row.locator('.note-in-resoph')).toHaveCount(0);
 });
 
+test('the date moves smoothly into the place of the icon it loses, rather than jumping there', async ({ page }) => {
+  /*
+    The icon used to fade and keep its room until the list was next drawn, so
+    the date stood beside an empty space for two seconds and then jumped to
+    the edge. Its fading is played to the end here rather than waited for:
+    the fake clock drives the timers, not the stylesheet's animations.
+  */
+  await start(page);
+  const row = page.locator('#list .section-block').last().locator('.note').filter({ hasText: RANKED_NAME });
+  await row.first().click();
+  await page.locator('#editor').press('End');
+  await page.locator('#editor').pressSequentially(' Dopisano.');
+  await page.clock.runFor(1200);
+
+  const leaving = row.locator('.note-in-resoph.leaving');
+  await expect(leaving).toHaveCount(1);
+  await leaving.evaluate((element) => {
+    for (const animation of element.getAnimations()) animation.finish();
+  });
+  const dateEndsFaded = await row.locator('.note-when').evaluate((element) => element.getBoundingClientRect().right);
+
+  await page.clock.runFor(3000);
+  await expect(row.locator('.note-in-resoph')).toHaveCount(0);
+  const dateEndsDrawn = await row.locator('.note-when').evaluate((element) => element.getBoundingClientRect().right);
+
+  expect(Math.abs(dateEndsDrawn - dateEndsFaded)).toBeLessThan(1);
+});
+
 test('waits behind its message while Resoph and Notepad are open, and carries on once closed', async ({ page }) => {
   await page.addInitScript(() => {
     // Once, before the first load only: later loads must not reopen them.
