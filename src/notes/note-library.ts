@@ -1,16 +1,8 @@
 import { type FileSystem, FolderMissing } from '../platform/file-system.ts';
 import type { Log } from '../platform/logging.ts';
 import { type Note, type NoteStore, type NoteVersion, noteOf } from './note.ts';
-import {
-  CHANGED_IN_BOTH_FOLDER,
-  EXTENSION,
-  RESOPH_LINKS_FOLDER,
-  VERSIONS_FOLDER,
-  copyNameFor,
-  idOf,
-} from './note-naming.ts';
-import { CHANGED_ELSEWHERE, type NoteRenamed, type OwnNoteStore } from './note-store.ts';
-import { type Whereabouts, whereaboutsOf } from './note-whereabouts.ts';
+import { CHANGED_IN_BOTH_FOLDER, EXTENSION, RESOPH_LINKS_FOLDER, copyNameFor, idOf } from './note-naming.ts';
+import type { NoteRenamed, OwnNoteStore } from './note-store.ts';
 import type { ResophFolder, ResophText } from './resoph-folder.ts';
 import { resophIdOf, resophStemOf } from './resoph-note.ts';
 
@@ -32,8 +24,6 @@ function isFromResoph(version: NoteVersion): boolean {
 export interface NoteLibrary extends NoteStore {
   /** He has looked at a text that changed in both places: stop saying so. */
   seenChangedInBoth(id: string): Promise<void>;
-  /** Where each text's files are and what has happened to it. For test mode alone. */
-  whereabouts(): Promise<Map<string, Whereabouts>>;
 }
 
 /**
@@ -80,35 +70,6 @@ export function createNoteLibrary(
       if (!(failure instanceof FolderMissing)) throw failure;
       return new Set();
     }
-  }
-
-  /** Each copy's link: the copy's name, and the Resoph file the link names. */
-  async function linkStems(): Promise<Map<string, string>> {
-    const links = new Map<string, string>();
-    for (const copy of await linkedNames()) {
-      links.set(copy, (await files.read(`${linksFolder}/${copy}${EXTENSION}`)).trim());
-    }
-    return links;
-  }
-
-  /** The texts that changed on disk behind b-notes' back, which kept a version of each. */
-  async function changedElsewhere(): Promise<Set<string>> {
-    const versions = `${folder}/${VERSIONS_FOLDER}`;
-    let kept: string[];
-    try {
-      kept = await files.listFolders(versions);
-    } catch (failure: unknown) {
-      // Not there until the first version is kept, which is ordinary.
-      if (!(failure instanceof FolderMissing)) throw failure;
-      return new Set();
-    }
-    const labelled = new RegExp(` ${CHANGED_ELSEWHERE}( \\(\\d+\\))?$`);
-    const found = new Set<string>();
-    for (const id of kept) {
-      const names = (await files.list(`${versions}/${id}`)).map((file) => idOf(nameOf(file.path)));
-      if (names.some((name) => labelled.test(name))) found.add(id);
-    }
-    return found;
   }
 
   /**
@@ -256,26 +217,6 @@ export function createNoteLibrary(
       const [fromResoph, changed] = await Promise.all([resophNotes(), namesIn(changedFolder)]);
       const marked = mine.map((note): Note => (changed.has(note.id) ? { ...note, changedInBoth: true } : note));
       return [...marked, ...fromResoph].sort((first, second) => second.updatedAt - first.updatedAt);
-    },
-
-    async whereabouts(): Promise<Map<string, Whereabouts>> {
-      const [texts, ownIds, links, taken, changed, elsewhere] = await Promise.all([
-        resoph === null ? Promise.resolve([]) : resoph.list(),
-        own.liveIds(),
-        linkStems(),
-        takenIn(),
-        namesIn(changedFolder),
-        changedElsewhere(),
-      ]);
-      return whereaboutsOf({
-        folder,
-        resophTexts: texts.map((text) => ({ stem: text.stem, path: text.file.path })),
-        ownIds,
-        links,
-        taken,
-        changedInBoth: changed,
-        changedElsewhere: elsewhere,
-      });
     },
 
     async seenChangedInBoth(id: string): Promise<void> {
