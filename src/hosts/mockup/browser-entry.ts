@@ -1,7 +1,7 @@
 import type { ChosenPlaces, Host } from '../../platform/host.ts';
 import type { Log } from '../../platform/logging.ts';
 import { startApp } from '../../ui/ui-app.ts';
-import { addMockFileList } from './mock-file-list.ts';
+import { mockFileList } from './mock-file-list.ts';
 import { createMockOtherEditors, pretendRunning, pretendTray } from './mock-other-editors.ts';
 import {
   MOCK_APP_FOLDER,
@@ -56,15 +56,14 @@ function offerTheCloseSequence(): void {
 }
 
 /**
- * Puts the pretend filesystem where it can be looked at, given `?test`.
+ * Puts the pretend filesystem within reach of a console, given `?test`.
  *
  * Only ever in this host, which is the only one with a pretend filesystem and
  * which the packaged app is never built from — so there is nothing here to
- * leave switched on by accident. A button on screen, because reaching a
- * browser console is awkward from inside a pane, and `showFiles()` on the
- * window as well for when a console is at hand.
+ * leave switched on by accident. The list itself is test mode's `files`
+ * button; `showFiles()` is for when a console is at hand.
  */
-function offerTheFileList(): void {
+function offerTheTestHelpers(): void {
   if (!new URLSearchParams(window.location.search).has('test')) return;
 
   /*
@@ -98,7 +97,6 @@ function offerTheFileList(): void {
     },
     writable: true,
   });
-  addMockFileList();
 }
 
 /**
@@ -164,10 +162,14 @@ ${path}`);
       finishBeforeClose = finish;
     },
     setZoom,
+    testTools: {
+      toggleFiles: mockFileList(),
+      requested: new URLSearchParams(window.location.search).has('test'),
+    },
   };
 
   await startApp(host);
-  offerTheFileList();
+  offerTheTestHelpers();
   offerTheCloseSequence();
 }
 

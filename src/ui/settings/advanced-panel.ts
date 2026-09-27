@@ -4,6 +4,7 @@ import type { ChosenPlaces, Host } from '../../platform/host.ts';
 import type { ResophTray } from '../../platform/other-editors.ts';
 import { type AdvancedSettings, DEFAULT_CTRL_CARD_AFTER_MS } from './advanced-settings.ts';
 import { icon } from '../icons.ts';
+import { testModeRow } from '../../test-mode/test-mode-panel-row.ts';
 
 /**
  * The one surface in this app that is not written for him.
@@ -26,7 +27,7 @@ import { icon } from '../icons.ts';
  */
 export interface AdvancedHandlers {
   onClose: () => void;
-  onKeep: (settings: ChosenPlaces & { ctrlCardAfterMs: number | null }) => void;
+  onKeep: (settings: ChosenPlaces & { ctrlCardAfterMs: number | null; testMode: boolean }) => void;
 }
 
 /** A path, and the way to look at it. */
@@ -195,12 +196,14 @@ export function openAdvancedPanel(
   container: HTMLDialogElement,
   host: Host,
   advanced: AdvancedSettings,
+  testModeOn: boolean,
   handlers: AdvancedHandlers,
 ): () => void {
   let resoph = host.resophFolder ?? '';
   let notes = host.notesFolder;
   let logs = host.logsFolder;
   let wait: number | null = advanced.ctrlCardAfterMs;
+  let testMode = testModeOn;
 
   let modal: Shown | null = null;
   const close = (): void => {
@@ -275,6 +278,9 @@ export function openAdvancedPanel(
       waitRow(wait, (to) => {
         wait = to;
       }),
+      testModeRow(testMode, (to) => {
+        testMode = to;
+      }),
     );
 
     const note = document.createElement('p');
@@ -286,7 +292,7 @@ export function openAdvancedPanel(
     keep.type = 'button';
     keep.className = 'keep';
     keep.textContent = 'Apply and restart';
-    keep.addEventListener('click', () => handlers.onKeep({ resoph, notes, logs, ctrlCardAfterMs: wait }));
+    keep.addEventListener('click', () => handlers.onKeep({ resoph, notes, logs, ctrlCardAfterMs: wait, testMode }));
 
     const cancel = document.createElement('button');
     cancel.type = 'button';

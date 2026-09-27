@@ -62,6 +62,16 @@ describe('where each text lives, for test mode', () => {
     assert.equal(all.has(resophIdOf('Pismo')), false);
   });
 
+  it('finds the Resoph original of a copy whose title he ranked with spaces', async () => {
+    // The spaces are the name: a link read with its edges trimmed names no file.
+    const { store, whereabouts } = await folders({ [RANKED]: 'Tekst.' });
+    const copy = (await store.save(resophIdOf(RANKED), `${RANKED}\n\nTekst. Dopisano.`)) ?? '';
+
+    const found = (await whereabouts()).get(copy);
+    assert.equal(found?.resophStem, RANKED);
+    assert.equal(found?.resophGone, false);
+  });
+
   it('says a text begun in b-notes is its own', async () => {
     const { store, whereabouts } = await folders();
     const id = await store.save(null, 'Novo\n\nTekst.');

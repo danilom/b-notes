@@ -47,6 +47,8 @@ import {
   statusFor,
 } from './status-line.ts';
 import { flashToast } from './toast.ts';
+import { type TestMode, startTestMode } from '../test-mode/test-mode-view.ts';
+import { testModeIsOn } from '../test-mode/test-mode-setting.ts';
 
 let language: Language;
 let words: ReturnType<typeof strings>;
@@ -232,7 +234,11 @@ function draw(): void {
   });
   putAway.drawStrip();
   archived.drawStrip();
+  testMode?.drawn(notes);
 }
+
+/** Test mode on screen, when it is on on this machine. */
+let testMode: TestMode | null = null;
 
 let findInText: FindInText;
 let keptCopies: KeptCopiesView;
@@ -931,6 +937,8 @@ export async function startApp(runningOn: Host): Promise<void> {
   // Read at startup, like everything else in that file. Editing it takes
   // effect next time the app opens, which is when whoever edited it is there.
   const advanced = await readAdvanced(host.files, host.appFolder);
+  const testModeOn = await testModeIsOn(host);
+  if (testModeOn) testMode = startTestMode(host, listPane, (said, how) => flashToast(toast, said, how));
   createCtrlCard({
     within: writingBox,
     editor,
@@ -949,6 +957,7 @@ export async function startApp(runningOn: Host): Promise<void> {
     languageNow: () => language,
     settingsNow: () => settings,
     advancedNow: () => advanced,
+    testModeNow: () => testModeOn,
     preview: (appearance) => {
       showAppearanceOf(appearance);
       // Everything else in the panel is a stylesheet away. This one is a

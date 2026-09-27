@@ -71,6 +71,8 @@ async function main(): Promise<void> {
 
   const host: Host = {
     runMode: where.mode,
+    // Nothing here is pretend, so there is nothing of the browser's to offer.
+    testTools: null,
     // Wrapped, or an absence crossing back from the other process arrives as
     // an ordinary failure and every catch built on telling the two apart lets
     // it through. See `withAbsences`.

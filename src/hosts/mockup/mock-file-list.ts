@@ -30,33 +30,6 @@ const PANEL_STYLE: Partial<CSSStyleDeclaration> = {
   boxShadow: '0 8px 30px rgb(0 0 0 / 0.45)',
 };
 
-/*
-  At the empty end of the sidebar toolbar, which is the one piece of the app
-  with room to spare. Floating it put it over Izgled; putting it in the status
-  strip made that strip wrap, so the layout under test stopped matching the
-  layout that ships. A test tool that changes the thing being tested is worse
-  than no test tool.
-*/
-const BUTTON_STYLE: Partial<CSSStyleDeclaration> = {
-  marginLeft: 'auto',
-  padding: '2px 8px',
-  border: '1px solid #3a3d44',
-  borderRadius: '4px',
-  background: '#1b1d21',
-  color: '#e6e6e6',
-  font: '12px Consolas, monospace',
-  cursor: 'pointer',
-};
-
-/** Where it floats instead, if the strip it belongs in isn't there. */
-const ADRIFT_STYLE: Partial<CSSStyleDeclaration> = {
-  position: 'fixed',
-  right: '12px',
-  bottom: '12px',
-  zIndex: '9999',
-  marginLeft: '0',
-};
-
 const thousands = (value: number): string => value.toLocaleString('en-GB');
 
 const HEADING = '#ffffff';
@@ -104,7 +77,20 @@ function fill(into: HTMLElement, filter: string): void {
   );
 }
 
-export function addMockFileList(): void {
+/**
+ * The list, built the first time it is asked for, and a way to open and close
+ * it. Opened from test mode's `files` button, which is where the button lives
+ * in both hosts; this host is the only one with a list to show.
+ */
+export function mockFileList(): () => void {
+  let toggle: (() => void) | null = null;
+  return () => {
+    toggle ??= buildMockFileList();
+    toggle();
+  };
+}
+
+function buildMockFileList(): () => void {
   const panel = document.createElement('div');
   Object.assign(panel.style, PANEL_STYLE);
 
@@ -134,24 +120,16 @@ export function addMockFileList(): void {
   filter.addEventListener('input', draw);
   panel.append(filter, lines);
 
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.textContent = 'files';
-  Object.assign(button.style, BUTTON_STYLE);
-  button.addEventListener('click', () => {
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') panel.style.display = 'none';
+  });
+  document.body.append(panel);
+
+  return () => {
     const opening = panel.style.display === 'none';
     panel.style.display = opening ? 'flex' : 'none';
     // Read afresh every time it opens: the whole point is to see what the last
     // thing he pressed actually did.
     if (opening) draw();
-  });
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') panel.style.display = 'none';
-  });
-
-  const toolbar = document.getElementById('toolbar');
-  if (toolbar === null) Object.assign(button.style, ADRIFT_STYLE);
-  (toolbar ?? document.body).append(button);
-  document.body.append(panel);
+  };
 }

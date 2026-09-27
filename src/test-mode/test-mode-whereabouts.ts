@@ -158,7 +158,9 @@ async function namesIn(files: FileSystem, folder: string): Promise<Set<string>> 
 async function linksIn(files: FileSystem, folder: string): Promise<Map<string, string>> {
   const links = new Map<string, string>();
   for (const link of await textFiles(files, folder)) {
-    links.set(link.stem, (await files.read(link.path)).trim());
+    // As written, and never trimmed: a name he ranked with leading spaces is
+    // those spaces, and the library writes the link with nothing around it.
+    links.set(link.stem, await files.read(link.path));
   }
   return links;
 }

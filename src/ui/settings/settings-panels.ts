@@ -3,6 +3,7 @@ import type { Host } from '../../platform/host.ts';
 import { type Log, describeError } from '../../platform/logging.ts';
 import { openAdvancedPanel } from './advanced-panel.ts';
 import { type AdvancedSettings, writeAdvanced } from './advanced-settings.ts';
+import { writeTestMode } from '../../test-mode/test-mode-setting.ts';
 import type { Appearance } from './appearance.ts';
 import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
 import type { Settings } from './app-settings.ts';
@@ -18,6 +19,8 @@ export interface SettingsPanelsParts {
   log: Log;
   /** What the advanced panel starts from, and hands back changed. */
   advancedNow: () => AdvancedSettings;
+  /** Whether test mode is on, for the switch in the advanced panel. */
+  testModeNow: () => boolean;
   languageNow: () => Language;
   settingsNow: () => Settings;
   /** Shown, not kept: what he is trying out goes on screen and nowhere else. */
@@ -70,7 +73,7 @@ export function createSettingsPanels(parts: SettingsPanelsParts): SettingsPanels
   function showAdvanced(): void {
     if (advancedPane.open) return;
 
-    const close = openAdvancedPanel(advancedPane, host, parts.advancedNow(), {
+    const close = openAdvancedPanel(advancedPane, host, parts.advancedNow(), parts.testModeNow(), {
       onClose: () => {
         close();
       },
@@ -83,8 +86,9 @@ export function createSettingsPanels(parts: SettingsPanelsParts): SettingsPanels
           app the folders are settled before a window exists, so a reload alone
           would be handed the old ones anyway.
         */
-        const { ctrlCardAfterMs, ...folders } = settings;
+        const { ctrlCardAfterMs, testMode, ...folders } = settings;
         void writeAdvanced(host.files, host.appFolder, { ctrlCardAfterMs })
+          .then(() => writeTestMode(host.files, host.appFolder, testMode))
           .then(() => host.rememberFolders(folders))
           .then(() => host.restart())
           .catch((error: unknown) => {

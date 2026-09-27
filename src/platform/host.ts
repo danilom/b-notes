@@ -10,6 +10,14 @@ export interface ChosenPlaces {
   logs: string;
 }
 
+/** What only the browser build offers test mode. */
+export interface TestTools {
+  /** Opens the list of the pretend files, or closes it again. */
+  toggleFiles(): void;
+  /** Whether the page was opened with `?test`, which turns test mode on for that visit. */
+  requested: boolean;
+}
+
 /** What a copy of the app is: installed, built to work on, or the mock. */
 export type RunMode = 'installed' | 'dev' | 'browser';
 
@@ -152,4 +160,9 @@ export interface Host {
    * @param factor 1 is unscaled; 1.5 makes everything half again as large.
    */
   readonly setZoom: (factor: number) => void;
+  /**
+   * The browser build's own test tools, or null where there are none: in the
+   * app he installs, test mode shows what it can and says what it cannot.
+   */
+  readonly testTools: TestTools | null;
 }
