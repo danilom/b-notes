@@ -575,6 +575,13 @@ button svg {
   color: var(--faint);
 }
 
+/* Smaller in the strip, where the buttons are compact and five of them in
+   a row made the icons read louder than the words beside them. */
+.status-action svg {
+  width: 0.95em;
+  height: 0.95em;
+}
+
 #search-row {
   display: flex;
   gap: 0.4rem;
