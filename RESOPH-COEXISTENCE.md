@@ -310,6 +310,35 @@ So one name must mean one text, on every machine, forever:
   names nobody reads.
 - **Never ` (n)`**, and nothing is ever renumbered.
 
+**Why in the filename, and not in a record beside it.** Dropbox reconciles by
+path and nothing else. If two machines write the same path, Dropbox merges
+them into one file plus a conflicted copy before b-notes sees anything, and no
+record anywhere can undo that. So whatever decides *which text this is* has to
+be in the path:
+
+- A **record in Dropbox** mapping Resoph files to b-notes files would be written
+  by two offline machines, each choosing differently, and would itself become
+  a conflicted copy to reconcile.
+- A **record per machine** (`userData`) never reaches the other machines. The
+  Asus wouldn't know the Dell had already copied a text, and would copy it
+  again under a name of its own: a duplicate.
+- A name **computed from the text's origin** needs no record, and nothing about
+  it can fall out of step.
+
+Records still have their place, for what doesn't decide identity:
+
+- **The link** (§4.4) — which Resoph file a copy came from. The checksum can't
+  be run backwards, so this is written down, in b-notes' folder, under the
+  copy's own name. It's written once, and any machine that writes it writes
+  the same thing, so Dropbox has nothing to argue about.
+- **Per-machine hints** — file IDs and the modification times last seen, for
+  spotting renames (§4.6). These go in `userData`. They mean nothing on another
+  machine, and losing them costs a missed rename, never a text.
+
+The readable part is fixed when the file is made. If he retitles the text
+later, the name keeps the old title. That's harmless — nothing reads it — but
+someone looking in the folder should know.
+
 What goes from today's code: numbering on collision, which renamed *other*
 texts to make room; stripping his own ` (1)`; and Serbian letters in names,
 which Windows' own zip mangles.
