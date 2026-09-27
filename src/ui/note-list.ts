@@ -223,7 +223,7 @@ function headingOf(row: Row, words: ReturnType<typeof strings>): HTMLElement {
     rank.setAttribute('aria-hidden', 'true');
     heading.append(rank);
   }
-  if (mark !== null) heading.append(span('note-mark', mark));
+  if (mark !== null) heading.append(markOf(mark));
   if (position !== null) {
     if (position.series !== null) heading.append(span('note-series', position.series));
     heading.append(span('note-position', position.number));
@@ -235,6 +235,21 @@ function headingOf(row: Row, words: ReturnType<typeof strings>): HTMLElement {
   }
   heading.append(span('note-title', marked ? name : row.title));
   return heading;
+}
+
+/** His collection's mark, which is drawn as a sign rather than as he typed it. */
+const COLLECTION_MARK = '(UP)';
+
+/**
+ * His mark as the list draws it: as he typed it, except `(UP)`, which leads
+ * hundreds of rows and is drawn as its two letters in the rank bars' box, so
+ * a row starts the same way whichever of the two leads it.
+ */
+function markOf(mark: string): HTMLElement {
+  if (mark !== COLLECTION_MARK) return span('note-mark', mark);
+  const sign = span('note-mark note-collection', 'UP');
+  sign.setAttribute('aria-label', mark);
+  return sign;
 }
 
 function span(className: string, text: string): HTMLElement {

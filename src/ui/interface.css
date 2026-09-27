@@ -855,6 +855,32 @@ button svg {
   white-space: nowrap;
 }
 
+/*
+  (UP), his collection, as its two letters in the rank bars' box (0.62em of
+  the row's text wide), so every row starts the same way whichever of the two
+  leads it. The letters don't fit that width at a readable size, so they are
+  drawn taller rather than smaller, the way a sign condenses capitals.
+
+  In Tahoma whatever his font, because the box is sized for Tahoma's letters:
+  a wider face would spill out of it. On the name's baseline like the bars,
+  and stretched upward from it, so the letters stand on the line the title
+  stands on.
+*/
+.note-collection {
+  display: inline-block;
+  /* Half the row's text; everything below is in that size. */
+  font-size: 0.5em;
+  width: 1.24em;
+  font-family: Tahoma, var(--ui-font);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-align: center;
+  transform: scaleY(1.35);
+  /* Tahoma's baseline, with a line height of 1. */
+  transform-origin: 50% 90%;
+}
+
 /* His place in a series: the series he names, if he names one, and the number. */
 .note-series,
 .note-position {
