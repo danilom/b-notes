@@ -1,15 +1,30 @@
 import { type FileSystem, FolderMissing } from '../platform/file-system.ts';
 import type { Log } from '../platform/logging.ts';
 import { type Note, type NoteStore, type NoteVersion, noteOf } from './note.ts';
-import { EXTENSION, RESOPH_LINKS_FOLDER, copyNameFor, idOf } from './note-naming.ts';
+import { CHANGED_IN_BOTH_FOLDER, EXTENSION, RESOPH_LINKS_FOLDER, copyNameFor, idOf } from './note-naming.ts';
 import type { NoteRenamed, OwnNoteStore } from './note-store.ts';
-import type { ResophFolder } from './resoph-folder.ts';
+import type { ResophFolder, ResophText } from './resoph-folder.ts';
 import { resophIdOf, resophStemOf } from './resoph-note.ts';
 
 const nameOf = (path: string): string => path.split('/').at(-1) ?? path;
 
 /** What a copy kept straight from Resoph is labelled, among a text's versions. */
 export const FROM_RESOPH = 'Resoph';
+
+/**
+ * Whether a kept copy came straight from Resoph: its name ends in the label,
+ * or in the label and the number two copies taken in one second are told
+ * apart by.
+ */
+function isFromResoph(version: NoteVersion): boolean {
+  return new RegExp(` ${FROM_RESOPH}( \\(\\d+\\))?$`).test(version.id);
+}
+
+/** The store over both folders, and what only it can answer. */
+export interface NoteLibrary extends NoteStore {
+  /** He has looked at a text that changed in both places: stop saying so. */
+  seenChangedInBoth(id: string): Promise<void>;
+}
 
 /**
  * Every text he has: b-notes' own, and the ones still only in Resoph.
@@ -35,8 +50,16 @@ export function createNoteLibrary(
   folder: string,
   log: Log,
   renamed: NoteRenamed = () => undefined,
-): NoteStore {
+): NoteLibrary {
   const linksFolder = `${folder}/${RESOPH_LINKS_FOLDER}`;
+  const changedFolder = `${folder}/${CHANGED_IN_BOTH_FOLDER}`;
+
+  /**
+   * Each Resoph file's time and size when it was last compared with its copy,
+   * so a file that has not changed since is not compared again. Per run, and
+   * only a saving: forgetting it costs one comparison.
+   */
+  const compared = new Map<string, string>();
 
   /** Copies whose link was written: including any he has since destroyed. */
   async function linkedNames(): Promise<Set<string>> {
@@ -84,6 +107,81 @@ export function createNoteLibrary(
     return copy;
   }
 
+  async function namesIn(at: string): Promise<Set<string>> {
+    try {
+      return new Set((await files.list(at)).map((file) => idOf(nameOf(file.path))));
+    } catch (failure: unknown) {
+      if (!(failure instanceof FolderMissing)) throw failure;
+      return new Set();
+    }
+  }
+
+  /**
+   * Brings a change made in Resoph into the copy b-notes has of that text.
+   *
+   * Anything b-notes has already seen for this text — the copy itself, or any
+   * version kept of it — is not news. That is what stops another machine's
+   * Resoph, putting an old version back, from rolling the text back here.
+   *
+   * News, when b-notes has not changed the text since it last took Resoph's:
+   * Resoph's becomes the text. News when both have changed: the newer becomes
+   * the text, the other is kept as a version, and the text says so until he
+   * has looked. Nothing is lost either way; Resoph's is always kept.
+   */
+  async function bringIn(fromResoph: ResophText, copy: string, copyUpdatedAt: number): Promise<boolean> {
+    const seenAs = `${fromResoph.file.updatedAt}|${fromResoph.file.bytes}`;
+    if (compared.get(copy) === seenAs) return false;
+    compared.set(copy, seenAs);
+
+    const current = await own.read(copy);
+    if (current === fromResoph.text) return false;
+    const versions = await own.listVersions(copy);
+    if (versions.some((version) => version.text === fromResoph.text)) return false;
+
+    // Newest first, so this is what Resoph last said that b-notes took in.
+    const lastFromResoph = versions.find(isFromResoph);
+    await own.keepLabelledCopy(copy, fromResoph.text, FROM_RESOPH);
+
+    if (lastFromResoph?.text === current) {
+      await own.save(copy, fromResoph.text);
+      log.info('Brought in a change made in Resoph', { from: fromResoph.stem, to: copy });
+      return true;
+    }
+
+    if (fromResoph.file.updatedAt > copyUpdatedAt) {
+      await own.keepCopy(copy, current);
+      await own.save(copy, fromResoph.text);
+    }
+    await files.write(`${changedFolder}/${copy}${EXTENSION}`, fromResoph.stem);
+    log.warn('A text changed in both Resoph and b-notes; the newer is the text, the other kept', {
+      from: fromResoph.stem,
+      to: copy,
+      newer: fromResoph.file.updatedAt > copyUpdatedAt ? 'Resoph' : 'b-notes',
+    });
+    return true;
+  }
+
+  /**
+   * Every copy whose Resoph file has news, brought up to date. One at a time,
+   * so two never write over each other, and one failing leaves the rest.
+   */
+  async function bringInEverything(texts: ResophText[], mine: Note[]): Promise<boolean> {
+    const copies = new Map(mine.map((note) => [note.id, note.updatedAt]));
+    let changed = false;
+    for (const text of texts) {
+      const copy = copyNameFor(text.stem);
+      const copyUpdatedAt = copies.get(copy);
+      if (copyUpdatedAt === undefined) continue;
+      try {
+        if (await bringIn(text, copy, copyUpdatedAt)) changed = true;
+      } catch (failure: unknown) {
+        compared.delete(copy);
+        log.error('Could not bring in a change made in Resoph', { from: text.stem, to: copy, failure });
+      }
+    }
+    return changed;
+  }
+
   /** The Resoph texts with no copy, as notes. */
   async function resophNotes(): Promise<Note[]> {
     if (resoph === null) return [];
@@ -95,8 +193,17 @@ export function createNoteLibrary(
 
   return {
     async list(): Promise<Note[]> {
-      const [mine, fromResoph] = await Promise.all([own.list(), resophNotes()]);
-      return [...mine, ...fromResoph].sort((first, second) => second.updatedAt - first.updatedAt);
+      let mine = await own.list();
+      if (resoph !== null && (await bringInEverything(await resoph.list(), mine))) mine = await own.list();
+      const [fromResoph, changed] = await Promise.all([resophNotes(), namesIn(changedFolder)]);
+      const marked = mine.map((note): Note => (changed.has(note.id) ? { ...note, changedInBoth: true } : note));
+      return [...marked, ...fromResoph].sort((first, second) => second.updatedAt - first.updatedAt);
+    },
+
+    async seenChangedInBoth(id: string): Promise<void> {
+      if (!(await namesIn(changedFolder)).has(id)) return;
+      await files.removeFile(`${changedFolder}/${id}${EXTENSION}`);
+      log.info('He looked at a text that changed in both places', { id });
     },
 
     async read(id: string): Promise<string> {

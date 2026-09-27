@@ -275,3 +275,100 @@ describe('dates', () => {
     assert.deepEqual((await store.list()).map((note) => note.title), ['Novo', 'Staro']);
   });
 });
+
+/** Rewrites a Resoph file the way Resoph would, dated `when`. */
+async function resophWrites(resoph: string, name: string, text: string, when: Date): Promise<void> {
+  await writeFile(path.join(resoph, `${name}.txt`), text, 'utf8');
+  await utimes(path.join(resoph, `${name}.txt`), when, when);
+}
+
+const LATER = new Date(Date.now() + 60 * 60_000);
+const EARLIER = new Date(Date.now() - 60 * 60_000);
+
+describe('a change made in Resoph to a text b-notes has copied', () => {
+  it('becomes the text, when he has not changed it in b-notes since', async () => {
+    const { store, resoph } = await library({ Pismo: 'Prvo.' });
+    // Taken in by keeping a copy, which leaves the text as Resoph had it.
+    await store.keepCopy(resophIdOf('Pismo'), 'Pismo\nPrvo.');
+
+    await resophWrites(resoph, 'Pismo', 'Drugo, napisano u Resophu.', LATER);
+
+    const [note] = await store.list();
+    assert.equal(note?.text, 'Pismo\nDrugo, napisano u Resophu.');
+    assert.equal(note?.changedInBoth, undefined);
+  });
+
+  it('is kept as a version either way, labelled as from Resoph', async () => {
+    const { store, resoph } = await library({ Pismo: 'Prvo.' });
+    await store.keepCopy(resophIdOf('Pismo'), 'Pismo\nPrvo.');
+
+    await resophWrites(resoph, 'Pismo', 'Drugo.', LATER);
+    await store.list();
+
+    const fromResoph = (await store.listVersions(copyNameFor('Pismo'))).filter((version) =>
+      version.id.includes(FROM_RESOPH),
+    );
+    assert.deepEqual(fromResoph.map((version) => version.text), ['Pismo\nDrugo.', 'Pismo\nPrvo.']);
+  });
+
+  it('is not news when it is something b-notes has already seen, however it came back', async () => {
+    // Another machine's Resoph putting the old version back must not roll his
+    // b-notes text back to it.
+    const { store, resoph } = await library({ Pismo: 'Prvo.' });
+    await store.save(resophIdOf('Pismo'), 'Pismo\nPrvo, pa dopisano u b-notes.');
+
+    await resophWrites(resoph, 'Pismo', 'Prvo.', LATER);
+
+    const [note] = await store.list();
+    assert.equal(note?.text, 'Pismo\nPrvo, pa dopisano u b-notes.');
+    assert.equal(note?.changedInBoth, undefined);
+  });
+
+  it('when both changed, makes the newer one the text and keeps the other', async () => {
+    const { store, resoph } = await library({ Pismo: 'Prvo.' });
+    await store.save(resophIdOf('Pismo'), 'Pismo\nPrvo, dopisano u b-notes.');
+
+    await resophWrites(resoph, 'Pismo', 'Prvo, dopisano u Resophu.', LATER);
+
+    const [note] = await store.list();
+    assert.equal(note?.text, 'Pismo\nPrvo, dopisano u Resophu.');
+    const kept = (await store.listVersions(copyNameFor('Pismo'))).map((version) => version.text);
+    assert.ok(kept.includes('Pismo\nPrvo, dopisano u b-notes.'), 'b-notes version was not kept');
+  });
+
+  it('when both changed and b-notes is newer, keeps b-notes and Resoph beside it', async () => {
+    const { store, resoph } = await library({ Pismo: 'Prvo.' });
+    await store.save(resophIdOf('Pismo'), 'Pismo\nPrvo, dopisano u b-notes.');
+
+    await resophWrites(resoph, 'Pismo', 'Prvo, dopisano u Resophu.', EARLIER);
+
+    const [note] = await store.list();
+    assert.equal(note?.text, 'Pismo\nPrvo, dopisano u b-notes.');
+    const kept = (await store.listVersions(copyNameFor('Pismo'))).map((version) => version.text);
+    assert.ok(kept.includes('Pismo\nPrvo, dopisano u Resophu.'), 'the Resoph version was not kept');
+  });
+
+  it('says so when both changed, until he has looked', async () => {
+    const { store, resoph } = await library({ Pismo: 'Prvo.' });
+    await store.save(resophIdOf('Pismo'), 'Pismo\nPrvo, dopisano u b-notes.');
+    await resophWrites(resoph, 'Pismo', 'Prvo, dopisano u Resophu.', LATER);
+
+    assert.equal((await store.list())[0]?.changedInBoth, true);
+
+    await store.seenChangedInBoth(copyNameFor('Pismo'));
+
+    assert.equal((await store.list())[0]?.changedInBoth, undefined);
+  });
+
+  it('still leaves Resoph folder untouched', async () => {
+    const { store, resoph } = await library({ Pismo: 'Prvo.' });
+    await store.save(resophIdOf('Pismo'), 'Pismo\nPrvo, dopisano u b-notes.');
+    await resophWrites(resoph, 'Pismo', 'Prvo, dopisano u Resophu.', LATER);
+    const before = await everything(resoph);
+
+    await store.list();
+    await store.seenChangedInBoth(copyNameFor('Pismo'));
+
+    assert.deepEqual(await everything(resoph), before);
+  });
+});

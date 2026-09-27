@@ -25,6 +25,11 @@ export interface Note {
   searchable: string;
   updatedAt: number;
   bytes: number;
+  /**
+   * Changed in Resoph and in b-notes since they last agreed. The newer is the
+   * text and the other is kept as a version; this says so until he has looked.
+   */
+  changedInBoth?: true;
 }
 
 /**

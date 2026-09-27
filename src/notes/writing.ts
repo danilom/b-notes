@@ -125,6 +125,8 @@ export interface Writing {
   countVersions(handle: NoteHandle): Promise<number>;
   /** Every copy kept of a text, newest first. */
   versionsOf(handle: NoteHandle): Promise<NoteVersion[]>;
+  /** He has looked at a text that changed in both Resoph and b-notes. */
+  seenChangedInBoth(handle: NoteHandle): Promise<void>;
   /** Resolves once nothing is being written. Waiting, unstarted work stays waiting. */
   idle(): Promise<void>;
   /** Timers down, nothing further attempted. */
@@ -325,6 +327,7 @@ export function createWriting(
     keepCopy: (handle, text) => store.keepCopy(nameOf(handle), text),
     countVersions: (handle) => store.countVersions(nameOf(handle)),
     versionsOf: (handle) => store.listVersions(nameOf(handle)),
+    seenChangedInBoth: (handle) => store.seenChangedInBoth(nameOf(handle)),
 
     async list(): Promise<LiveNote[]> {
       const notes = await store.list();

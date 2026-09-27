@@ -73,6 +73,14 @@ export const VERSIONS_FOLDER = 'Verzije';
 export const RESOPH_LINKS_FOLDER = 'Iz Resopha';
 
 /**
+ * One small file per text that changed in Resoph and in b-notes at once, named
+ * like the text, there until he has looked at the versions. A file rather than
+ * a setting because it has to travel: a text that moved on in two places is
+ * news on every machine, until it has been seen on one.
+ */
+export const CHANGED_IN_BOTH_FOLDER = 'Menjano na dva mesta';
+
+/**
  * Where writing brought in from somewhere else is kept, one folder per source.
  *
  * Beside his texts rather than among them: an import is mostly older copies of
