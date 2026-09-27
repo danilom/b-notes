@@ -20,7 +20,8 @@ const held = (page: Page): Promise<Held> =>
   page.evaluate(() => JSON.parse(localStorage.getItem('b-notes:mock-files') ?? '{}') as Held);
 
 const RANKED = '                        %2AGRADSKE PRICE, prva';
-const RANKED_TITLE = '*GRADSKE PRICE, prva';
+// As the list shows it: the spaces are dots and the star is drawn in its own place.
+const RANKED_NAME = 'GRADSKE PRICE, prva';
 
 async function start(page: Page): Promise<void> {
   await page.clock.install();
@@ -32,19 +33,20 @@ async function start(page: Page): Promise<void> {
 test('shows his Resoph titles without their spaces, marked by how high he ranked them', async ({ page }) => {
   await start(page);
 
-  const row = page.locator('#list .note').filter({ hasText: RANKED_TITLE }).first();
-  await expect(row.locator('.note-title')).toHaveText(RANKED_TITLE);
+  const row = page.locator('#list .note').filter({ hasText: RANKED_NAME }).first();
+  await expect(row.locator('.note-title')).toHaveText(RANKED_NAME);
   await expect(row.locator('.note-rank')).toHaveAttribute('data-rank', '3');
+  await expect(row.locator('.note-star:not(.unstarred)')).toHaveCount(1);
 
   // His order: the text he ranked highest comes first in the whole list.
   const all = page.locator('#list .section-block').last();
-  await expect(all.locator('.note .note-title').first()).toHaveText(RANKED_TITLE);
+  await expect(all.locator('.note .note-title').first()).toHaveText(RANKED_NAME);
 });
 
 test('a Resoph text opens as Resoph shows it, title first', async ({ page }) => {
   await start(page);
 
-  await page.locator('#list .note').filter({ hasText: RANKED_TITLE }).first().click();
+  await page.locator('#list .note').filter({ hasText: RANKED_NAME }).first().click();
 
   await expect(page.locator('#editor')).toHaveValue(
     '                        *GRADSKE PRICE, prva\n\nGrad se budi rano, prije nego iko od nas.\n\nPrva prica o gradu.',
@@ -56,7 +58,7 @@ test('typing into a Resoph text writes b-notes own copy and leaves Resoph folder
   const before = await held(page);
   const resophBefore = Object.fromEntries(Object.entries(before).filter(([path]) => path.startsWith('ResophNotes/')));
 
-  await page.locator('#list .note').filter({ hasText: RANKED_TITLE }).first().click();
+  await page.locator('#list .note').filter({ hasText: RANKED_NAME }).first().click();
   await page.locator('#editor').press('End');
   await page.locator('#editor').pressSequentially(' Dopisano.');
   await page.clock.runFor(1200);
@@ -71,7 +73,7 @@ test('typing into a Resoph text writes b-notes own copy and leaves Resoph folder
   expect(copies).toHaveLength(1);
   expect(copies[0]?.[1].text).toContain('Dopisano.');
   // Still one row for it in the whole list: the copy, not the copy and the original.
-  await expect(page.locator('#list .section-block').last().locator('.note').filter({ hasText: RANKED_TITLE })).toHaveCount(1);
+  await expect(page.locator('#list .section-block').last().locator('.note').filter({ hasText: RANKED_NAME })).toHaveCount(1);
 });
 
 test('waits behind its message while Resoph and Notepad are open, and carries on once closed', async ({ page }) => {

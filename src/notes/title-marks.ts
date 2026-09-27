@@ -8,6 +8,8 @@ interface Mark {
   drawn?: string;
   /** Whether a place in a numbered series may follow it: `(UP) II 12`. */
   numbered?: boolean;
+  /** Whether it carries his star, drawn in the star's own place. */
+  starred?: boolean;
 }
 
 /**
@@ -21,7 +23,7 @@ const MARKS: readonly Mark[] = [
   // The collection he is building, numbered in reading order. What it stands
   // for is his secret.
   { typed: '(UP)', numbered: true },
-  { typed: '*(UP)', drawn: '★(UP)', numbered: true },
+  { typed: '*(UP)', drawn: '(UP)', numbered: true, starred: true },
 
   // Kinds — perhaps esej and priča — with the letters that float or sink them.
   { typed: 'A (E)' },
@@ -45,11 +47,12 @@ const MARKS: readonly Mark[] = [
   { typed: 'y' },
 ];
 
-/** The star he ranks a text by, in front of its name and after any mark. */
-const STARS: readonly Mark[] = [
-  { typed: '*', drawn: '★' },
-  { typed: 'A*', drawn: 'A★' },
-];
+/**
+ * The star he ranks a text by, in front of its name and after any mark. The
+ * list draws it in one place on every row, whichever way he typed it; the `A`
+ * he sometimes floats it with only ever sorted, like his spaces, and goes.
+ */
+const STARS: readonly Mark[] = [{ typed: '*' }, { typed: 'A*' }];
 
 /*
   Where a mark ends. After a mark come spaces, or it runs straight into a
@@ -70,12 +73,12 @@ const SERIES_POSITION = /^(?:([IVX]{1,4})\s+)?(\d+)\s+/;
  * numbered series, his star, and the rest.
  */
 export interface TitleParts {
-  /** As the list draws it: `(UP)`, `A (E)`, `AA`, `★(UP)`. */
+  /** As the list draws it: `(UP)`, `A (E)`, `AA`. */
   mark: string | null;
   /** Where it stands in a series under `(UP)`: `12`, `II 104`. */
   position: SeriesPosition | null;
-  /** As the list draws it: `★`, `A★`. */
-  star: string | null;
+  /** Whether he starred it, in front of the name or in the mark. */
+  starred: boolean;
   /** Everything after, spaces collapsed as in `titleFrom`. */
   name: string;
 }
@@ -91,11 +94,11 @@ export interface SeriesPosition {
  * Reads his marks off the front of a title, so the list can draw them as marks
  * rather than as words he wrote.
  *
- * Nothing is dropped but spaces — every letter he typed is still on screen —
- * and the order is untouched: it is read off the line as typed.
+ * Nothing is dropped but what only ever sorted — spaces, and the `A` in front
+ * of a star — and the order is untouched: it is read off the line as typed.
  */
 export function titlePartsOf(titleLine: string): TitleParts {
-  const unmarked: TitleParts = { mark: null, position: null, star: null, name: titleFrom(titleLine) };
+  const unmarked: TitleParts = { mark: null, position: null, starred: false, name: titleFrom(titleLine) };
 
   const mark = markAt(titleLine.trimStart(), MARKS, (after) => CAPITALISED_WORD.test(after));
   let rest = mark?.rest ?? titleLine.trimStart();
@@ -113,7 +116,7 @@ export function titlePartsOf(titleLine: string): TitleParts {
   const name = rest.replace(/\s+/g, ' ').trim();
   // Marks with nothing after them are a title of their own, not marks.
   if ((mark === null && star === null) || name.length === 0) return unmarked;
-  return { mark: mark?.drawn ?? null, position, star: star?.drawn ?? null, name };
+  return { mark: mark?.drawn ?? null, position, starred: star !== null || mark?.starred === true, name };
 }
 
 /**
@@ -127,13 +130,18 @@ function markAt(
   text: string,
   marks: readonly Mark[],
   mayRunOn: (after: string) => boolean,
-): { drawn: string; numbered: boolean; rest: string } | null {
+): { drawn: string; numbered: boolean; starred: boolean; rest: string } | null {
   for (const mark of marks) {
     if (!text.startsWith(mark.typed)) continue;
     const after = text.slice(mark.typed.length);
     const gap = /^\s*/.exec(after)?.[0] ?? '';
     if (gap.length === 0 && !mayRunOn(after)) continue;
-    return { drawn: mark.drawn ?? mark.typed, numbered: mark.numbered === true, rest: after.slice(gap.length) };
+    return {
+      drawn: mark.drawn ?? mark.typed,
+      numbered: mark.numbered === true,
+      starred: mark.starred === true,
+      rest: after.slice(gap.length),
+    };
   }
   return null;
 }

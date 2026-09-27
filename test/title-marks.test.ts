@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import { type TitleParts, titlePartsOf } from '../src/notes/title-marks.ts';
 
 /** What a title with no marks reads as: itself, spaces collapsed. */
-const unmarked = (name: string): TitleParts => ({ mark: null, position: null, star: null, name });
+const unmarked = (name: string): TitleParts => ({ mark: null, position: null, starred: false, name });
 
 /*
   The shapes below are his, from his Resoph folder; the words are invented.
@@ -14,26 +14,26 @@ describe('reading his marks off the front of a title', () => {
     assert.deepEqual(titlePartsOf('(UP)           3  Sorabi**'), {
       mark: '(UP)',
       position: { series: null, number: '3' },
-      star: null,
+      starred: false,
       name: 'Sorabi**',
     });
     assert.deepEqual(titlePartsOf('(UP)  II     12     Most (w)  Luka'), {
       mark: '(UP)',
       position: { series: 'II', number: '12' },
-      star: null,
+      starred: false,
       name: 'Most (w) Luka',
     });
   });
 
   it('reads a number as a place in a series only after (UP)', () => {
-    assert.deepEqual(titlePartsOf('AA  20 godina'), { mark: 'AA', position: null, star: null, name: '20 godina' });
+    assert.deepEqual(titlePartsOf('AA  20 godina'), { mark: 'AA', position: null, starred: false, name: '20 godina' });
   });
 
   it('takes (UP) with no number as a mark alone', () => {
     assert.deepEqual(titlePartsOf('(UP)        Lovcen 1 i 2'), {
       mark: '(UP)',
       position: null,
-      star: null,
+      starred: false,
       name: 'Lovcen 1 i 2',
     });
   });
@@ -42,17 +42,17 @@ describe('reading his marks off the front of a title', () => {
     assert.equal(titlePartsOf('A (E)     Bangkok III').mark, 'A (E)');
     assert.equal(titlePartsOf('A(P)  Stara bajka').mark, 'A(P)');
     assert.equal(titlePartsOf('yA (E)   Ulica').mark, 'yA (E)');
-    assert.deepEqual(titlePartsOf('AA(E)Kafana'), { mark: 'AA(E)', position: null, star: null, name: 'Kafana' });
+    assert.deepEqual(titlePartsOf('AA(E)Kafana'), { mark: 'AA(E)', position: null, starred: false, name: 'Kafana' });
   });
 
   it('reads the letters that only float or sink a text, apart or run into a word', () => {
-    assert.deepEqual(titlePartsOf('AAA Pismo'), { mark: 'AAA', position: null, star: null, name: 'Pismo' });
-    assert.deepEqual(titlePartsOf('AAKafana'), { mark: 'AA', position: null, star: null, name: 'Kafana' });
-    assert.deepEqual(titlePartsOf('zz staro'), { mark: 'zz', position: null, star: null, name: 'staro' });
+    assert.deepEqual(titlePartsOf('AAA Pismo'), { mark: 'AAA', position: null, starred: false, name: 'Pismo' });
+    assert.deepEqual(titlePartsOf('AAKafana'), { mark: 'AA', position: null, starred: false, name: 'Kafana' });
+    assert.deepEqual(titlePartsOf('zz staro'), { mark: 'zz', position: null, starred: false, name: 'staro' });
   });
 
   it('reads (UP) run straight into a name', () => {
-    assert.deepEqual(titlePartsOf('(UP)Vepar**'), { mark: '(UP)', position: null, star: null, name: 'Vepar**' });
+    assert.deepEqual(titlePartsOf('(UP)Vepar**'), { mark: '(UP)', position: null, starred: false, name: 'Vepar**' });
   });
 
   it('keeps the leading spaces out of it: those are the rank', () => {
@@ -74,34 +74,39 @@ describe('reading his marks off the front of a title', () => {
 });
 
 describe('his star', () => {
-  it('is drawn as a star in front of the name, glued to it or not', () => {
+  it('is read in front of the name, glued to it or not', () => {
     assert.deepEqual(titlePartsOf('                        *GRAD KRLJE'), {
       mark: null,
       position: null,
-      star: '★',
+      starred: true,
       name: 'GRAD KRLJE',
     });
-    assert.deepEqual(titlePartsOf('* Ivo A ( ?konacna v.)').star, '★');
+    assert.equal(titlePartsOf('* Ivo A ( ?konacna v.)').starred, true);
   });
 
-  it('comes after a mark, with the floating A in front of it', () => {
+  it('is read after a mark, the floating A in front of it dropped', () => {
     assert.deepEqual(titlePartsOf('A (E)     A* Avdo Medj.(konacna)'), {
       mark: 'A (E)',
       position: null,
-      star: 'A★',
+      starred: true,
       name: 'Avdo Medj.(konacna)',
     });
   });
 
-  it('is drawn as a star when it is part of the mark', () => {
-    assert.equal(titlePartsOf('*(UP)  Nobelova**( radi)').mark, '★(UP)');
+  it('is taken out of the mark it is typed into, to be drawn in its own place', () => {
+    assert.deepEqual(titlePartsOf('*(UP)  Nobelova**( radi)'), {
+      mark: '(UP)',
+      position: null,
+      starred: true,
+      name: 'Nobelova**( radi)',
+    });
   });
 
   it('stays as he typed it inside or after the name', () => {
     assert.deepEqual(titlePartsOf('(UP)           5  Sor Gitara*(rez) I'), {
       mark: '(UP)',
       position: { series: null, number: '5' },
-      star: null,
+      starred: false,
       name: 'Sor Gitara*(rez) I',
     });
   });

@@ -126,7 +126,7 @@ export function openRowFor(view: ListView): Row | null {
     title: words.untitledNew,
     sortTitle: '',
     rank: 0,
-    parts: { mark: null, position: null, star: null, name: words.untitledNew },
+    parts: { mark: null, position: null, starred: false, name: words.untitledNew },
     searchable: '',
     updatedAt: view.draft.startedAt,
     // Nothing written in it yet, which is exactly what an empty page says.
@@ -192,44 +192,49 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
   when.className = 'note-when';
   when.textContent = describeWhen(row.updatedAt, view.language);
 
-  element.append(pageGlyph(row.length), ...titleElements(row), when);
+  element.append(pageGlyph(row.length), headingOf(row), when);
   return element;
 }
 
 /**
- * The title and the marks in front of it: the dots for his leading spaces,
- * then his own mark and his place in a series, each where the one before it
- * would start if it were not there — a row indents only by what it carries.
+ * The title and what he put in front of it, as one heading: the dots for his
+ * leading spaces, his mark, his place in a series, his star, then the name.
  *
- * Beside the title rather than in it, so a title long enough to be cut short
+ * Beside the name rather than in it, so a name long enough to be cut short
  * never takes a mark with it.
  */
-function titleElements(row: Row): HTMLElement[] {
-  const shown: HTMLElement[] = [];
-  const part = (className: string, text: string): HTMLElement => {
-    const element = document.createElement('span');
-    element.className = className;
-    element.textContent = text;
-    return element;
-  };
+function headingOf(row: Row): HTMLElement {
+  const heading = span('note-heading', '');
+  const { mark, position, starred, name } = row.parts;
+  const marked = mark !== null || starred;
 
   if (row.rank > 0) {
-    const rank = part('note-rank', '');
+    const rank = span('note-rank', '');
     rank.dataset['rank'] = String(row.rank);
     rank.setAttribute('aria-hidden', 'true');
-    shown.push(rank);
+    heading.append(rank);
   }
-
-  const { mark, position, star, name } = row.parts;
-  if (mark === null && star === null) return [...shown, part('note-title', row.title)];
-  if (mark !== null) shown.push(part('note-mark', mark));
+  if (mark !== null) heading.append(span('note-mark', mark));
   if (position !== null) {
     // The series beside the mark, the number set right in a column after it.
-    if (position.series !== null) shown.push(part('note-series', position.series));
-    shown.push(part('note-position', position.number));
+    if (position.series !== null) heading.append(span('note-series', position.series));
+    heading.append(span('note-position', position.number));
   }
-  if (star !== null) shown.push(part('note-mark', star));
-  return [...shown, part('note-title', name)];
+  // On every row that carries a mark, starred or not, so a star never moves a name.
+  if (marked || row.rank > 0) {
+    const star = span(starred ? 'note-star' : 'note-star unstarred', '\u2605');
+    star.setAttribute('aria-hidden', 'true');
+    heading.append(star);
+  }
+  heading.append(span('note-title', marked ? name : row.title));
+  return heading;
+}
+
+function span(className: string, text: string): HTMLElement {
+  const element = document.createElement('span');
+  element.className = className;
+  element.textContent = text;
+  return element;
 }
 
 export function renderList(container: HTMLElement, view: ListView): void {

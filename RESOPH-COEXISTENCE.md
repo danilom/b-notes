@@ -213,8 +213,13 @@ The table *Where his things are kept* in `DESIGN.md` changes with this.
     `AA`…`AAAA`, `ZZ`…, `zz`…, `y` — are drawn small in the dots' blue, still
     as his letters. 536 of 1,215 titles carry one.
   - A `*` in front of the name — after the leading spaces, a mark or a series
-    number, and with a floating `A` in `A (E) A* Avdo` — is drawn as ★ with
-    the marks. Stars inside or after a name (`Sorabi**`) stay as he typed them.
+    number, or typed into `*(UP)` — is drawn as a small grey ★ in one place,
+    just before the name. The `A` he floats it with (`A (E) A* Avdo`) only
+    sorted, and isn't shown. Stars inside or after a name (`Sorabi**`) stay as
+    he typed them.
+  - Each kind of mark has a slot of the same width on every row that carries
+    it, on the name's baseline, so rows marked alike start their names at one
+    edge. The marks are the one part in colour; dots, series and star are grey.
   - The number after `(UP)`, with its series (`II`) if there is one, goes in
     a right-aligned column, as his padding meant it; 205 titles have one.
     Rows without one are not indented for it.

@@ -775,21 +775,41 @@ button svg {
   opacity: 1;
 }
 
-/* Italic because it is not a title yet — it is the app describing what he
-   is looking at until his own first line takes over. */
 /*
-  How high he ranked a text with leading spaces, as one to three dots in the
-  accent colour: the one part of the row that is the app's reading of what he
-  did, rather than his words. The spaces themselves are not shown — a row
-  starting with thirty of them looks broken — but the order still follows
-  them, and this says why a text sits where it does.
+  The title and what he put in front of it, on the name's baseline so the
+  smaller marks sit on its line rather than floating to the middle of the row,
+  and close together, so they read as one title and not as columns.
+*/
+.note-heading {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.3em;
+}
+
+/*
+  Each kind of mark has a place of its own, the same width on every row that
+  carries one, so the names of rows marked alike start at one edge. A row
+  without any starts its name at the left, as it always did.
+
+  How high he ranked a text with leading spaces, as one to three dots, set
+  right so they sit against what follows. The spaces themselves are not shown
+  — a row starting with thirty of them looks broken — but the order still
+  follows them, and this says why a text sits where it does.
 */
 .note-rank {
   flex: none;
-  color: var(--chosen-ink);
+  min-width: 1.9em;
+  color: var(--quiet);
   font-size: 0.6em;
   letter-spacing: -0.05em;
+  text-align: right;
   white-space: nowrap;
+  /* Lifted off the baseline to the middle of the name's letters: sitting on
+     it, three small grey dots read as "…". */
+  position: relative;
+  top: -0.35em;
 }
 
 .note-rank[data-rank='1']::before {
@@ -805,12 +825,13 @@ button svg {
 }
 
 /*
-  His marks, in the ink of the rank dots and smaller than his words, so the
-  name is what reads first. Letters as he typed them: shrunk and coloured,
-  never swapped for a symbol he would have to learn.
+  His marks, the one part in colour and smaller than his words, so the name is
+  what reads first. Letters as he typed them, never swapped for a symbol he
+  would have to learn.
 */
 .note-mark {
   flex: none;
+  min-width: 2.7em;
   color: var(--chosen-ink);
   font-size: 0.78em;
   letter-spacing: 0.02em;
@@ -826,7 +847,7 @@ button svg {
 .note-position {
   flex: none;
   color: var(--quiet);
-  font-size: 0.85em;
+  font-size: 0.78em;
   white-space: nowrap;
 }
 
@@ -836,6 +857,26 @@ button svg {
   text-align: right;
 }
 
+/*
+  His star, just before the name, in one place whether he typed it in front of
+  the name or into a mark. Grey and small: it ranks a text, it isn't the text.
+  Its place is kept on every marked row, starred or not, so a star never moves
+  a name.
+*/
+.note-star {
+  flex: none;
+  width: 1.3em;
+  color: var(--quiet);
+  font-size: 0.7em;
+  text-align: center;
+}
+
+.note-star.unstarred {
+  visibility: hidden;
+}
+
+/* Italic because it is not a title yet — it is the app describing what he
+   is looking at until his own first line takes over. */
 .note.draft .note-title {
   font-style: italic;
 }
