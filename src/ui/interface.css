@@ -64,6 +64,10 @@
     and nor is his screen.
   */
   --l-ink: 15%;
+  /* The names in his list: a step back from his writing, still well clear
+     of the dates beside them (9.4:1 against the list, where the dates
+     are 5.4:1). Full ink made the list louder than the text he has open. */
+  --l-title: 26%;
   --l-quiet: 38%;
   --l-faint: 40%;
   /* Dimmer than anything the app states, because it is not a
@@ -119,6 +123,7 @@
   --grey-h: 220;
 
   --ink: hsl(var(--grey-h) var(--muted) var(--l-ink));
+  --title: hsl(var(--grey-h) var(--muted) var(--l-title));
   --quiet: hsl(var(--grey-h) var(--muted) var(--l-quiet));
   --faint: hsl(var(--grey-h) var(--muted) var(--l-faint));
   --hint: hsl(var(--grey-h) var(--muted) var(--l-hint));
@@ -201,6 +206,7 @@
   --muted: 6%;
 
   --l-ink: 88%;
+  --l-title: 78%;
   --l-quiet: 68%;
   --l-faint: 68%;
   --l-hint: 54%;
@@ -758,6 +764,7 @@ button svg {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--title);
 }
 
 .note-when {
