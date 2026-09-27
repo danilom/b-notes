@@ -14,6 +14,13 @@ const SHOWN_AS: Record<OtherEditor, string> = {
 const LOOK_AGAIN_MS = 2_000;
 
 /**
+ * How long to give them to go after being asked. Notepad takes a moment to
+ * exit, and looking at once found it still there and flashed the red line
+ * about its question before the message went away.
+ */
+const CLOSING_TAKES_MS = 1_000;
+
+/**
  * Whether to tell him Notepad is waiting on him: it is still open after he
  * pressed the button. Notepad asked to close with unsaved changes asks about
  * them — from behind b-notes, where Windows only lets its taskbar button blink —
@@ -144,6 +151,7 @@ export async function untilOtherEditorsClose(
         } catch (failure: unknown) {
           log.error('Could not close the other writing programs', failure);
         }
+        await new Promise((settle) => setTimeout(settle, CLOSING_TAKES_MS));
         await look();
         closing = false;
         button.disabled = false;

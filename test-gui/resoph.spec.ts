@@ -181,6 +181,8 @@ test('checks again whenever he comes back, saving what he typed first', async ({
   await expect(message.locator('.panel')).toHaveCount(1);
 
   await message.getByRole('button', { name: 'Zatvori druge programe' }).click();
+  // The clock is held; let through the moment it gives them to close.
+  await page.clock.runFor(1000);
   await expect(message).toBeHidden();
 
   // And with nothing open, coming back is just coming back.
