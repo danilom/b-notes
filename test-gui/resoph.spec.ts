@@ -63,7 +63,7 @@ test('marks a text still in Resoph with Resoph\'s icon, and the icon really load
   await start(page);
   const mark = page.locator('#list .section-block').last().locator('.note').filter({ hasText: RANKED_NAME }).locator('.note-in-resoph');
   await expect(mark).toBeVisible();
-  await expect(mark).toHaveAttribute('aria-label', /U Resophu/);
+  await expect(mark).toHaveAttribute('aria-label', 'Tekst je u Resophu. Kad počneš da pišeš, prenosi se u b-notes.');
 
   const width = await mark.evaluate(async (element) => {
     const url = /url\("?(.*?)"?\)/.exec(getComputedStyle(element).backgroundImage)?.[1];
