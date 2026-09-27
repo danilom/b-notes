@@ -40,6 +40,21 @@ const DIACRITICS = /[šđčćž]/g;
  * character is left alone, because removing that accent would shorten the
  * string and move every mark after it. None of his texts are written that way.
  */
+/**
+ * His letters with their marks taken off, case kept: `Šđ` is `Sd`.
+ *
+ * For filenames, where Windows' own zip mangles anything past plain letters.
+ * `đ` has to be named, because it has no plain letter hiding under a mark;
+ * every other accented letter comes apart into a letter and a mark.
+ */
+export function withoutDiacritics(text: string): string {
+  return text
+    .replaceAll('đ', 'd')
+    .replaceAll('Đ', 'D')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '');
+}
+
 export function toSearchable(text: string): string {
   return text.toLowerCase().replace(DIACRITICS, (letter) => PLAIN.get(letter) ?? letter);
 }

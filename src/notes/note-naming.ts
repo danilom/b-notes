@@ -5,6 +5,8 @@
  * the ids the real filesystem would — a mock that names things differently
  * would quietly invalidate anything judged against it.
  */
+import { withoutDiacritics } from '../language/diacritics.ts';
+import { titleOfResophName } from './resoph-note.ts';
 
 /**
  * Notes are `.txt`. Windows opens that in Notepad on a double-click while `.md`
@@ -360,4 +362,132 @@ export function claimName(base: string, own: string | null, taken: ReadonlySet<s
     next += 1;
   }
   return { id: `${base} (${next})`, displaced };
+}
+
+/*
+  Naming files once, and never again.
+
+  b-notes no longer renames anything. A file is named when it is made, and to
+  b-notes that name *is* the text from then on. Several machines work offline
+  and Dropbox reconciles them later, matching files by path alone, so one name
+  has to mean one text everywhere:
+
+  1. The same text gets the same name on every machine — two machines copying
+     one Resoph text offline must write one file, not two.
+  2. Different texts get different names on every machine — or Dropbox makes
+     one file of two texts, and one is filed away as a version of the other.
+  3. The name is decided without looking at the folder, because each offline
+     machine sees a different one; "the next free number" breaks both rules.
+
+  So every name is a readable part and a tag that makes it unique. The
+  reasoning, with examples, is in `RESOPH-COEXISTENCE.md` §4.7.
+*/
+
+/** Where a readable part is cut, at a word where one is near enough. */
+const LONGEST_NAME = 50;
+
+/**
+ * What survives into a filename untouched: plain letters and digits, spaces,
+ * and punctuation that every tool on his machines takes. Not `~`, which
+ * separates the tag, so a readable part can never be mistaken for one.
+ */
+const PLAIN_NAME_CHARACTER = /[A-Za-z0-9 .,;!'()&+_-]/;
+
+/** Said when a title leaves nothing usable, in the app's own language. */
+const NO_TITLE = 'Bez naslova';
+
+/**
+ * A title as the readable part of a filename: safe in Notepad, zip and
+ * Explorer, and never seen by him.
+ *
+ * Diacritics come off (Windows' own zip mangles them), anything else unusual
+ * becomes a space, spaces are collapsed and trimmed — his leading spaces
+ * included, which is precisely what Explorer refuses — and no trailing dot,
+ * which Windows drops on its own.
+ */
+export function safeTitle(title: string): string {
+  let plain = '';
+  for (const character of withoutDiacritics(title)) {
+    plain += PLAIN_NAME_CHARACTER.test(character) ? character : ' ';
+  }
+  let cleaned = plain.replace(/\s+/g, ' ').trim().replace(/[. ]+$/, '');
+
+  if (cleaned.length > LONGEST_NAME) {
+    const cut = cleaned.slice(0, LONGEST_NAME);
+    const lastSpace = cut.lastIndexOf(' ');
+    cleaned = (lastSpace >= LONGEST_NAME * 0.6 ? cut.slice(0, lastSpace) : cut).replace(/[. ]+$/, '');
+  }
+
+  if (cleaned.length === 0) return NO_TITLE;
+  if (RESERVED_ON_WINDOWS.test(cleaned)) return `_${cleaned}`;
+  return cleaned;
+}
+
+/**
+ * Six characters that stand for a piece of text: the same text gives the same
+ * six on every machine, and texts that differ by one space give different ones.
+ *
+ * cyrb53, a small well-mixed hash, because shared code may not use Node's
+ * crypto and nothing here needs to be secret — only stable and spread out.
+ * Six characters of base 36 is about two billion values, and the only texts
+ * that ever share a readable part are his handful of spacing variants.
+ */
+export function tagOf(text: string): string {
+  let first = 0xdeadbeef;
+  let second = 0x41c6ce57;
+  for (let at = 0; at < text.length; at += 1) {
+    const code = text.charCodeAt(at);
+    first = Math.imul(first ^ code, 2654435761);
+    second = Math.imul(second ^ code, 1597334677);
+  }
+  first = Math.imul(first ^ (first >>> 16), 2246822507) ^ Math.imul(second ^ (second >>> 13), 3266489909);
+  second = Math.imul(second ^ (second >>> 16), 2246822507) ^ Math.imul(first ^ (first >>> 13), 3266489909);
+  const hash = 4294967296 * (2097151 & second) + (first >>> 0);
+  return hash.toString(36).toUpperCase().padStart(6, '0').slice(-6);
+}
+
+/**
+ * The name b-notes gives its copy of a Resoph text: the title made safe, and a
+ * tag worked out from the Resoph file's exact name.
+ *
+ * Nothing else goes into it, so every machine that copies this Resoph file
+ * writes the same file, and his spacing variants — `Pismo`, `   Pismo` — which
+ * make the same readable part, still get different tags.
+ */
+export function copyNameFor(resophStem: string): string {
+  return `${safeTitle(titleOfResophName(resophStem))} ~${tagOf(resophStem)}`;
+}
+
+/** A machine's name as it can stand in a filename. */
+function safeMachine(machine: string): string {
+  const plain = withoutDiacritics(machine).replace(/[^A-Za-z0-9-]/g, '').slice(0, 20);
+  return plain.length > 0 ? plain : 'PC';
+}
+
+/**
+ * The name for a text he starts in b-notes: the first line made safe, and the
+ * moment and machine it was started on.
+ *
+ * Unique by construction. Two machines each starting a text that opens with
+ * `Pismo` offline would otherwise both write `Pismo.txt`, and Dropbox would make
+ * one text of two.
+ */
+export function newNameFor(title: string, when: Date, machine: string): string {
+  return `${safeTitle(title)} ~${versionName(when)} ${safeMachine(machine)}`;
+}
+
+/**
+ * `base`, or `base 2`, `base 3`… — whichever is free.
+ *
+ * Only for the rare moves inside b-notes' own folder — back from Obrisano or
+ * an archive — where a name built to be unique has somehow met itself. Never
+ * a way of naming a text in the first place: that is decided without looking,
+ * above.
+ */
+export function unusedName(base: string, taken: ReadonlySet<string>): string {
+  if (!taken.has(base)) return base;
+  for (let count = 2; ; count += 1) {
+    const candidate = `${base} ${count}`;
+    if (!taken.has(candidate)) return candidate;
+  }
 }
