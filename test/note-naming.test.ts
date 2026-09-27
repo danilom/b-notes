@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { copyNameFor, newNameFor, safeTitle, tagOf, unusedName } from '../src/notes/note-naming.ts';
+import { codeOf, copyNameFor, newNameFor, safeTitle, tagOf, unusedName } from '../src/notes/note-naming.ts';
 
 describe('a title made safe for a filename', () => {
   it('takes the diacritics off, which Windows zip mangles', () => {
@@ -67,6 +67,29 @@ describe('the name of a copy b-notes makes of a Resoph text', () => {
   it('keeps his spacing variants apart, though they read the same', () => {
     assert.notEqual(copyNameFor('   Pismo'), copyNameFor('         Pismo'));
     assert.notEqual(copyNameFor('Pismo'), copyNameFor(' Pismo'));
+  });
+});
+
+describe('the code a copy carries, which the stub in Resoph tells him to search for', () => {
+  const stem = '                %2AGRAD Kilim';
+
+  it('is read off a copy name, tilde and all', () => {
+    assert.equal(codeOf(copyNameFor(stem)), `~${tagOf(stem)}`);
+  });
+
+  it('is the same on a second copy of the same Resoph file, which only gains a number', () => {
+    assert.equal(codeOf(`${copyNameFor(stem)} 2`), `~${tagOf(stem)}`);
+  });
+
+  it('is not found in a text started in b-notes, whose name ends in when and where', () => {
+    const when = new Date(2026, 8, 27, 14, 32, 10);
+    assert.equal(codeOf(newNameFor('Pismo', when, 'LAPTOP')), null);
+    assert.equal(codeOf(newNameFor('Pismo ~ABC123', when, 'PC')), null);
+  });
+
+  it('is not found in a name without one', () => {
+    assert.equal(codeOf('Pismo'), null);
+    assert.equal(codeOf('Pismo ~k3f9a2'), null);
   });
 });
 

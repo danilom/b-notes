@@ -236,6 +236,24 @@ export function copyNameFor(resophStem: string): string {
   return `${safeTitle(titleOfResophName(resophStem))} ~${tagOf(resophStem)}`;
 }
 
+/*
+  The code at the end of a copy's name, with the number a second copy of the
+  same Resoph file is given after it. Nothing else b-notes names ends this
+  way: a text started here ends in the moment and the machine.
+*/
+const COPY_CODE = /~([0-9A-Z]{6})(?: \d+)?$/;
+
+/**
+ * The code a text taken over from Resoph carries in its file name, `~K3F9A2`,
+ * or null for a text that has none. It never changes while the text is in
+ * b-notes, whatever he does to its title, which is what makes it the way back
+ * from the stub left in Resoph.
+ */
+export function codeOf(id: string): string | null {
+  const found = COPY_CODE.exec(id);
+  return found === null ? null : `~${found[1] ?? ''}`;
+}
+
 /** A machine's name as it can stand in a filename. */
 function safeMachine(machine: string): string {
   const plain = withoutDiacritics(machine).replace(/[^A-Za-z0-9-]/g, '').slice(0, 20);

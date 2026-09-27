@@ -1,7 +1,7 @@
 import type { FileSystem } from '../platform/file-system.ts';
 import type { Log } from '../platform/logging.ts';
 import { type Note, type NoteStore, type NoteVersion, noteOf } from './note.ts';
-import { EXTENSION, copyNameFor, unusedName } from './note-naming.ts';
+import { EXTENSION, codeOf, copyNameFor, unusedName } from './note-naming.ts';
 import { type Naming, type NoteRenamed, type OwnNoteStore, REAL_NAMING } from './note-store.ts';
 import type { ResophFolder, ResophText } from './resoph-folder.ts';
 import { resophIdOf, resophNameFor, resophPartsOf, resophStemOf } from './resoph-note.ts';
@@ -137,7 +137,10 @@ export function createNoteLibrary(
       return;
     }
     const path = windowsPath(`${folder}/${copy}${EXTENSION}`);
-    await resoph.write(stem, stubText({ kind, when: naming.now(), machine: naming.machine, path }));
+    // Every copy is named with a code; the file name is the fallback only so
+    // the stub always says something he can type.
+    const code = codeOf(copy) ?? copy;
+    await resoph.write(stem, stubText({ kind, when: naming.now(), machine: naming.machine, path, code }));
   }
 
   /** The name a text will have in Resoph, and what goes into the file; or why it cannot go. */

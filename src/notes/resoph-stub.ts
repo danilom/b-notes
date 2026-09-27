@@ -18,6 +18,8 @@ export interface StubFacts {
   machine: string;
   /** The text's file in b-notes' folder, as Windows writes the path. */
   path: string;
+  /** The code in that file's name, `~K3F9A2`, which b-notes' search finds it by. */
+  code: string;
 }
 
 /** The first line: loud, and the thing a stub is known by. */
@@ -26,11 +28,28 @@ const HEADLINES: Record<StubKind, string> = {
   deleted: '!!! OVAJ TEKST JE OBRISAN U B-NOTES !!!',
 };
 
-/** What to do, in his words. */
+/**
+ * What to do, in his words. By its code rather than its title: the title is
+ * his first line, which he may change, or empty, and his titles repeat; the
+ * code stays with the text, and b-notes' search finds exactly that one.
+ */
 const SAYS: Record<StubKind, readonly string[]> = {
-  moved: ['NE PIŠI OVDE — ovde ga više nema.', 'Otvori b-notes i nađi ga po naslovu.'],
-  deleted: ['NE PIŠI OVDE — ovde ga više nema.', 'Vrati ga u b-notes, iz „Obrisani tekstovi".'],
+  moved: ['NE PIŠI OVDE — ovde ga više nema.', 'Otvori b-notes i ukucaj {code} u pretragu.'],
+  deleted: [
+    'NE PIŠI OVDE — ovde ga više nema.',
+    'Otvori b-notes, ukucaj {code} u pretragu i vrati ga iz „Obrisani tekstovi".',
+  ],
 };
+
+/**
+ * Where a text's code goes in what the stub says, and what stands in for it
+ * when a stub on disk is measured: the same number of characters as any code.
+ */
+const CODE_SLOT = '{code}';
+const ANY_CODE = '~000000';
+
+const saidWith = (kind: StubKind, code: string): string[] =>
+  SAYS[kind].map((line) => line.replace(CODE_SLOT, code));
 
 /** Where b-notes can be had, for a machine that does not have it yet. */
 const RELEASES = 'https://github.com/danilom/b-notes/releases';
@@ -71,11 +90,11 @@ function recordIn(line: string): string | null {
 }
 
 /** The stub for a text, with Windows line endings, as Resoph writes its own files. */
-export function stubText({ kind, when, machine, path }: StubFacts): string {
+export function stubText({ kind, when, machine, path, code }: StubFacts): string {
   const at = `${when.getFullYear()}-${two(when.getMonth() + 1)}-${two(when.getDate())} ${two(when.getHours())}:${two(when.getMinutes())}`;
   return [
     HEADLINES[kind],
-    ...SAYS[kind],
+    ...saidWith(kind, code),
     '',
     `${RECORD}${at}, ${machine}`,
     `${RECORD}${path}`,
@@ -100,7 +119,14 @@ export function isStub(body: string): boolean {
 
   const counted = (text: string): number => text.replace(/\s/g, '').length;
   const records = lines.map(recordIn).filter((record) => record !== null);
-  const stubFor = (kind: StubKind): number => counted([HEADLINES[kind], ...SAYS[kind], ...records].join(''));
+  const stubFor = (kind: StubKind): number =>
+    counted([HEADLINES[kind], ...saidWith(kind, ANY_CODE), ...records].join(''));
   const all = counted(lines.join(''));
-  return (Object.keys(HEADLINES) as StubKind[]).some((kind) => Math.abs(all - stubFor(kind)) <= STRAY);
+  // Measured against its own kind, which its first line says. The two differ
+  // in length by more than the stray allowance, so measured against either, a
+  // moved stub with a sentence of his in it would pass for a deleted one.
+  // Either only when that line is gone.
+  const kinds = (Object.keys(HEADLINES) as StubKind[]).filter((kind) => lines.includes(HEADLINES[kind]));
+  const candidates = kinds.length > 0 ? kinds : (Object.keys(HEADLINES) as StubKind[]);
+  return candidates.some((kind) => Math.abs(all - stubFor(kind)) <= STRAY);
 }

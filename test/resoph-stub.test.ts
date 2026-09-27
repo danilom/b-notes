@@ -8,12 +8,14 @@ const MOVED = stubText({
   when: new Date(2026, 8, 27, 14, 32),
   machine: 'ASUS',
   path: 'D:\\Dropbox\\b-notes\\GRAD Kilim ~K3F9A2.txt',
+  code: '~K3F9A2',
 });
 const DELETED = stubText({
   kind: 'deleted',
   when: new Date(2026, 8, 27, 14, 32),
   machine: 'ASUS',
   path: 'D:\\Dropbox\\b-notes\\GRAD Kilim ~K3F9A2.txt',
+  code: '~K3F9A2',
 });
 
 describe('the stub left in Resoph', () => {
@@ -28,6 +30,12 @@ describe('the stub left in Resoph', () => {
   it('says it was deleted, and where to bring it back from, when it was', () => {
     assert.equal(DELETED.split('\r\n')[0], '!!! OVAJ TEKST JE OBRISAN U B-NOTES !!!');
     assert.match(DELETED, /Obrisani tekstovi/);
+  });
+
+  it('tells him the code to type into the search, which finds the text whatever its title has become', () => {
+    assert.ok(MOVED.split('\r\n').includes('Otvori b-notes i ukucaj ~K3F9A2 u pretragu.'));
+    assert.match(DELETED, /ukucaj ~K3F9A2 u pretragu/);
+    assert.doesNotMatch(MOVED + DELETED, /\{code\}/);
   });
 });
 
