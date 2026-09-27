@@ -165,6 +165,14 @@ ${path}`);
     testTools: {
       toggleFiles: mockFileList(),
       requested: new URLSearchParams(window.location.search).has('test'),
+      // Written by hand rather than through `searchParams`, which would make
+      // it `?test=` — not what anyone types, or looks for in the address.
+      restartWith: (testMode: boolean) => {
+        const others = new URLSearchParams(window.location.search);
+        others.delete('test');
+        const search = [others.toString(), testMode ? 'test' : ''].filter((part) => part.length > 0).join('&');
+        window.location.assign(`${window.location.pathname}${search.length > 0 ? `?${search}` : ''}`);
+      },
     },
   };
 

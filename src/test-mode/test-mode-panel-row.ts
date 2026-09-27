@@ -2,7 +2,7 @@
  * The switch, in the advanced panel, among the other things that are not his.
  * Applied with the rest of the panel, when the app starts again.
  */
-export function testModeRow(on: boolean, change: (on: boolean) => void): HTMLElement {
+export function testModeRow(on: boolean, change: (on: boolean) => void, inBrowser: boolean): HTMLElement {
   const row = document.createElement('div');
   row.className = 'advanced-row';
 
@@ -21,7 +21,9 @@ export function testModeRow(on: boolean, change: (on: boolean) => void): HTMLEle
 
   const note = document.createElement('span');
   note.className = 'advanced-note';
-  note.textContent = 'Where each text lives, on every row, and a [test-mode] tag. This machine only.';
+  note.textContent = `Where each text lives, on every row, and a [test-mode] tag. ${
+    inBrowser ? 'Here: ?test in the address.' : 'This machine only.'
+  }`;
 
   row.append(name, box, note);
   return row;

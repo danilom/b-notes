@@ -14,8 +14,10 @@ export interface ChosenPlaces {
 export interface TestTools {
   /** Opens the list of the pretend files, or closes it again. */
   toggleFiles(): void;
-  /** Whether the page was opened with `?test`, which turns test mode on for that visit. */
+  /** Whether the page was opened with `?test`, which is what test mode is in this build. */
   requested: boolean;
+  /** Opens the page again with `?test` or without it, which is switching test mode here. */
+  restartWith(testMode: boolean): void;
 }
 
 /** What a copy of the app is: installed, built to work on, or the mock. */

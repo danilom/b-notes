@@ -27,7 +27,9 @@ const STYLES = `
   background: #1b1d21; color: #e6e6e6; font: 10px/1.2 Consolas, monospace;
   white-space: nowrap; opacity: 0.9; cursor: help;
 }
-.test-mode-tools { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.test-mode-tools { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+/* Begun in b-notes: the case with nothing to look into, so the one set apart. */
+.test-mode-badge.own { background: #1d4a2a; }
 .test-mode-tag {
   padding: 1px 5px; border-radius: 3px;
   background: #b3261e; color: #ffffff; font: 11px Consolas, monospace;
@@ -88,7 +90,7 @@ function mark(row: HTMLElement, where: Whereabouts | undefined): void {
   if (where === undefined) return;
   const codes = codesFor(where);
   const badge = document.createElement('span');
-  badge.className = 'test-mode-badge';
+  badge.className = `test-mode-badge ${where.origin}`;
   badge.textContent = codes.map(({ code }) => code).join(' ');
   badge.title = legendOf(codes);
   row.title = pathsOf(where);

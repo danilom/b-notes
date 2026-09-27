@@ -9,6 +9,10 @@ import type { Log } from '../platform/logging.ts';
  * test mode stays in its own folder from end to end. Per machine, in the app's
  * own folder and not in Dropbox: switching it on at one machine must not follow
  * him to the next.
+ *
+ * Not in the browser build, where test mode is `?test` in the address and
+ * nothing else: the address is where anyone testing there looks, and a switch
+ * kept in the page's pretend files could be on with nothing in sight to say so.
  */
 const FILE = 'test-mode.json';
 
@@ -35,10 +39,24 @@ export async function readTestMode(files: FileSystem, appFolder: string, log: Lo
   }
 }
 
-/** On where the file says so, or for one visit where the browser build was opened with `?test`. */
+/** On where the file says so — or, in the browser build, where the address has `?test`. */
 export async function testModeIsOn(host: Host): Promise<boolean> {
-  if (host.testTools?.requested === true) return true;
+  if (host.testTools !== null) return host.testTools.requested;
   return readTestMode(host.files, host.appFolder, host.log);
+}
+
+/**
+ * Switches test mode and starts the app again with it: by saving the file and
+ * restarting, or in the browser build by opening the page with or without
+ * `?test`, which is a restart there too.
+ */
+export async function restartWithTestMode(host: Host, on: boolean): Promise<void> {
+  if (host.testTools !== null) {
+    host.testTools.restartWith(on);
+    return;
+  }
+  await writeTestMode(host.files, host.appFolder, on);
+  await host.restart();
 }
 
 /** On only where the file says so in so many words. Separate so it can be tested without a disk. */

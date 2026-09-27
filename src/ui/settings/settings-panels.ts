@@ -3,7 +3,7 @@ import type { Host } from '../../platform/host.ts';
 import { type Log, describeError } from '../../platform/logging.ts';
 import { openAdvancedPanel } from './advanced-panel.ts';
 import { type AdvancedSettings, writeAdvanced } from './advanced-settings.ts';
-import { writeTestMode } from '../../test-mode/test-mode-setting.ts';
+import { restartWithTestMode } from '../../test-mode/test-mode-setting.ts';
 import type { Appearance } from './appearance.ts';
 import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
 import type { Settings } from './app-settings.ts';
@@ -88,9 +88,8 @@ export function createSettingsPanels(parts: SettingsPanelsParts): SettingsPanels
         */
         const { ctrlCardAfterMs, testMode, ...folders } = settings;
         void writeAdvanced(host.files, host.appFolder, { ctrlCardAfterMs })
-          .then(() => writeTestMode(host.files, host.appFolder, testMode))
           .then(() => host.rememberFolders(folders))
-          .then(() => host.restart())
+          .then(() => restartWithTestMode(host, testMode))
           .catch((error: unknown) => {
             // English, like the panel it came from: the only person who can
             // have pressed that button reads English.

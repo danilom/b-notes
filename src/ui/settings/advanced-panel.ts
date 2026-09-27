@@ -278,9 +278,13 @@ export function openAdvancedPanel(
       waitRow(wait, (to) => {
         wait = to;
       }),
-      testModeRow(testMode, (to) => {
-        testMode = to;
-      }),
+      testModeRow(
+        testMode,
+        (to) => {
+          testMode = to;
+        },
+        host.testTools !== null,
+      ),
     );
 
     const note = document.createElement('p');
