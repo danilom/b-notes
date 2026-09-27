@@ -357,13 +357,17 @@ const TEXT = {
       is the button, and closing them himself works too.
     */
     closeEditorsTitle: 'Zatvori druge programe za tekstove',
-    closeEditorsSay: (open: string) =>
-      `Otvoreno je: ${open}. Dok pišeš u b-notes, oni treba da budu zatvoreni, da se isti tekst ne bi menjao na dva mesta.`,
-    closeEditorsButton: 'Zatvori ih',
-    closeEditorsBeside: 'b-notes ih zatvara umesto tebe i nastavlja čim se zatvore.',
-    closeEditorsNotepad: 'Ako Notepad pita da li da sačuva izmene, reci da.',
+    closeEditorsWhy:
+      'Ne piši isti tekst u dva programa odjednom — jedan preko drugog pišu izmene. ' +
+      'Dok radiš u b-notes, ostali moraju da budu zatvoreni.',
+    closeEditorsOpen: 'Otvoreni su:',
+    closeEditorsHow: 'Klikni dugme ispod: b-notes će ih zatvoriti umesto tebe i nastaviti čim se zatvore.',
+    closeEditorsButton: 'Zatvori druge programe',
     closeEditorsClosing: 'Zatvaram…',
-    closeEditorsAnd: 'i',
+    // Only while Notepad is still open after he pressed the button: it is then
+    // almost certainly asking about unsaved changes, from behind b-notes, with
+    // only its taskbar button blinking. His Windows is in English, so "Save".
+    closeEditorsNotepadAsks: 'Notepad te pita da li da sačuva izmene. Klikni na Notepad dole na traci i izaberi „Save".',
   },
   en: {
     newNote: 'New text',
@@ -527,13 +531,14 @@ const TEXT = {
     changedInBoth: 'This text was also changed in Resoph. The other version is kept.',
     changedInBothSee: 'See the versions',
     closeEditorsTitle: 'Close the other writing programs',
-    closeEditorsSay: (open: string) =>
-      `Open now: ${open}. While you write in b-notes they should be closed, so one text is not changed in two places.`,
-    closeEditorsButton: 'Close them',
-    closeEditorsBeside: 'b-notes closes them for you and carries on as soon as they are closed.',
-    closeEditorsNotepad: 'If Notepad asks whether to save changes, say yes.',
+    closeEditorsWhy:
+      "Don't write the same text in two programs at once — they write over each other's changes. " +
+      'While you work in b-notes, the others must be closed.',
+    closeEditorsOpen: 'Open now:',
+    closeEditorsHow: 'Click the button below: b-notes will close them for you and carry on as soon as they are closed.',
+    closeEditorsButton: 'Close the other programs',
     closeEditorsClosing: 'Closing…',
-    closeEditorsAnd: 'and',
+    closeEditorsNotepadAsks: 'Notepad is asking whether to save your changes. Click Notepad on the taskbar below and choose "Save".',
   },
 } satisfies Record<
   Language,

@@ -85,14 +85,38 @@ test('waits behind its message while Resoph and Notepad are open, and carries on
 
   const message = page.locator('#close-editors');
   await expect(message).toBeVisible();
-  await expect(message).toContainText('Resoph i Notepad');
+  await expect(message.locator('.close-editors-open li')).toHaveText(['ResophNotes', 'Notepad']);
+  // Nothing about Notepad's question until he has pressed the button.
+  await expect(message.locator('.close-editors-asks')).toBeHidden();
   await expect(page.locator('#list .note')).toHaveCount(0);
 
   // Escape is not a way past it.
   await page.keyboard.press('Escape');
   await expect(message).toBeVisible();
 
-  await message.getByRole('button', { name: 'Zatvori ih' }).click();
+  await message.getByRole('button', { name: 'Zatvori druge programe' }).click();
+  await expect(message).toBeHidden();
+  await expect(page.locator('#list .note').first()).toBeVisible();
+});
+
+test("tells him where Notepad's question is, when Notepad will not close", async ({ page }) => {
+  // What a Notepad holding unsaved changes does when asked to close: it asks,
+  // from behind b-notes, and stays open until he answers.
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('pretended') !== null) return;
+    sessionStorage.setItem('pretended', 'yes');
+    localStorage.setItem('b-notes:mock-running', JSON.stringify({ running: ['Notepad'], stubborn: true }));
+  });
+  await page.goto('/');
+
+  const message = page.locator('#close-editors');
+  await message.getByRole('button', { name: 'Zatvori druge programe' }).click();
+  await expect(message.locator('.close-editors-asks')).toBeVisible();
+
+  // He answers Notepad, and it closes: b-notes carries on by itself.
+  await page.evaluate(() =>
+    localStorage.setItem('b-notes:mock-running', JSON.stringify({ running: [], stubborn: false })),
+  );
   await expect(message).toBeHidden();
   await expect(page.locator('#list .note').first()).toBeVisible();
 });
@@ -151,7 +175,7 @@ test('checks again whenever he comes back, saving what he typed first', async ({
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   await expect(message.locator('.panel')).toHaveCount(1);
 
-  await message.getByRole('button', { name: 'Zatvori ih' }).click();
+  await message.getByRole('button', { name: 'Zatvori druge programe' }).click();
   await expect(message).toBeHidden();
 
   // And with nothing open, coming back is just coming back.

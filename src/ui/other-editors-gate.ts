@@ -2,34 +2,39 @@ import type { Log } from '../platform/logging.ts';
 import type { OtherEditor, OtherEditors } from '../platform/other-editors.ts';
 import { type Language, strings } from '../language/wording.ts';
 import { showAsModal } from './dialogs/modal.ts';
+import { icon } from './icons.ts';
 
 /** What each is called where he reads it: the name on its own window. */
 const SHOWN_AS: Record<OtherEditor, string> = {
-  ResophNotes: 'Resoph',
+  ResophNotes: 'ResophNotes',
   Notepad: 'Notepad',
   Obsidian: 'Obsidian',
 };
-
-/** `Resoph`, `Resoph i Notepad`, `Resoph, Notepad i Obsidian`. */
-export function namesOf(editors: readonly OtherEditor[], and: string): string {
-  const names = editors.map((editor) => SHOWN_AS[editor]);
-  const last = names.pop();
-  if (last === undefined) return '';
-  return names.length === 0 ? last : `${names.join(', ')} ${and} ${last}`;
-}
 
 /** How often to look again while he closes them himself. */
 const LOOK_AGAIN_MS = 2_000;
 
 /**
+ * Whether to tell him Notepad is waiting on him: it is still open after he
+ * pressed the button. Notepad asked to close with unsaved changes asks about
+ * them — from behind b-notes, where Windows only lets its taskbar button blink —
+ * and until he answers, b-notes waits for nothing he can see. On Windows 11
+ * Notepad keeps unsaved tabs instead of asking, so this should rarely show.
+ */
+export function notepadIsAsking(running: readonly OtherEditor[], pressed: boolean): boolean {
+  return pressed && running.includes('Notepad');
+}
+
+/**
  * Waits, behind one plain modal message, until Resoph, Notepad and Obsidian
  * are closed — and returns at once when none of them is open, which is most
- * starts.
+ * of the time.
  *
- * There is no way past it but closing them, by the button or by hand, and no
- * mode that half-works: b-notes simply has not started yet. Not being able to
- * tell what is running counts as nothing running, so this can never keep him
- * from his writing on its own account.
+ * A firm hold, not an error: an amber raised hand, what to do and why, the
+ * programs by name, and one button. There is no way past it but closing them,
+ * by the button or by hand, and no mode that half-works: b-notes simply waits.
+ * Not being able to tell what is running counts as nothing running, so this
+ * can never keep him from his writing on its own account.
  */
 export async function untilOtherEditorsClose(
   container: HTMLDialogElement,
@@ -47,38 +52,54 @@ export async function untilOtherEditorsClose(
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
 
-  // No mark beside the title. Every other dialog's is the icon of the button
-  // that opened it; nothing opened this one, and the obvious mark — an X —
-  // reads as a way out, which is exactly what this has none of.
   const header = document.createElement('header');
   const title = document.createElement('h1');
   const titleText = document.createElement('span');
   titleText.className = 'heading-text';
   titleText.textContent = words.closeEditorsTitle;
-  title.append(titleText);
+  title.append(icon('hold'), titleText);
   header.append(title);
 
-  const said = document.createElement('p');
-  said.className = 'confirm-body';
-  const notepad = document.createElement('p');
-  notepad.className = 'confirm-body close-editors-notepad';
+  const why = document.createElement('p');
+  why.className = 'confirm-body';
+  why.textContent = words.closeEditorsWhy;
+
+  const listed = document.createElement('p');
+  listed.className = 'confirm-body close-editors-label';
+  listed.textContent = words.closeEditorsOpen;
+  const names = document.createElement('ul');
+  names.className = 'close-editors-open';
+
+  const how = document.createElement('p');
+  how.className = 'confirm-body';
+  how.textContent = words.closeEditorsHow;
 
   const footer = document.createElement('footer');
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'keep';
   button.textContent = words.closeEditorsButton;
-  const beside = document.createElement('span');
-  beside.className = 'close-editors-beside';
-  beside.textContent = words.closeEditorsBeside;
-  footer.append(button, beside);
+  footer.append(button);
 
-  panel.append(header, said, notepad, footer);
+  const asks = document.createElement('p');
+  asks.className = 'confirm-body close-editors-asks';
+  asks.textContent = words.closeEditorsNotepadAsks;
+  asks.hidden = true;
 
+  // Above the button rather than below it: the footer is pinned to the
+  // bottom of the panel, and a line after it could sit hidden behind it.
+  panel.append(header, why, listed, names, how, asks, footer);
+
+  let pressed = false;
   const describe = (running: readonly OtherEditor[]): void => {
-    said.textContent = words.closeEditorsSay(namesOf(running, words.closeEditorsAnd));
-    notepad.textContent = running.includes('Notepad') ? words.closeEditorsNotepad : '';
-    notepad.hidden = !running.includes('Notepad');
+    names.replaceChildren(
+      ...running.map((editor) => {
+        const item = document.createElement('li');
+        item.textContent = SHOWN_AS[editor];
+        return item;
+      }),
+    );
+    asks.hidden = !notepadIsAsking(running, pressed);
   };
   describe(open);
 
@@ -110,6 +131,7 @@ export async function untilOtherEditorsClose(
     button.addEventListener('click', () => {
       if (closing) return;
       closing = true;
+      pressed = true;
       button.disabled = true;
       button.textContent = words.closeEditorsClosing;
       log.info('He asked b-notes to close the other writing programs');

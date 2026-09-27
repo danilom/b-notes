@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { editorsAmong, imageNamesIn, isWholeXml, stampFor } from '../src/hosts/electron/windows-editors.ts';
-import { namesOf } from '../src/ui/other-editors-gate.ts';
+import { notepadIsAsking } from '../src/ui/other-editors-gate.ts';
 
 /** What `tasklist /FO CSV /NH` prints, a few lines of it. */
 const TASKLIST = [
@@ -56,16 +56,17 @@ describe('naming the copies of Resoph database', () => {
   });
 });
 
-describe('what the message calls the open programs', () => {
-  it('names one as its window does', () => {
-    assert.equal(namesOf(['ResophNotes'], 'i'), 'Resoph');
+describe('telling him Notepad is waiting on him', () => {
+  it('says nothing before he has pressed the button', () => {
+    assert.equal(notepadIsAsking(['Notepad'], false), false);
   });
 
-  it('joins two with the word for and', () => {
-    assert.equal(namesOf(['ResophNotes', 'Notepad'], 'i'), 'Resoph i Notepad');
+  it('says so when Notepad is still open after he pressed it', () => {
+    // It is then asking about unsaved changes, from behind b-notes.
+    assert.equal(notepadIsAsking(['Notepad', 'ResophNotes'], true), true);
   });
 
-  it('lists three with commas, the last with and', () => {
-    assert.equal(namesOf(['ResophNotes', 'Notepad', 'Obsidian'], 'and'), 'Resoph, Notepad and Obsidian');
+  it('says nothing about Notepad once only the others are left', () => {
+    assert.equal(notepadIsAsking(['ResophNotes'], true), false);
   });
 });

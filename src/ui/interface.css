@@ -146,6 +146,8 @@
   */
   --danger: hsl(2 72% 42%);
   --danger-wash: hsl(2 72% 42% / 0.09);
+  /* A stern hold rather than an error: wait, not "something broke". */
+  --caution: hsl(36 90% 40%);
 
   /* What floats above his text casts a shadow onto it. Dark here, and
      light in the dark mode below — the room it is lit from changes. */
@@ -216,6 +218,7 @@
      reads as a warning instead of as a hole. */
   --danger: hsl(4 70% 65%);
   --danger-wash: hsl(4 70% 65% / 0.14);
+  --caution: hsl(38 85% 60%);
 
   --halo: rgb(255 255 255 / 0.11);
   --halo-near: rgb(255 255 255 / 0.09);
@@ -843,17 +846,36 @@ button svg {
   display: none;
 }
 
-/* The message b-notes starts behind while Resoph or Notepad is open. */
-.close-editors footer {
-  align-items: center;
+/*
+  The message b-notes holds him at while Resoph or Notepad is open. The hand
+  in amber is the only colour, until Notepad is waiting on him — then that one
+  line is red, because it is the one thing he has to do right now.
+*/
+/* Weighted past `.panel h1 svg`, which greys every other dialog's mark. */
+.panel.close-editors h1 svg {
+  color: var(--caution);
 }
 
-.close-editors-beside {
-  color: var(--quiet);
-  font-size: 0.9em;
+/* "Otvoreni su:" belongs to the list under it, so it sits against it. */
+.confirm-body.close-editors-label {
+  padding-bottom: 0.1rem;
 }
 
-.close-editors-notepad[hidden] {
+.close-editors-open {
+  margin: 0 0 0.9rem;
+  padding-left: 1.4rem;
+}
+
+.close-editors-open li {
+  font-weight: 600;
+}
+
+.close-editors-asks {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.close-editors-asks[hidden] {
   display: none;
 }
 
