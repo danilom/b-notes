@@ -175,6 +175,11 @@ differences from what follows:
   and every other byte left alone. Tried on the VM: Resoph starts normally with
   the edited settings, and asked to close the way its X does, it now quits.
   So closing it needs force at most once per machine.
+- **Once per machine**, recorded in `userData/resoph-tray.json`. If someone
+  turns tray mode back on afterwards, b-notes leaves it: that was a choice.
+- **The advanced panel says where it stands**: *Resoph tray: off (switched off
+  by b-notes 2026-10-02)* in the panel's grey, or in red while it is on — with
+  why, if it was turned back on. One glance on a visit or down the telephone.
 
 ### 4.1 Two folders — *decided*
 
