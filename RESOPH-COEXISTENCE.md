@@ -19,9 +19,16 @@ From his folder, the 0.7.0 test log, and Danilo trying it by hand:
   `%USERPROFILE%\.ResophNotes\`: two XML files, one for settings and one for
   the data. They live outside Dropbox, so each machine's Resoph has its own copy
   of everything. The content isn't encrypted but base64: each note's full text,
-  title as the first line and a single newline after it, plus created and
-  modified times, a deleted flag, a Simplenote key, and tags — `pinned` among
-  them.
+  plus created and modified times, a deleted flag, a Simplenote key, and tags —
+  `pinned` among them.
+- **A note is its title, a blank line, and the file's text.** Checked, not
+  guessed: with his whole (redacted) corpus loaded into Resoph on the VM, every
+  one of the 1,215 notes in Resoph's database is exactly that — an empty file
+  included, which is the title and the blank line. `scripts/check-resoph-reading.mts`
+  compares what b-notes reads from the folder with what Resoph holds, note by
+  note, and prints counts only, so it can be run on his own machines too.
+  (The one hand-made note sampled earlier, with a single line break, was typed
+  that way in Resoph; no file-backed note looks like it.)
 - **The database is live, not left over** from before `.txt` storage was
   switched on. In Danilo's sample, a note created 2026-09-19 carries a
   `<modify>` of 2026-09-26 23:18 and a `<filemodify>` of 23:57 the same night.
@@ -49,9 +56,10 @@ From his folder, the 0.7.0 test log, and Danilo trying it by hand:
 - **It lists `.txt` files in subfolders**, live, and makes an empty note in the
   main folder for each one, titled with that file's name. So nothing of b-notes'
   may sit inside his folder.
-- **Toward Simplenote** it joins title and body with a blank line between.
-  Simplenote keeps one piece of text per note, so a Simplenote export carries
-  the title inside every file. That's why his ~300 Simplenote-era files do.
+- **Simplenote** keeps one piece of text per note, so a Simplenote export
+  carries the title inside every file. That's why his ~300 Simplenote-era files
+  do — 294 in this corpus — and Resoph shows those with the title twice.
+  b-notes shows it once, the one deliberate difference from Resoph.
 - **Characters it can't put in a filename** become `%2A` (`*`), `%3F` (`?`),
   `%2F` (`/`), `%5C` (`\`), `%3A` (`:`), `%09` (tab). Leading and trailing spaces
   are kept.

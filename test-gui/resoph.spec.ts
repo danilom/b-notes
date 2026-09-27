@@ -47,7 +47,7 @@ test('a Resoph text opens as Resoph shows it, title first', async ({ page }) => 
   await page.locator('#list .note').filter({ hasText: RANKED_TITLE }).first().click();
 
   await expect(page.locator('#editor')).toHaveValue(
-    '                        *GRADSKE PRICE, prva\nGrad se budi rano, prije nego iko od nas.\n\nPrva prica o gradu.',
+    '                        *GRADSKE PRICE, prva\n\nGrad se budi rano, prije nego iko od nas.\n\nPrva prica o gradu.',
   );
 });
 

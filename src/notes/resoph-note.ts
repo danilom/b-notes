@@ -52,19 +52,26 @@ function sameLine(first: string, second: string): boolean {
 }
 
 /**
- * The note as Resoph shows it: the title, then what the file holds.
+ * The note as Resoph shows it: the title, a blank line, then what the file
+ * holds — a file with nothing in it included, which is the title and the
+ * blank line.
  *
- * Except where the file already starts with that title. His ~300 texts from a
- * 2023 Simplenote export carry it inside as well, and Resoph shows those with
- * the title twice. Shown once here: the doubled line is an accident of how the
- * files were moved, not something he wrote.
+ * Checked against Resoph itself rather than inferred: over his whole corpus,
+ * every one of the 1,215 notes in Resoph's own database is exactly this
+ * (`scripts/check-resoph-reading.mts`). An earlier guess of one line break
+ * matched none of them.
+ *
+ * One difference, on purpose: where the file already starts with that title.
+ * His ~300 texts from a 2023 Simplenote export carry it inside as well, and
+ * Resoph shows those with the title twice. Shown once here: the doubled line
+ * is an accident of how the files were moved, not something he wrote.
  *
  * @param body the file's text, with line endings already made `\n`.
  */
 export function composeResophText(title: string, body: string): string {
   const firstLine = body.split('\n').find((line) => line.trim().length > 0);
   if (firstLine !== undefined && sameLine(firstLine, title)) return body;
-  return body.length === 0 ? title : `${title}\n${body}`;
+  return `${title}\n\n${body}`;
 }
 
 /**

@@ -31,12 +31,13 @@ describe('the title Resoph shows for a file', () => {
 });
 
 describe('a Resoph note as Resoph shows it', () => {
-  it('puts the title above what the file holds', () => {
-    assert.equal(composeResophText('Pismo', 'Prvi red.\n\nDrugi.'), 'Pismo\nPrvi red.\n\nDrugi.');
+  it('puts the title above what the file holds, with a blank line between', () => {
+    // As Resoph holds every one of his 1,215 notes in its own database.
+    assert.equal(composeResophText('Pismo', 'Prvi red.\n\nDrugi.'), 'Pismo\n\nPrvi red.\n\nDrugi.');
   });
 
-  it('is only the title when the file is empty', () => {
-    assert.equal(composeResophText('Osa i staklo', ''), 'Osa i staklo');
+  it('is the title and the blank line when the file is empty', () => {
+    assert.equal(composeResophText('Osa i staklo', ''), 'Osa i staklo\n\n');
   });
 
   it('does not double a title the file already starts with', () => {
@@ -49,7 +50,7 @@ describe('a Resoph note as Resoph shows it', () => {
   });
 
   it('keeps the title when the file merely starts with the same words', () => {
-    assert.equal(composeResophText('Pismo', 'Pismo iz Boke\nTekst.'), 'Pismo\nPismo iz Boke\nTekst.');
+    assert.equal(composeResophText('Pismo', 'Pismo iz Boke\nTekst.'), 'Pismo\n\nPismo iz Boke\nTekst.');
   });
 });
 
