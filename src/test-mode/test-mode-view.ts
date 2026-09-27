@@ -29,7 +29,7 @@ const STYLES = `
 }
 .test-mode-tools { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 /* Begun in b-notes: the case with nothing to look into, so the one set apart. */
-.test-mode-badge.own { background: #1d4a2a; }
+.test-mode-badge.own { background: #2e8b47; color: #ffffff; }
 .test-mode-tag {
   padding: 1px 5px; border-radius: 3px;
   background: #b3261e; color: #ffffff; font: 11px Consolas, monospace;
