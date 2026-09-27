@@ -641,7 +641,7 @@ button svg {
     of the row before the padding starts and every row is indented by it —
     against a heading and a search box that are not. Four pixels is little
     enough to pass as a gap and too much to pass as alignment. Giving the left
-    padding the width back puts the page glyph on the same line as both.
+    padding the width back puts the start of every row on the same line as both.
   */
   --mark-width: 4px;
   padding: 0.5rem 0.9rem 0.5rem calc(0.9rem - var(--mark-width));
@@ -675,16 +675,17 @@ button svg {
      colour as the rest of the list. Hover is left alone: it tints with a wash
      rather than a colour, so there is no token to match, and at five per cent
      there is nothing to see. */
-  --written: var(--chosen-soft);
 }
 
 /*
-  How much is written in a text, drawn as how much is written on a page.
+  How much is written in a text, drawn as how much is written on a page: in
+  the shelves and among a text's versions, where telling a substantial copy
+  from a stub is the point. Not in his list, where every mark on a row is one
+  he typed himself.
 
   First in the row rather than after the date, which would leave it ragged:
-  dates here run from `pre 36 minuta` to `2019`, so anything following one
-  lands in a different place on every line. Leading, they make a column he can
-  run his eye down, and the titles stay aligned with each other as before.
+  dates run from `pre 36 minuta` to `2019`, so anything following one lands in
+  a different place on every line.
 
   Never darker than the date, and mostly lighter. It answers a question he did
   not ask, so it must not compete with the title, which answers the one he did.
@@ -694,8 +695,7 @@ button svg {
 .note-length {
   flex: none;
   /* The shelves lay their rows out on a grid, where the default would stretch
-     it; his list lays them out with flex, where it would not. Said once here so
-     the glyph sits the same way in both. */
+     it. */
   align-self: center;
   /*
     About as tall as the title's line and seven tenths as wide, which is the
@@ -706,7 +706,7 @@ button svg {
     The height is given and the width follows from the viewBox, so the page
     cannot be squashed by changing one and forgetting the other.
 
-    In rem, so it is one size in all four lists. In em it tracked whatever type
+    In rem, so it is one size in all three lists. In em it tracked whatever type
     the list around it was set in, and the same mark came out three sizes — the
     one thing that stops him reading two of them against each other, which is
     the only reason the mark is there.

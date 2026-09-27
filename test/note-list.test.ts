@@ -1,4 +1,3 @@
-import { bandsFrom } from '../src/notes/text-length.ts';
 import type { NoteHandle } from '../src/notes/note-handle.ts';
 import type { LiveNote } from '../src/notes/writing.ts';
 import assert from 'node:assert/strict';
@@ -36,7 +35,6 @@ const NOTES = [
 function view(over: Partial<ListView> = {}): ListView {
   return {
     notes: NOTES,
-    lengths: bandsFrom(NOTES.map((note) => note.bytes)),
     query: '',
     recentCount: DEFAULT_APPEARANCE.recentCount,
     openId: null,

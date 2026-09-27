@@ -9,10 +9,11 @@ import type { LengthBand } from '../notes/text-length.ts';
  * with none says the text is empty — which he can otherwise only find out by
  * opening it.
  *
- * Its own module because four lists draw it now — his texts, the deleted, the
- * archive and the copies of one text. They are all writing, and a mark that
- * meant one thing in the list and something else a dialog away would be worse
- * than no mark at all.
+ * Its own module because three lists draw it — the deleted, the archive and
+ * the copies of one text. They are all writing, and a mark that meant one thing
+ * in one list and something else a dialog away would be worse than no mark at
+ * all. His own list of texts had it too, and gave it up: there every mark on a
+ * row is one he typed, and he finds a text by its title, not its length.
  */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';

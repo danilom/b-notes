@@ -226,7 +226,6 @@ let savedWords = 0;
 function draw(): void {
   renderList(listPane, {
     notes,
-    lengths,
     query: search.value,
     recentCount: shownRecent,
     openId: openName(),

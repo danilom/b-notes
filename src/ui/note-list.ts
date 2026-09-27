@@ -1,21 +1,12 @@
 import { compareTitles } from '../notes/note-title.ts';
-import { type LengthBand, type LengthBands, bandOf } from '../notes/text-length.ts';
 import { isResophId } from '../notes/resoph-note.ts';
 import { type TitleParts, titlePartsOf } from '../notes/title-marks.ts';
 import type { LiveNote } from '../notes/writing.ts';
 import { toSearchable } from '../language/diacritics.ts';
 import { type Language, describeWhen, strings } from '../language/wording.ts';
-import { pageGlyph } from './page-glyph.ts';
 
 export interface ListView {
   notes: readonly LiveNote[];
-  /**
-   * Where one length band becomes the next, taken from his whole corpus.
-   *
-   * Handed in rather than worked out here: they are the same for every row, so
-   * counting them per row would be counting the corpus once per text.
-   */
-  lengths: LengthBands;
   query: string;
   /**
    * How many recent texts to offer before he has to look for himself. His to
@@ -59,8 +50,6 @@ export interface Row {
   parts: TitleParts;
   /** Still in Resoph: typing in it will take it over. */
   inResoph: boolean;
-  /** How full a page to draw beside it, from empty to four lines. */
-  length: LengthBand;
   /** Folded, so `macka` finds `mačka` and `mačka` finds `macka`. */
   searchable: string;
   updatedAt: number;
@@ -90,7 +79,7 @@ function titleOf(note: LiveNote, words: ReturnType<typeof strings>): string {
   return note.title.length > 0 ? note.title : words.untitled;
 }
 
-function toRow(note: LiveNote, words: ReturnType<typeof strings>, lengths: LengthBands): Row {
+function toRow(note: LiveNote, words: ReturnType<typeof strings>): Row {
   return {
     id: note.id,
     title: titleOf(note, words),
@@ -100,13 +89,12 @@ function toRow(note: LiveNote, words: ReturnType<typeof strings>, lengths: Lengt
     inResoph: isResophId(note.id),
     searchable: note.searchable,
     updatedAt: note.updatedAt,
-    length: bandOf(note.bytes, lengths),
   };
 }
 
 function rowsFor(view: ListView): Row[] {
   const words = strings(view.language);
-  return view.notes.map((note) => toRow(note, words, view.lengths));
+  return view.notes.map((note) => toRow(note, words));
 }
 
 /**
@@ -136,8 +124,6 @@ export function openRowFor(view: ListView): Row | null {
     inResoph: false,
     searchable: '',
     updatedAt: view.draft.startedAt,
-    // Nothing written in it yet, which is exactly what an empty page says.
-    length: 0,
   };
 }
 
@@ -200,7 +186,7 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
   when.textContent = describeWhen(row.updatedAt, view.language);
 
   const words = strings(view.language);
-  element.append(pageGlyph(row.length), headingOf(row, words), when, ...resophMarkOf(row, view, words));
+  element.append(headingOf(row, words), when, ...resophMarkOf(row, view, words));
   return element;
 }
 
