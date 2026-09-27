@@ -24,7 +24,18 @@ function isStoredFile(value: unknown): value is StoredFile {
   return typeof candidate['text'] === 'string' && typeof candidate['updatedAt'] === 'number';
 }
 
+/**
+ * His own corpus, when that is what is being served: held in the page rather
+ * than stored, and read afresh from his folder on every load.
+ *
+ * Thirteen megabytes of it is past what the browser will keep, and far past
+ * what can be parsed again on every read — which the stored files are, so that
+ * a test can change them from outside the app.
+ */
+let heldInPage: Map<string, StoredFile> | null = null;
+
 function load(): Map<string, StoredFile> {
+  if (heldInPage !== null) return heldInPage;
   const raw = window.localStorage.getItem(KEY);
   if (raw === null) return new Map();
 
@@ -39,6 +50,10 @@ function load(): Map<string, StoredFile> {
 }
 
 function store(files: Map<string, StoredFile>): void {
+  if (heldInPage !== null) {
+    heldInPage = files;
+    return;
+  }
   window.localStorage.setItem(KEY, JSON.stringify(Object.fromEntries(files)));
 }
 
@@ -194,17 +209,20 @@ export function everyFile(): { path: string; bytes: number }[] {
  * they come back as they were.
  */
 export async function seedIfEmpty(): Promise<void> {
-  if (load().size > 0) return;
-
   // His own folder, when `npm run ui:his-corpus` serves it: taken as it is,
-  // with nothing invented added.
+  // with nothing invented added, and afresh on every load — what he changes
+  // here lasts until the page is reloaded.
   const his = await fetchCorpus('resoph-corpus.json');
   if (his !== null) {
     const files = his as { name: string; body: string; updatedAt: number }[];
-    store(new Map(files.map((file) => [`${MOCK_RESOPH_FOLDER}/${file.name}`, { text: file.body, updatedAt: file.updatedAt }])));
+    window.localStorage.removeItem(KEY);
+    heldInPage = new Map(
+      files.map((file) => [`${MOCK_RESOPH_FOLDER}/${file.name}`, { text: file.body, updatedAt: file.updatedAt }]),
+    );
     return;
   }
 
+  if (load().size > 0) return;
   const invented = await fetchCorpus('corpus.json');
   if (invented === null) return;
   const entries = invented as { id: string; text: string; updatedAt: number }[];
