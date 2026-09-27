@@ -791,33 +791,44 @@ button svg {
 }
 
 /*
-  How high he ranked a text with leading spaces, as one to three dots. The
-  spaces themselves are not shown — a row starting with thirty of them looks
-  broken — but the order still follows them, and this says why a text sits
-  where it does.
+  How high he ranked a text with leading spaces, as a signal of three rising
+  bars with one to three of them lit: a strength, not a count, and the same
+  width at every rank so it never moves the name. The spaces themselves are
+  not shown — a row starting with thirty of them looks broken — but the order
+  still follows them, and this says why a text sits where it does.
+
+  Drawn rather than typed, so no font can turn it into punctuation. It stands
+  on the name's baseline and rises to about the height of its capitals.
 */
 .note-rank {
+  --lit: var(--quiet);
+  --unlit: var(--line);
+  --bar-1: var(--unlit);
+  --bar-2: var(--unlit);
+  --bar-3: var(--unlit);
   flex: none;
-  color: var(--quiet);
-  font-size: 0.6em;
-  letter-spacing: -0.05em;
-  white-space: nowrap;
-  /* Lifted off the baseline to the middle of the name's letters: sitting on
-     it, three small grey dots read as "…". */
-  position: relative;
-  top: -0.35em;
+  display: inline-block;
+  width: 0.62em;
+  height: 0.72em;
+  background:
+    linear-gradient(var(--bar-1), var(--bar-1)) 0 100% / 0.14em 40% no-repeat,
+    linear-gradient(var(--bar-2), var(--bar-2)) 0.24em 100% / 0.14em 70% no-repeat,
+    linear-gradient(var(--bar-3), var(--bar-3)) 0.48em 100% / 0.14em 100% no-repeat;
 }
 
-.note-rank[data-rank='1']::before {
-  content: '•';
+.note-rank[data-rank='1'] {
+  --bar-1: var(--lit);
 }
 
-.note-rank[data-rank='2']::before {
-  content: '••';
+.note-rank[data-rank='2'] {
+  --bar-1: var(--lit);
+  --bar-2: var(--lit);
 }
 
-.note-rank[data-rank='3']::before {
-  content: '•••';
+.note-rank[data-rank='3'] {
+  --bar-1: var(--lit);
+  --bar-2: var(--lit);
+  --bar-3: var(--lit);
 }
 
 /*

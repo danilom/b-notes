@@ -206,11 +206,12 @@ The table *Where his things are kept* in `DESIGN.md` changes with this.
   order already carries his rank, so the list shows a title without its
   leading spaces, runs of spaces inside it collapsed and Resoph's `%2A` shown
   as `*`. What he typed stays untouched in the text itself.
-  - Leading spaces become one to three dots: 1–15 spaces, 16–23, 24 and more.
+  - Leading spaces become a signal of three rising bars, one to three lit:
+    1–15 spaces, 16–23, 24 and more. The same width at every rank.
     His widths bunch at 16 and 24.
   - The marks at the front that he spells consistently — `(UP)`, `*(UP)`, the
     kinds `A (E)`, `A(E)`, `AA(E)`, `yA (E)`, `ZA (E)`, `A(P)`, `AA(P)`, and
-    `AA`…`AAAA`, `ZZ`…, `zz`…, `y` — are drawn small in the dots' blue, still
+    `AA`…`AAAA`, `ZZ`…, `zz`…, `y` — are drawn small in the accent blue, still
     as his letters. 536 of 1,215 titles carry one.
   - A `*` in front of the name — after the leading spaces, a mark or a series
     number, or typed into `*(UP)` — is drawn as a small grey ★ in one place,
@@ -219,7 +220,7 @@ The table *Where his things are kept* in `DESIGN.md` changes with this.
     he typed them.
   - Everything in front of the name is one space's width apart, on the name's
     baseline, and every row starts at the same place. No columns: his padding
-    is for sorting. The marks are the one part in colour; dots, series and
+    is for sorting. The marks are the one part in colour; the signal, series and
     star are grey.
   - The number after `(UP)`, with its series (`II`) if there is one, is drawn
     grey after the mark; 205 titles have one.

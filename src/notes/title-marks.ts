@@ -17,7 +17,7 @@ interface Mark {
  * his own titles; one that is not here is drawn as the words he typed, which
  * is always safe. A new one is a new row, and a test.
  *
- * Not here: the leading spaces he ranks by, which are the dots (`rankOf`).
+ * Not here: the leading spaces he ranks by, which are the signal bars (`rankOf`).
  */
 const MARKS: readonly Mark[] = [
   // The collection he is building, numbered in reading order. What it stands

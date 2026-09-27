@@ -197,7 +197,7 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
 }
 
 /**
- * The title and what he put in front of it, as one heading: the dots for his
+ * The title and what he put in front of it, as one heading: the signal for his
  * leading spaces, his mark, his place in a series, his star, then the name.
  *
  * Beside the name rather than in it, so a name long enough to be cut short
