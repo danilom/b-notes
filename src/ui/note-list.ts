@@ -1,5 +1,6 @@
-import { type TitleParts, compareTitles, titlePartsOf } from '../notes/note-title.ts';
+import { compareTitles } from '../notes/note-title.ts';
 import { type LengthBand, type LengthBands, bandOf } from '../notes/text-length.ts';
+import { type TitleParts, titlePartsOf } from '../notes/title-marks.ts';
 import type { LiveNote } from '../notes/writing.ts';
 import { toSearchable } from '../language/diacritics.ts';
 import { type Language, describeWhen, strings } from '../language/wording.ts';
@@ -203,14 +204,6 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
  * Beside the title rather than in it, so a title long enough to be cut short
  * never takes a mark with it.
  */
-/**
- * His star as a star. Only in the marks drawn in front of a name: a `*` in the
- * name itself is left as he typed it.
- */
-function starred(mark: string): string {
-  return mark.replaceAll('*', '\u2605');
-}
-
 function titleElements(row: Row): HTMLElement[] {
   const shown: HTMLElement[] = [];
   const part = (className: string, text: string): HTMLElement => {
@@ -229,13 +222,13 @@ function titleElements(row: Row): HTMLElement[] {
 
   const { mark, position, star, name } = row.parts;
   if (mark === null && star === null) return [...shown, part('note-title', row.title)];
-  if (mark !== null) shown.push(part('note-mark', starred(mark)));
+  if (mark !== null) shown.push(part('note-mark', mark));
   if (position !== null) {
     // The series beside the mark, the number set right in a column after it.
     if (position.series !== null) shown.push(part('note-series', position.series));
     shown.push(part('note-position', position.number));
   }
-  if (star !== null) shown.push(part('note-mark', starred(star)));
+  if (star !== null) shown.push(part('note-mark', star));
   return [...shown, part('note-title', name)];
 }
 
