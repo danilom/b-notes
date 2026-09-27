@@ -64,6 +64,8 @@ export interface TitleParts {
   mark: string | null;
   /** Where it stands in a series under `(UP)`: `12`, `II 104`. */
   position: SeriesPosition | null;
+  /** The star he ranks it by, where it comes before the name: `*`, `A*`. */
+  star: string | null;
   /** Everything after, spaces collapsed as in `titleFrom`. */
   name: string;
 }
@@ -85,6 +87,11 @@ const COLLECTION = /^(\*?\(UP\))\s+(?:(?:([IVX]{1,4})\s+)?(\d+)\s+)?/;
 const KIND = /^([A-Za-z]{0,2} ?\([EP]\))(?:\s+|(?=[A-ZČĆŠĐŽ]))/;
 /** Letters that only float a text up (`AA`) or sink it (`zz`, `y`). */
 const LIFT = /^(A{2,4}|Z{2,4}|z{2,4}|y)(?:\s+|(?=[A-ZČĆŠĐŽ][a-zčćšđž]))/;
+/**
+ * A star in front of the name, glued to it or not, sometimes after a floating
+ * `A` (`A (E) A* Avdo`). Stars inside or after a name are words, not marks.
+ */
+const STAR = /^(A{0,3}\*)\s*/;
 
 /**
  * Reads his marks off the front of a title, so the list can draw them as marks
@@ -96,20 +103,26 @@ const LIFT = /^(A{2,4}|Z{2,4}|z{2,4}|y)(?:\s+|(?=[A-ZČĆŠĐŽ][a-zčćšđž])
  * on screen, and the order is still his, read off the line as typed.
  */
 export function titlePartsOf(titleLine: string): TitleParts {
-  const rest = titleLine.replace(/^\s+/, '');
-  const unmarked: TitleParts = { mark: null, position: null, name: titleFrom(titleLine) };
+  const unmarked: TitleParts = { mark: null, position: null, star: null, name: titleFrom(titleLine) };
 
+  let rest = titleLine.replace(/^\s+/, '');
   const found = COLLECTION.exec(rest) ?? KIND.exec(rest) ?? LIFT.exec(rest);
-  if (found === null) return unmarked;
+  if (found !== null) rest = rest.slice(found[0].length);
+  const starred = STAR.exec(rest);
+  if (starred !== null) rest = rest.slice(starred[0].length);
 
-  const name = rest.slice(found[0].length).replace(/\s+/g, ' ').trim();
-  // A mark with nothing after it is a title of its own, not a mark.
+  const name = rest.replace(/\s+/g, ' ').trim();
+  if (found === null && starred === null) return unmarked;
+  // Marks with nothing after them are a title of their own, not marks.
   if (name.length === 0) return unmarked;
 
-  const mark = found[1] ?? '';
-  const number = found[3];
-  const position = number === undefined ? null : { series: found[2] ?? null, number };
-  return { mark, position, name };
+  const number = found?.[3];
+  return {
+    mark: found?.[1] ?? null,
+    position: number === undefined ? null : { series: found?.[2] ?? null, number },
+    star: starred?.[1] ?? null,
+    name,
+  };
 }
 
 const LETTERS = new Intl.Collator('sr-Latn');

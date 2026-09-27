@@ -125,7 +125,7 @@ export function openRowFor(view: ListView): Row | null {
     title: words.untitledNew,
     sortTitle: '',
     rank: 0,
-    parts: { mark: null, position: null, name: words.untitledNew },
+    parts: { mark: null, position: null, star: null, name: words.untitledNew },
     searchable: '',
     updatedAt: view.draft.startedAt,
     // Nothing written in it yet, which is exactly what an empty page says.
@@ -203,6 +203,14 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
  * Beside the title rather than in it, so a title long enough to be cut short
  * never takes a mark with it.
  */
+/**
+ * His star as a star. Only in the marks drawn in front of a name: a `*` in the
+ * name itself is left as he typed it.
+ */
+function starred(mark: string): string {
+  return mark.replaceAll('*', '\u2605');
+}
+
 function titleElements(row: Row): HTMLElement[] {
   const shown: HTMLElement[] = [];
   const part = (className: string, text: string): HTMLElement => {
@@ -219,14 +227,15 @@ function titleElements(row: Row): HTMLElement[] {
     shown.push(rank);
   }
 
-  const { mark, position, name } = row.parts;
-  if (mark === null) return [...shown, part('note-title', row.title)];
-  shown.push(part('note-mark', mark));
+  const { mark, position, star, name } = row.parts;
+  if (mark === null && star === null) return [...shown, part('note-title', row.title)];
+  if (mark !== null) shown.push(part('note-mark', starred(mark)));
   if (position !== null) {
     // The series beside the mark, the number set right in a column after it.
     if (position.series !== null) shown.push(part('note-series', position.series));
     shown.push(part('note-position', position.number));
   }
+  if (star !== null) shown.push(part('note-mark', starred(star)));
   return [...shown, part('note-title', name)];
 }
 
