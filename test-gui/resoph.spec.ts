@@ -124,3 +124,37 @@ test('says so over a text that changed in both Resoph and b-notes, and leads to 
   await expect(page.locator('#versions')).toBeVisible();
   await expect(bar).toBeHidden();
 });
+
+test('checks again whenever he comes back, saving what he typed first', async ({ page }) => {
+  await start(page);
+  await page.locator('#list .note').filter({ hasText: 'Pismo prijatelju' }).first().click();
+  await page.locator('#editor').press('End');
+  // Typed, and not yet saved: the clock is held, so the save is still waiting.
+  await page.locator('#editor').pressSequentially(' Upravo dopisano.');
+
+  // Notepad opened while he was away, then he comes back to b-notes.
+  await page.evaluate(() => {
+    localStorage.setItem('b-notes:mock-running', JSON.stringify({ running: ['Notepad'], stubborn: false }));
+    window.dispatchEvent(new Event('focus'));
+  });
+
+  const message = page.locator('#close-editors');
+  await expect(message).toBeVisible();
+  // His words reached disk before the message came up, not after.
+  const saved = await page.evaluate(() =>
+    Object.entries(JSON.parse(localStorage.getItem('b-notes:mock-files') ?? '{}') as Record<string, { text: string }>)
+      .some(([path, file]) => /^b-notes\/[^/]+\.txt$/.test(path) && file.text.includes('Upravo dopisano.')),
+  );
+  expect(saved).toBe(true);
+
+  // Coming back again while it is up starts nothing new.
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(message.locator('.panel')).toHaveCount(1);
+
+  await message.getByRole('button', { name: 'Zatvori ih' }).click();
+  await expect(message).toBeHidden();
+
+  // And with nothing open, coming back is just coming back.
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(message).toBeHidden();
+});

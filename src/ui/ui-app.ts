@@ -92,6 +92,7 @@ function element<T extends Element>(id: string, kind: new () => T): T {
 const listPane = element('list', HTMLDivElement);
 const editor = element('editor', HTMLTextAreaElement);
 const changedInBoth = element('changed-in-both', HTMLDivElement);
+const closeEditorsPane = element('close-editors', HTMLDialogElement);
 const changedInBothSaid = element('changed-in-both-said', HTMLSpanElement);
 const changedInBothSee = element('changed-in-both-see', HTMLButtonElement);
 const editorMarks = element('editor-marks', HTMLDivElement);
@@ -371,20 +372,36 @@ changedInBothSee.addEventListener('click', () => {
  * is still opening, and reading both folders twice at once would be a race.
  */
 let ready = false;
-let refreshing = false;
+/**
+ * A return being dealt with. Checked first by the next one: never two at once,
+ * and none while the message about the other programs is up — closing them
+ * bounces focus between windows, and each bounce is a "return" that would
+ * start everything again underneath the message already handling it.
+ */
+let returning = false;
 
 /**
- * Both folders looked at again, whenever he comes back to b-notes.
+ * Whenever he comes back to b-notes: the other writing programs closed, then
+ * both folders looked at again.
  *
- * He goes back and forth with Resoph, and what he wrote there has to be here
- * when he returns — that b-notes always has everything is the reason to use
- * it. Only what changed is read again, so this is cheap enough to do on every
- * return.
+ * The window's focus event is exactly that moment — it fires when the whole
+ * window comes back from somewhere else, not for anything inside it, and not
+ * for a notification that takes no focus. It is also the one moment a message
+ * costs him nothing: he has just come back and is not mid-sentence.
+ *
+ * What he had typed goes to disk first, so the message never holds his words.
+ * Then Resoph, Notepad and Obsidian, if any has been opened meanwhile, are
+ * closed behind the same message as at startup. Then the folders, so whatever
+ * they wrote on the way out is what he sees — that b-notes always has
+ * everything is the reason to use it. Only what changed is read again, so this
+ * is cheap enough to do on every return.
  */
-async function refreshOnReturn(): Promise<void> {
-  if (!ready || refreshing) return;
-  refreshing = true;
+async function onReturn(): Promise<void> {
+  if (!ready || returning) return;
+  returning = true;
   try {
+    await writing.flush();
+    await untilOtherEditorsClose(closeEditorsPane, host.otherEditors, log, language);
     notes = await writing.list();
     lengths = bandsFrom(notes.map((note) => note.bytes));
     showWhatChangedUnderHim();
@@ -394,7 +411,7 @@ async function refreshOnReturn(): Promise<void> {
   } catch (error: unknown) {
     log.warn('Could not look at his texts again on coming back', describeError(error));
   } finally {
-    refreshing = false;
+    returning = false;
   }
 }
 
@@ -423,7 +440,7 @@ function showWhatChangedUnderHim(): void {
 }
 
 window.addEventListener('focus', () => {
-  void refreshOnReturn();
+  void onReturn();
 });
 
 function showStatus(): void {
@@ -1114,12 +1131,7 @@ export async function startApp(runningOn: Host): Promise<void> {
     starts from whatever they last wrote and nothing edits his texts beside it.
     Returns at once when none is open.
   */
-  await untilOtherEditorsClose(
-    element('close-editors', HTMLDialogElement),
-    host.otherEditors,
-    log,
-    language,
-  );
+  await untilOtherEditorsClose(closeEditorsPane, host.otherEditors, log, language);
 
   /*
     Asked before anything is read, because the answer to "is it there" was the
