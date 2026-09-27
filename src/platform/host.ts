@@ -1,5 +1,6 @@
 import type { FileSystem } from './file-system.ts';
 import type { Log } from './logging.ts';
+import type { OtherEditors } from './other-editors.ts';
 
 /** The folders someone can point the app at, from the advanced panel. */
 export interface ChosenPlaces {
@@ -53,6 +54,12 @@ export interface Host {
       somewhere shared, which is the cheapest telemetry available to us. */
   readonly logsFolder: string;
   readonly log: Log;
+  /**
+   * The other programs he opens his texts in, which b-notes asks him to close
+   * before it starts. The host's because only it can see the machine's
+   * programs; the browser build pretends.
+   */
+  readonly otherEditors: OtherEditors;
   /**
    * Opens a folder in whatever the desktop uses to show folders.
    *

@@ -1,6 +1,7 @@
 import type { FileSystem } from '../../platform/file-system.ts';
 import type { ChosenPlaces, Host, RunMode } from '../../platform/host.ts';
 import type { Log } from '../../platform/logging.ts';
+import type { OtherEditors } from '../../platform/other-editors.ts';
 import { startApp } from '../../ui/ui-app.ts';
 import { withAbsences } from './ipc-file-system.ts';
 
@@ -21,6 +22,7 @@ declare global {
     chooseFolder?: (from: string) => Promise<string | null>;
     rememberFolders?: (next: ChosenPlaces) => Promise<void>;
     restart?: () => Promise<void>;
+    otherEditors?: OtherEditors;
     log?: Log;
     setZoom?: (factor: number) => void;
   }
@@ -43,6 +45,7 @@ async function main(): Promise<void> {
     chooseFolder,
     rememberFolders,
     restart,
+    otherEditors,
     log,
     setZoom,
   } = window;
@@ -55,6 +58,7 @@ async function main(): Promise<void> {
     chooseFolder === undefined ||
     rememberFolders === undefined ||
     restart === undefined ||
+    otherEditors === undefined ||
     log === undefined ||
     setZoom === undefined
   ) {
@@ -82,6 +86,7 @@ async function main(): Promise<void> {
     chooseFolder,
     rememberFolders,
     restart,
+    otherEditors,
     log,
     setZoom,
   };

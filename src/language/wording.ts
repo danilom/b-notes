@@ -350,6 +350,20 @@ const TEXT = {
     */
     changedInBoth: 'Ovaj tekst je menjan i u Resoph-u. Druga verzija je sačuvana.',
     changedInBothSee: 'Pogledaj verzije',
+    /*
+      What b-notes starts behind while Resoph, Notepad or Obsidian is open. The
+      line under the title says what to do; the line beside the button says
+      what pressing it does. Nothing here asks him a question: the only answer
+      is the button, and closing them himself works too.
+    */
+    closeEditorsTitle: 'Zatvori druge programe za tekstove',
+    closeEditorsSay: (open: string) =>
+      `Otvoreno je: ${open}. Dok pišeš u b-notes, oni treba da budu zatvoreni, da se isti tekst ne bi menjao na dva mesta.`,
+    closeEditorsButton: 'Zatvori ih',
+    closeEditorsBeside: 'b-notes ih zatvara umesto tebe i nastavlja čim se zatvore.',
+    closeEditorsNotepad: 'Ako Notepad pita da li da sačuva izmene, reci da.',
+    closeEditorsClosing: 'Zatvaram…',
+    closeEditorsAnd: 'i',
   },
   en: {
     newNote: 'New text',
@@ -512,6 +526,14 @@ const TEXT = {
     emptiedHint: 'This text is empty. Delete it if you no longer need it.',
     changedInBoth: 'This text was also changed in Resoph. The other version is kept.',
     changedInBothSee: 'See the versions',
+    closeEditorsTitle: 'Close the other writing programs',
+    closeEditorsSay: (open: string) =>
+      `Open now: ${open}. While you write in b-notes they should be closed, so one text is not changed in two places.`,
+    closeEditorsButton: 'Close them',
+    closeEditorsBeside: 'b-notes closes them for you and carries on as soon as they are closed.',
+    closeEditorsNotepad: 'If Notepad asks whether to save changes, say yes.',
+    closeEditorsClosing: 'Closing…',
+    closeEditorsAnd: 'and',
   },
 } satisfies Record<
   Language,

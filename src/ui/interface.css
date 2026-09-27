@@ -843,6 +843,20 @@ button svg {
   display: none;
 }
 
+/* The message b-notes starts behind while Resoph or Notepad is open. */
+.close-editors footer {
+  align-items: center;
+}
+
+.close-editors-beside {
+  color: var(--quiet);
+  font-size: 0.9em;
+}
+
+.close-editors-notepad[hidden] {
+  display: none;
+}
+
 #changed-in-both-see {
   flex: none;
   margin-left: auto;

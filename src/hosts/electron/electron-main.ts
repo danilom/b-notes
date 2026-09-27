@@ -8,6 +8,8 @@ import { createFileSystem } from './disk-file-system.ts';
 import { absenceReply } from '../../platform/file-system.ts';
 import { readChosenFolders, whereToOpen, writeChosenFolders } from './chosen-folders.ts';
 import { findResophFolder } from './resoph-config.ts';
+import { createOtherEditors } from './windows-editors.ts';
+import { OTHER_EDITORS, type OtherEditor } from '../../platform/other-editors.ts';
 import { startUpdateChecks } from './app-updates.ts';
 import { type Rect, deskAround, keptOnTheDesk } from './window-bounds.ts';
 
@@ -91,6 +93,19 @@ const folders = {
   machine: hostname(),
 };
 const files = createFileSystem(path.join(appFolder, 'saving'));
+// Resoph's database is copied into ours before Resoph is ended: per machine,
+// like the database itself, and never into Dropbox, since it holds all his
+// writing and Resoph already keeps one there.
+const otherEditors = createOtherEditors(
+  path.join(homedir(), '.ResophNotes'),
+  path.join(appFolder, 'resoph-copies'),
+  log.scoped('editors'),
+);
+
+function asEditors(value: unknown): OtherEditor[] {
+  if (!Array.isArray(value)) throw new TypeError('editors must be a list');
+  return value.filter((each): each is OtherEditor => OTHER_EDITORS.some((known) => known === each));
+}
 
 function asString(value: unknown, name: string): string {
   if (typeof value !== 'string') throw new TypeError(`${name} must be a string`);
@@ -208,6 +223,8 @@ handle('app:restart', async () => {
   app.relaunch();
   app.exit(0);
 });
+handle('editors:running', () => otherEditors.running());
+handle('editors:close', (args) => otherEditors.close(asEditors(args[0])));
 handle('files:list', (args) => files.list(asString(args[0], 'folder')));
 handle('files:listFolders', (args) => files.listFolders(asString(args[0], 'folder')));
 handle('files:folderExists', (args) => files.folderExists(asString(args[0], 'folder')));

@@ -35,6 +35,7 @@ import { type FindInText, createFindInText } from './find-in-text.ts';
 import { icon } from './icons.ts';
 import { type KeptCopiesView, createKeptCopies } from './versions/kept-copies.ts';
 import { showLostTexts } from './lost-texts.ts';
+import { untilOtherEditorsClose } from './other-editors-gate.ts';
 import { confirmationForDeleting } from './deleted-and-archived/note-confirmations.ts';
 import { type Draft, renderList } from './note-list.ts';
 import { type PutAwayTexts, createPutAwayTexts } from './deleted-and-archived/put-away-texts.ts';
@@ -1107,6 +1108,18 @@ export async function startApp(runningOn: Host): Promise<void> {
       onAdvanced: () => panels.showAdvanced(),
     });
   }
+
+  /*
+    Resoph, Notepad and Obsidian closed before anything is read, so b-notes
+    starts from whatever they last wrote and nothing edits his texts beside it.
+    Returns at once when none is open.
+  */
+  await untilOtherEditorsClose(
+    element('close-editors', HTMLDialogElement),
+    host.otherEditors,
+    log,
+    language,
+  );
 
   /*
     Asked before anything is read, because the answer to "is it there" was the

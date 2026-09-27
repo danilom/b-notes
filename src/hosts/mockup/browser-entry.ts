@@ -2,6 +2,7 @@ import type { ChosenPlaces, Host } from '../../platform/host.ts';
 import type { Log } from '../../platform/logging.ts';
 import { startApp } from '../../ui/ui-app.ts';
 import { addMockFileList } from './mock-file-list.ts';
+import { createMockOtherEditors, pretendRunning } from './mock-other-editors.ts';
 import {
   MOCK_APP_FOLDER,
   MOCK_NOTES_FOLDER,
@@ -72,6 +73,12 @@ function offerTheFileList(): void {
     cause one, what the interface did about it could only be reasoned about.
     Beside `showFiles`, behind the same `?test`, and in this host alone.
   */
+  // Resoph, Notepad or Obsidian "running", for the message b-notes starts behind.
+  Object.defineProperty(window, 'pretendRunning', {
+    value: pretendRunning,
+    writable: true,
+  });
+
   Object.defineProperty(window, 'refuseTheNextWrites', {
     value: (count: number): void => refuseTheNextWrites(count),
     writable: true,
@@ -100,6 +107,7 @@ async function main(): Promise<void> {
   const host: Host = {
     runMode: 'browser',
     files: createMockFileSystem(),
+    otherEditors: createMockOtherEditors(),
     resophFolder: MOCK_RESOPH_FOLDER,
     notesFolder: MOCK_NOTES_FOLDER,
     machineName: 'Browser',

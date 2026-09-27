@@ -2,6 +2,7 @@ import { clipboard, contextBridge, ipcRenderer, webFrame } from 'electron';
 
 import type { FileSystem } from '../../platform/file-system.ts';
 import type { ChosenPlaces } from '../../platform/host.ts';
+import type { OtherEditor, OtherEditors } from '../../platform/other-editors.ts';
 
 /**
  * Everything the packaged app hands the interface: somewhere to keep files, and
@@ -41,6 +42,12 @@ const openFolder = (path: string) => ipcRenderer.invoke('app:openFolder', path);
 const chooseFolder = (from: string) => ipcRenderer.invoke('app:chooseFolder', from);
 const rememberFolders = (next: ChosenPlaces) => ipcRenderer.invoke('app:rememberFolders', next);
 const restart = () => ipcRenderer.invoke('app:restart');
+
+/** The programs b-notes asks him to close before it starts. Seen and closed by the main process. */
+const otherEditors: OtherEditors = {
+  running: () => ipcRenderer.invoke('editors:running'),
+  close: (which: readonly OtherEditor[]) => ipcRenderer.invoke('editors:close', [...which]),
+};
 
 /**
  * The one thing the main process asks the window for, rather than the other
@@ -104,4 +111,5 @@ contextBridge.exposeInMainWorld('onBeforeClose', onBeforeClose);
 contextBridge.exposeInMainWorld('chooseFolder', chooseFolder);
 contextBridge.exposeInMainWorld('rememberFolders', rememberFolders);
 contextBridge.exposeInMainWorld('restart', restart);
+contextBridge.exposeInMainWorld('otherEditors', otherEditors);
 contextBridge.exposeInMainWorld('log', log);
