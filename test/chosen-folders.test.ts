@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
-import { readChosenFolders, whereToOpen, writeChosenFolders } from '../src/hosts/electron/chosen-folders.ts';
+import { notesFolderFor, readChosenFolders, whereToOpen, writeChosenFolders } from '../src/hosts/electron/chosen-folders.ts';
 
 describe('where the folder picker should open', () => {
   it('opens at the folder itself when it is there', async () => {
@@ -74,5 +74,39 @@ describe('the folders someone chose', () => {
     await writeFile(path.join(dir, 'folders.json'), '{ not json', 'utf8');
 
     assert.deepEqual(readChosenFolders(dir), { resoph: null, notes: null, logs: null });
+  });
+});
+
+describe("where b-notes' own folder is", () => {
+  it('goes beside his Resoph folder when nobody chose one', () => {
+    assert.deepEqual(notesFolderFor('C:/Users/Brano/Dropbox/ResophNotes_Brano', null, 'C:/Docs'), {
+      folder: 'C:/Users/Brano/Dropbox/b-notes',
+      refused: null,
+    });
+  });
+
+  it('goes in Documents on a machine without Resoph', () => {
+    assert.deepEqual(notesFolderFor(null, null, 'C:/Docs'), { folder: 'C:/Docs/b-notes', refused: null });
+  });
+
+  it('is the one chosen, when that is somewhere else', () => {
+    assert.deepEqual(notesFolderFor('C:/Dropbox/Resoph', 'C:/Dropbox/Moje', 'C:/Docs'), {
+      folder: 'C:/Dropbox/Moje',
+      refused: null,
+    });
+  });
+
+  it('is never his Resoph folder, or inside it, whatever was chosen', () => {
+    // Resoph lists subfolders and puts back what it remembers: b-notes writing
+    // there is the thing this whole design exists to prevent.
+    assert.deepEqual(notesFolderFor('C:/Dropbox/Resoph', 'c:/dropbox/resoph/', 'C:/Docs'), {
+      folder: 'C:/Dropbox/b-notes',
+      refused: 'c:/dropbox/resoph/',
+    });
+    assert.deepEqual(notesFolderFor('C:/Dropbox/Resoph', 'C:/Dropbox/Resoph/b-notes', 'C:/Docs').refused, 'C:/Dropbox/Resoph/b-notes');
+  });
+
+  it('may sit beside a folder whose name merely starts the same', () => {
+    assert.equal(notesFolderFor('C:/Dropbox/Resoph', 'C:/Dropbox/Resoph-b', 'C:/Docs').refused, null);
   });
 });

@@ -6,7 +6,7 @@ import { BUILD_STAMP } from '../../platform/build-info.ts';
 import { LOG_LEVELS, createFileLogger } from './log-file.ts';
 import { createFileSystem } from './disk-file-system.ts';
 import { absenceReply } from '../../platform/file-system.ts';
-import { readChosenFolders, whereToOpen, writeChosenFolders } from './chosen-folders.ts';
+import { notesFolderFor, readChosenFolders, whereToOpen, writeChosenFolders } from './chosen-folders.ts';
 import { findResophFolder } from './resoph-config.ts';
 import { createOtherEditors } from './windows-editors.ts';
 import { OTHER_EDITORS, type OtherEditor } from '../../platform/other-editors.ts';
@@ -78,16 +78,13 @@ const asPath = (value: string): string => value.replaceAll('\\', '/');
 */
 const detectedResoph = chosen.resoph === null ? findResophFolder(homedir()) : null;
 const resophFolder = chosen.resoph ?? detectedResoph;
+const notes = notesFolderFor(resophFolder, chosen.notes, asPath(app.getPath('documents')));
 
 const folders = {
   // The renderer cannot ask whether this was packaged; only this process can.
   mode: runMode,
   resoph: resophFolder,
-  notes:
-    chosen.notes ??
-    (resophFolder === null
-      ? asPath(path.join(app.getPath('documents'), 'b-notes'))
-      : `${path.posix.dirname(resophFolder)}/b-notes`),
+  notes: notes.folder,
   app: asPath(appFolder),
   logs: chosen.logs ?? asPath(path.join(appFolder, 'logs')),
   machine: hostname(),
@@ -451,6 +448,12 @@ async function start(): Promise<void> {
     resophFrom: chosen.resoph !== null ? 'chosen' : detectedResoph !== null ? "Resoph's settings" : 'none',
     notes: folders.notes,
   });
+  if (notes.refused !== null) {
+    log.warn("b-notes' folder was set inside his Resoph folder; using the one beside it instead", {
+      refused: notes.refused,
+      using: notes.folder,
+    });
+  }
   await app.whenReady();
   const window = await createWindow();
   // Bounds against the work area, because "a window he cannot see" covers a

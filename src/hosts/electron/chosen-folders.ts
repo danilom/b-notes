@@ -61,6 +61,34 @@ export function writeChosenFolders(appFolder: string, folders: ChosenFolders): v
 }
 
 /**
+ * b-notes' own folder: the one chosen, or beside his Resoph folder, or in
+ * Documents where there is no Resoph.
+ *
+ * Never his Resoph folder or anything inside it. Resoph lists subfolders too,
+ * and puts back whatever it remembers, so a b-notes folder there would have
+ * b-notes writing exactly where it must not — which one wrong pick in the
+ * advanced panel would otherwise do. Such a choice is set aside for the
+ * default, and said so in `refused`.
+ *
+ * All paths with forward slashes.
+ */
+export function notesFolderFor(
+  resoph: string | null,
+  chosen: string | null,
+  documents: string,
+): { folder: string; refused: string | null } {
+  const beside = resoph === null ? `${documents}/b-notes` : `${path.posix.dirname(resoph)}/b-notes`;
+  if (chosen === null) return { folder: beside, refused: null };
+  if (resoph === null) return { folder: chosen, refused: null };
+  const inside = (folder: string, within: string): boolean => {
+    const a = folder.toLowerCase().replace(/\/+$/, '');
+    const b = within.toLowerCase().replace(/\/+$/, '');
+    return a === b || a.startsWith(`${b}/`);
+  };
+  return inside(chosen, resoph) ? { folder: beside, refused: chosen } : { folder: chosen, refused: null };
+}
+
+/**
  * Where a folder picker should open, given where we would like it to open.
  *
  * Two things stop the wanted folder being usable as it stands. Paths are kept
