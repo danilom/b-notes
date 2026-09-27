@@ -89,6 +89,9 @@ test('waits behind its message while Resoph and Notepad are open, and carries on
   // Nothing about Notepad's question until he has pressed the button.
   await expect(message.locator('.close-editors-asks')).toBeHidden();
   await expect(page.locator('#list .note')).toHaveCount(0);
+  // Over a plain background, not an empty list that looks like a failed load.
+  await expect(page.locator('#side')).toBeHidden();
+  await expect(page.locator('#main')).toBeHidden();
 
   // Escape is not a way past it.
   await page.keyboard.press('Escape');
@@ -164,6 +167,8 @@ test('checks again whenever he comes back, saving what he typed first', async ({
 
   const message = page.locator('#close-editors');
   await expect(message).toBeVisible();
+  // His texts stay in view behind it: here nothing is missing.
+  await expect(page.locator('#list .note').first()).toBeVisible();
   // His words reached disk before the message came up, not after.
   const saved = await page.evaluate(() =>
     Object.entries(JSON.parse(localStorage.getItem('b-notes:mock-files') ?? '{}') as Record<string, { text: string }>)

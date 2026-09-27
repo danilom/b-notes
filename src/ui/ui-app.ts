@@ -1130,8 +1130,13 @@ export async function startApp(runningOn: Host): Promise<void> {
     Resoph, Notepad and Obsidian closed before anything is read, so b-notes
     starts from whatever they last wrote and nothing edits his texts beside it.
     Returns at once when none is open.
+
+    Over a plain background: nothing has been read yet, and an empty list
+    behind the message would look like b-notes failing to load his texts.
   */
+  document.body.classList.add('holding');
   await untilOtherEditorsClose(closeEditorsPane, host.otherEditors, log, language);
+  document.body.classList.remove('holding');
 
   /*
     Asked before anything is read, because the answer to "is it there" was the

@@ -360,7 +360,7 @@ const TEXT = {
     closeEditorsWhy:
       'Ne piši isti tekst u dva programa odjednom — jedan preko drugog pišu izmene. ' +
       'Dok radiš u b-notes, ostali moraju da budu zatvoreni.',
-    closeEditorsOpen: 'Otvoreni su:',
+    closeEditorsOpen: (count: number): string => (count === 1 ? 'Otvoren je:' : 'Otvoreni su:'),
     closeEditorsHow: 'Klikni dugme ispod: b-notes će ih zatvoriti umesto tebe i nastaviti čim se zatvore.',
     closeEditorsButton: 'Zatvori druge programe',
     closeEditorsClosing: 'Zatvaram…',
@@ -534,7 +534,7 @@ const TEXT = {
     closeEditorsWhy:
       "Don't write the same text in two programs at once — they write over each other's changes. " +
       'While you work in b-notes, the others must be closed.',
-    closeEditorsOpen: 'Open now:',
+    closeEditorsOpen: () => 'Open now:',
     closeEditorsHow: 'Click the button below: b-notes will close them for you and carry on as soon as they are closed.',
     closeEditorsButton: 'Close the other programs',
     closeEditorsClosing: 'Closing…',

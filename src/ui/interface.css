@@ -146,8 +146,6 @@
   */
   --danger: hsl(2 72% 42%);
   --danger-wash: hsl(2 72% 42% / 0.09);
-  /* A stern hold rather than an error: wait, not "something broke". */
-  --caution: hsl(36 90% 40%);
 
   /* What floats above his text casts a shadow onto it. Dark here, and
      light in the dark mode below — the room it is lit from changes. */
@@ -218,7 +216,6 @@
      reads as a warning instead of as a hole. */
   --danger: hsl(4 70% 65%);
   --danger-wash: hsl(4 70% 65% / 0.14);
-  --caution: hsl(38 85% 60%);
 
   --halo: rgb(255 255 255 / 0.11);
   --halo-near: rgb(255 255 255 / 0.09);
@@ -847,13 +844,32 @@ button svg {
 }
 
 /*
-  The message b-notes holds him at while Resoph or Notepad is open. The hand
-  in amber is the only colour, until Notepad is waiting on him — then that one
-  line is red, because it is the one thing he has to do right now.
+  The message b-notes holds him at while Resoph or Notepad is open. A raised
+  hand, large, as the emoji Windows draws — a stop, not a corner decoration,
+  and the same in light and dark. Red appears only when Notepad is waiting
+  on him, because that is the one thing he has to do right now.
 */
-/* Weighted past `.panel h1 svg`, which greys every other dialog's mark. */
-.panel.close-editors h1 svg {
-  color: var(--caution);
+.close-editors-stop {
+  flex: none;
+  font-size: 2.6em;
+  line-height: 1;
+}
+
+/* What the button does, under the line that divides it off, right above it. */
+.close-editors-how {
+  flex-basis: 100%;
+  margin: 0 0 0.3rem;
+  line-height: 1.5;
+}
+
+/*
+  At startup nothing has been read yet, and his list and page standing empty
+  behind the message would read as b-notes having failed to load them. So
+  they are not shown until the message has gone.
+*/
+body.holding > #side,
+body.holding > #main {
+  visibility: hidden;
 }
 
 /* "Otvoreni su:" belongs to the list under it, so it sits against it. */

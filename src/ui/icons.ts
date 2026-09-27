@@ -25,8 +25,7 @@ export type IconName =
   | 'versions'
   | 'previous'
   | 'next'
-  | 'settings'
-  | 'hold';
+  | 'settings';
 
 const PATHS = {
   'new-text': [
@@ -71,14 +70,6 @@ const PATHS = {
   settings: [
     'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
     'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z',
-  ],
-  // A raised hand: wait, not yet. For the message b-notes holds him at while
-  // other writing programs are open — a firm stop, not an error.
-  hold: [
-    'M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2',
-    'M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2',
-    'M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8',
-    'M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15',
   ],
   // Up and down rather than left and right: his matches are ordered down the
   // page, and that is the direction he will actually travel.

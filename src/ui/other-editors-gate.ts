@@ -2,7 +2,6 @@ import type { Log } from '../platform/logging.ts';
 import type { OtherEditor, OtherEditors } from '../platform/other-editors.ts';
 import { type Language, strings } from '../language/wording.ts';
 import { showAsModal } from './dialogs/modal.ts';
-import { icon } from './icons.ts';
 
 /** What each is called where he reads it: the name on its own window. */
 const SHOWN_AS: Record<OtherEditor, string> = {
@@ -30,7 +29,7 @@ export function notepadIsAsking(running: readonly OtherEditor[], pressed: boolea
  * are closed — and returns at once when none of them is open, which is most
  * of the time.
  *
- * A firm hold, not an error: an amber raised hand, what to do and why, the
+ * A firm hold, not an error: a big raised hand, what to do and why, the
  * programs by name, and one button. There is no way past it but closing them,
  * by the button or by hand, and no mode that half-works: b-notes simply waits.
  * Not being able to tell what is running counts as nothing running, so this
@@ -54,10 +53,14 @@ export async function untilOtherEditorsClose(
 
   const header = document.createElement('header');
   const title = document.createElement('h1');
+  const stop = document.createElement('span');
+  stop.className = 'close-editors-stop';
+  stop.setAttribute('aria-hidden', 'true');
+  stop.textContent = '\u270B';
   const titleText = document.createElement('span');
   titleText.className = 'heading-text';
   titleText.textContent = words.closeEditorsTitle;
-  title.append(icon('hold'), titleText);
+  title.append(stop, titleText);
   header.append(title);
 
   const why = document.createElement('p');
@@ -66,12 +69,11 @@ export async function untilOtherEditorsClose(
 
   const listed = document.createElement('p');
   listed.className = 'confirm-body close-editors-label';
-  listed.textContent = words.closeEditorsOpen;
   const names = document.createElement('ul');
   names.className = 'close-editors-open';
 
   const how = document.createElement('p');
-  how.className = 'confirm-body';
+  how.className = 'close-editors-how';
   how.textContent = words.closeEditorsHow;
 
   const footer = document.createElement('footer');
@@ -79,19 +81,20 @@ export async function untilOtherEditorsClose(
   button.type = 'button';
   button.className = 'keep';
   button.textContent = words.closeEditorsButton;
-  footer.append(button);
+  footer.append(how, button);
 
   const asks = document.createElement('p');
   asks.className = 'confirm-body close-editors-asks';
   asks.textContent = words.closeEditorsNotepadAsks;
   asks.hidden = true;
 
-  // Above the button rather than below it: the footer is pinned to the
+  // Above the footer rather than in or below it: the footer is pinned to the
   // bottom of the panel, and a line after it could sit hidden behind it.
-  panel.append(header, why, listed, names, how, asks, footer);
+  panel.append(header, why, listed, names, asks, footer);
 
   let pressed = false;
   const describe = (running: readonly OtherEditor[]): void => {
+    listed.textContent = words.closeEditorsOpen(running.length);
     names.replaceChildren(
       ...running.map((editor) => {
         const item = document.createElement('li');
