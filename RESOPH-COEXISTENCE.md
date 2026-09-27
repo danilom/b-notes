@@ -452,11 +452,14 @@ folder, both through Dropbox, often after long offline stretches.
   Here it isn't needed for safety. It breaks the habit of having all three
   open, and it cuts down on texts moving on in two places at once. *Decided
   in outline.*
-- **Not during a session.** Nothing b-notes writes is anywhere Resoph looks, so
-  if he opens Resoph again while b-notes runs, the worst it causes is a text
-  that moved on in both, which §4.5 handles without loss. Interrupting him
-  mid-sentence would cost more than it saves. Revisit if forks turn out to be
-  common.
+- **And whenever he comes back to b-notes** — *decided and built*. Not during
+  a session, which would stop him mid-sentence, but at the one moment a
+  message costs him nothing: the window regaining focus, which fires only when
+  the whole window comes back from somewhere else. What he typed is saved
+  first; then the same message if Resoph, Notepad (any Notepad) or Obsidian
+  was opened meanwhile; then both folders are read again, so what they wrote
+  on the way out is what he sees. Never two of these at once, and none while
+  the message is up — closing the programs bounces focus between windows.
 - **How the button closes them** — *open*, to be tried on a real machine:
   - **Resoph can't be asked while `<systray>` is on**, since its close button
     only hides it. *Decided and built:* b-notes switches the setting off
@@ -503,7 +506,8 @@ folder, both through Dropbox, often after long offline stretches.
 - Reading Resoph's database.
 - Collapsing identical copies, and turning his marks into rank or status.
 - Anything written to Resoph's folder.
-- Stopping him mid-session when Resoph or Notepad opens.
+- Stopping him mid-session when Resoph or Notepad opens, other than when he
+  comes back to the window.
 
 ## 5. Open questions
 

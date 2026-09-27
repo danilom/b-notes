@@ -107,9 +107,10 @@ What follows:
   a button that closes them for him. Resoph's close button only hides it in
   the tray while its *minimize to tray* is on, so b-notes switches that off in
   Resoph's settings whenever Resoph is closed; until it has, Resoph is ended,
-  once its files have been copied into `userData`. Not during a session:
-  nothing b-notes writes is where Resoph looks, so running together costs at
-  most a text changed in both.
+  once its files have been copied into `userData`. And again whenever he comes
+  back to the window — having saved what he typed first — since opening one of
+  them from Explorer and coming back is his ordinary habit. Never while he is
+  writing: that would stop him mid-sentence.
 - **His filenames will have to be cleaned up eventually**, and not by renaming
   in place, for the reason above. The shape recorded in `CORPUS-ANALYSIS.md`
   §9 is copying out into a folder of b-notes' own, once Resoph no longer
