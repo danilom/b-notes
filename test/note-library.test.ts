@@ -5,7 +5,7 @@ import path from 'node:path';
 import { describe, it } from 'node:test';
 
 import { createFileSystem } from '../src/hosts/electron/disk-file-system.ts';
-import { FROM_RESOPH, createNoteLibrary } from '../src/notes/note-library.ts';
+import { FROM_RESOPH, ResophMoveRefused, createNoteLibrary } from '../src/notes/note-library.ts';
 import { DELETED_FOLDER, VERSIONS_FOLDER, copyNameFor } from '../src/notes/note-naming.ts';
 import { createNoteStore } from '../src/notes/note-store.ts';
 import { createResophFolder } from '../src/notes/resoph-folder.ts';
@@ -44,7 +44,8 @@ async function library(
   const own = createNoteStore(files, slashed(notes), log, renamed, NAMING);
   const store = createNoteLibrary(
     own,
-    createResophFolder(files, slashed(resoph), log),
+    // As the app has it: a machine without Resoph has no Resoph folder at all.
+    options.resoph === false ? null : createResophFolder(files, slashed(resoph), log),
     files,
     slashed(notes),
     log,
@@ -308,6 +309,108 @@ describe('what b-notes does to Resoph folder', () => {
     assert.deepEqual((await readdir(resoph)).sort(), names);
     for (const name of ['Pismo', RANKED, 'Zima']) assert.equal(isStub(await resophFile(resoph, name)), true, name);
     assert.equal(await resophFile(resoph, 'Leto'), 'Sunce.');
+  });
+});
+
+describe('moving a text to Resoph', () => {
+  /** Refused for this reason, and nothing changed. */
+  const refusedFor = (reason: string) => (failure: unknown) =>
+    failure instanceof ResophMoveRefused && failure.reason === reason;
+
+  it('writes it into a file named from its first line, as Resoph names files, spaces and all', async () => {
+    const { store, resoph } = await library();
+    const id = (await store.save(null, '   *GRAD: Kilim?  \n\nPrvi red.\nDrugi.')) ?? '';
+
+    const moved = await store.moveToResoph(id);
+
+    assert.equal(moved, resophIdOf('   %2AGRAD%3A Kilim%3F  '));
+    assert.equal(await resophFile(resoph, '   %2AGRAD%3A Kilim%3F  '), 'Prvi red.\r\nDrugi.');
+  });
+
+  it('takes it out of b-notes and shows it as a Resoph text, reading as it did', async () => {
+    const { store } = await library();
+    const id = (await store.save(null, 'Pismo\n\nPrvi red.')) ?? '';
+
+    await store.moveToResoph(id);
+
+    const notes = await store.list();
+    assert.deepEqual(notes.map((note) => note.id), [resophIdOf('Pismo')]);
+    assert.equal(notes[0]?.text, 'Pismo\n\nPrvi red.');
+  });
+
+  it('keeps its versions in b-notes, for recovery', async () => {
+    const { store, notes } = await library();
+    const id = (await store.save(null, 'Pismo\n\nPrvo.')) ?? '';
+    await store.keepCopy(id, 'Pismo\n\nStarije.');
+
+    await store.moveToResoph(id);
+
+    assert.equal((await readdir(path.join(notes, VERSIONS_FOLDER, id))).length, 1);
+  });
+
+  it('says the text is now held under its Resoph id', async () => {
+    const { store, renames } = await library();
+    const id = (await store.save(null, 'Pismo\n\nPrvo.')) ?? '';
+
+    await store.moveToResoph(id);
+
+    assert.deepEqual(renames.at(-1), [id, resophIdOf('Pismo')]);
+  });
+
+  it('goes back over its own stub when it came from Resoph', async () => {
+    const { store, resoph } = await library({ Pismo: 'Prvo.' });
+    const copy = (await store.save(resophIdOf('Pismo'), 'Pismo\n\nPrvo. Dopisano.')) ?? '';
+
+    await store.moveToResoph(copy);
+
+    assert.equal(await resophFile(resoph, 'Pismo'), 'Prvo. Dopisano.');
+    assert.deepEqual((await readdir(resoph)).sort(), ['Pismo.txt']);
+  });
+
+  it('never writes over a text of his in Resoph that has the same title', async () => {
+    const { store, resoph } = await library({ Pismo: 'Njegov tekst u Resophu.' });
+    const id = (await store.save(null, 'Pismo\n\nDrugi.')) ?? '';
+
+    await assert.rejects(store.moveToResoph(id), refusedFor('title-taken'));
+
+    assert.equal(await resophFile(resoph, 'Pismo'), 'Njegov tekst u Resophu.');
+    assert.equal(await store.read(id), 'Pismo\n\nDrugi.');
+  });
+
+  it('refuses a title longer than Resoph names its files', async () => {
+    const { store } = await library();
+    const id = (await store.save(null, `${'Dugacak naslov '.repeat(8)}\n\nTekst.`)) ?? '';
+
+    await assert.rejects(store.moveToResoph(id), refusedFor('title-too-long'));
+  });
+
+  it('keeps his text in b-notes when what was written into Resoph does not read back whole', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'b-notes-library-'));
+    const notes = path.join(root, 'b-notes');
+    const resoph = path.join(root, 'ResophNotes');
+    await mkdir(notes);
+    await mkdir(resoph);
+    const disk = createFileSystem(path.join(tmpdir(), 'b-notes-staging'));
+    // A disk that loses the end of whatever is written into Resoph's folder.
+    const lossy = {
+      ...disk,
+      write: (at: string, text: string) => disk.write(at, at.includes('ResophNotes') ? text.slice(0, 3) : text),
+    };
+    const log = silentLog();
+    const own = createNoteStore(lossy, slashed(notes), log, () => undefined, NAMING);
+    const store = createNoteLibrary(own, createResophFolder(lossy, slashed(resoph), log), lossy, slashed(notes), log);
+    const id = (await store.save(null, 'Pismo\n\nPrvi red, dugacak.')) ?? '';
+
+    await assert.rejects(store.moveToResoph(id));
+
+    assert.equal(await store.read(id), 'Pismo\n\nPrvi red, dugacak.');
+  });
+
+  it('refuses on a machine without Resoph', async () => {
+    const { store } = await library({}, { resoph: false });
+    const id = (await store.save(null, 'Pismo\n\nTekst.')) ?? '';
+
+    await assert.rejects(store.moveToResoph(id), refusedFor('no-resoph'));
   });
 });
 

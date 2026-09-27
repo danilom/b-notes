@@ -45,6 +45,33 @@ export function titleOfResophName(stem: string): string {
   return stem.replace(/%([0-9A-Fa-f]{2})/g, (escape, code: string) => ESCAPED.get(code.toUpperCase()) ?? escape);
 }
 
+/** The characters a filename cannot hold, and how Resoph writes each: the reverse of `ESCAPED`. */
+const ESCAPES: ReadonlyMap<string, string> = new Map([...ESCAPED].map(([code, character]) => [character, `%${code}`]));
+
+/**
+ * The file name Resoph gives a title, without `.txt`: each character a
+ * filename cannot hold written as Resoph writes it — `%2A` for `*` — and
+ * nothing else touched. Spaces, leading and trailing, are part of his title.
+ * The exact reverse of `titleOfResophName`.
+ */
+export function resophNameFor(title: string): string {
+  return [...title].map((character) => ESCAPES.get(character) ?? character).join('');
+}
+
+/**
+ * A text split the way Resoph keeps it: the title — the first line with
+ * anything in it, exactly as typed — and the rest, less the one blank line
+ * Resoph shows between the two. The reverse of `composeResophText`.
+ */
+export function resophPartsOf(text: string): { title: string; body: string } {
+  const lines = text.replaceAll('\r\n', '\n').split('\n');
+  const at = lines.findIndex((line) => line.trim().length > 0);
+  if (at === -1) return { title: '', body: '' };
+  const rest = lines.slice(at + 1);
+  if (rest[0]?.trim() === '') rest.shift();
+  return { title: lines[at] ?? '', body: rest.join('\n') };
+}
+
 /** The first line with anything in it, compared loosely: case, spacing and ends aside. */
 function sameLine(first: string, second: string): boolean {
   const loose = (line: string): string => line.replace(/\s+/g, ' ').trim().toLowerCase();

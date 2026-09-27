@@ -103,6 +103,11 @@ export interface OwnNoteStore extends NoteStore {
    * came from — `2026-09-27 14-32-10 Resoph`.
    */
   keepLabelledCopy(id: string, text: string, label: string): Promise<string>;
+  /**
+   * Takes a text out of b-notes' folder, because it has moved to Resoph. Its
+   * versions stay where they are, for whoever ever has to recover it.
+   */
+  letGo(id: string): Promise<void>;
 }
 
 export function createNoteStore(
@@ -355,6 +360,14 @@ export function createNoteStore(
     liveIds: async () => new Set((await noteFiles()).keys()),
     putAwayIds: idsPutAway,
     keepLabelledCopy: (id, text, label) => keepVersion(requireNoteId(id), text, label),
+
+    async letGo(id: string): Promise<void> {
+      const file = (await noteFiles()).get(requireNoteId(id));
+      if (file === undefined) return;
+      await files.removeFile(file.path);
+      lastSeen.delete(id);
+      log.info('A text left b-notes for Resoph; its versions stay', { id });
+    },
 
     async list(): Promise<Note[]> {
       const notes = await Promise.all([...(await noteFiles())].map(([id, file]) => noteFrom(id, file)));

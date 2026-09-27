@@ -5,9 +5,44 @@ import {
   composeResophText,
   isResophId,
   resophIdOf,
+  resophNameFor,
+  resophPartsOf,
   resophStemOf,
   titleOfResophName,
 } from '../src/notes/resoph-note.ts';
+
+describe('the file name Resoph gives a title', () => {
+  it('writes what a filename cannot hold as Resoph does, and keeps every space', () => {
+    assert.equal(resophNameFor('   *GRAD: Kilim?  '), '   %2AGRAD%3A Kilim%3F  ');
+    assert.equal(resophNameFor('A/B\\C'), 'A%2FB%5CC');
+  });
+
+  it('reads back as the title it was made from', () => {
+    for (const title of ['   *GRAD: Kilim?  ', 'Obican naslov', '50% "tacno" <ili> |ne|', 'Tab\there']) {
+      assert.equal(titleOfResophName(resophNameFor(title)), title);
+    }
+  });
+});
+
+describe('a text split the way Resoph keeps it', () => {
+  it('takes the first line as the title, exactly, and the rest less one blank line', () => {
+    assert.deepEqual(resophPartsOf('   *Naslov  \n\nPrvi red.\nDrugi.'), { title: '   *Naslov  ', body: 'Prvi red.\nDrugi.' });
+  });
+
+  it('keeps a body that starts straight under the title', () => {
+    assert.deepEqual(resophPartsOf('Naslov\nPrvi red.'), { title: 'Naslov', body: 'Prvi red.' });
+  });
+
+  it('shows again as the same text once Resoph puts the title back above it', () => {
+    const text = '   *Naslov  \n\nPrvi red.\n\n\nDrugi.';
+    const { title, body } = resophPartsOf(text);
+    assert.equal(composeResophText(title, body), text);
+  });
+
+  it('has no title for a text with nothing in it', () => {
+    assert.deepEqual(resophPartsOf('\n  \n'), { title: '', body: '' });
+  });
+});
 
 describe('the title Resoph shows for a file', () => {
   it('reads back the characters Resoph had to escape', () => {

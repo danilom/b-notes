@@ -4,14 +4,43 @@ import { type Note, type NoteStore, type NoteVersion, noteOf } from './note.ts';
 import { EXTENSION, copyNameFor, unusedName } from './note-naming.ts';
 import { type Naming, type NoteRenamed, type OwnNoteStore, REAL_NAMING } from './note-store.ts';
 import type { ResophFolder, ResophText } from './resoph-folder.ts';
-import { resophIdOf, resophStemOf } from './resoph-note.ts';
+import { resophIdOf, resophNameFor, resophPartsOf, resophStemOf } from './resoph-note.ts';
 import { type StubKind, isStub, stubText } from './resoph-stub.ts';
 
 /** What a copy kept straight from Resoph is labelled, among a text's versions. */
 export const FROM_RESOPH = 'Resoph';
 
-/** The store over both folders. */
-export type NoteLibrary = NoteStore;
+/** The store over both folders, and what only it can do. */
+export interface NoteLibrary extends NoteStore {
+  /**
+   * Moves one of b-notes' texts into Resoph, under a file named from its first
+   * line, and hands back the id it has there.
+   *
+   * @throws {ResophMoveRefused} where it cannot go, saying why.
+   */
+  moveToResoph(id: string): Promise<string>;
+}
+
+/** Why a text cannot be moved to Resoph, for saying so to him. */
+export type ResophMoveRefusal = 'no-resoph' | 'no-title' | 'title-too-long' | 'title-taken';
+
+export class ResophMoveRefused extends Error {
+  readonly reason: ResophMoveRefusal;
+
+  constructor(reason: ResophMoveRefusal) {
+    super(`Not moved to Resoph: ${reason}`);
+    this.name = 'ResophMoveRefused';
+    this.reason = reason;
+  }
+}
+
+/**
+ * The longest name b-notes gives a Resoph file, without `.txt`. His longest
+ * are exactly 100 characters with it, which looks like Resoph's own limit;
+ * a longer one is refused rather than cut, since how Resoph would cut it is
+ * not known.
+ */
+const LONGEST_RESOPH_NAME = 96;
 
 /** A path as Windows writes it, for the line in a stub whoever recovers the text will read. */
 const windowsPath = (path: string): string => path.replaceAll('/', '\\');
@@ -111,7 +140,33 @@ export function createNoteLibrary(
     await resoph.write(stem, stubText({ kind, when: naming.now(), machine: naming.machine, path }));
   }
 
+  /** The name a text will have in Resoph, and what goes into the file; or why it cannot go. */
+  async function placeInResoph(id: string): Promise<{ stem: string; body: string }> {
+    if (resoph === null) throw new ResophMoveRefused('no-resoph');
+    const { title, body } = resophPartsOf(await own.read(id));
+    if (title.trim().length === 0) throw new ResophMoveRefused('no-title');
+    const stem = resophNameFor(title);
+    if (stem.length > LONGEST_RESOPH_NAME) throw new ResophMoveRefused('title-too-long');
+    const there = await resoph.read(stem);
+    // A text of his by that name stays his; a stub is b-notes' own, and gives way.
+    if (there !== null && !isStub(there.body)) throw new ResophMoveRefused('title-taken');
+    return { stem, body };
+  }
+
   return {
+    async moveToResoph(id: string): Promise<string> {
+      const { stem, body } = await placeInResoph(id);
+      await resoph?.write(stem, body);
+      // Read back before b-notes lets go of its file: after that, Resoph's is the only one.
+      if ((await resoph?.read(stem))?.body !== body.replaceAll('\r\n', '\n')) {
+        throw new Error(`A text moved to Resoph did not read back: ${stem}`);
+      }
+      await own.letGo(id);
+      renamed(id, resophIdOf(stem));
+      log.info('Moved a text to Resoph', { from: id, to: stem });
+      return resophIdOf(stem);
+    },
+
     async list(): Promise<Note[]> {
       const [mine, fromResoph] = await Promise.all([own.list(), resophNotes()]);
       return [...mine, ...fromResoph].sort((first, second) => second.updatedAt - first.updatedAt);

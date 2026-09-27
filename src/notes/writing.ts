@@ -121,6 +121,14 @@ export interface Writing {
   destroy(token: string): Promise<void>;
   /** A copy kept now, whatever the ordinary rule would say. */
   keepCopy(handle: NoteHandle, text: string): Promise<string>;
+  /**
+   * Moves a text of b-notes' into Resoph, his last words written first. The
+   * handle follows it, and from then on names a Resoph text.
+   *
+   * @throws {ResophMoveRefused} where it cannot go; and plainly, when his last
+   *   words could not be written, since moving without them would lose them.
+   */
+  moveToResoph(handle: NoteHandle): Promise<void>;
   /** How many copies are kept of a text. Counted without reading any. */
   countVersions(handle: NoteHandle): Promise<number>;
   /** Every copy kept of a text, newest first. */
@@ -324,6 +332,13 @@ export function createWriting(
     },
 
     keepCopy: (handle, text) => store.keepCopy(nameOf(handle), text),
+
+    async moveToResoph(handle: NoteHandle): Promise<void> {
+      await this.flush(handle);
+      // A flush never rejects: what it could not write is still waiting.
+      if (waiting.has(handle)) throw new Error('His last words could not be written, so the text was not moved');
+      await store.moveToResoph(nameOf(handle));
+    },
     countVersions: (handle) => store.countVersions(nameOf(handle)),
     versionsOf: (handle) => store.listVersions(nameOf(handle)),
 
