@@ -509,8 +509,12 @@ button:hover:not(:disabled) svg {
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.3rem 0.7rem;
+  /* Compact, so the strip takes as little of his writing's height as two
+     rows can: his screens are 1280 × 650 and 730 once Windows has scaled
+     them, and every row of the strip is a line of his text gone. The
+     labels stay whole and the text size stays; only the air goes. */
+  gap: 0.35rem;
+  padding: 0.2rem 0.5rem;
   font-size: 0.92em;
 }
 
@@ -522,7 +526,7 @@ button:hover:not(:disabled) svg {
     times a year and Izgled rarely, but a miss between them costs him a
     dialog he did not ask for — so they are not neighbours.
   */
-  gap: 0.6rem;
+  gap: 0.4rem;
   margin-left: auto;
   /* And again inside the group, for the largest text size, where even on
      his own screen four of these will not sit on one line. */
@@ -531,7 +535,7 @@ button:hover:not(:disabled) svg {
 }
 
 #appearance-button {
-  margin-left: 1.8rem;
+  margin-left: 1.2rem;
 }
 
 /* Greyed rather than gone when the text in front of him has no copies,
@@ -547,8 +551,8 @@ button:hover:not(:disabled) svg {
    about the app rather than doing anything to his text. Only what
    differs from the shape above. */
 #appearance-button {
-  gap: 0.4rem;
-  padding: 0.3rem 0.6rem;
+  gap: 0.35rem;
+  padding: 0.2rem 0.5rem;
   border-color: transparent;
   background: none;
   color: var(--quiet);
@@ -1103,8 +1107,8 @@ body.holding > #main {
 #status {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.45rem 0.9rem 0.45rem 1.4rem;
+  gap: 0.25rem 1rem;
+  padding: 0.35rem 0.9rem 0.35rem 1.4rem;
   border-top: 1px solid var(--line);
   background: var(--panel);
   color: var(--quiet);
@@ -1112,25 +1116,32 @@ body.holding > #main {
   /* What the toast hangs off. */
   position: relative;
   /*
-    Four buttons do not fit beside the line of text on a narrow window,
-    and without this the row simply grew past the edge and gave the whole
-    app a horizontal scrollbar — with Izgled off the side of the screen.
+    What puts the status line on a row of its own, above the buttons.
 
-    He runs it full screen, where there is room to spare; what makes this
-    reachable is the text size, since everything here is in `em` and the
-    largest setting is most of the way to it. So the group drops to its
-    own line rather than the window growing a bar he has never seen.
+    It was first here for the buttons: without it the row grew past the
+    edge and gave the whole app a horizontal scrollbar, with Izgled off the
+    side of the screen. The buttons' own group still wraps, for the largest
+    text size, rather than the window growing a bar he has never seen.
   */
   flex-wrap: wrap;
 }
 
-/* Shrinks and is cut rather than shoving the buttons off: what it says
-   is worth less than the way to do something about it. */
+/*
+  A row of its own, above the buttons: two rows, always, rather than one
+  that becomes two when the sentence runs long. Beside the buttons there
+  was no room on his screens for more than "Sačuvano u…", which is there
+  and says nothing. On its own row it is whole at his sizes, and cut with
+  "…" (the whole of it on hover) only where the window is narrower still.
+
+  A shade smaller than the buttons: it reports, they act.
+*/
 #status-text {
+  flex: 1 0 100%;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 0.92em;
 }
 
 

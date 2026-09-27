@@ -523,10 +523,25 @@ function showStatus(): void {
   if (!emptyHint.hidden) pointHintAtDeleteButton();
 
   statusText.textContent = statusFor(now, language);
+  sayWholeIfCut();
   // Shown is said: a thing that has just happened stops being news once he has
   // been told it.
   notice = null;
 }
+
+/**
+ * The status line is cut short with "…" where the strip is too narrow for it,
+ * and then the whole sentence is there on hover. Only then: a tooltip saying
+ * again what is already there in full is one more thing appearing under his
+ * pointer for nothing.
+ */
+function sayWholeIfCut(): void {
+  if (statusText.scrollWidth > statusText.clientWidth) statusText.title = statusText.textContent;
+  else statusText.removeAttribute('title');
+}
+
+// Checked again when the window changes size, which is what cuts it.
+new ResizeObserver(sayWholeIfCut).observe(statusText);
 
 
 

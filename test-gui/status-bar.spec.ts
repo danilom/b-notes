@@ -92,10 +92,11 @@ const HIS_WINDOWS = [
   { laptop: 'Asus', width: 1280, height: 650 },
 ];
 
-test('keeps the strip on one row at the width he actually writes in', async ({ page }) => {
-  // Wrapping is the fallback, not the arrangement. If his own window starts
-  // needing two rows, the strip has outgrown the space and wants deciding
-  // about rather than quietly taking another line of his writing.
+test('keeps the buttons on one row at the size of his own windows', async ({ page }) => {
+  // The strip is two rows, the status line over the buttons. Wrapping the
+  // buttons as well is the fallback, not the arrangement: if his own window
+  // starts needing a third row, the strip has outgrown the space and wants
+  // deciding about rather than quietly taking another line of his writing.
   for (const { laptop, width, height } of HIS_WINDOWS) {
     await page.setViewportSize({ width, height });
     const rows = await page.locator('#status-actions button').evaluateAll((buttons) => {
@@ -105,4 +106,23 @@ test('keeps the strip on one row at the width he actually writes in', async ({ p
 
     expect(rows, `on his ${laptop}`).toBe(1);
   }
+});
+
+test('shows the status line whole on his screens, and cut short with the whole of it on hover where it cannot be', async ({
+  page,
+}) => {
+  const line = page.locator('#status-text');
+  await expect(line).not.toHaveText('');
+
+  for (const { laptop, width, height } of HIS_WINDOWS) {
+    await page.setViewportSize({ width, height });
+    const cut = await line.evaluate((element) => element.scrollWidth > element.clientWidth);
+    expect(cut, `on his ${laptop}`).toBe(false);
+    await expect(line, `on his ${laptop}`).not.toHaveAttribute('title');
+  }
+
+  // Narrower than any window of his, so the sentence cannot fit.
+  await page.setViewportSize({ width: 560, height: 650 });
+  await expect.poll(() => line.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+  await expect(line).toHaveAttribute('title', (await line.textContent()) ?? '');
 });
