@@ -182,13 +182,32 @@ export function createNoteLibrary(
     return changed;
   }
 
+  /**
+   * Each Resoph text as a note, kept by its file's time and size.
+   *
+   * Working a note out folds all of its text for searching, and over his 11MB
+   * that was half a second every time b-notes came back to the front — on his
+   * slowest laptop, a pause every time he switches back. Only a file that has
+   * changed is worked out again.
+   */
+  const described = new Map<string, { seenAs: string; note: Note }>();
+
+  function noteFor({ stem, file, text }: ResophText): Note {
+    const seenAs = `${file.updatedAt}|${file.bytes}`;
+    const held = described.get(stem);
+    if (held !== undefined && held.seenAs === seenAs) return held.note;
+    const note = noteOf(resophIdOf(stem), text, file.updatedAt, file.bytes);
+    described.set(stem, { seenAs, note });
+    return note;
+  }
+
   /** The Resoph texts with no copy, as notes. */
   async function resophNotes(): Promise<Note[]> {
     if (resoph === null) return [];
     const [texts, taken] = await Promise.all([resoph.list(), takenIn()]);
-    return texts
-      .filter(({ stem }) => !taken.has(copyNameFor(stem)))
-      .map(({ stem, file, text }) => noteOf(resophIdOf(stem), text, file.updatedAt, file.bytes));
+    const present = new Set(texts.map(({ stem }) => stem));
+    for (const stem of described.keys()) if (!present.has(stem)) described.delete(stem);
+    return texts.filter(({ stem }) => !taken.has(copyNameFor(stem))).map(noteFor);
   }
 
   return {
