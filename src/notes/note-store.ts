@@ -23,8 +23,7 @@ import {
   versionsFolderFor,
 } from './note-naming.ts';
 import { planSave } from './note-saving.ts';
-import { toSearchable } from '../language/diacritics.ts';
-import { rankOf, titleFrom, titleLineOf } from './note-title.ts';
+import { titleFrom } from './note-title.ts';
 import {
   type Archive,
   type ArchivedNote,
@@ -33,6 +32,7 @@ import {
   type NoteStore,
   type NoteVersion,
   isEmptyText,
+  noteOf,
 } from './note.ts';
 
 const nameOf = (path: string): string => path.split('/').at(-1) ?? path;
@@ -85,13 +85,30 @@ export interface Naming {
 
 const REAL_NAMING: Naming = { machine: 'PC', now: () => new Date() };
 
+/**
+ * The store over b-notes' own folder, with what the library over it needs to
+ * take a Resoph text in: which names are in use, and a way to keep a copy
+ * that says where it came from.
+ */
+export interface OwnNoteStore extends NoteStore {
+  /** Every text in the folder, by id. */
+  liveIds(): Promise<Set<string>>;
+  /** Every text put away in Obrisano, by id. */
+  putAwayIds(): Promise<Set<string>>;
+  /**
+   * Keeps a copy of a text, named for the moment and a word saying where it
+   * came from — `2026-09-27 14-32-10 Resoph`.
+   */
+  keepLabelledCopy(id: string, text: string, label: string): Promise<string>;
+}
+
 export function createNoteStore(
   files: FileSystem,
   folder: string,
   log: Log,
   renamed: NoteRenamed = () => undefined,
   naming: Naming = REAL_NAMING,
-): NoteStore {
+): OwnNoteStore {
   const at = (...parts: string[]): string => [folder, ...parts].join('/');
 
   /**
@@ -163,20 +180,9 @@ export function createNoteStore(
 
   /** Everything about a note that the app works with, read off one file. */
   async function noteFrom(id: string, file: FileInfo): Promise<Note> {
-    const text = asWritten(await files.read(file.path));
-    const titleLine = titleLineOf(text);
-    return {
-      id,
-      // From the text, not the name: the name is made safe and carries a tag
-      // he never wrote.
-      title: titleFrom(text),
-      sortTitle: titleLine,
-      rank: rankOf(titleLine),
-      text,
-      searchable: toSearchable(text),
-      updatedAt: file.updatedAt,
-      bytes: file.bytes,
-    };
+    // The title from the text, not the name: the name is made safe and
+    // carries a tag he never wrote.
+    return noteOf(id, asWritten(await files.read(file.path)), file.updatedAt, file.bytes);
   }
 
   const newestFirst = (first: Note, second: Note): number => second.updatedAt - first.updatedAt;
@@ -246,10 +252,11 @@ export function createNoteStore(
    * — two versions of the same note within a second is barely possible, but the
    * cost of being wrong is the text this whole thing exists to save.
    */
-  async function keepVersion(id: string, text: string): Promise<string> {
+  async function keepVersion(id: string, text: string, label?: string): Promise<string> {
     const folder = versionsFolderFor(id);
     const taken = new Set((await filesIn(at(folder))).map((file) => idOf(nameOf(file.path))));
-    const name = nextFreeId(versionName(new Date()), null, taken);
+    const moment = versionName(new Date());
+    const name = nextFreeId(label === undefined ? moment : `${moment} ${label}`, null, taken);
     await files.write(at(folder, `${name}${EXTENSION}`), text);
     // The safety net firing. Rare, and the one line that answers "where did the
     // paragraph I deleted go" — which is the reason any of this exists.
@@ -339,6 +346,10 @@ export function createNoteStore(
   }
 
   return {
+    liveIds: async () => new Set((await noteFiles()).keys()),
+    putAwayIds: idsPutAway,
+    keepLabelledCopy: (id, text, label) => keepVersion(requireNoteId(id), text, label),
+
     async list(): Promise<Note[]> {
       const notes = await Promise.all([...(await noteFiles())].map(([id, file]) => noteFrom(id, file)));
       return notes.sort(newestFirst);

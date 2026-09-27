@@ -9,7 +9,9 @@ import type {
   Note,
   NoteVersion,
 } from './note.ts';
+import { createNoteLibrary } from './note-library.ts';
 import { type Naming, createNoteStore } from './note-store.ts';
+import { createResophFolder } from './resoph-folder.ts';
 
 /** A text of his, and what it is called while the app runs. */
 export interface LiveNote extends Note {
@@ -39,6 +41,13 @@ const RETRY_AFTER_MS = [1_000, 3_000, 10_000, 30_000] as const;
 
 /** 800ms after he stops, pushed back by every keystroke. */
 const AUTOSAVE_IDLE_MS = 800;
+
+/** Where his texts are read from, and how new ones are named. */
+export interface WritingOptions {
+  /** His Resoph folder, read and never written. Null where there is none. */
+  resophFolder?: string | null;
+  naming?: Naming;
+}
 
 /** Handed in so a test can hold time still rather than wait it out. */
 export interface Timers {
@@ -147,7 +156,7 @@ export function createWriting(
   log: Log,
   changed: (written: NoteHandle[]) => void = () => undefined,
   timers: Timers = realTimers,
-  naming?: Naming,
+  options: WritingOptions = {},
 ): Writing {
   const nextHandle = createHandles();
   /** Where each text lives now. Null for one he has begun and not yet saved. */
@@ -171,7 +180,16 @@ export function createWriting(
     livesAt.set(handle, to);
   }
 
-  const store = createNoteStore(files, folder, log, renamed, naming);
+  const own = createNoteStore(files, folder, log, renamed, options.naming);
+  const resophFolder = options.resophFolder ?? null;
+  const store = createNoteLibrary(
+    own,
+    resophFolder === null ? null : createResophFolder(files, resophFolder, log),
+    files,
+    folder,
+    log,
+    renamed,
+  );
 
   function remember(id: string): NoteHandle {
     const known = byToken.get(id);

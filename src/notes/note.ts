@@ -1,3 +1,6 @@
+import { toSearchable } from '../language/diacritics.ts';
+import { rankOf, titleFrom, titleLineOf } from './note-title.ts';
+
 export interface Note {
   /** The filename. Storage detail — he never sees it. */
   id: string;
@@ -164,6 +167,28 @@ export interface NoteStore {
    * and it reaches nothing that is still in his list.
    */
   destroy(id: string): Promise<void>;
+}
+
+/**
+ * Everything about a note the app works with, from its text and its file.
+ *
+ * One place, so a text read from b-notes' folder and one read from Resoph's
+ * are described identically — the list cannot tell them apart, and must not.
+ *
+ * @param text with line endings already made `\n`.
+ */
+export function noteOf(id: string, text: string, updatedAt: number, bytes: number): Note {
+  const titleLine = titleLineOf(text);
+  return {
+    id,
+    title: titleFrom(text),
+    sortTitle: titleLine,
+    rank: rankOf(titleLine),
+    text,
+    searchable: toSearchable(text),
+    updatedAt,
+    bytes,
+  };
 }
 
 /**
