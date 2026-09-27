@@ -205,7 +205,58 @@ folder. It will have to:
 - **Clean up the names on the way**, which is when filenames become safe for
   Notepad, zip and Explorer.
 
-## 7. Cleanup on his machines — *reminder for deployment*
+## 7. Alternative: b-notes' own folder, fed from Resoph — *under discussion*
+
+Danilo's idea, and possibly a replacement for §2–§5. Don't coexist in one
+folder. b-notes keeps his texts in its own folder, as its own, and keeps
+bringing in whatever Resoph has, until one day there's nothing new to bring.
+
+- **b-notes' folder is the master.** Clean names, the title inside the text,
+  versions and deleting as `DESIGN.md` has them. Nothing Resoph does can undo
+  anything there, because Resoph never sees it.
+- **Resoph → b-notes is frictionless.** On start, and whenever b-notes comes to
+  the front, it reads his Resoph folder and brings in what's new or changed.
+- **b-notes → Resoph, at first, is nothing at all.** b-notes never writes to
+  Resoph's folder, so it can't harm a Resoph note, and it never has to close
+  Resoph. The price: what he writes in b-notes isn't in Resoph. That nudges him
+  toward b-notes, but could also read as loss, and Danilo has to explain it in
+  person. Content-only write-back — never names, never deletes — can be added
+  later if he gets stuck between the two.
+- **This is where b-notes gets to limit the mess.** The rules for bringing a
+  Resoph file in:
+  - Identical text under another name (a retitle, or Resoph bringing an old
+    name back) is the same text, not a new one.
+  - Text b-notes has already seen for that file, at any point, is not news.
+    That's what stops another machine's Resoph from rolling a text back.
+  - Changed in both since the last import: nothing is lost. One stays the text,
+    the other is kept as a version of it. Which one, and what he's told, is
+    *open*.
+  - Nothing is ever deleted because it disappeared from Resoph's folder.
+- **The switch becomes a setting**, not a migration: stop reading Resoph's
+  folder.
+- **The hard part is the import**, which now becomes a small sync engine. It
+  has to give the same result on three or four machines importing the same
+  change offline, so no two of them create the same text twice. It lives
+  entirely inside b-notes, though, where it can be tested hard, unlike Resoph's
+  behaviour.
+- **The turns of §3 stop being needed for safety**, so Resoph is never forced
+  out.
+
+Experiments on Resoph that decide details (Danilo can run them):
+
+1. With Resoph closed, change a file's text in Notepad, then start Resoph. Does
+   it show the new text, or put its own back over it? This decides whether
+   write-back could ever work.
+2. With Resoph closed, add a new `.txt` to its folder. Does it take it in?
+3. With Resoph closed, rename a file. Which names come back, and how many
+   times?
+4. With Resoph open and the note not being edited, change its file. Picked up?
+   And the same with the note mid-edit in Resoph.
+5. Is Simplenote sync on, on his machines? Which way does it win?
+6. A census of each machine's database — counts, dates, pins, deleted flags,
+   never content. A small script run on his machine could produce it.
+
+## 8. Cleanup on his machines — *reminder for deployment*
 
 To do by hand, before or while the next build goes in:
 
