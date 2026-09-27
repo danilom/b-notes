@@ -100,7 +100,10 @@ test('waits behind its message while Resoph and Notepad are open, and carries on
   await expect(message).toBeVisible();
 
   await message.getByRole('button', { name: 'Zatvori druge programe' }).click();
-  await expect(message).toBeHidden();
+  // By design two or three seconds on the real clock — the pretend close, the
+  // second given them to go, the next look — so more than the default five
+  // for a machine that is slow that day.
+  await expect(message).toBeHidden({ timeout: 10_000 });
   await expect(page.locator('#list .note').first()).toBeVisible();
 });
 
@@ -122,7 +125,8 @@ test("tells him where Notepad's question is, when Notepad will not close", async
   await page.evaluate(() =>
     localStorage.setItem('b-notes:mock-running', JSON.stringify({ running: [], stubborn: false })),
   );
-  await expect(message).toBeHidden();
+  // Up to the next look, two seconds apart on the real clock: room for a slow day.
+  await expect(message).toBeHidden({ timeout: 10_000 });
   await expect(page.locator('#list .note').first()).toBeVisible();
 });
 
@@ -153,7 +157,8 @@ test('keeps both when a text changed in Resoph and in b-notes: his, and Resoph\'
   await expect(rows.locator('.note-other')).toHaveText('druga verzija');
 
   // His own stays as he left it, in front of him.
-  await expect(page.locator('#editor')).toHaveValue(/Iz b-notes\.$/);
+  // Where the caret was when he typed: just below the title, as a text opens.
+  await expect(page.locator('#editor')).toHaveValue(/Iz b-notes\./);
 
   // Resoph's opens with Resoph's words; once he writes in it, it is simply his.
   await rows.filter({ has: page.locator('.note-other') }).click();
