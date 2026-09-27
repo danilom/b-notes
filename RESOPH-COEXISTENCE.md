@@ -290,7 +290,28 @@ So the signals, in the order they are trusted:
 - **Creation times** are local to one machine, and reset by any copy.
 
 A retitle combined with an edit to the text in one sitting leaves nothing to
-pair by, and shows as a second text.
+pair by, and shows as a second text — and an edit is a keystroke away.
+
+**Resoph's own record of the note** survives both. Danilo saw the retitled
+note's `<object>` keep its place in Resoph's database and its `<create>` time.
+But — *not built; open*:
+
+- `<create>` alone names only about half his notes. With his corpus loaded on
+  the VM, 539 of 1,215 share a creation time with another, one group of 156:
+  Resoph dates a note it takes in from a file by that file's time, and his
+  2023 bulk imports dated hundreds to one second.
+- Creation time and position together would tell them apart, if the position
+  is stable when notes are added and deleted and when Resoph rewrites the
+  file. Untested. Deleted notes appear to stay in the list with
+  `<delete>true</delete>`, which would help.
+- Resoph saves its database when its close button hides it, not as he moves
+  between notes. b-notes closes Resoph before reading anything at startup, so
+  the database should be current then; during a session it can lag.
+- It knows only this machine's retitles. Another machine's arrive through
+  Dropbox as a file gone and a file come.
+
+Until then a text he retitles in Resoph after b-notes copied it shows as a
+second text: untidy, never hidden.
 
 When no signal is sure, the new Resoph file shows as a text of its own beside
 the b-notes copy: a duplicate, which is untidy but can be fixed later. Linking
