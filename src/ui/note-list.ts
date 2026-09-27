@@ -29,7 +29,7 @@ export interface ListView {
    * second later when the first autosave lands.
    */
   draft: Draft | null;
-  /** A text just taken over from Resoph, whose R is shown once more, going. */
+  /** A text just taken over from Resoph, whose Resoph icon is shown once more, going. */
   justTakenOver?: string | null;
   language: Language;
 }
@@ -205,15 +205,17 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
 }
 
 /**
- * A small R before the date on a text still in Resoph, so he has some sense of
- * which ones are: typing in one takes it over. On the row just taken over, the
- * R once more, going.
+ * Resoph's icon before the date on a text still in Resoph, so he has some sense
+ * of which ones are: typing in one takes it over. On the row just taken over,
+ * the icon once more, going. The picture itself is the stylesheet's.
  */
 function resophMarkOf(row: Row, view: ListView, words: ReturnType<typeof strings>): HTMLElement[] {
   const leaving = row.id !== null && row.id === view.justTakenOver;
   if (!row.inResoph && !leaving) return [];
-  const mark = span(leaving ? 'note-in-resoph leaving' : 'note-in-resoph', 'R');
+  const mark = span(leaving ? 'note-in-resoph leaving' : 'note-in-resoph', '');
   mark.title = words.inResophHint;
+  mark.setAttribute('role', 'img');
+  mark.setAttribute('aria-label', words.inResophHint);
   return [mark];
 }
 

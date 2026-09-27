@@ -305,22 +305,22 @@ function whatIsHappening(): WhatIsHappening {
  */
 let openWasResophs = false;
 
-/** A text just taken over from Resoph, whose R fades out on its row. */
+/** A text just taken over from Resoph, whose Resoph icon fades out on its row. */
 let justTakenOver: string | null = null;
 
-/** Long enough for the R to be seen going, and no longer. */
+/** Long enough for the icon to be seen going, and no longer. */
 const TAKEN_OVER_FADES_MS = 2000;
 
 /**
  * His first keystroke took a text over from Resoph: said softly, without
- * stopping him — a toast that stays while he types — and its R fades.
+ * stopping him — a toast that stays while he types — and its Resoph icon fades.
  */
 function tookOver(id: string): void {
   openWasResophs = false;
   justTakenOver = id;
   flashToast(toast, words.takenOver, words.takenOverHow, { throughTyping: true, quiet: true });
   log.info('Told him a text moved from Resoph into b-notes', { id });
-  // Drawn again once faded, so the R is gone from the row and not merely unseen.
+  // Drawn again once faded, so the icon is gone from the row and not merely unseen.
   setTimeout(() => {
     if (justTakenOver !== id) return;
     justTakenOver = null;

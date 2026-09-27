@@ -53,10 +53,38 @@ test('a Resoph text opens as Resoph shows it, title first', async ({ page }) => 
   );
 });
 
+test('marks a text still in Resoph with Resoph\'s icon, and the icon really loads', async ({ page }) => {
+  /*
+    A picture that fails to load leaves a blank the size of the icon, which
+    looks like no mark at all rather than like a fault. The first try at this
+    was blocked by the page's CSP, and a file left out of the build would do
+    the same.
+  */
+  await start(page);
+  const mark = page.locator('#list .section-block').last().locator('.note').filter({ hasText: RANKED_NAME }).locator('.note-in-resoph');
+  await expect(mark).toBeVisible();
+  await expect(mark).toHaveAttribute('aria-label', /U Resophu/);
+
+  const width = await mark.evaluate(async (element) => {
+    const url = /url\("?(.*?)"?\)/.exec(getComputedStyle(element).backgroundImage)?.[1];
+    if (url === undefined) return 0;
+    const image = new Image();
+    image.src = url;
+    try {
+      await image.decode();
+    } catch {
+      // Not loading is the answer this test is after, not a fault in it.
+      return 0;
+    }
+    return image.naturalWidth;
+  });
+  expect(width).toBeGreaterThan(0);
+});
+
 test('typing into a Resoph text takes it over, leaves a stub in Resoph, and says so', async ({ page }) => {
   await start(page);
   const row = page.locator('#list .section-block').last().locator('.note').filter({ hasText: RANKED_NAME });
-  await expect(row.locator('.note-in-resoph')).toHaveText('R');
+  await expect(row.locator('.note-in-resoph')).toBeVisible();
 
   await row.first().click();
   await page.locator('#editor').press('End');
@@ -146,7 +174,7 @@ test('moves a text back into Resoph from the strip, where it shows as a Resoph t
   expect(after[`ResophNotes/${RANKED}.txt`]?.text).toContain('Dopisano.');
   expect(Object.keys(after).some((path) => /^b-notes\/GRADSKE PRICE, prva ~[0-9A-Z]{6}\.txt$/.test(path))).toBe(false);
   await expect(row).toHaveCount(1);
-  await expect(row.locator('.note-in-resoph')).toHaveText('R');
+  await expect(row.locator('.note-in-resoph')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Premesti u Resoph' })).toBeHidden();
   await expect(page.locator('#editor')).toHaveValue(/Dopisano\./);
 });

@@ -131,8 +131,8 @@ one exception worth considering later is a single signpost note (§4.11).
 
 His list in b-notes is every text in his Resoph folder, plus every text b-notes
 holds itself — **but each text lives in one of the two at a time**. A Resoph
-text is shown straight from Resoph's file, with a small grey R. **The first
-time he types in one, b-notes takes it over**: the text is copied into b-notes'
+text is shown straight from Resoph's file, with Resoph's own icon, greyed.
+**The first time he types in one, b-notes takes it over**: the text is copied into b-notes'
 folder, and in Resoph's file a short, loud stub takes the place of his words,
 saying where they went. From then on the text is b-notes', and Resoph can no
 longer be written in by mistake. Nothing is kept in step between the two:
@@ -287,7 +287,7 @@ non-empty line, as it is. Length is cut only on screen, by the list itself.
 - **The copy's name** is worked out from the Resoph file's, the same on every
   machine (§4.7). Taken over a second time, it gets a number.
 - **He is told**, every time, by a quiet toast that stays while he types:
-  "Tekst je prenet iz Resopha u b-notes." The R on its row fades out.
+  "Tekst je prenet iz Resopha u b-notes." The icon on its row fades out.
 - **The stub**, in place of his words under the same file name, so Resoph
   still lists the title:
 

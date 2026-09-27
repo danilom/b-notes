@@ -873,13 +873,22 @@ button svg {
 }
 
 /*
-  A text still in Resoph: a small grey R before the date, quieter than
-  anything of his. Typing in the text takes it over, and the R fades out.
+  A text still in Resoph: Resoph's own icon before the date, the one he knows
+  it by, greyed and half there so it stays quieter than anything of his.
+  Typing in the text takes it over, and the icon fades out.
+
+  Its own file rather than a data URI, so the CSP needn't be loosened for it.
+  Sized in em rather than at Resoph's 16px, so it grows with the rest of the
+  list when he sets the text larger.
 */
 .note-in-resoph {
   flex: none;
-  color: var(--quiet);
-  font-size: 0.72em;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.15em;
+  background: url(resoph-mark.png) center / contain no-repeat;
+  filter: grayscale(1);
+  opacity: 0.55;
   cursor: default;
 }
 

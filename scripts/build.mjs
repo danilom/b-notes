@@ -100,6 +100,10 @@ await cp('assets/icon.svg', 'dist/icon.svg');
 await cp('assets/icon.svg', 'dist-browser/icon.svg');
 await cp('build/icon.png', 'dist/icon.png');
 
+// Resoph's icon, which the list shows on a text still in Resoph.
+await cp('assets/resoph-icon/resoph-mark.png', 'dist/resoph-mark.png');
+await cp('assets/resoph-icon/resoph-mark.png', 'dist-browser/resoph-mark.png');
+
 if (watch) {
   const contexts = await Promise.all(targets.map((options) => esbuild.context(options)));
   await Promise.all(contexts.map((context) => context.watch()));

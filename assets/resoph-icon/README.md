@@ -12,5 +12,8 @@ b-notes wants to point at Resoph in a way he'll recognise without reading.
   the soft edges. The small screenshots can't be used that way, because the
   light and dark ones were scaled differently and their pixels don't line up.
   Smaller sizes are made from this one.
+- `resoph-mark.png`: the same at 48 × 48 (Pillow, Lanczos), which the list
+  shows at about 16 px, greyed, before the date of a text still in Resoph.
+  48 so it stays sharp on a scaled-up screen.
 
 The icon is Resoph's, not b-notes'.
