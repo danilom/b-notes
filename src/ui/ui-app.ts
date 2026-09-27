@@ -338,6 +338,66 @@ async function reloadAfterWriting(): Promise<void> {
   void keptCopies.count();
 }
 
+/**
+ * Set once his texts have been read at startup. A window gains focus while it
+ * is still opening, and reading both folders twice at once would be a race.
+ */
+let ready = false;
+let refreshing = false;
+
+/**
+ * Both folders looked at again, whenever he comes back to b-notes.
+ *
+ * He goes back and forth with Resoph, and what he wrote there has to be here
+ * when he returns — that b-notes always has everything is the reason to use
+ * it. Only what changed is read again, so this is cheap enough to do on every
+ * return.
+ */
+async function refreshOnReturn(): Promise<void> {
+  if (!ready || refreshing) return;
+  refreshing = true;
+  try {
+    notes = await writing.list();
+    lengths = bandsFrom(notes.map((note) => note.bytes));
+    showWhatChangedUnderHim();
+    draw();
+    showStatus();
+    void keptCopies.count();
+  } catch (error: unknown) {
+    log.warn('Could not look at his texts again on coming back', describeError(error));
+  } finally {
+    refreshing = false;
+  }
+}
+
+/**
+ * The open text as it is on disk now, if it changed while he was away.
+ *
+ * Only when nothing of his is waiting to be written: his own words in the box
+ * always win over the file, and they will reach it in a moment anyway. His
+ * place is kept, as near as the new text allows.
+ */
+function showWhatChangedUnderHim(): void {
+  if (openHandle === NO_NOTE || writing.stateOf(openHandle).waiting) return;
+  const handle = openHandle;
+  const now = notes.find((note) => note.handle === handle);
+  if (now === undefined || now.text === editor.value) return;
+
+  const caret = Math.min(editor.selectionStart, now.text.length);
+  const scrollTop = editor.scrollTop;
+  editor.value = now.text;
+  editor.setSelectionRange(caret, caret);
+  editor.scrollTop = scrollTop;
+  savedAt = now.updatedAt;
+  savedWords = countWords(now.text);
+  findInText.again(search.value);
+  log.info('The open text changed elsewhere, so it is shown as it is now', { id: now.id });
+}
+
+window.addEventListener('focus', () => {
+  void refreshOnReturn();
+});
+
 function showStatus(): void {
   const now = whatIsHappening();
 
@@ -1086,6 +1146,7 @@ export async function startApp(runningOn: Host): Promise<void> {
     showStatus();
   }
 
+  ready = true;
   const body = document.body.getBoundingClientRect();
   log.info('Ready', {
     build: BUILD_STAMP,
