@@ -320,8 +320,11 @@ function tookOver(id: string): void {
   justTakenOver = id;
   flashToast(toast, words.takenOver, words.takenOverHow, { throughTyping: true, quiet: true });
   log.info('Told him a text moved from Resoph into b-notes', { id });
+  // Drawn again once faded, so the R is gone from the row and not merely unseen.
   setTimeout(() => {
-    if (justTakenOver === id) justTakenOver = null;
+    if (justTakenOver !== id) return;
+    justTakenOver = null;
+    draw();
   }, TAKEN_OVER_FADES_MS);
 }
 

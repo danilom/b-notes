@@ -53,27 +53,28 @@ test('a Resoph text opens as Resoph shows it, title first', async ({ page }) => 
   );
 });
 
-test('typing into a Resoph text writes b-notes own copy and leaves Resoph folder alone', async ({ page }) => {
+test('typing into a Resoph text takes it over, leaves a stub in Resoph, and says so', async ({ page }) => {
   await start(page);
-  const before = await held(page);
-  const resophBefore = Object.fromEntries(Object.entries(before).filter(([path]) => path.startsWith('ResophNotes/')));
+  const row = page.locator('#list .section-block').last().locator('.note').filter({ hasText: RANKED_NAME });
+  await expect(row.locator('.note-in-resoph')).toHaveText('R');
 
-  await page.locator('#list .note').filter({ hasText: RANKED_NAME }).first().click();
+  await row.first().click();
   await page.locator('#editor').press('End');
   await page.locator('#editor').pressSequentially(' Dopisano.');
   await page.clock.runFor(1200);
 
   const after = await held(page);
-  const resophAfter = Object.fromEntries(Object.entries(after).filter(([path]) => path.startsWith('ResophNotes/')));
-  expect(resophAfter).toEqual(resophBefore);
-
-  const copies = Object.entries(after).filter(
-    ([path]) => /^b-notes\/GRADSKE PRICE, prva ~[0-9A-Z]{6}\.txt$/.test(path),
-  );
+  const copies = Object.entries(after).filter(([path]) => /^b-notes\/GRADSKE PRICE, prva ~[0-9A-Z]{6}\.txt$/.test(path));
   expect(copies).toHaveLength(1);
   expect(copies[0]?.[1].text).toContain('Dopisano.');
-  // Still one row for it in the whole list: the copy, not the copy and the original.
-  await expect(page.locator('#list .section-block').last().locator('.note').filter({ hasText: RANKED_NAME })).toHaveCount(1);
+  // The Resoph file is still there, under the same name, holding the stub.
+  expect(after[`ResophNotes/${RANKED}.txt`]?.text).toContain('PREMEŠTEN U B-NOTES');
+
+  // One row for it, no longer Resoph's, and a word about what happened.
+  await expect(row).toHaveCount(1);
+  await expect(page.locator('#toast')).toContainText('Tekst je prenet iz Resopha u b-notes.');
+  await page.clock.runFor(3000);
+  await expect(row.locator('.note-in-resoph')).toHaveCount(0);
 });
 
 test('waits behind its message while Resoph and Notepad are open, and carries on once closed', async ({ page }) => {
@@ -130,43 +131,24 @@ test("tells him where Notepad's question is, when Notepad will not close", async
   await expect(page.locator('#list .note').first()).toBeVisible();
 });
 
-test('keeps both when a text changed in Resoph and in b-notes: his, and Resoph\'s marked beside it', async ({
-  page,
-}) => {
+test('moves a text back into Resoph from the strip, where it shows as a Resoph text again', async ({ page }) => {
   await start(page);
-  const rows = page.locator('#list .section-block').last().locator('.note').filter({ hasText: 'Pismo prijatelju' });
-  await rows.first().click();
+  const row = page.locator('#list .section-block').last().locator('.note').filter({ hasText: RANKED_NAME });
+  await row.first().click();
   await page.locator('#editor').press('End');
-  await page.locator('#editor').pressSequentially(' Iz b-notes.');
+  await page.locator('#editor').pressSequentially(' Dopisano.');
   await page.clock.runFor(1200);
 
-  // Resoph writes the same text meanwhile.
-  await page.evaluate(() => {
-    const all = JSON.parse(localStorage.getItem('b-notes:mock-files') ?? '{}') as Record<string, unknown>;
-    all['ResophNotes/         Pismo prijatelju.txt'] = {
-      text: '1\r\n\r\nDragi prijatelju, pisem ti iz grada. Iz Resopha.',
-      updatedAt: Date.now() + 60_000,
-    };
-    localStorage.setItem('b-notes:mock-files', JSON.stringify(all));
-    window.dispatchEvent(new Event('focus'));
-  });
+  await page.getByRole('button', { name: 'Premesti u Resoph' }).click();
 
-  // Two texts of that name now, and only Resoph's says it is the other version.
-  await expect(rows).toHaveCount(2);
-  await expect(rows.locator('.note-other')).toHaveCount(1);
-  await expect(rows.locator('.note-other')).toHaveText('druga verzija');
-
-  // His own stays as he left it, in front of him.
-  // Where the caret was when he typed: just below the title, as a text opens.
-  await expect(page.locator('#editor')).toHaveValue(/Iz b-notes\./);
-
-  // Resoph's opens with Resoph's words; once he writes in it, it is simply his.
-  await rows.filter({ has: page.locator('.note-other') }).click();
-  await expect(page.locator('#editor')).toHaveValue(/Iz Resopha\.$/);
-  await page.locator('#editor').press('End');
-  await page.locator('#editor').pressSequentially(' Moje.');
-  await page.clock.runFor(1200);
-  await expect(rows.locator('.note-other')).toHaveCount(0);
+  await expect(page.locator('#toast')).toContainText('Tekst je premešten u Resoph.');
+  const after = await held(page);
+  expect(after[`ResophNotes/${RANKED}.txt`]?.text).toContain('Dopisano.');
+  expect(Object.keys(after).some((path) => /^b-notes\/GRADSKE PRICE, prva ~[0-9A-Z]{6}\.txt$/.test(path))).toBe(false);
+  await expect(row).toHaveCount(1);
+  await expect(row.locator('.note-in-resoph')).toHaveText('R');
+  await expect(page.getByRole('button', { name: 'Premesti u Resoph' })).toBeHidden();
+  await expect(page.locator('#editor')).toHaveValue(/Dopisano\./);
 });
 
 test('checks again whenever he comes back, saving what he typed first', async ({ page }) => {

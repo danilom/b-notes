@@ -18,6 +18,12 @@ test.beforeEach(async ({ page }) => {
   // several of them are not laid out the way he will meet them.
   await page.locator('#list .note').first().click();
   await expect(page.locator('#editor')).not.toHaveValue('');
+  // Typed into, so it is b-notes' own — taken over from Resoph if it was
+  // there — and Premesti u Resoph is on the strip with the rest: the fullest
+  // the strip gets.
+  await page.locator('#editor').press('End');
+  await page.locator('#editor').pressSequentially('x');
+  await expect(page.locator('#move-to-resoph')).toBeVisible();
 });
 
 test('every button in the strip is the same size as the others', async ({ page }) => {
