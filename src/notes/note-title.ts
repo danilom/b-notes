@@ -60,7 +60,7 @@ export function rankOf(titleLine: string): 0 | 1 | 2 | 3 {
  * numbered series, and the rest.
  */
 export interface TitleParts {
-  /** As he typed it, spaces inside made one: `(UP)`, `A (E)`, `AA`, `zz`. */
+  /** As he typed it: `(UP)`, `A (E)`, `AA`, `zz`. */
   mark: string | null;
   /** Where it stands in a series under `(UP)`: `12`, `II 104`. */
   position: SeriesPosition | null;
@@ -106,7 +106,7 @@ export function titlePartsOf(titleLine: string): TitleParts {
   // A mark with nothing after it is a title of its own, not a mark.
   if (name.length === 0) return unmarked;
 
-  const mark = (found[1] ?? '').replace(/\s+/g, ' ');
+  const mark = found[1] ?? '';
   const number = found[3];
   const position = number === undefined ? null : { series: found[2] ?? null, number };
   return { mark, position, name };
