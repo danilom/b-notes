@@ -323,7 +323,9 @@ or `dev`.
 
 Renderer code logs through the `window.log` bridge, which reaches the same file;
 in a plain browser tab it falls back to the console. `logs.cmd` in the repo root
-opens the folder in VS Code, since the path is otherwise awkward to reach.
+opens the folder in VS Code, since the path is otherwise awkward to reach —
+wherever the logs have been pointed: it runs `scripts/open-logs.mts`, which
+finds the folder with the app's own rule (`logsFolderFor`).
 
 A warning for anyone reading these logs through a tool that runs inside a
 Windows Store/MSIX-packaged app: `%APPDATA%` is redirected copy-on-write into

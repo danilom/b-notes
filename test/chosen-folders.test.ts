@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
-import { notesFolderFor, readChosenFolders, whereToOpen, writeChosenFolders } from '../src/hosts/electron/chosen-folders.ts';
+import { logsFolderFor, notesFolderFor, readChosenFolders, whereToOpen, writeChosenFolders } from '../src/hosts/electron/chosen-folders.ts';
 
 describe('where the folder picker should open', () => {
   it('opens at the folder itself when it is there', async () => {
@@ -108,5 +108,15 @@ describe("where b-notes' own folder is", () => {
 
   it('may sit beside a folder whose name merely starts the same', () => {
     assert.equal(notesFolderFor('C:/Dropbox/Resoph', 'C:/Dropbox/Resoph-b', 'C:/Docs').refused, null);
+  });
+});
+
+describe('where the logs go', () => {
+  it('goes where they were pointed', () => {
+    assert.equal(logsFolderFor('C:/AppData/b-notes', { resoph: null, notes: null, logs: 'D:/Shared/logs' }), 'D:/Shared/logs');
+  });
+
+  it('goes under the app folder when nobody pointed them anywhere', () => {
+    assert.equal(logsFolderFor('C:/AppData/b-notes', { resoph: null, notes: null, logs: null }), 'C:/AppData/b-notes/logs');
   });
 });

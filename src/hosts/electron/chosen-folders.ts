@@ -61,6 +61,18 @@ export function writeChosenFolders(appFolder: string, folders: ChosenFolders): v
 }
 
 /**
+ * Where the log files go: the folder chosen in the advanced panel, or `logs`
+ * under the app's own folder.
+ *
+ * One rule for the app and for `scripts/open-logs.mts`, which opens the folder
+ * for whoever is reading them — a second copy of it is how that script came to
+ * open the default folder after the logs had been moved.
+ */
+export function logsFolderFor(appFolder: string, chosen: ChosenFolders): string {
+  return chosen.logs ?? asPath(path.join(appFolder, 'logs'));
+}
+
+/**
  * b-notes' own folder: the one chosen, or beside his Resoph folder, or in
  * Documents where there is no Resoph.
  *

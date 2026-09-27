@@ -6,7 +6,7 @@ import { BUILD_STAMP } from '../../platform/build-info.ts';
 import { LOG_LEVELS, createFileLogger } from './log-file.ts';
 import { createFileSystem } from './disk-file-system.ts';
 import { absenceReply } from '../../platform/file-system.ts';
-import { notesFolderFor, readChosenFolders, whereToOpen, writeChosenFolders } from './chosen-folders.ts';
+import { logsFolderFor, notesFolderFor, readChosenFolders, whereToOpen, writeChosenFolders } from './chosen-folders.ts';
 import { findResophFolder } from './resoph-config.ts';
 import { createOtherEditors } from './windows-editors.ts';
 import { OTHER_EDITORS, type OtherEditor } from '../../platform/other-editors.ts';
@@ -58,7 +58,7 @@ const appFolder = app.getPath('userData');
 // log goes. Anything wrong with the file reads as "nothing was chosen", which
 // starts the app in its default places rather than not at all.
 const chosen = readChosenFolders(appFolder);
-const log = createFileLogger(chosen.logs ?? path.join(appFolder, 'logs'), runMode);
+const log = createFileLogger(logsFolderFor(appFolder, chosen), runMode);
 const rendererLog = log.scoped('renderer');
 
 // Nothing here reaches a terminal: Electron detaches stdout on Windows, so an
@@ -86,7 +86,7 @@ const folders = {
   resoph: resophFolder,
   notes: notes.folder,
   app: asPath(appFolder),
-  logs: chosen.logs ?? asPath(path.join(appFolder, 'logs')),
+  logs: logsFolderFor(appFolder, chosen),
   machine: hostname(),
 };
 const files = createFileSystem(path.join(appFolder, 'saving'));

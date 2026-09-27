@@ -1,32 +1,15 @@
 @echo off
 setlocal
-set "LOGS=%APPDATA%\b-notes\logs"
+cd /d "%~dp0"
 
-if not exist "%LOGS%" (
-    echo No logs yet. Run the app at least once, then try again.
-    echo Looked in: %LOGS%
-    pause
-    exit /b 1
-)
+rem Opens b-notes' log folder in VS Code, wherever the logs have been pointed.
+rem The work is in scripts\open-logs.mts, which finds the folder the way the
+rem app does.
 
-rem Resolve the full path. Calling "code" by bare name makes its own launcher
-rem resolve %~dp0 against the current directory and look for Code.exe here.
-set "CODE="
-for /f "delims=" %%I in ('where code 2^>nul') do if not defined CODE set "CODE=%%I"
-
-rem A shell opened before VS Code was installed won't have it on PATH yet.
-if not defined CODE set "CODE=%LOCALAPPDATA%\Programs\Microsoft VS Code\bin\code.cmd"
-
-if not exist "%CODE%" (
-    echo Could not find VS Code. The logs are in: %LOGS%
-    pause
-    exit /b 1
-)
-
-call "%CODE%" "%LOGS%"
+node scripts\open-logs.mts
 
 if errorlevel 1 (
     echo.
-    echo Could not open VS Code. The logs are in: %LOGS%
     pause
+    exit /b 1
 )
