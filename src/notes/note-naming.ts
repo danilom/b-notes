@@ -75,6 +75,14 @@ export const VERSIONS_FOLDER = 'Verzije';
  */
 export const ARCHIVE_FOLDER = 'Arhiva';
 
+/**
+ * Where writing waits, as it came off an old machine or an export, until the
+ * import in Advanced settings turns it into an archive. Never listed: its
+ * files are in whatever shape they arrived in, which is why they are kept
+ * apart from `Arhiva`, where everything is in the shape b-notes reads.
+ */
+export const RAW_ARCHIVE_FOLDER = 'Arhiva-raw';
+
 /** One source's folder. `name` is the folder he or the importer chose. */
 export function archiveFolderFor(name: string): string {
   return `${ARCHIVE_FOLDER}/${name}`;
