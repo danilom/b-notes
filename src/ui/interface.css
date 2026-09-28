@@ -688,18 +688,22 @@ body.list-hidden {
    colour: the accent is his to choose and could be anything, and this
    has to read as emphasis in his own writing rather than as a mark the
    app has painted on. */
-/* Izgled and Premesti u Resoph: not buttons to look at. One opens a
-   panel about the app; the other is rare, and there only while he lives
-   beside Resoph. Only what differs from the shape above. */
+/* Izgled and Premesti u Resoph: buttons, but a step back from the three for
+   his text. One opens a panel about the app; the other is rare, and there
+   only while he lives beside Resoph. The same box as the others, so they
+   line up with them, with a paler edge, no fill and grey words. Only what
+   differs from the shape above. */
 .status-quiet {
-  border-color: transparent;
+  border-color: var(--line);
   background: none;
   color: var(--quiet);
+  opacity: 0.85;
 }
 
 .status-quiet:hover:not(:disabled) {
-  border-color: var(--line);
+  border-color: var(--quiet);
   color: var(--ink);
+  opacity: 1;
 }
 
 /*
@@ -1107,18 +1111,6 @@ button svg {
   cursor: default;
 }
 
-/* The same mark on Premesti u Resoph, sized like the strip's other icons and
-   less faded than in the list: there it marks where a text is, here it is
-   what the button does. */
-.resoph-mark-button {
-  flex: none;
-  width: 0.95em;
-  height: 0.95em;
-  background: url(resoph-mark.png) center / contain no-repeat;
-  filter: grayscale(1);
-  opacity: 0.75;
-}
-
 .note-in-resoph.leaving {
   animation: resoph-mark-leaves 1.8s ease-in forwards;
 }
@@ -1318,12 +1310,18 @@ body.holding > #main {
 
   Wide enough that the status line is still whole at his sizes; where it is
   not, it is the line that gives way, as it always is.
+
+  Measured on #main, which is as wide as the strip, rather than on the
+  strip itself: a container cannot be restyled by its own width, and the
+  two rows below need to restyle the strip. #main's width includes the
+  strip's 2.3rem of padding, so 64.3rem here is the 62rem the strip's
+  inside was measured at before.
 */
-#status {
+#main {
   container-type: inline-size;
 }
 
-@container (min-width: 62rem) {
+@container (min-width: 64.3rem) {
   #status-text {
     order: -1;
   }
@@ -1335,6 +1333,60 @@ body.holding > #main {
   /* Still set apart from Obriši tekst, which is now beside it. */
   #status-quiet {
     margin-left: 0.8rem;
+  }
+}
+
+/*
+  Two rows as columns: each as wide as the widest button in it, so Premesti
+  u Resoph stands under Ranije verzije with the same two edges. Izgled is
+  the one exception and keeps to the corner, where it is in the one row
+  too. The save line takes what is left beside them.
+
+  Not below 40rem: at the largest text size three buttons may not fit
+  across, and a grid would push past the window's edge where the rows
+  above wrap instead.
+*/
+@container (40rem <= width < 64.3rem) {
+  #status {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    gap: 0.25rem 0.4rem;
+  }
+
+  #status-actions,
+  #status-quiet {
+    display: contents;
+  }
+
+  #status .status-action {
+    justify-self: stretch;
+    justify-content: center;
+  }
+
+  #copy-all {
+    grid-area: 1 / 2;
+  }
+
+  #see-versions {
+    grid-area: 1 / 3;
+  }
+
+  #delete-note {
+    grid-area: 1 / 4;
+  }
+
+  #status-text {
+    grid-area: 2 / 1 / 3 / 3;
+  }
+
+  #move-to-resoph {
+    grid-area: 2 / 3;
+  }
+
+  /* Through #status, to outrank the stretch every button above is given. */
+  #status #appearance-button {
+    grid-area: 2 / 4;
+    justify-self: end;
   }
 }
 

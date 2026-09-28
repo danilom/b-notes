@@ -1233,12 +1233,9 @@ export async function startApp(runningOn: Host): Promise<void> {
   // text in front of him.
   seeVersions.prepend(icon('versions'));
   moveToResophLabel.textContent = words.moveToResoph;
-  // Resoph's own mark rather than an arrow: where the text goes, as the list
-  // shows beside the texts that are there.
-  const resophMark = document.createElement('span');
-  resophMark.className = 'resoph-mark-button';
-  resophMark.setAttribute('aria-hidden', 'true');
-  moveToResoph.prepend(resophMark);
+  // A line icon like its neighbours'. Resoph's own picture was tried here and
+  // stood out from them, however grey.
+  moveToResoph.prepend(icon('move-out'));
   hideList.append(icon('hide-list'));
   hideList.title = words.hideList;
   hideList.setAttribute('aria-label', words.hideList);
