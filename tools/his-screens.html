@@ -137,6 +137,8 @@
       <span>His screens:</span>
       <span id="choices"></span>
       <button id="reload" type="button" title="Load the app in the frame again">Reload</button>
+      <span>Strip:</span>
+      <span id="strips"></span>
       <span id="about"></span>
     </header>
     <div id="stage">
@@ -202,7 +204,7 @@
 
       function show(screen) {
         shown = screen;
-        history.replaceState(null, '', `#${screen.id}`);
+        history.replaceState(null, '', `${location.pathname}${location.search}#${screen.id}`);
         const inside = windowSize(screen);
         screenBox.style.width = `${screen.width}px`;
         screenBox.style.height = `${screen.height}px`;
@@ -230,6 +232,130 @@
       });
       window.addEventListener('resize', fit);
       show(remembered());
+
+      /*
+        Mock-ups of the strip under his text, laid over the real app in the
+        frame so they can be seen and pressed at his sizes. Nothing here is in
+        the app: each is a stylesheet and, for C, the app's own buttons moved
+        into a bar of their own, so they keep working. Choosing one reloads
+        the frame, since moved buttons cannot be put back.
+
+          Now  the strip as it is.
+          A    one button style, the two rows as columns with one right edge.
+          C    the text's own buttons in a bar across the top of the page, as
+               tall as the list's Novi tekst row; the save line and Izgled
+               alone at the bottom.
+      */
+      const STRIPS = [
+        { id: 'now', name: 'Now' },
+        { id: 'a', name: 'A' },
+        { id: 'c', name: 'C' },
+      ];
+      const strips = document.getElementById('strips');
+      let strip = new URLSearchParams(location.search).get('strip') ?? 'now';
+
+      /** One button look for the quiet two as well, and a line icon for Premesti. */
+      const SAME_BUTTONS = `
+        .status-quiet { border-color: var(--line) !important; background: var(--page) !important; color: var(--ink) !important; }
+        .status-quiet:hover:not(:disabled) { border-color: var(--quiet) !important; }
+      `;
+
+      const STYLES = {
+        a: `
+          ${SAME_BUTTONS}
+          #status-actions, #status-quiet {
+            display: grid !important;
+            grid-auto-flow: column;
+            grid-auto-columns: 11.5rem;
+            gap: 0.4rem !important;
+            justify-content: end;
+            margin-left: 0 !important;
+          }
+          #status-quiet { flex: none; }
+          #status-actions .status-action, #status-quiet .status-action { justify-content: center; }
+        `,
+        c: `
+          ${SAME_BUTTONS}
+          #mock-textbar {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.55rem 0.9rem 0.55rem 1.4rem;
+            background: var(--toolbar);
+            border-bottom: 1px solid var(--line);
+          }
+          #mock-textbar .status-action {
+            font-size: inherit;
+            padding: 0.45rem 0.8rem;
+            gap: 0.45rem;
+          }
+          #mock-textbar #delete-note { margin-left: auto; }
+          #status-actions { display: none !important; }
+          #status { flex-wrap: nowrap !important; }
+          #status-text { flex: 1; }
+          #status-quiet { margin-left: 0 !important; }
+        `,
+      };
+
+      /** The app's own line icon in place of the Resoph picture, as a line icon family would have it. */
+      function lineIconForMove(doc) {
+        const move = doc.getElementById('move-to-resoph');
+        const picture = move?.querySelector('.resoph-mark-button');
+        const model = doc.querySelector('#copy-all svg');
+        if (!move || !picture || !model) return;
+        const arrow = model.cloneNode(false);
+        for (const d of ['M5 12h14', 'm12 5 7 7-7 7']) {
+          const path = doc.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('d', d);
+          arrow.append(path);
+        }
+        picture.replaceWith(arrow);
+      }
+
+      function applyStrip(doc) {
+        if (strip === 'now') return;
+        const style = doc.createElement('style');
+        style.textContent = STYLES[strip];
+        doc.head.append(style);
+        lineIconForMove(doc);
+        if (strip !== 'c') return;
+        const bar = doc.createElement('div');
+        bar.id = 'mock-textbar';
+        const move = doc.getElementById('move-to-resoph');
+        move.classList.remove('status-quiet');
+        bar.append(doc.getElementById('copy-all'), doc.getElementById('see-versions'), move, doc.getElementById('delete-note'));
+        doc.getElementById('main').prepend(bar);
+      }
+
+      /** Once the app has drawn its buttons, which it does after reading the texts. */
+      frame.addEventListener('load', () => {
+        const doc = frame.contentDocument;
+        let tries = 0;
+        const ready = () => {
+          const labelled = doc?.getElementById('copy-all-label')?.textContent;
+          if (doc && labelled) return applyStrip(doc);
+          if ((tries += 1) < 60) setTimeout(ready, 100);
+        };
+        ready();
+      });
+
+      function chooseStrip(id) {
+        strip = id;
+        const query = id === 'now' ? '' : `?strip=${id}`;
+        history.replaceState(null, '', `${location.pathname}${query}#${shown.id}`);
+        for (const button of strips.children) button.setAttribute('aria-pressed', String(button.dataset.id === id));
+        frame.contentWindow?.location.reload();
+      }
+
+      for (const each of STRIPS) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = each.name;
+        button.dataset.id = each.id;
+        button.setAttribute('aria-pressed', String(each.id === strip));
+        button.addEventListener('click', () => chooseStrip(each.id));
+        strips.append(button);
+      }
     </script>
   </body>
 </html>
