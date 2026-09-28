@@ -323,9 +323,8 @@ function fill(
   /*
     Not for him, and not hidden from him either.
 
-    It sits on the bottom line, under both halves because it belongs to
-    neither, lined up with the fonts above it and clear of Vrati na početno
-    and U redu at either end — labelled in English and behind a question only
+    It sits on the bottom line beside U redu, under both halves because it
+    belongs to neither, labelled in English and behind a question only
     someone who meant to come here can answer. Hiding it behind a keystroke was considered and dropped: whoever
     needs it will be standing at his machine years from now with no checkout to
     hand, and a door you have to remember is a door you have lost.
