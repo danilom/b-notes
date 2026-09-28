@@ -142,10 +142,11 @@ export interface Writing {
 /**
  * His writing: which texts there are, and when they reach disk.
  *
- * The store below knows files — names, renames, the numbering of same-named
- * texts, the copies kept of each. This knows two things it deliberately does
- * not: that a text stays the same text when its name changes, and that a save
- * happens over time and can fail.
+ * The store below knows files — names, the copies kept of each, taking a text
+ * over from Resoph. This knows two things it deliberately does not: that a
+ * text stays the same text when the name it is held by changes, as a Resoph
+ * text's does when it becomes b-notes' copy, and that a save happens over time
+ * and can fail.
  *
  * Both of those lived in the interface, among the drawing, and every fault
  * worth the name came from there: a save fired and never awaited, so two could
@@ -228,10 +229,11 @@ export function createWriting(
    * One write at a time, ever.
    *
    * Two saves running together is not a rare interleaving to be careful about:
-   * `store.save` reads the folder, plans a rename and may keep a copy, so two
-   * of them crossing can rename against each other or land the older text
-   * last. This is the whole of the answer, and the reason saving goes through
-   * a queue that normally holds nothing at all.
+   * `store.save` reads what is on disk, may keep a copy, and the first time a
+   * Resoph text is written takes it over and writes a stub, so two of them
+   * crossing can take one text over twice or land the older text last. This
+   * is the whole of the answer, and the reason saving goes through a queue
+   * that normally holds nothing at all.
    */
   function work(): Promise<void> {
     running ??= run().finally(() => {
