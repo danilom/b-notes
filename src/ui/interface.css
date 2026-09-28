@@ -775,9 +775,17 @@ button svg {
 */
 .section {
   position: sticky;
-  top: 0;
+  /*
+    A pixel above the top of the list rather than at it, and a pixel taller
+    so nothing moves. At 150 and 175 % the list's top falls between two of
+    the screen's pixels: the heading was drawn from a whole one and the rows
+    cut at the exact edge, so a sliver of their letters showed above it as
+    they scrolled. Reaching past the edge, it covers that sliver. Only while
+    it is pinned: further down the list, top does nothing.
+  */
+  top: -1px;
   z-index: 1;
-  padding: 1rem 0.9rem 0.3rem;
+  padding: calc(1rem + 1px) 0.9rem 0.3rem;
   background: var(--panel);
   font-size: 0.75em;
   letter-spacing: 0.06em;
