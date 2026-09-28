@@ -113,16 +113,40 @@ export function createNoteLibrary(
     if (original === null || original === undefined) throw new Error(`No such Resoph text: ${stem}`);
     const seen = described.get(stem)?.note.text ?? original.text;
 
-    const taken = new Set([...(await own.liveIds()), ...(await own.putAwayIds())]);
-    const copy = unusedName(copyNameFor(stem), taken);
-    await own.keepLabelledCopy(copy, original.text, FROM_RESOPH);
-    await own.save(copy, seen);
+    const live = await own.liveIds();
+    const resumed = await interruptedCopy(stem, seen, live);
+    const copy = resumed ?? unusedName(copyNameFor(stem), new Set([...live, ...(await own.putAwayIds())]));
+    if (resumed === null) {
+      await own.keepLabelledCopy(copy, original.text, FROM_RESOPH);
+      await own.save(copy, seen);
+    }
     if ((await own.read(copy)) !== seen) throw new Error(`The copy of a Resoph text did not read back: ${copy}`);
 
     await leaveStub(stem, seen, copy, kind);
     renamed(resophIdOf(stem), copy);
     log.info('Took a text over from Resoph', { from: stem, to: copy, kind });
     return copy;
+  }
+
+  /**
+   * A copy of this Resoph file already holding exactly the words being taken
+   * over, or null.
+   *
+   * That is this same takeover, stopped after the copy was written — the
+   * stub could not be written, say, with Dropbox holding the file — or the
+   * same one done on another machine and synced here. The save's retry comes
+   * back through here, and making a copy each time left him a second text
+   * for every attempt. A copy holding anything else is his writing since, and
+   * is left alone: the new words get a copy of their own beside it.
+   */
+  async function interruptedCopy(stem: string, seen: string, live: ReadonlySet<string>): Promise<string | null> {
+    const named = copyNameFor(stem);
+    const ofThisFile = (id: string): boolean =>
+      id === named || (id.startsWith(`${named} `) && /^\d+$/.test(id.slice(named.length + 1)));
+    for (const id of [...live].filter(ofThisFile).sort()) {
+      if ((await own.read(id)) === seen) return id;
+    }
+    return null;
   }
 
   /**
