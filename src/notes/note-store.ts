@@ -468,8 +468,11 @@ export function createNoteStore(
     },
 
     async save(id: string | null, text: string): Promise<string | null> {
-      const existing = await noteFiles();
-      const current = id === null ? undefined : existing.get(requireNoteId(id))?.path;
+      // Straight to the file, not through a listing of the folder: an id only
+      // ever names `<id>.txt`. Listing on every autosave read and stat'ed every
+      // text he has — 9ms a save with a few, 59ms with a thousand, on a fast
+      // disk — and was one more step that could fail his save.
+      const current = id === null ? undefined : at(`${requireNoteId(id)}${EXTENSION}`);
 
       // Read at most once, however many of the questions below want it: on a
       // 145KB essay this is the expensive part of a save.
@@ -481,7 +484,7 @@ export function createNoteStore(
 
       const action = await planSave(id, text, {
         newName: async (written) =>
-          unusedName(newNameFor(titleFrom(written), naming.now(), naming.machine), new Set(existing.keys())),
+          unusedName(newNameFor(titleFrom(written), naming.now(), naming.machine), new Set((await noteFiles()).keys())),
         previousText,
         lastKept: async () => (id === null ? null : newestCopy(id)),
       });

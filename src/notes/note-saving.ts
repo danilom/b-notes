@@ -1,5 +1,5 @@
 import { isEmptyText } from './note.ts';
-import { worthKeeping } from './text-change.ts';
+import { enoughGoes, worthKeeping } from './text-change.ts';
 
 /**
  * What a save should do. Deciding is shared; carrying it out is each host's own
@@ -78,6 +78,7 @@ export async function planSave(
     run of small changes and keeps nothing. What this catches is the chunk that
     disappears between one save and the next.
   */
+  if (!enoughGoes(previous, text)) return { kind: 'write', id };
   const keep = worthKeeping(previous, text, await context.lastKept());
   return keep ? { kind: 'write', id, snapshot: previous } : { kind: 'write', id };
 }

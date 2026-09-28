@@ -65,6 +65,26 @@ describe('a disk that will not answer', () => {
     // store now says so rather than choosing a number.
     await assert.rejects(() => store.countVersions(id ?? ''), /permission denied/);
   });
+
+  it('still saves a text whose folder cannot be listed, since saving it needs only its own file', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
+    const real = createFileSystem(path.join(tmpdir(), 'b-notes-staging'));
+    let listing = true;
+    const refuses: FileSystem = {
+      ...real,
+      list: async (folder: string) => {
+        if (!listing) throw new Error('EACCES: permission denied');
+        return real.list(folder);
+      },
+    };
+    const store = createNoteStore(refuses, dir.replaceAll('\\', '/'), silentLog());
+    const id = (await store.save(null, 'O zimi\n\nTekst.')) ?? '';
+
+    listing = false;
+    await store.save(id, 'O zimi\n\nTekst. Dopisano.');
+
+    assert.equal(await readFile(path.join(dir, `${id}${EXTENSION}`), 'utf8'), 'O zimi\n\nTekst. Dopisano.');
+  });
 });
 
 describe('saving', () => {

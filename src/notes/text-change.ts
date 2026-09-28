@@ -45,6 +45,17 @@ export function changeBetween(from: string, to: string): TextChange {
 }
 
 /**
+ * The first of `worthKeeping`'s questions on its own: is enough going?
+ *
+ * Asked apart so a save can stop here without fetching the copy already kept,
+ * which is a trip to the disk and the answer to a question almost no save gets
+ * as far as.
+ */
+export function enoughGoes(previous: string, next: string): boolean {
+  return changeBetween(previous, next).removed >= WORTH_KEEPING;
+}
+
+/**
  * Whether this save is about to destroy enough to keep a copy of first.
  *
  * Two questions, one number. Is enough going? And is there enough in what is
@@ -62,7 +73,7 @@ export function changeBetween(from: string, to: string): TextChange {
  * worth keeping.
  */
 export function worthKeeping(previous: string, next: string, lastKept: string | null): boolean {
-  if (changeBetween(previous, next).removed < WORTH_KEEPING) return false;
+  if (!enoughGoes(previous, next)) return false;
   if (lastKept === null) return true;
   return changeBetween(lastKept, previous).added >= WORTH_KEEPING;
 }
