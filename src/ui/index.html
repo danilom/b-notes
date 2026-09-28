@@ -22,7 +22,10 @@
         <button id="new-note" type="button">
           <span id="new-note-label"></span>
         </button>
-
+        <!-- The list folds away to the left, from the edge it folds towards,
+             well apart from Novi tekst. Only the chevron: he presses this on
+             purpose. The way back is the one that needs words. -->
+        <button id="hide-list" type="button"></button>
       </div>
       <div id="finder">
         <div id="search-row">
@@ -47,6 +50,14 @@
         <span id="archive-block-label"></span>
       </div>
     </div>
+
+    <!-- The way back to the list while it is folded away: at the window's edge,
+         level with where Novi tekst was, and saying what it brings back, since
+         this is what he has to find again. Not kept between runs, so closing
+         and opening the app always brings the list back too. -->
+    <button id="show-list" type="button" hidden>
+      <span id="show-list-label"></span>
+    </button>
 
     <div id="main">
       <div id="writing">

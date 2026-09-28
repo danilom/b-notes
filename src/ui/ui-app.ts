@@ -102,6 +102,9 @@ const foundPane = element('found', HTMLDivElement);
 const statusText = element('status-text', HTMLSpanElement);
 const search = element('search', HTMLInputElement);
 const newNote = element('new-note', HTMLButtonElement);
+const hideList = element('hide-list', HTMLButtonElement);
+const showList = element('show-list', HTMLButtonElement);
+const showListLabel = element('show-list-label', HTMLSpanElement);
 const newNoteLabel = element('new-note-label', HTMLSpanElement);
 const appearanceButton = element('appearance-button', HTMLButtonElement);
 const appearanceLabel = element('appearance-label', HTMLSpanElement);
@@ -859,7 +862,10 @@ async function deleteOpenNote(id: string, handle: NoteHandle): Promise<void> {
   notice = words.noteDeleted;
   showStatus();
   // Where he is most likely to be going next, and somewhere for the keyboard to
-  // land: the button he pressed has just gone inert under his finger.
+  // land: the button he pressed has just gone inert under his finger. The list
+  // comes back if he had folded it away: the text he was in has gone, and the
+  // list is what is left to work with.
+  showsList(true);
   search.focus();
   log.info('Put a text away', { id });
 }
@@ -890,6 +896,22 @@ async function reload(): Promise<void> {
 
 
 appearanceButton.addEventListener('click', () => panels.showAppearance());
+
+/**
+ * The list of texts folded away, or back. Not kept: every start shows it, so
+ * closing and opening the app is a way back he cannot lose. The keyboard goes
+ * to his text either way, which is what the room was made for.
+ */
+function showsList(shown: boolean): void {
+  if (document.body.classList.contains('list-hidden') === !shown) return;
+  document.body.classList.toggle('list-hidden', !shown);
+  showList.hidden = shown;
+  editor.focus();
+  log.info(shown ? 'Showed the list of texts' : 'Hid the list of texts');
+}
+
+hideList.addEventListener('click', () => showsList(false));
+showList.addEventListener('click', () => showsList(true));
 copyAll.addEventListener('click', () => {
   void copyWholeText();
 });
@@ -1198,6 +1220,12 @@ export async function startApp(runningOn: Host): Promise<void> {
   seeVersions.prepend(icon('versions'));
   moveToResophLabel.textContent = words.moveToResoph;
   moveToResoph.prepend(icon('move-out'));
+  hideList.append(icon('hide-list'));
+  hideList.title = words.hideList;
+  hideList.setAttribute('aria-label', words.hideList);
+  showList.prepend(icon('show-list'));
+  showListLabel.textContent = words.listOfTexts;
+  showList.title = words.showList;
   appearanceButton.prepend(icon('appearance'));
   search.placeholder = words.searchPlaceholder;
   search.setAttribute('aria-label', words.searchLabel);
