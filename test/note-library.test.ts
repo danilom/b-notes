@@ -169,6 +169,20 @@ describe('the first time he types into a Resoph text', () => {
     assert.ok(stub.includes('\r\n'), 'the stub is not written as Resoph writes its files');
   });
 
+  it('takes over a name with a space after it too, and saves the copy again', async () => {
+    // The shape 0.7.0 refused on his machine, every autosave, until he closed
+    // it: ranked, escaped, and a space before the extension.
+    const trailing = `${' '.repeat(30)}%2AKILIM `;
+    const { store, resoph } = await library({ [trailing]: 'Prvi red.' });
+
+    const id = await store.save(resophIdOf(trailing), `${' '.repeat(30)}*KILIM \nPrvi red, bolji.`);
+
+    assert.equal(id, copyNameFor(trailing));
+    assert.equal(await store.save(id, `${' '.repeat(30)}*KILIM \nPrvi red, jos bolji.`), id);
+    assert.equal(await store.read(id), `${' '.repeat(30)}*KILIM \nPrvi red, jos bolji.`);
+    assert.equal(isStub(await resophFile(resoph, trailing)), true);
+  });
+
   it("keeps what Resoph had as a version, labelled as coming from Resoph", async () => {
     const { store } = await library({ Pismo: 'Prvi red.' });
 
