@@ -21,9 +21,7 @@ export function testModeRow(on: boolean, change: (on: boolean) => void, inBrowse
 
   const note = document.createElement('span');
   note.className = 'advanced-note';
-  note.textContent = `Where each text lives, on every row, and a [test-mode] tag. ${
-    inBrowser ? 'Here: ?test in the address.' : 'This machine only.'
-  }`;
+  note.textContent = `Each text's file on its row; ${inBrowser ? 'here, ?test in the address.' : 'this machine only.'}`;
 
   row.append(name, box, note);
   return row;

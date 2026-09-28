@@ -311,10 +311,6 @@ export function openAdvancedPanel(
       ),
     );
 
-    const note = document.createElement('p');
-    note.className = 'advanced-note';
-    note.textContent = 'Nothing is moved or copied. The app starts again when you apply.';
-
     const footer = document.createElement('footer');
     const keep = document.createElement('button');
     keep.type = 'button';
@@ -336,7 +332,7 @@ export function openAdvancedPanel(
       pieces.push(warning);
     }
 
-    panel.replaceChildren(...pieces, folders, note, footer);
+    panel.replaceChildren(...pieces, folders, footer);
   }
 
   fill();

@@ -1757,13 +1757,22 @@ dialog::backdrop {
   font-family: var(--ui-font);
 }
 
+/*
+  A thick border in the accent, on this and the import opened from it: the
+  one sign, at a glance, that these are the setup's dialogs and not his.
+  Both classes, to win over `.panel`'s own thin border, which comes later.
+*/
+.panel.advanced-panel {
+  border: 4px solid var(--chosen);
+}
+
 /* The first thing anyone needs when he telephones, and until now it lived
    only inside the log file. */
 .advanced-build {
   display: flex;
   align-items: baseline;
   gap: 0.8rem;
-  margin: 0.2rem 0 1.2rem;
+  margin: 0.2rem 0 0.8rem;
   font-family: Consolas, 'Courier New', monospace;
 }
 
@@ -1782,7 +1791,7 @@ dialog::backdrop {
   everything here is real and the app around it is being changed.
 */
 .advanced-warning {
-  margin: 0 0 1.2rem;
+  margin: 0 0 0.8rem;
   padding: 0.6rem 0.8rem;
   border: 2px solid var(--danger);
   background: var(--danger-wash);
@@ -1876,10 +1885,13 @@ dialog::backdrop {
   color: var(--ink);
 }
 
+/* What a row's control means, beside it: no margin of its own, so a row with
+   a note is no further from its neighbours than one without. */
 .advanced-note {
-  margin: 1.2rem 0 0;
+  margin: 0;
   color: var(--quiet);
   font-size: 0.9em;
+  line-height: 1.35;
 }
 
 /* The archive import: nearly the whole window, the console taking all of it
