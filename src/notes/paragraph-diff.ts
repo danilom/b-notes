@@ -72,7 +72,21 @@ const paragraphsOf = (text: string): string[] =>
     .map((paragraph) => paragraph.trim())
     .filter((paragraph) => paragraph.length > 0);
 
-const wordsOf = (text: string): string[] => text.split(/\s+/).filter((word) => word.length > 0);
+/**
+ * A line break inside a paragraph, standing among its words.
+ *
+ * His lines inside a paragraph are his: three changes written one under the
+ * other are three lines, and a paragraph compared word by word used to come
+ * back as one run-on line because every break was split away with the spaces.
+ */
+export const LINE_BREAK = '\n';
+
+/** A paragraph's words, each line break kept as a word of its own. */
+const wordsOf = (text: string): string[] =>
+  text.split(/[ \t]+|(\n)/).filter((word): word is string => word !== undefined && word.length > 0);
+
+/** How many words, not counting line breaks, which say nothing about how alike two paragraphs are. */
+const countOf = (words: readonly string[]): number => words.filter((word) => word !== LINE_BREAK).length;
 
 /**
  * The classic longest-common-subsequence table, filled from the end.
@@ -129,11 +143,11 @@ function align(from: readonly string[], to: readonly string[]): WordPiece[] {
 /** Null unless these two are alike enough to be called one paragraph reworded. */
 function reworded(was: string, now: string): DiffPiece | null {
   const [before, after] = [wordsOf(was), wordsOf(now)];
-  const longer = Math.max(before.length, after.length);
+  const longer = Math.max(countOf(before), countOf(after));
   if (longer < ENOUGH_WORDS) return null;
 
   const words = align(before, after);
-  const shared = words.filter((word) => word.kind === 'same').length;
+  const shared = words.filter((word) => word.kind === 'same' && word.text !== LINE_BREAK).length;
 
   if (shared / longer < SAME_ENOUGH) return null;
   return { kind: 'changed', text: was, words };

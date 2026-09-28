@@ -68,6 +68,22 @@ describe('comparing a copy with the active text', () => {
     );
   });
 
+  it('keeps his lines inside a reworded paragraph, rather than running them together', () => {
+    const lines = ['change in resoph', '2nd change in resoph', '3rd change in resoph'];
+    const diff = diffParagraphs(
+      joined('N', [...lines, '!!!!! next day change in resoph'].join('\n')),
+      joined('N', lines.join('\n')),
+    );
+    const one = diff.pieces[1];
+
+    assert.equal(one?.kind, 'changed');
+    const words = one?.kind === 'changed' ? one.words : [];
+    assert.deepEqual(
+      words.filter((word) => word.kind === 'same').map((word) => word.text).join(' '),
+      'change in resoph \n 2nd change in resoph \n 3rd change in resoph',
+    );
+  });
+
   it('leaves short paragraphs alone, where half the words is one word', () => {
     // Two words each: one match is fifty per cent, and "reworded" would be a
     // worse account of them than "replaced".

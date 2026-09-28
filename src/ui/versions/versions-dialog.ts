@@ -1,7 +1,7 @@
 import { type Shown, showAsModal } from '../dialogs/modal.ts';
 import { type Language, describeWhen, strings } from '../../language/wording.ts';
 import type { NoteVersion } from '../../notes/note.ts';
-import { type DiffPiece, type DiffRun, diffParagraphs, runsOf } from '../../notes/paragraph-diff.ts';
+import { type DiffPiece, type DiffRun, LINE_BREAK, diffParagraphs, runsOf } from '../../notes/paragraph-diff.ts';
 import { icon } from '../icons.ts';
 import { scrollShowing } from './change-in-view.ts';
 import { createStepper } from '../stepper.ts';
@@ -192,6 +192,12 @@ function rewordedOf(words: readonly { kind: string; text: string }[]): HTMLParag
   const paragraph = document.createElement('p');
 
   for (const word of words) {
+    // A break he made inside the paragraph, drawn as one. A break only one
+    // side has is drawn too: a line cannot be struck through.
+    if (word.text === LINE_BREAK) {
+      paragraph.append(document.createElement('br'));
+      continue;
+    }
     if (word.kind === 'same') {
       paragraph.append(`${word.text} `);
       continue;
