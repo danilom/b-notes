@@ -1744,24 +1744,27 @@ dialog::backdrop {
 /* ---- the settings that are not his ---- */
 
 /*
-  Not for him, and not hidden from him either. It sits in the bottom-left
-  corner of Izgled, apart from both halves because it belongs to neither,
-  in English and behind a word to type, because whoever needs it will be
-  at his machine years from now with no checkout to hand — and a door you
-  have to remember is a door you have lost. Quiet rather than concealed: a
-  gear is a mark he has no reason to press and whoever is looking for it
-  cannot miss.
-
-  Written against the footer so it wins over the footer's own buttons,
-  which are sized to be pressed; this one is sized to be passed over.
+  Not for him, and not hidden from him either. It sits on a line of its
+  own at the bottom right of Izgled, under both halves because it belongs
+  to neither, in English and behind a word to type, because whoever needs
+  it will be at his machine years from now with no checkout to hand — and
+  a door you have to remember is a door you have lost. Quiet rather than
+  concealed: a gear is a mark he has no reason to press and whoever is
+  looking for it cannot miss.
 */
-.panel footer .advanced-door {
+.advanced-line {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.4rem;
+}
+
+.advanced-door {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  min-width: 0;
-  margin-right: 0.6rem;
-  padding: 0.3rem 0.4rem;
+  /* Its words, not its box, flush with the right edge of the choices. */
+  margin-right: -0.6rem;
+  padding: 0.3rem 0.6rem;
   border-color: transparent;
   background: none;
   color: var(--quiet);
@@ -2799,6 +2802,16 @@ dialog::backdrop {
 */
 .appearance-panel .group-row > :first-child {
   min-width: 8.9rem;
+}
+
+/* Svetla and Tamna halving that width between them, so the pair is as
+   wide as the size control above it and the two read as one column. */
+.appearance-panel .choices:has(.mode-choice) {
+  flex-wrap: nowrap;
+}
+
+.mode-choice {
+  flex: 1 1 0;
 }
 
 /* The two halves: his writing, and the app around it. */
