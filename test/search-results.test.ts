@@ -145,3 +145,63 @@ describe('the order within a group', () => {
     assert.deepEqual(names(inTitle), ['Andric A', 'Andric B']);
   });
 });
+
+describe('a search of several words', () => {
+  it('finds only the texts that have every word', () => {
+    const { inTitle, inText, asPart } = foundGroups(
+      [text('Ivo', 'Samo ime.'), text('Pismo', 'Andric, bez imena.'), text('Oba', 'Ivo je Andric.')],
+      'ivo andric',
+      NOW,
+    );
+    assert.deepEqual([...names(inTitle), ...names(inText), ...names(asPart)], ['Oba']);
+  });
+
+  it('puts the words together before the same words apart', () => {
+    const { inText } = foundGroups(
+      [text('A', 'Ivo je pisao, a Andric nije.'), text('B', 'Pisao je Ivo Andric.')],
+      'ivo andric',
+      NOW,
+    );
+    assert.deepEqual(names(inText), ['B', 'A']);
+  });
+
+  it('puts the words together before words apart mentioned more often', () => {
+    const apart = Array.from({ length: 15 }, () => 'Ivo i Andric').join(', ');
+    const { inText } = foundGroups([text('A', apart), text('B', 'Ivo Andric.')], 'ivo andric', NOW);
+    assert.deepEqual(names(inText), ['B', 'A']);
+  });
+
+  it('puts a title with the words together before one with them apart', () => {
+    const { inTitle } = foundGroups([text('Andric i Ivo'), text('Ivo Andric')], 'ivo andric', NOW);
+    assert.deepEqual(names(inTitle), ['Ivo Andric', 'Andric i Ivo']);
+  });
+
+  it('counts a text with some words in its title and the rest further down as found in the text', () => {
+    const { inTitle, inText } = foundGroups([text('Andric', 'Pisao je Njegos.')], 'andric njegos', NOW);
+    assert.deepEqual(names(inTitle), []);
+    assert.deepEqual(names(inText), ['Andric']);
+  });
+
+  it('counts a word glued to his mark in the title with the rest further down', () => {
+    const { inText } = foundGroups([text('AAKafana', 'Pisao je Njegos.')], 'kafana njegos', NOW);
+    assert.deepEqual(names(inText), ['AAKafana']);
+  });
+
+  it('counts words apart by the rarest of them', () => {
+    // Ivo forty times and Andric once is not about Ivo Andric.
+    const ivo = Array.from({ length: 40 }, () => 'Ivo').join(' ');
+    const both = Array.from({ length: 5 }, () => 'Ivo, pa Andric').join(' ');
+    const { inText } = foundGroups([text('A', `${ivo}, pa Andric`), text('B', both)], 'ivo andric', NOW);
+    assert.deepEqual(names(inText), ['B', 'A']);
+  });
+
+  it('puts the words apart before a word found only inside another', () => {
+    const { inText, asPart } = foundGroups(
+      [text('A', 'Zivot i Andric.'), text('B', 'Ivo je pisao, a Andric nije.')],
+      'ivo andric',
+      NOW,
+    );
+    assert.deepEqual(names(inText), ['B']);
+    assert.deepEqual(names(asPart), ['A']);
+  });
+});

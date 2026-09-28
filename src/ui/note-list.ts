@@ -4,6 +4,7 @@ import { type TitleParts, titlePartsOf } from '../notes/title-marks.ts';
 import type { LiveNote } from '../notes/writing.ts';
 import { toSearchable } from '../language/diacritics.ts';
 import { foundGroups } from './search-results.ts';
+import { hasEveryWord, wordsOf } from './phrase-match.ts';
 import { matchesIn } from './text-match.ts';
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 
@@ -76,9 +77,10 @@ export interface Section {
  * quicker rather than slower when diacritics stopped mattering.
  */
 export function matches(row: Searched, query: string): boolean {
-  const needle = toSearchable(query.trim());
-  if (needle.length === 0) return true;
-  return row.searchable.includes(needle) || foundByCode(row, query) !== null;
+  const words = wordsOf(query);
+  if (words.length === 0) return true;
+  // Every word, together or apart, as the list finds them.
+  return hasEveryWord(row.searchable, words) || foundByCode(row, query) !== null;
 }
 
 /** What a search looks through: his words, and the code in his file's name. */
@@ -99,7 +101,7 @@ interface Searched {
  */
 export function foundByCode(row: Searched, query: string): string | null {
   const needle = toSearchable(query.trim());
-  if (needle.length === 0 || row.searchable.includes(needle)) return null;
+  if (needle.length === 0 || hasEveryWord(row.searchable, wordsOf(query))) return null;
   const code = row.code ?? null;
   return code !== null && toSearchable(code).includes(needle) ? code : null;
 }
@@ -301,7 +303,7 @@ function markOf(mark: string): HTMLElement {
 function titleWithMatches(text: string, query: string): HTMLElement {
   const title = span('note-title', '');
   let from = 0;
-  for (const { start, end } of matchesIn(text, query)) {
+  for (const { start, end } of matchesIn(text, query, 'any-word')) {
     const found = document.createElement('mark');
     found.className = 'note-found';
     found.textContent = text.slice(start, end);

@@ -1,5 +1,6 @@
 import { toSearchable } from '../language/diacritics.ts';
 import { titlePartsOf } from '../notes/title-marks.ts';
+import { phrasesIn, wordsOf } from './phrase-match.ts';
 
 /**
  * What a search found, in the order it is worth his looking at.
@@ -9,6 +10,11 @@ import { titlePartsOf } from '../notes/title-marks.ts';
  * texts where it is only inside other words — `ivo` in "život" — which is a
  * match, but seldom the one he meant. Everything finer than that is order
  * within a group, never another heading.
+ *
+ * Of several words, every one must be there; see phrase-match.ts. The words
+ * together, as he typed them, come before the same words apart, in whichever
+ * group the text is in. A text with some of them in its title and the rest
+ * further down is found in the text.
  *
  * What counts as the word: where it starts a word, or is the whole of one.
  * The two are close, and nearly always the same word — in Serbian "Andrića"
@@ -21,11 +27,12 @@ import { titlePartsOf } from '../notes/title-marks.ts';
  * 1. The few he is working on now, newest first. Recency is worth a lot for
  *    a handful of texts and nothing after that: past the last few, he is as
  *    likely to be looking for something from years ago.
- * 2. In the titles, the whole word before the start of one.
- * 3. In the texts, how often it is there as a word, in coarse steps: a text
+ * 2. The words together before the words apart.
+ * 3. In the titles, the whole word before the start of one.
+ * 4. In the texts, how often it is there as a word, in coarse steps: a text
  *    that names Andrić fifteen times is about him, one that names him once is
  *    not, and between twenty mentions and forty there is nothing to choose.
- * 4. His own order, the one Svi tekstovi is in. His leading spaces, his star
+ * 5. His own order, the one Svi tekstovi is in. His leading spaces, his star
  *    and his AA and ZZ are all ways of moving a title up or down a list, so
  *    his order is his ranking, and this reads it without having to know what
  *    any of his marks means. Last, because for texts he has not marked it is
@@ -34,7 +41,7 @@ import { titlePartsOf } from '../notes/title-marks.ts';
 export interface FoundGroups<T> {
   inTitle: T[];
   inText: T[];
-  /** Found only inside other words, in the title or the text. */
+  /** Found only inside other words, in the title or the text; of several, one of them at least. */
   asPart: T[];
 }
 
@@ -63,35 +70,56 @@ const MENTION_STEPS = [15, 5, 2, 1] as const;
  * @param now the moment "recent" is measured from.
  */
 export function foundGroups<T extends Findable>(inHisOrder: readonly T[], query: string, now: number): FoundGroups<T> {
-  const needle = toSearchable(query.trim());
-  if (needle.length === 0) return { inTitle: [], inText: [], asPart: [] };
+  const words = wordsOf(query);
+  if (words.length === 0) return { inTitle: [], inText: [], asPart: [] };
 
-  const inTitle: Ranked<T>[] = [];
-  const inText: Ranked<T>[] = [];
-  const asPart: Ranked<T>[] = [];
+  const needle = toSearchable(query.trim());
+  const groups: { [group in keyof FoundGroups<T>]: Ranked<T>[] } = { inTitle: [], inText: [], asPart: [] };
   inHisOrder.forEach((text, place) => {
-    const title = matchIn(titleAsRead(text.sortTitle), needle);
-    const code = toSearchable(text.code ?? '');
-    // The code is a name he types exactly: any match in it is a match on the text itself.
-    if (title.whole > 0 || (code.length > 0 && code.includes(needle))) {
-      inTitle.push({ text, place, weight: 2 });
-      return;
-    }
-    if (title.start > 0) {
-      inTitle.push({ text, place, weight: 1 });
-      return;
-    }
-    const body = matchIn(text.searchable, needle);
-    const words = body.whole + body.start;
-    if (words > 0) {
-      // The step first; a whole word only decides between texts in the same one.
-      inText.push({ text, place, weight: stepOf(words) * 2 + (body.whole > 0 ? 1 : 0) });
-    } else if (title.inside + body.inside > 0) {
-      asPart.push({ text, place, weight: 0 });
-    }
+    const found = placeOf(text, words, needle);
+    if (found !== null) groups[found.group].push({ text, place, weight: found.weight });
   });
 
-  return { inTitle: ordered(inTitle, now), inText: ordered(inText, now), asPart: ordered(asPart, now) };
+  return {
+    inTitle: ordered(groups.inTitle, now),
+    inText: ordered(groups.inText, now),
+    asPart: ordered(groups.asPart, now),
+  };
+}
+
+/** Which group a text goes in and how well it matched there; null where it was not found. */
+function placeOf(
+  text: Findable,
+  words: readonly string[],
+  needle: string,
+): { group: keyof FoundGroups<unknown>; weight: number } | null {
+  // The code is a name he types exactly: any match in it is a match on the text itself.
+  const code = toSearchable(text.code ?? '');
+  if (code.length > 0 && code.includes(needle)) return { group: 'inTitle', weight: 3 };
+
+  const titleRead = titleAsRead(text.sortTitle);
+  if (!words.every((word) => text.searchable.includes(word) || titleRead.includes(word))) return null;
+
+  const title = matchIn(titleRead, words);
+  if (title.everyWord) {
+    // The phrase first; a whole word only decides between titles that are alike in that.
+    const whole = title.phrase > 0 ? title.wholePhrase : title.wholeWords.every(Boolean);
+    return { group: 'inTitle', weight: (title.phrase > 0 ? 2 : 0) + (whole ? 1 : 0) };
+  }
+
+  const body = matchIn(text.searchable, words);
+  // Some of the words in the title and the rest further down are found in the text.
+  const mentions = words.map((_, at) => Math.max(title.mentions[at] ?? 0, body.mentions[at] ?? 0));
+  if (mentions.some((count) => count === 0)) return { group: 'asPart', weight: 0 };
+
+  // The phrase first, then the step, then a whole word. Apart, the step is the
+  // rarest word's: forty mentions of Ivo and one of Andrić is not about Andrić.
+  const together = body.phrase > 0;
+  const count = together ? body.phrase : Math.min(...mentions);
+  const whole = together
+    ? body.wholePhrase
+    : words.every((_, at) => (body.wholeWords[at] ?? false) || (title.wholeWords[at] ?? false));
+  return { group: 'inText', weight: (together ? 10 : 0) + stepOf(count) * 2 + (whole ? 1 : 0) };
 }
 
 /**
@@ -106,41 +134,36 @@ function titleAsRead(sortTitle: string): string {
 }
 
 interface Matches {
-  whole: number;
-  start: number;
-  inside: number;
+  /** How many times the words stand together as words, beginning a word or whole. */
+  phrase: number;
+  /** Whether the phrase is there once at least as whole words. */
+  wholePhrase: boolean;
+  /** How many times each word is there as a word, in the order he typed them. */
+  mentions: number[];
+  /** Whether each word is there once at least as a whole word. */
+  wholeWords: boolean[];
+  /** Whether each word is somewhere there as a word. */
+  everyWord: boolean;
 }
-
-/** How many times the needle is there as a whole word, at the start of one, and inside one. */
-function matchIn(haystack: string, needle: string): Matches {
-  const found = { whole: 0, start: 0, inside: 0 };
-  for (let at = haystack.indexOf(needle); at !== -1; at = haystack.indexOf(needle, at + needle.length)) {
-    const end = at + needle.length;
-    if (!wordBreak(haystack, at)) found.inside += 1;
-    else if (wordBreak(haystack, end)) found.whole += 1;
-    else found.start += 1;
-  }
-  return found;
-}
-
-const LETTER = /\p{L}/u;
-const DIGIT = /\p{N}/u;
 
 /**
- * Whether a word begins or ends at this point: at either end of the text,
- * beside anything that is not a letter or a digit, or where letters meet
- * digits. That last is for his series numbers, glued to the name as often
- * as not — "5Nosac", "3USAoc" — where the name is still a word.
+ * How the words are in one piece of his writing.
+ *
+ * Counted as words, never inside other words: `ivo` in "život" is only ever
+ * enough for the last group, and a text that names Ivo once is no more about
+ * him for mentioning life fifty times.
  */
-function wordBreak(text: string, at: number): boolean {
-  if (at === 0 || at === text.length) return true;
-  const before = text.charAt(at - 1);
-  const after = text.charAt(at);
-  const kind = (letter: string): 'letter' | 'digit' | 'other' =>
-    LETTER.test(letter) ? 'letter' : DIGIT.test(letter) ? 'digit' : 'other';
-  const a = kind(before);
-  const b = kind(after);
-  return a === 'other' || b === 'other' || a !== b;
+function matchIn(haystack: string, words: readonly string[]): Matches {
+  const phrases = phrasesIn(haystack, words).filter(({ kind }) => kind !== 'inside');
+  const each = words.map((word) => phrasesIn(haystack, [word]).filter(({ kind }) => kind !== 'inside'));
+  const mentions = each.map((found) => found.length);
+  return {
+    phrase: phrases.length,
+    wholePhrase: phrases.some(({ kind }) => kind === 'whole'),
+    mentions,
+    wholeWords: each.map((found) => found.some(({ kind }) => kind === 'whole')),
+    everyWord: mentions.every((count) => count > 0),
+  };
 }
 
 interface Ranked<T> {

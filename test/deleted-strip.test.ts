@@ -52,6 +52,11 @@ describe('the strip under his list', () => {
     assert.equal(deletedStripFor([...THREE, retitled], '~K3F9A2', 'sr').label, '1 obrisan tekst sadrži „~K3F9A2“');
   });
 
+  it('counts the ones with every word he typed, together or apart, as his list finds them', () => {
+    // "O zimi … snijeg" apart; the letter mentions winter but no snow.
+    assert.equal(deletedStripFor(THREE, 'snijeg zimi', 'sr').label, '1 obrisan tekst sadrži „snijeg zimi“');
+  });
+
   it('finds them without the marks he did not type', () => {
     assert.equal(deletedStripFor(THREE, 'lisce', 'sr').label, '1 obrisan tekst sadrži „lisce“');
   });

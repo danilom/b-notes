@@ -46,6 +46,30 @@ describe('finding the search inside his text', () => {
   });
 });
 
+describe('marking a search of several words in his text', () => {
+  it('marks the words together where they are, and not the same words apart', () => {
+    assert.deepEqual(found('Ivo je pisao. Ivo Andric, pa Andric.', 'ivo andric'), ['Ivo Andric']);
+  });
+
+  it('marks each word where they are only apart, in reading order', () => {
+    assert.deepEqual(found('Andric je, a Ivo nije, Andric', 'ivo andric'), ['Andric', 'Ivo', 'Andric']);
+  });
+
+  it('marks nothing in a text that lacks one of the words', () => {
+    assert.deepEqual(found('Ivo je pisao.', 'ivo andric'), []);
+  });
+
+  it('marks what there is of them in a title, where the rest may be further down', () => {
+    const inTitle = (title: string, query: string) =>
+      matchesIn(title, query, 'any-word').map(({ start, end }) => title.slice(start, end));
+    assert.deepEqual(inTitle('Pisma Andricu', 'ivo andric'), ['Andric']);
+  });
+
+  it('marks one of two words that start in the same place once, the longer', () => {
+    assert.deepEqual(found('Andric', 'andric and'), ['Andric']);
+  });
+});
+
 describe('the panel counting what a search found', () => {
   const some = (howMany: number) =>
     Array.from({ length: howMany }, (_, at) => ({ start: at, end: at + 1 }));

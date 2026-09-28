@@ -1,5 +1,6 @@
 import { toSearchable } from '../language/diacritics.ts';
 import { type Language, strings } from '../language/wording.ts';
+import { hasEveryWord, phrasesIn, wordsOf } from './phrase-match.ts';
 
 /** Where in his text a search found something. */
 export interface TextMatch {
@@ -20,27 +21,46 @@ const MOST_MARKS = 500;
 /**
  * Every place the query appears in the text, ignoring case.
  *
- * Matched the same way the list matches — same case folding, same diacritics —
- * so what is marked in his writing and what was found in the list can never
- * disagree. The folding is one character for one, so these offsets are offsets
- * into the text he can see.
+ * Matched the same way the list matches — same case folding, same diacritics,
+ * same words — so what is marked in his writing and what was found in the list
+ * can never disagree. The folding is one character for one, so these offsets
+ * are offsets into the text he can see.
  *
+ * Of several words, the phrase where the text has it, and nothing else: the
+ * marks then show him the place he was looking for. Where it has them only
+ * apart, each word wherever it is, in reading order, so that stepping through
+ * them walks him through the text the way he would read it.
+ *
+ * @param needs whether every word must be there for any to be marked. In his
+ *   text, yes: marking the Ivos in a text that never names Andrić would say it
+ *   was found. In a title in the list, no: a text found by one word in its
+ *   title and the other further down shows why it is there by the one.
  * @returns matches in the order they appear, never overlapping.
  */
-export function matchesIn(text: string, query: string): TextMatch[] {
-  const needle = toSearchable(query.trim());
-  if (needle.length === 0) return [];
+export function matchesIn(text: string, query: string, needs: 'every-word' | 'any-word' = 'every-word'): TextMatch[] {
+  const words = wordsOf(query);
+  if (words.length === 0) return [];
 
   // Folded here rather than taken from the note: what he is looking at may have
   // words in it he hasn't finished typing, let alone saved.
   const haystack = toSearchable(text);
-  const found: TextMatch[] = [];
-  let at = haystack.indexOf(needle);
+  const together = phrasesIn(haystack, words, MOST_MARKS);
+  if (together.length > 0 || words.length === 1) return together.map(({ start, end }) => ({ start, end }));
+  if (needs === 'every-word' && !hasEveryWord(haystack, words)) return [];
+  return eachWordIn(haystack, words);
+}
 
-  while (at !== -1 && found.length < MOST_MARKS) {
-    found.push({ start: at, end: at + needle.length });
-    // Past the whole match, so "aa" in "aaaa" is two matches and not three.
-    at = haystack.indexOf(needle, at + needle.length);
+/** Every place each of the words is, in reading order, never overlapping. */
+function eachWordIn(haystack: string, words: readonly string[]): TextMatch[] {
+  const every = words
+    .flatMap((word) => phrasesIn(haystack, [word], MOST_MARKS))
+    // Where two start together, the longer: "an" and "andric" mark "andric".
+    .sort((a, b) => a.start - b.start || b.end - a.end);
+  const found: TextMatch[] = [];
+  for (const { start, end } of every) {
+    if (found.length === MOST_MARKS) break;
+    if (start < (found.at(-1)?.end ?? 0)) continue;
+    found.push({ start, end });
   }
   return found;
 }

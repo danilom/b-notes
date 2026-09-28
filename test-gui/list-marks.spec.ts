@@ -55,3 +55,15 @@ test('marks what a search found in the titles it found it in, and nowhere in the
   // Svi tekstovi is every text, whatever he searched for: nothing marked there.
   await expect(page.locator('#list .note.aside mark.note-found')).toHaveCount(0);
 });
+
+test('marks the word in a title that a search of several words found partly further down', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#list .note').first()).toBeVisible();
+
+  // "PRICE" is in the title, "budi" in the text under it: "Grad se budi rano".
+  await page.locator('#search').fill('price budi');
+  const found = page.locator('#list .section-block').first();
+  await expect(found.locator('.section')).toContainText('Pronađeni u tekstu');
+  const row = found.locator('.note').filter({ hasText: 'GRADSKE PRICE, prva' });
+  await expect(row.locator('.note-title mark.note-found')).toHaveText('PRICE');
+});
