@@ -5,6 +5,7 @@ import {
   FileMissing,
   FolderMissing,
 } from '../../platform/file-system.ts';
+import { rawArchiveSample } from './mock-raw-archive-sample.ts';
 import { resophSample } from './mock-resoph-sample.ts';
 
 const KEY = 'b-notes:mock-files';
@@ -257,7 +258,7 @@ export async function seedIfEmpty(): Promise<void> {
     const body = entry.text.split('\n').slice(1).join('\n').replace(/^\n/, '');
     seeded.set(`${MOCK_RESOPH_FOLDER}/${entry.id}`, { text: body, updatedAt: entry.updatedAt });
   }
-  for (const file of resophSample(MOCK_RESOPH_FOLDER, Date.now())) {
+  for (const file of [...resophSample(MOCK_RESOPH_FOLDER, Date.now()), ...rawArchiveSample(MOCK_NOTES_FOLDER, Date.now())]) {
     seeded.set(file.path, { text: file.text, updatedAt: file.updatedAt });
   }
   store(seeded);

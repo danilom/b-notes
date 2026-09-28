@@ -125,6 +125,7 @@ const confirmPane = element('confirm', HTMLDialogElement);
 const deletedPane = element('deleted', HTMLDialogElement);
 const versionsPane = element('versions', HTMLDialogElement);
 const advancedPane = element('advanced', HTMLDialogElement);
+const importPane = element('archive-import', HTMLDialogElement);
 const seeVersions = element('see-versions', HTMLButtonElement);
 const moveToResoph = element('move-to-resoph', HTMLButtonElement);
 const moveToResophLabel = element('move-to-resoph-label', HTMLSpanElement);
@@ -1073,6 +1074,7 @@ export async function startApp(runningOn: Host): Promise<void> {
   panels = createSettingsPanels({
     appearancePane,
     advancedPane,
+    importPane,
     confirmPane,
     button: appearanceButton,
     host,
@@ -1095,6 +1097,14 @@ export async function startApp(runningOn: Host): Promise<void> {
     say: (said) => {
       notice = said;
       showStatus();
+    },
+    archivesChanged: () => {
+      void archived
+        .read()
+        .then(() => archived.drawStrip())
+        .catch((error: unknown) => {
+          log.error('Could not count the archives again after an import', describeError(error));
+        });
     },
   });
 

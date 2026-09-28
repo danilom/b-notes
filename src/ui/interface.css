@@ -1904,6 +1904,30 @@ dialog::backdrop {
   font-size: 0.9em;
 }
 
+/* The archive import: a console, wide enough for a folder's line to fit. */
+#archive-import {
+  padding: 1.5rem;
+}
+
+.archive-import {
+  width: min(48rem, 100%);
+}
+
+.import-console {
+  height: 20rem;
+  margin: 0.8rem 0 0;
+  padding: 0.6rem 0.8rem;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel);
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.85em;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 /* Almost the whole window: the list needs the width for a snippet, and a
    text needs the height to be read rather than peeked at. */
 #archive,

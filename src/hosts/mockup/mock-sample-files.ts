@@ -1,4 +1,5 @@
 import {
+  RAW_ARCHIVE_FOLDER,
   archiveFolderFor,
   archivedVersionsFolderFor,
   unusedName,
@@ -60,6 +61,11 @@ export interface ArchivedSample {
   updatedAt: number;
   /** Earlier states of it, kept beside it exactly as a live text's are. */
   copies?: readonly { text: string; takenAt: number }[];
+}
+
+/** Where one raw folder waits to be imported, as the app would look for it. */
+export function rawArchiveFolderFor(writingFolder: string, name: string): string {
+  return `${writingFolder}/${RAW_ARCHIVE_FOLDER}/${name}`;
 }
 
 /**
