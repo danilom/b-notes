@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { isStub } from '../src/notes/resoph-stub.ts';
+
 /**
  * Living beside Resoph, end to end in the browser build.
  *
@@ -96,7 +98,7 @@ test('typing into a Resoph text takes it over, leaves a stub in Resoph, and says
   expect(copies).toHaveLength(1);
   expect(copies[0]?.[1].text).toContain('Dopisano.');
   // The Resoph file is still there, under the same name, holding the stub.
-  expect(after[`ResophNotes/${RANKED}.txt`]?.text).toContain('PREMEŠTEN U B-NOTES');
+  expect(isStub(after[`ResophNotes/${RANKED}.txt`]?.text ?? '')).toBe(true);
 
   // One row for it, no longer Resoph's, and a word about what happened.
   await expect(row).toHaveCount(1);
@@ -117,7 +119,8 @@ test('finds a taken-over text by the code in the stub, however its title has cha
   await page.clock.runFor(1200);
 
   const stub = (await held(page))[`ResophNotes/${RANKED}.txt`]?.text ?? '';
-  const code = /ukucaj (~[0-9A-Z]{6}) u pretragu/.exec(stub)?.[1];
+  // Whatever the stub's wording, the code is in it, in the file's name if nowhere else.
+  const code = /~[0-9A-Z]{6}/.exec(stub)?.[0];
   if (code === undefined) throw new Error(`no code in the stub: ${stub}`);
 
   await page.locator('#search').fill(code);
@@ -148,7 +151,7 @@ test('emptying a Resoph text takes it over without saying so, and leaves the hin
   await page.clock.runFor(1200);
 
   // Taken over all the same: Resoph's file holds the stub.
-  expect((await held(page))[`ResophNotes/${RANKED}.txt`]?.text).toContain('PREMEŠTEN U B-NOTES');
+  expect(isStub((await held(page))[`ResophNotes/${RANKED}.txt`]?.text ?? '')).toBe(true);
   await expect(page.locator('#empty-hint')).toBeVisible();
   await expect(page.locator('#toast')).not.toContainText('Tekst je prenet iz Resopha u b-notes.');
 });

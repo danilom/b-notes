@@ -10,7 +10,7 @@ import { DELETED_FOLDER, VERSIONS_FOLDER, copyNameFor } from '../src/notes/note-
 import { createNoteStore } from '../src/notes/note-store.ts';
 import { createResophFolder } from '../src/notes/resoph-folder.ts';
 import { resophIdOf } from '../src/notes/resoph-note.ts';
-import { isStub } from '../src/notes/resoph-stub.ts';
+import { type StubKind, isStub, stubText } from '../src/notes/resoph-stub.ts';
 import { silentLog } from './silent-log.ts';
 
 const NAMING = { machine: 'Test', now: () => new Date(2026, 8, 27, 10, 0, 0) };
@@ -134,6 +134,13 @@ describe('texts still only in Resoph', () => {
   });
 });
 
+/**
+ * The line a stub of this kind opens with, whatever the wording is now. Taken
+ * from what b-notes writes, so these tests check the kind and never the words.
+ */
+const firstLineOfStub = (kind: StubKind): string | undefined =>
+  stubText({ kind, when: new Date(), machine: '', path: '', code: '' }).split('\r\n')[0];
+
 /** What a Resoph file holds now. */
 const resophFile = (resoph: string, name: string): Promise<string> => readFile(path.join(resoph, `${name}.txt`), 'utf8');
 
@@ -163,7 +170,7 @@ describe('the first time he types into a Resoph text', () => {
 
     const stub = await resophFile(resoph, RANKED);
     assert.equal(isStub(stub), true);
-    assert.match(stub, /PREMEŠTEN U B-NOTES/);
+    assert.equal(stub.split('\r\n')[0], firstLineOfStub('moved'));
     assert.ok(stub.includes(`${copyNameFor(RANKED)}.txt`), 'the stub does not say which file');
     assert.ok(stub.includes('2026-09-27 10:00, Test'), 'the stub does not say when and where');
     assert.ok(stub.includes('\r\n'), 'the stub is not written as Resoph writes its files');
@@ -381,6 +388,32 @@ describe('moving a text to Resoph', () => {
     assert.deepEqual((await readdir(resoph)).sort(), ['Pismo.txt']);
   });
 
+  it('keeps a line he typed into the stub before writing over it, though the stub hid it', async () => {
+    const { store, resoph, notes } = await library({ Pismo: 'Prvo.' });
+    const copy = (await store.save(resophIdOf('Pismo'), 'Pismo\n\nPrvo. Dopisano.')) ?? '';
+    const stub = await resophFile(resoph, 'Pismo');
+    await resophWrites(resoph, 'Pismo', `Upisao sam ovo u Resophu\r\n${stub}`);
+    // Still a stub by the rule — a first line may be a title Resoph wrote in —
+    // so still hidden, and only a kept version stands between it and the move.
+    assert.equal((await store.list()).length, 1, 'the stub with his first line in it is not hidden');
+
+    await store.moveToResoph(copy);
+
+    const kept = await readdir(path.join(notes, VERSIONS_FOLDER, copy));
+    const texts = await Promise.all(kept.map((name) => readFile(path.join(notes, VERSIONS_FOLDER, copy, name), 'utf8')));
+    assert.ok(texts.some((text) => text.includes('Upisao sam ovo u Resophu')), 'his line was not kept');
+  });
+
+  it('keeps nothing more of a stub that holds only what b-notes wrote', async () => {
+    const { store, notes } = await library({ Pismo: 'Prvo.' });
+    const copy = (await store.save(resophIdOf('Pismo'), 'Pismo\n\nPrvo. Dopisano.')) ?? '';
+    const before = await readdir(path.join(notes, VERSIONS_FOLDER, copy));
+
+    await store.moveToResoph(copy);
+
+    assert.deepEqual(await readdir(path.join(notes, VERSIONS_FOLDER, copy)), before);
+  });
+
   it('never writes over a text of his in Resoph that has the same title', async () => {
     const { store, resoph } = await library({ Pismo: 'Njegov tekst u Resophu.' });
     const id = (await store.save(null, 'Pismo\n\nDrugi.')) ?? '';
@@ -440,7 +473,9 @@ describe('putting away a Resoph text', () => {
       [`${copyNameFor('Zima')}.txt`, VERSIONS_FOLDER].sort(),
     );
     assert.deepEqual((await store.listDeleted()).map((note) => note.text), ['Zima\n\nSnijeg.']);
-    assert.match(await resophFile(resoph, 'Zima'), /OBRISAN U B-NOTES/);
+    const stub = await resophFile(resoph, 'Zima');
+    assert.equal(isStub(stub), true);
+    assert.equal(stub.split('\r\n')[0], firstLineOfStub('deleted'));
   });
 
   it('comes back as the copy, once only', async () => {

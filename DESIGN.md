@@ -90,7 +90,11 @@ What follows:
   hours. So **b-notes never renames, moves or deletes anything in his Resoph
   folder**, and renames nothing anywhere. What it does write there, it writes
   in place, which Resoph reads as it is: a stub over a text it takes over, and
-  a text he moves back. His own title edits in Resoph, undone by another machine's
+  a text he moves back. **The stub is an on-disk format that lasts for good**:
+  Resoph puts it back if it goes, and an old b-notes must know a new one. It
+  is known by a frozen rule that never looks at its wording — every line
+  starts with `[b-notes]` — set out in `resoph-stub.ts` and
+  `RESOPH-COEXISTENCE.md` §4.5. Change the wording freely; never the rule. His own title edits in Resoph, undone by another machine's
   Resoph, are where most of his identical copies come from.
 - **A name is made once, and made to mean one text on every machine.** Several
   machines work offline and Dropbox matches files by path alone. So a copy of

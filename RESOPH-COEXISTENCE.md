@@ -294,19 +294,39 @@ non-empty line, as it is. Length is cut only on screen, by the list itself.
   still lists the title:
 
   ```
-  !!! OVAJ TEKST JE PREMEŠTEN U B-NOTES !!!
-  NE PIŠI OVDE — ovde ga više nema.
-  Otvori b-notes i ukucaj ~K3F9A2 u pretragu.
+  [b-notes] 📋 OVAJ TEKST JE PREMEŠTEN U B-NOTES
+  [b-notes] ❌ NE PIŠI OVDE — ovde ga više nema.
+  [b-notes] Otvori b-notes i ukucaj ~K3F9A2 u pretragu.
 
-  [b-notes] 2026-09-27 14:32, ASUS
-  [b-notes] D:\Dropbox\b-notes\GRAD Kilim ~K3F9A2.txt
-  [b-notes] https://github.com/danilom/b-notes/releases
+  [b-notes] Datum: 2026-09-28 14:32, Dell
+  [b-notes] Fajl: C:\Users\Brano\Dropbox\b-notes\GRAD Kilim ~K3F9A2.txt
+  [b-notes] Program: https://github.com/danilom/b-notes/releases
   ```
 
-  For a deleted text, "OBRISAN U B-NOTES" and "Otvori b-notes, ukucaj
-  ~K3F9A2 u pretragu i vrati ga iz „Obrisani tekstovi"." The marked lines are
-  for whoever has to recover a text: when, on which machine, where the file
-  went, and where b-notes can be had on a machine that lacks it.
+  For a deleted text it says first that the text is kept, and only then how
+  to have it back, so it does not read as something he must do now:
+
+  ```
+  [b-notes] 🗑 OVAJ TEKST JE OBRISAN IZ B-NOTES
+  [b-notes] ❌ NE PIŠI OVDE — ovde ga više nema.
+  [b-notes] Sačuvan je među obrisanima u b-notes.
+
+  [b-notes] Ako ti ikad zatreba, otvori b-notes,
+  [b-notes] ukucaj ~K3F9A2 u pretragu i vrati ga
+  [b-notes] iz "Obrisani tekstovi".
+
+  [b-notes] Datum: 2026-09-28 14:32, Dell
+  [b-notes] Fajl: C:\Users\Brano\Dropbox\b-notes\GRAD Kilim ~K3F9A2.txt
+  [b-notes] Program: https://github.com/danilom/b-notes/releases
+  ```
+
+  Every line starts with `[b-notes]`, and the file ends with an empty line,
+  so a click below the text or Ctrl+End puts him on a line of his own. The
+  last three lines are for whoever has to recover a text: when, on which
+  machine, where the file went, and where b-notes can be had on a machine
+  that lacks it. A path too long for its line is shortened in the middle.
+  The wording is free to change (§4.5); every wording that ships is kept
+  verbatim in `test/resoph-stub.test.ts`.
 - **Found by its code, not its title.** The code at the end of the copy's
   file name stays with the text however he retitles or empties it, and his
   titles repeat. b-notes' search matches it like any of his words, whole or
@@ -317,11 +337,19 @@ non-empty line, as it is. Length is cut only on screen, by the list itself.
 
 ### 4.5 After a text is taken over — *decided and built*
 
-- **A stub is not listed.** It is known by its marks — the loud first line,
-  the `[b-notes]` lines — and forgiving of up to 20 stray characters anywhere,
-  which he is likely to leave. More than that is his writing: the file shows
-  as a Resoph text again, beside b-notes' copy. So does a stub that another
-  machine's Resoph writes the old text back over. Two texts, nothing hidden.
+- **A stub is not listed.** It is known by one frozen rule, which never
+  looks at the wording, so the wording can change and an old b-notes still
+  knows a new stub. A Resoph file is a stub if and only if at least one line
+  starts with `[b-notes]` (leading spaces aside), and what counts as his
+  comes to 20 characters or fewer, spaces and line breaks not counted. His
+  is: anything past 150 characters after the prefix on a prefixed line;
+  anything past 100 on the first line, when it has no prefix — room for the
+  title Resoph writes there if its "include title in file" setting is ever
+  switched on; and all of every other line without the prefix. More than 20
+  is his writing: the file shows as a Resoph text again, beside b-notes'
+  copy. So does a stub that another machine's Resoph writes the old text back
+  over. Two texts, nothing hidden. The prefix, 150, 100 and 20 may never
+  change; the rule is set out in capitals in `resoph-stub.ts`.
 - **Dropbox's conflicted copies** are two texts too. Nothing is done about
   them.
 - **A file changed behind b-notes' back** in its own folder — Notepad, another
@@ -330,7 +358,12 @@ non-empty line, as it is. Length is cut only on screen, by the list itself.
 - **"Premesti u Resoph"** — in the strip, only while a text of b-notes' is
   open — moves one back: into a Resoph file named from its first line exactly
   as Resoph names files (`%2A` for `*`, and the rest; spaces kept), with the
-  text below the title. It goes back over its own stub. It is refused, and
+  text below the title. It goes back over its own stub, keeping what was in
+  it as a version first when the stub holds anything besides b-notes' own
+  lines — a first line or a few characters the rule let pass as a stub are
+  hidden, and writing over them is what would lose them. A title Windows
+  takes for a device, `CON` or `nul.txt`, goes as `CON_` and `nul_.txt`: a
+  file named `CON.txt` is one only b-notes could open. It is refused, and
   says why in the status line, when a text of his in Resoph already has that
   name, when there is no title, when the name would be over 96 characters —
   his longest are exactly that, which looks like Resoph's own limit — and on a

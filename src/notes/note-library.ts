@@ -5,7 +5,7 @@ import { EXTENSION, codeOf, copyNameFor, unusedName } from './note-naming.ts';
 import { type Naming, type NoteRenamed, type OwnNoteStore, REAL_NAMING } from './note-store.ts';
 import type { ResophFolder, ResophText } from './resoph-folder.ts';
 import { resophIdOf, resophNameFor, resophPartsOf, resophStemOf } from './resoph-note.ts';
-import { type StubKind, isStub, stubText } from './resoph-stub.ts';
+import { type StubKind, holdsAnythingElse, isStub, stubText } from './resoph-stub.ts';
 
 /** What a copy kept straight from Resoph is labelled, among a text's versions. */
 export const FROM_RESOPH = 'Resoph';
@@ -168,7 +168,7 @@ export function createNoteLibrary(
   }
 
   /** The name a text will have in Resoph, and what goes into the file; or why it cannot go. */
-  async function placeInResoph(id: string): Promise<{ stem: string; body: string }> {
+  async function placeInResoph(id: string): Promise<{ stem: string; body: string; over: ResophText | null }> {
     if (resoph === null) throw new ResophMoveRefused('no-resoph');
     const { title, body } = resophPartsOf(await own.read(id));
     if (title.trim().length === 0) throw new ResophMoveRefused('no-title');
@@ -177,12 +177,15 @@ export function createNoteLibrary(
     const there = await resoph.read(stem);
     // A text of his by that name stays his; a stub is b-notes' own, and gives way.
     if (there !== null && !isStub(there.body)) throw new ResophMoveRefused('title-taken');
-    return { stem, body };
+    return { stem, body, over: there };
   }
 
   return {
     async moveToResoph(id: string): Promise<string> {
-      const { stem, body } = await placeInResoph(id);
+      const { stem, body, over } = await placeInResoph(id);
+      // A stub may hold a first line or a few characters of his that the rule
+      // lets pass; writing over it is the moment those would be lost.
+      if (over !== null && holdsAnythingElse(over.body)) await own.keepLabelledCopy(id, over.text, FROM_RESOPH);
       await resoph?.write(stem, body);
       // Read back before b-notes lets go of its file: after that, Resoph's is the only one.
       if ((await resoph?.read(stem))?.body !== body.replaceAll('\r\n', '\n')) {
