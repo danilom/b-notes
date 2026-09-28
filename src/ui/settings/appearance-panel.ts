@@ -323,9 +323,10 @@ function fill(
   /*
     Not for him, and not hidden from him either.
 
-    It sits on a line of its own at the bottom right, under both halves
-    because it belongs to neither, labelled in English and behind a question
-    only someone who meant to come here can answer. Hiding it behind a keystroke was considered and dropped: whoever
+    It sits on the bottom line, under both halves because it belongs to
+    neither, lined up with the fonts above it and clear of Vrati na početno
+    and U redu at either end — labelled in English and behind a question only
+    someone who meant to come here can answer. Hiding it behind a keystroke was considered and dropped: whoever
     needs it will be standing at his machine years from now with no checkout to
     hand, and a door you have to remember is a door you have lost.
   */
@@ -337,9 +338,6 @@ function fill(
   doorLabel.textContent = 'Advanced settings';
   advanced.append(doorLabel);
   advanced.addEventListener('click', handlers.onAdvanced);
-  const aside = document.createElement('div');
-  aside.className = 'advanced-line';
-  aside.append(advanced);
 
   const writingSize = scaleGroup(
     words,
@@ -416,7 +414,7 @@ function fill(
   cancel.type = 'button';
   cancel.textContent = words.appearanceCancel;
   cancel.addEventListener('click', handlers.onCancel);
-  footer.append(reset, keep, cancel);
+  footer.append(reset, advanced, keep, cancel);
 
   // The app first, then his writing: the zoom multiplies the writing size, so
   // the outer control has to be settled before the one nested inside it means
@@ -430,7 +428,6 @@ function fill(
     header,
     half(words.appearanceApp, [row([appSize, fonts], fonts), row([modes, accents, recent], accents)]),
     half(words.appearanceWriting, [row([writingSize, writingFonts], writingFonts)]),
-    aside,
     footer,
   );
   keep.focus();

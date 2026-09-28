@@ -1744,26 +1744,22 @@ dialog::backdrop {
 /* ---- the settings that are not his ---- */
 
 /*
-  Not for him, and not hidden from him either. It sits on a line of its
-  own at the bottom right of Izgled, under both halves because it belongs
-  to neither, in English and behind a word to type, because whoever needs
-  it will be at his machine years from now with no checkout to hand — and
-  a door you have to remember is a door you have lost. Quiet rather than
-  concealed: a gear is a mark he has no reason to press and whoever is
-  looking for it cannot miss.
-*/
-.advanced-line {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.4rem;
-}
+  Not for him, and not hidden from him either. It sits on the bottom line
+  of Izgled, under both halves because it belongs to neither, in English
+  and behind a word to type, because whoever needs it will be at his
+  machine years from now with no checkout to hand — and a door you have to
+  remember is a door you have lost. Quiet rather than concealed: a gear is
+  a mark he has no reason to press and whoever is looking for it cannot
+  miss, and a name someone can read out to him over the phone.
 
-.advanced-door {
+  Written against the footer so it wins over the footer's own buttons,
+  which are sized to be pressed; this one is sized to be passed over.
+*/
+.panel footer .advanced-door {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  /* Its words, not its box, flush with the right edge of the choices. */
-  margin-right: -0.6rem;
+  min-width: 0;
   padding: 0.3rem 0.6rem;
   border-color: transparent;
   background: none;
@@ -2773,6 +2769,15 @@ dialog::backdrop {
     width to spare — his windows are 1280 across.
   */
   width: min(46rem, 100%);
+  /*
+    The panel's two columns: the first as wide as a size stepper — two
+    2.6rem buttons, a 2.9rem reading and two 0.4rem gaps — and the gap
+    after it. Every row and the footer line up on these, so both fonts,
+    the colours and Advanced settings all start at one line. Change the
+    stepper and the first has to follow it.
+  */
+  --first-column: 8.9rem;
+  --between-columns: 1.3rem;
 }
 
 /* A little less air between the rows than the other dialogs have: enough
@@ -2789,19 +2794,31 @@ dialog::backdrop {
   padding-top: 0.7rem;
 }
 
+/*
+  Vrati na početno in the first column, where it has always been, and
+  Advanced settings starting where the second column does; U redu and
+  Otkaži at the right as in every dialog. A grid rather than the footer's
+  usual row, since only a grid can put the door on the column line.
+*/
 .appearance-panel footer {
+  display: grid;
+  grid-template-columns: minmax(var(--first-column), max-content) 1fr auto auto;
+  column-gap: 0.5rem;
   margin-top: 0.6rem;
   padding-bottom: 0.7rem;
 }
 
-/*
-  The first group of every row at least as wide as a size stepper — two
-  2.6rem buttons, a 2.9rem reading and two 0.4rem gaps — so what follows
-  starts at one line in every row: both fonts, and the colours under the
-  app's font. Change the stepper and this has to follow it.
-*/
+.appearance-panel footer .advanced-door {
+  justify-self: start;
+  margin-left: calc(var(--between-columns) - 0.5rem);
+}
+
+.appearance-panel .group-row {
+  column-gap: var(--between-columns);
+}
+
 .appearance-panel .group-row > :first-child {
-  min-width: 8.9rem;
+  min-width: var(--first-column);
 }
 
 /* Svetla and Tamna halving that width between them, so the pair is as
