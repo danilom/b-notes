@@ -166,10 +166,26 @@ export function groupsFor<T extends ShelvedText>(
   const ordered = [...texts].sort((first, second) => second.updatedAt - first.updatedAt);
   const looking = filter.trim();
   if (looking.length === 0) return { found: ordered, rest: [] };
-  return {
-    found: ordered.filter((note) => matches(note, looking)),
-    rest: ordered.filter((note) => !matches(note, looking)),
-  };
+  // One pass, so each text is matched once per keystroke rather than twice.
+  const found: T[] = [];
+  const rest: T[] = [];
+  for (const note of ordered) (matches(note, looking) ? found : rest).push(note);
+  return { found, rest };
+}
+
+/**
+ * What a row shows that comes from the whole of its text, worked out once
+ * per text rather than on every keystroke: the text does not change while it
+ * is on the shelf, and the list is redrawn with each letter typed.
+ */
+const drawn = new WeakMap<ShelvedText, { bytes: number; snippet: string }>();
+
+function drawingOf(note: ShelvedText): { bytes: number; snippet: string } {
+  const known = drawn.get(note);
+  if (known !== undefined) return known;
+  const worked = { bytes: bytesOf(note.text), snippet: snippetOf(note) };
+  drawn.set(note, worked);
+  return worked;
 }
 
 /**
@@ -185,10 +201,38 @@ export function openingFilter(hasOwnSearch: boolean, query: string): string {
   return hasOwnSearch ? '' : query.trim();
 }
 
+/**
+ * How much of a text a snippet is looked for in: many snippets' worth, and
+ * never the whole of it. Every row flattened its entire text to show one line
+ * of it, which across an archive of three thousand texts was 380 ms on every
+ * letter typed into the search.
+ */
+const SNIPPET_SOURCE = 1024;
+
 export function snippetOf(note: ShelvedText): string {
-  const flat = note.text.replace(/\s+/g, ' ').trim();
+  const flat = note.text.slice(0, note.title.length + SNIPPET_SOURCE).replace(/\s+/g, ' ').trim();
   const rest = flat.startsWith(note.title) ? flat.slice(note.title.length).trim() : flat;
   return onOneLine(rest, SNIPPET);
+}
+
+/** One text's row, and the one part of it a search changes besides its place. */
+interface ShelfRow {
+  row: HTMLElement;
+  /** The code it was found by, where his words did not match, as in his list. */
+  code: HTMLSpanElement;
+}
+
+/**
+ * Where a row stands after a search: on top, or pushed down and dimmed —
+ * never removed. The list itself stopped hiding what a search missed for this
+ * reason: a row that goes when he types reads as a text that has gone, and
+ * here it would read as the archive being incomplete.
+ */
+function place({ row, code }: ShelfRow, aside: boolean, foundBy: string | null): HTMLElement {
+  row.className = aside ? 'review-row aside' : 'review-row';
+  code.textContent = foundBy ?? '';
+  code.hidden = foundBy === null;
+  return row;
 }
 
 function rowFor<T extends ShelvedText>(
@@ -197,19 +241,15 @@ function rowFor<T extends ShelvedText>(
   words: ReturnType<typeof strings>,
   lengths: LengthBands,
   show: (note: T) => void,
-  aside = false,
-  code: string | null = null,
-): HTMLElement {
+): ShelfRow {
   const row = document.createElement('button');
   row.type = 'button';
-  // Pushed down and dimmed, never removed. The list itself stopped hiding what
-  // a search missed for this reason: a row that goes when he types reads as a
-  // text that has gone, and here it would read as the archive being incomplete.
-  row.className = aside ? 'review-row aside' : 'review-row';
+  row.className = 'review-row';
 
   // Measured off the text itself: what is on a shelf is held in memory rather
   // than as a file, so there is no size on disk to ask for.
-  const length = pageGlyph(bandOf(bytesOf(note.text), lengths));
+  const { bytes, snippet: said } = drawingOf(note);
+  const length = pageGlyph(bandOf(bytes, lengths));
 
   const title = document.createElement('span');
   title.className = 'review-title';
@@ -217,13 +257,10 @@ function rowFor<T extends ShelvedText>(
   // he emptied has no title and no snippet, and a blank row would read as the
   // app having lost track of something.
   title.textContent = note.title.length > 0 ? note.title : words.untitled;
-  // The code it was found by, where his words did not match, as in his list.
-  if (code !== null) {
-    const found = document.createElement('span');
-    found.className = 'note-code';
-    found.textContent = code;
-    title.append(' ', found);
-  }
+  const code = document.createElement('span');
+  code.className = 'note-code';
+  code.hidden = true;
+  title.append(' ', code);
 
   const when = document.createElement('span');
   when.className = 'review-when';
@@ -233,7 +270,6 @@ function rowFor<T extends ShelvedText>(
   // out: the row keeps the height of the others, which is the difference
   // between a comfortable target and a thin one, and "there is nothing in
   // this" is a fact about the text rather than a gap in the app.
-  const said = snippetOf(note);
   const snippet = document.createElement('span');
   snippet.className = said.length > 0 ? 'review-snippet' : 'review-snippet review-snippet-none';
   snippet.textContent = said.length > 0 ? said : words.untexted;
@@ -256,7 +292,7 @@ function rowFor<T extends ShelvedText>(
   row.append(length, lines);
 
   row.addEventListener('click', () => show(note));
-  return row;
+  return { row, code };
 }
 
 const CLASS_FOR: Record<ShelfAction['strength'], string> = {
@@ -330,6 +366,23 @@ export function openTextShelf<T extends ShelvedText>(
   }
 
   /**
+   * Each text's row, made the first time it is shown and moved about after.
+   *
+   * Every letter typed used to make all of them again — three thousand rows
+   * of an archive, some thirty thousand elements, most of a fifth of a second
+   * per letter. The text does not change while he is here, so neither does
+   * its row: only where it stands, and whether it is dimmed.
+   */
+  const made = new Map<T, ShelfRow>();
+  function rowOf(note: T): ShelfRow {
+    const known = made.get(note);
+    if (known !== undefined) return known;
+    const drawn = rowFor(note, shelf, words, lengths, show);
+    made.set(note, drawn);
+    return drawn;
+  }
+
+  /**
    * Everything, every time — promoted rather than filtered.
    *
    * What he asked for on top, the rest under it and dimmed, and nothing taken
@@ -343,7 +396,7 @@ export function openTextShelf<T extends ShelvedText>(
     const { found, rest } = groupsFor(texts, filter);
 
     if (filter.length === 0) {
-      for (const note of found) list.push(rowFor(note, shelf, words, lengths, show));
+      for (const note of found) list.push(place(rowOf(note), false, null));
       rows.replaceChildren(...list);
       return;
     }
@@ -355,11 +408,11 @@ export function openTextShelf<T extends ShelvedText>(
       empty.textContent = words.nothingFound;
       list.push(empty);
     }
-    for (const note of found) list.push(rowFor(note, shelf, words, lengths, show, false, foundByCode(note, filter)));
+    for (const note of found) list.push(place(rowOf(note), false, foundByCode(note, filter)));
 
     if (rest.length > 0) {
       list.push(headingOf(`${words.shelfRest} · ${words.noteCount(rest.length)}`));
-      for (const note of rest) list.push(rowFor(note, shelf, words, lengths, show, true));
+      for (const note of rest) list.push(place(rowOf(note), true, null));
     }
 
     rows.replaceChildren(...list);

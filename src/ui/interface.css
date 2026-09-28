@@ -2088,6 +2088,12 @@ dialog::backdrop {
      room paid for by the hundred; the inset at the sides is what keeps the text
      off the hover edge, and no more than that. */
   padding: 0.3rem 0.45rem;
+  /* Laid out only when near the screen. An archive can hold three thousand
+     of these, and laying every one out again on each letter typed into its
+     search was most of a quarter of a second per letter. The size stands in
+     for a row not yet drawn, and each remembers its own once it has been. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 4.2rem;
 }
 
 /* What the row says, which is two or three lines of it. */
