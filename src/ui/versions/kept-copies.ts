@@ -76,8 +76,11 @@ export function createKeptCopies(parts: KeptCopiesParts): KeptCopiesView {
       copies at all.
     */
     const count = keptOf(parts.openTextNow().handle, kept);
-    label.textContent = `${strings(parts.languageNow()).versions} (${count})`;
+    const words = strings(parts.languageNow());
+    label.textContent = `${words.versions} (${count})`;
     button.disabled = count === 0;
+    // Why it will not open, for the hand that tries it anyway.
+    button.title = count === 0 ? words.noVersions : '';
   }
 
   async function count(): Promise<void> {

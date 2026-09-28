@@ -1115,8 +1115,8 @@ button svg {
   width: 0.95em;
   height: 0.95em;
   background: url(resoph-mark.png) center / contain no-repeat;
-  filter: grayscale(0.4);
-  opacity: 0.85;
+  filter: grayscale(1);
+  opacity: 0.75;
 }
 
 .note-in-resoph.leaving {

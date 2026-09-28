@@ -253,6 +253,7 @@ const TEXT = {
     notDestroyed: 'Tekst nije uništen',
 
     versions: 'Ranije verzije',
+    noVersions: 'Ne postoje ranije verzije ovog teksta.',
     versionsTitle: 'Ranije verzije',
     versionTitle: 'Pregled verzije',
     // Where he is in the list, not which copy this is. It is there so that a
@@ -525,6 +526,7 @@ const TEXT = {
     notDestroyed: 'Text not destroyed',
 
     versions: 'Earlier versions',
+    noVersions: 'There are no earlier versions of this text.',
     versionsTitle: 'Earlier versions',
     versionTitle: 'Version preview',
     versionNumber: (at: number) => `#${at}`,
