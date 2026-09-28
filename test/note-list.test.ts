@@ -49,6 +49,10 @@ function view(over: Partial<ListView> = {}): ListView {
 const titlesIn = (sections: ReturnType<typeof sectionsFor>, heading: string) =>
   sections.find((section) => section.heading === heading)?.rows.map((row) => row.title);
 
+/** Every text a search found, in the order shown, whichever heading it is under. */
+const foundTitles = (sections: ReturnType<typeof sectionsFor>) =>
+  sections.filter((section) => section.heading.startsWith('Pronađeni')).flatMap((section) => section.rows.map((row) => row.title));
+
 describe('the list of texts', () => {
   it('shows nothing extra while he has not started a new text', () => {
     const sections = sectionsFor(view());
@@ -103,7 +107,7 @@ describe('the list of texts', () => {
       'Ponta',
       'Zima',
     ]);
-    assert.deepEqual(titlesIn(sectionsFor(searching), 'Pronađeni'), ['Ponta']);
+    assert.deepEqual(foundTitles(sectionsFor(searching)), ['Ponta']);
   });
 
   it('lifts nothing out for a saved text, matching or not, searching or not', () => {
@@ -118,7 +122,7 @@ describe('the list of texts', () => {
     const searching = view({ query: 'nepostojeće', draft: { startedAt: 9000 } });
     assert.notEqual(openRowFor(searching), null);
     const sections = sectionsFor(searching);
-    assert.deepEqual(titlesIn(sections, 'Pronađeni'), []);
+    assert.deepEqual(foundTitles(sections), []);
     assert.deepEqual(titlesIn(sections, 'Svi tekstovi'), ['Amsterdam', 'Ponta', 'Zima']);
   });
 
@@ -129,7 +133,8 @@ describe('the list of texts', () => {
     ];
     for (const query of ['macka', 'mačka', 'MAČKA']) {
       const sections = sectionsFor({ ...view(), notes: accented, query });
-      assert.deepEqual(titlesIn(sections, 'Pronađeni'), ['Mačka', 'Macka'], `for ${query}`);
+      // Both, whatever the order: that is search-results.ts's business.
+      assert.deepEqual(foundTitles(sections).sort(), ['Macka', 'Mačka'], `for ${query}`);
     }
   });
 
@@ -138,14 +143,34 @@ describe('the list of texts', () => {
     const notes = spellings.map((word, i) => note(word, `Ovdje je ${word} u tekstu`, 9000 - i));
     for (const query of spellings) {
       const sections = sectionsFor({ ...view(), notes, query });
-      assert.equal(titlesIn(sections, 'Pronađeni')?.length, 4, `for ${query}`);
+      assert.equal(foundTitles(sections)?.length, 4, `for ${query}`);
     }
   });
 
   it('keeps every text somewhere when nothing matches at all', () => {
     const sections = sectionsFor(view({ query: 'nepostojeće' }));
-    assert.deepEqual(titlesIn(sections, 'Pronađeni'), []);
+    assert.deepEqual(foundTitles(sections), []);
     assert.deepEqual(titlesIn(sections, 'Svi tekstovi'), ['Amsterdam', 'Ponta', 'Zima']);
+  });
+});
+
+describe('the headings a search puts over what it found', () => {
+  const headings = (query: string, notes = NOTES) =>
+    sectionsFor(view({ notes, query })).map((section) => section.heading);
+
+  it('says where it was found: in the title, then in the text', () => {
+    const both = [...NOTES, note('Kamenolom', 'Rad u kamenu.', 500)];
+    // Ponta has it only in its text; Kamenolom in its title.
+    assert.deepEqual(headings('kamen', both), ['Pronađeni u naslovu', 'Pronađeni u tekstu', 'Svi tekstovi']);
+  });
+
+  it('shows only the heading that has something under it', () => {
+    assert.deepEqual(headings('kamen'), ['Pronađeni u tekstu', 'Svi tekstovi']);
+    assert.deepEqual(headings('zima'), ['Pronađeni u naslovu', 'Svi tekstovi']);
+  });
+
+  it('says plainly that nothing was found, under one heading', () => {
+    assert.deepEqual(headings('nepostojeće'), ['Pronađeni', 'Svi tekstovi']);
   });
 });
 
@@ -156,12 +181,12 @@ describe('finding a text by the code the stub in Resoph gives him', () => {
 
   it('finds it by the whole code, tilde and all, in any case', () => {
     for (const query of ['~K3F9A2', '~k3f9a2', 'K3F9A2']) {
-      assert.deepEqual(titlesIn(sectionsFor({ ...withCode, query }), 'Pronađeni'), ['Sasvim drugi naslov'], query);
+      assert.deepEqual(foundTitles(sectionsFor({ ...withCode, query })), ['Sasvim drugi naslov'], query);
     }
   });
 
   it('finds it by part of the code, as it would by part of a word', () => {
-    assert.deepEqual(titlesIn(sectionsFor({ ...withCode, query: 'f9a2' }), 'Pronađeni'), ['Sasvim drugi naslov']);
+    assert.deepEqual(foundTitles(sectionsFor({ ...withCode, query: 'f9a2' })), ['Sasvim drugi naslov']);
   });
 
   it('says which code it was found by, where his words did not match', () => {
@@ -177,7 +202,7 @@ describe('finding a text by the code the stub in Resoph gives him', () => {
   });
 
   it('finds nothing by a code in a text that has none', () => {
-    assert.deepEqual(titlesIn(sectionsFor(view({ query: '~K3F9A2' })), 'Pronađeni'), []);
+    assert.deepEqual(foundTitles(sectionsFor(view({ query: '~K3F9A2' }))), []);
   });
 });
 

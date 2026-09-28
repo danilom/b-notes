@@ -3,6 +3,7 @@ import { isResophId } from '../notes/resoph-note.ts';
 import { type TitleParts, titlePartsOf } from '../notes/title-marks.ts';
 import type { LiveNote } from '../notes/writing.ts';
 import { toSearchable } from '../language/diacritics.ts';
+import { foundGroups } from './search-results.ts';
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 
 export interface ListView {
@@ -23,6 +24,8 @@ export interface ListView {
   /** A text just taken over from Resoph, whose Resoph icon is shown once more, going. */
   justTakenOver?: string | null;
   language: Language;
+  /** The moment a search's "recent" is measured from: now, unless a test says otherwise. */
+  now?: number;
 }
 
 export interface Draft {
@@ -192,11 +195,17 @@ export function sectionsFor(view: ListView): Section[] {
     ];
   }
 
-  const found = byRecency.filter((row) => matches(row, view.query));
-  return [
-    { heading: words.sectionFound, rows: found },
-    { heading: words.sectionAll, rows: all, aside: true },
-  ];
+  // Two groups at most, each under a heading that says where he was found,
+  // in the order search-results.ts explains. One heading when nothing was.
+  const { inTitle, inText } = foundGroups(all, view.query, view.now ?? Date.now());
+  const found: Section[] =
+    inTitle.length + inText.length === 0
+      ? [{ heading: words.sectionFound, rows: [] }]
+      : [
+          ...(inTitle.length > 0 ? [{ heading: words.sectionFoundInTitle, rows: inTitle }] : []),
+          ...(inText.length > 0 ? [{ heading: words.sectionFoundInText, rows: inText }] : []),
+        ];
+  return [...found, { heading: words.sectionAll, rows: all, aside: true }];
 }
 
 function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
