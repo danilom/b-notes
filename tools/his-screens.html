@@ -249,6 +249,8 @@
       const STRIPS = [
         { id: 'now', name: 'Now' },
         { id: 'a', name: 'A' },
+        { id: 'a1', name: 'A1 light' },
+        { id: 'a2', name: 'A2 quiet' },
         { id: 'c', name: 'C' },
       ];
       const strips = document.getElementById('strips');
@@ -260,15 +262,13 @@
         .status-quiet:hover:not(:disabled) { border-color: var(--quiet) !important; }
       `;
 
-      const STYLES = {
-        /*
-          One grid for the whole strip, each column as wide as the widest
-          button in it: Premesti under Ranije verzije, Izgled under Obriši
-          tekst. The width it switches on is asked of #main, which is as wide
-          as the strip, because the strip cannot be asked about itself.
-        */
-        a: `
-          ${SAME_BUTTONS}
+      /*
+        The strip as one grid, each column as wide as the widest button in it:
+        Premesti under Ranije verzije, Izgled under Obriši tekst. The width it
+        switches on is asked of #main, which is as wide as the strip, because
+        the strip cannot be asked about itself.
+      */
+      const GRID = `
           #main { container-type: inline-size; }
           #status {
             container-type: normal !important;
@@ -295,6 +295,18 @@
             #move-to-resoph { grid-area: 1 / 5; margin-left: 0.8rem !important; }
             #appearance-button { grid-area: 1 / 6; }
           }
+      `;
+
+      const STYLES = {
+        a: `${SAME_BUTTONS}${GRID}`,
+        /* A, with the two that are not about his text drawn lighter: no fill, a paler edge, grey words. */
+        a1: `${GRID}
+          .status-quiet { border-color: var(--line) !important; background: none !important; color: var(--quiet) !important; opacity: 0.85; }
+          .status-quiet:hover:not(:disabled) { opacity: 1; color: var(--ink) !important; border-color: var(--quiet) !important; }
+        `,
+        /* A, with the two as they were — no edge at all — but every button's icon and words starting at the left of its column, so theirs sit under the ones above. */
+        a2: `${GRID}
+          #status .status-action { justify-content: flex-start !important; }
         `,
         c: `
           ${SAME_BUTTONS}
