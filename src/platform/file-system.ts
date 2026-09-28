@@ -109,6 +109,9 @@ export function absenceIn(answer: unknown): FolderMissing | FileMissing | null {
   return null;
 }
 
+/** What a strict read found: the file's text, or that it is not UTF-8. */
+export type StrictRead = { kind: 'text'; text: string } | { kind: 'not-utf8' };
+
 export interface FileInfo {
   path: string;
   updatedAt: number;
@@ -154,8 +157,23 @@ export interface FileSystem {
   folderExists(folder: string): Promise<boolean>;
   /** Throws `FileMissing` where there is no such file. */
   read(path: string): Promise<string>;
-  /** Must not be able to leave a half-written file behind. */
-  write(path: string, text: string): Promise<void>;
+  /**
+   * The same, but refusing a file that is not UTF-8 rather than reading it.
+   *
+   * `read` turns bytes it cannot decode into "�" and says nothing, which is
+   * harmless for a file b-notes wrote and a loss for one that came from
+   * somewhere else: the letters are gone from whatever is written from it.
+   * An answer rather than a rejection, because a rejection loses its kind on
+   * its way across from the other process. Throws `FileMissing` as `read` does.
+   */
+  readStrict(path: string): Promise<StrictRead>;
+  /**
+   * Must not be able to leave a half-written file behind.
+   *
+   * @param modifiedAt the file's time afterwards, in ms since the epoch, for a
+   * copy that should keep the date of what it was copied from. Now if omitted.
+   */
+  write(path: string, text: string, modifiedAt?: number): Promise<void>;
   /** Creates the destination folder if it doesn't exist yet. */
   rename(from: string, to: string): Promise<void>;
   /**

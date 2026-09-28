@@ -110,6 +110,13 @@ function asString(value: unknown, name: string): string {
   return value;
 }
 
+/** A file time the window asked for, or none. */
+function asOptionalTime(value: unknown): number | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== 'number' || !Number.isFinite(value)) throw new TypeError('modifiedAt must be a time');
+  return value;
+}
+
 /**
  * A file that isn't there yet. Ordinary, and not the same thing as a failure.
  *
@@ -232,7 +239,10 @@ handle('files:list', (args) => files.list(asString(args[0], 'folder')));
 handle('files:listFolders', (args) => files.listFolders(asString(args[0], 'folder')));
 handle('files:folderExists', (args) => files.folderExists(asString(args[0], 'folder')));
 handle('files:read', (args) => files.read(asString(args[0], 'path')));
-handle('files:write', (args) => files.write(asString(args[0], 'path'), asString(args[1], 'text')));
+handle('files:readStrict', (args) => files.readStrict(asString(args[0], 'path')));
+handle('files:write', (args) =>
+  files.write(asString(args[0], 'path'), asString(args[1], 'text'), asOptionalTime(args[2])),
+);
 handle('files:rename', (args) => files.rename(asString(args[0], 'from'), asString(args[1], 'to')));
 handle('files:removeEmptyFolder', (args) => files.removeEmptyFolder(asString(args[0], 'folder')));
 handle('files:removeEmptyFile', (args) => files.removeEmptyFile(asString(args[0], 'path')));

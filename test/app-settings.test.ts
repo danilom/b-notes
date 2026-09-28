@@ -37,6 +37,9 @@ function slowFiles() {
       await new Promise<void>((resolve) => waiting.push(resolve));
       stored.set(path, text);
     },
+    readStrict: async () => {
+      throw new Error('not used');
+    },
     rename: async () => {
       throw new Error('not used');
     },
@@ -201,6 +204,9 @@ describe('saving how he likes the app set up', () => {
       },
       write: async () => {
         throw new Error('disk is full');
+      },
+      readStrict: async () => {
+        throw new Error('not used');
       },
       rename: async () => {
         throw new Error('not used');

@@ -1,6 +1,7 @@
 import {
   type FileInfo,
   type FileSystem,
+  type StrictRead,
   FileMissing,
   FolderMissing,
 } from '../../platform/file-system.ts';
@@ -136,7 +137,14 @@ export function createMockFileSystem(): FileSystem {
       return file.text;
     },
 
-    async write(at: string, text: string): Promise<void> {
+    /** Everything here is a JavaScript string already, so always text. */
+    async readStrict(at: string): Promise<StrictRead> {
+      const file = load().get(at);
+      if (file === undefined) throw new FileMissing(at);
+      return { kind: 'text', text: file.text };
+    },
+
+    async write(at: string, text: string, modifiedAt?: number): Promise<void> {
       if (refusals > 0) {
         refusals -= 1;
         // What Windows gives when Dropbox is holding the file it is uploading.
@@ -145,7 +153,7 @@ export function createMockFileSystem(): FileSystem {
         });
       }
       const files = load();
-      files.set(at, { text, updatedAt: Date.now() });
+      files.set(at, { text, updatedAt: modifiedAt ?? Date.now() });
       store(files);
     },
 

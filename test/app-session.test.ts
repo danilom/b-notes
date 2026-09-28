@@ -21,6 +21,9 @@ function filesHolding(contents: Record<string, string>) {
     write: async (path, text) => {
       stored.set(path, text);
     },
+    readStrict: async () => {
+      throw new Error('not used');
+    },
     rename: async () => {
       throw new Error('not used');
     },

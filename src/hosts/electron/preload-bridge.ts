@@ -26,7 +26,9 @@ const files: FileSystem = {
   list: (folder: string) => ipcRenderer.invoke('files:list', folder),
   listFolders: (folder: string) => ipcRenderer.invoke('files:listFolders', folder),
   read: (path: string) => ipcRenderer.invoke('files:read', path),
-  write: (path: string, text: string) => ipcRenderer.invoke('files:write', path, text),
+  readStrict: (path: string) => ipcRenderer.invoke('files:readStrict', path),
+  write: (path: string, text: string, modifiedAt?: number) =>
+    ipcRenderer.invoke('files:write', path, text, modifiedAt),
   folderExists: (folder: string) => ipcRenderer.invoke('files:folderExists', folder),
   rename: (from: string, to: string) => ipcRenderer.invoke('files:rename', from, to),
   removeEmptyFolder: (folder: string) => ipcRenderer.invoke('files:removeEmptyFolder', folder),

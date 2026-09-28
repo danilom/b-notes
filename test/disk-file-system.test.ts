@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
@@ -110,7 +110,45 @@ describe('tidying away a folder', () => {
  * causing the failure it exists to survive, besides syncing a create and a
  * delete for every autosave.
  */
+describe('reading a file that has to be UTF-8', () => {
+  const files = createFileSystem(path.join(tmpdir(), 'b-notes-staging'));
+
+  it('reads one that is, letters and all', async () => {
+    const root = await emptyFolder();
+    await writeFile(path.join(root, 'Pismo.md'), 'Češće đak', 'utf8');
+
+    assert.deepEqual(await files.readStrict(forwardSlashed(path.join(root, 'Pismo.md'))), {
+      kind: 'text',
+      text: 'Češće đak',
+    });
+  });
+
+  it('says so of one in Windows-1250, rather than reading its letters as "�"', async () => {
+    const root = await emptyFolder();
+    // "Češće" as an old Windows editor would have saved it.
+    await writeFile(path.join(root, 'Pismo.md'), Buffer.from([0xc8, 0x65, 0x9a, 0xe6, 0x65]));
+
+    assert.deepEqual(await files.readStrict(forwardSlashed(path.join(root, 'Pismo.md'))), { kind: 'not-utf8' });
+  });
+
+  it('says a missing file is missing, as a plain read does', async () => {
+    const root = await emptyFolder();
+
+    await assert.rejects(files.readStrict(forwardSlashed(path.join(root, 'nema.md'))), { name: 'FileMissing' });
+  });
+});
+
 describe('writing a file', () => {
+  it('keeps the time it is asked to, so a copy can carry the date of what it was copied from', async () => {
+    const root = await emptyFolder();
+    const files = createFileSystem(await emptyFolder());
+    const then = new Date(2019, 2, 12, 9, 30).getTime();
+
+    await files.write(forwardSlashed(path.join(root, 'Pismo.txt')), 'Dragi brate', then);
+
+    assert.equal((await stat(path.join(root, 'Pismo.txt'))).mtimeMs, then);
+  });
+
   it('leaves nothing of its own in the folder he syncs', async () => {
     const root = await emptyFolder();
     const staging = await emptyFolder();

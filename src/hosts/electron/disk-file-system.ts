@@ -1,10 +1,11 @@
 import type { Dirent } from 'node:fs';
-import { mkdir, readFile, readdir, rename, rmdir, stat, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, rmdir, stat, unlink, utimes, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
   type FileInfo,
   type FileSystem,
+  type StrictRead,
   FileMissing,
   FolderMissing,
 } from '../../platform/file-system.ts';
@@ -127,15 +128,34 @@ export function createFileSystem(stagingFolder: string): FileSystem {
       }
     },
 
+    async readStrict(at: string): Promise<StrictRead> {
+      let bytes: Buffer;
+      try {
+        bytes = await readFile(at);
+      } catch (error: unknown) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+        throw new FileMissing(at);
+      }
+      try {
+        return { kind: 'text', text: new TextDecoder('utf-8', { fatal: true }).decode(bytes) };
+      } catch {
+        // The decoder's only complaint is bytes that are not UTF-8, which is
+        // the answer asked for, so it is returned rather than logged here.
+        return { kind: 'not-utf8' };
+      }
+    },
+
     /**
      * Write to a sibling file and rename over the target, so a crash mid-write
-     * can't truncate an essay.
+     * can't truncate an essay. A time asked for is set on the sibling before
+     * the rename, which carries it across, so the file never has the wrong one.
      */
-    async write(at: string, text: string): Promise<void> {
+    async write(at: string, text: string, modifiedAt?: number): Promise<void> {
       await mkdir(path.dirname(at), { recursive: true });
       const temp = await halfWrittenCopyFor(at, stagingFolder);
       try {
         await writeFile(temp, text, 'utf8');
+        if (modifiedAt !== undefined) await utimes(temp, new Date(modifiedAt), new Date(modifiedAt));
         await rename(temp, at);
       } catch (error: unknown) {
         /*

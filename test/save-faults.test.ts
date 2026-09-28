@@ -53,6 +53,7 @@ function faulty(real: FileSystem): Faulty {
     listFolders: wrap(real.listFolders),
     folderExists: wrap(real.folderExists),
     read: wrap(real.read),
+    readStrict: wrap(real.readStrict),
     write: wrap(real.write),
     rename: wrap(real.rename),
     removeEmptyFolder: wrap(real.removeEmptyFolder),
