@@ -33,7 +33,9 @@ const TEXT = {
       the dialog — so the number gets a sentence saying what it counts.
     */
     appearanceRecent: 'Nedavni tekstovi',
-    appearanceRecentNote: 'Koliko ih stoji na vrhu spiska, iznad „Svi tekstovi“.',
+    // A no-break space inside the name: the note wraps under its buttons,
+    // and a heading's name split across two lines no longer reads as one.
+    appearanceRecentNote: 'Koliko ih stoji na vrhu spiska, iznad „Svi\u00A0tekstovi“.',
     appearanceReset: 'Vrati na početno',
     appearanceSmaller: 'Manje',
     appearanceLarger: 'Veće',
@@ -398,7 +400,7 @@ const TEXT = {
     appearanceColour: 'Colour',
     appearanceMode: 'Background',
     appearanceRecent: 'Recent texts',
-    appearanceRecentNote: 'How many stand at the top of the list, above “All texts”.',
+    appearanceRecentNote: 'How many stand at the top of the list, above “All\u00A0texts”.',
     appearanceReset: 'Back to the start',
     appearanceSmaller: 'Smaller',
     appearanceLarger: 'Larger',

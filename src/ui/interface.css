@@ -2762,6 +2762,32 @@ dialog::backdrop {
 .panel.appearance-panel {
   font-family: 'Segoe UI', system-ui, sans-serif;
   font-size: 14px;
+  /*
+    Wide rather than tall, with its groups side by side: on his Asus the
+    window is 628 pixels high inside, and stacked one above the other the
+    groups came to 736, so the panel scrolled at every size. It has the
+    width to spare — his windows are 1280 across.
+  */
+  width: min(46rem, 100%);
+}
+
+/* A little less air between the rows than the other dialogs have: enough
+   that it also fits at 110 %, where he may well have it. */
+.appearance-panel h3 {
+  margin-top: 0.5rem;
+}
+
+.appearance-panel .panel-half + .panel-half h2 {
+  margin-top: 0.8rem;
+}
+
+.appearance-panel header {
+  padding-top: 0.7rem;
+}
+
+.appearance-panel footer {
+  margin-top: 0.6rem;
+  padding-bottom: 0.7rem;
 }
 
 /* The two halves: his writing, and the app around it. */
@@ -2817,14 +2843,15 @@ dialog::backdrop {
 }
 
 /*
-  Two groups that stay on one line at every size.
+  Groups that stay on one line at every size.
 
   They used to wrap apart at some zooms and not others, which looks like
   a fault rather than a layout: past a certain zoom the panel stops being
-  32rem wide and becomes as wide as the window allows, so its contents
+  its full width and becomes as wide as the window allows, so its contents
   narrow while the buttons inside do not. Rather than let the groups
-  break apart, the swatches wrap within their own group — six across, or
-  three and three, but always beside the size rather than beneath it.
+  break apart, one group in each row gives — the fonts wrap onto a second
+  line, the swatches go three and three, the samples trail off sooner —
+  and the rest keep their width beside it.
 */
 .group-row {
   display: flex;
@@ -2834,15 +2861,11 @@ dialog::backdrop {
 }
 
 .group-row > * {
+  flex: 0 0 auto;
   min-width: 0;
 }
 
-/* The size control is nowrap, so it keeps its width and the colours give. */
-.group-row > *:first-child {
-  flex: 0 0 auto;
-}
-
-.group-row > *:last-child {
+.group-row > .fills {
   flex: 1 1 0;
 }
 
@@ -2916,6 +2939,12 @@ button:disabled {
 */
 .count-group .zoom-reading {
   min-width: 7.5rem;
+}
+
+/* As wide as its buttons, with the note under them wrapping to match, so
+   the colours beside it keep room for all six on one line. */
+.count-group {
+  width: min-content;
 }
 
 /*

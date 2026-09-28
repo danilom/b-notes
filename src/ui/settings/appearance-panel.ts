@@ -220,10 +220,15 @@ function scaleGroup(
   });
 }
 
-/** Groups narrow enough to sit side by side, so the panel stays short. */
-function row(groups: readonly HTMLElement[]): HTMLElement {
+/**
+ * Groups side by side, so the panel stays short enough for his screens
+ * without scrolling. The others keep the width they need; `fills` takes what
+ * is left, and is the one whose buttons wrap when the row is tight.
+ */
+function row(groups: readonly HTMLElement[], fills: HTMLElement): HTMLElement {
   const line = document.createElement('div');
   line.className = 'group-row';
+  fills.classList.add('fills');
   line.append(...groups);
   return line;
 }
@@ -421,8 +426,8 @@ function fill(
   // anything. Setting his text first and then the zoom would change it twice.
   panel.replaceChildren(
     header,
-    half(words.appearanceApp, [modes, fonts, row([appSize, accents]), recent]),
-    half(words.appearanceWriting, [writingFonts, writingSize]),
+    half(words.appearanceApp, [row([modes, fonts], fonts), row([appSize, accents, recent], accents)]),
+    half(words.appearanceWriting, [row([writingFonts, writingSize], writingFonts)]),
     footer,
   );
   keep.focus();
