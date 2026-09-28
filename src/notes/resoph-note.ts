@@ -11,6 +11,7 @@
  * Pure, and shared by both hosts: the browser mock has to read Resoph's folder
  * exactly as the installed app does.
  */
+import { clearOfWindowsDevices } from './windows-device-names.ts';
 
 /**
  * The characters Resoph cannot put in a filename, as it writes them instead.
@@ -52,10 +53,12 @@ const ESCAPES: ReadonlyMap<string, string> = new Map([...ESCAPED].map(([code, ch
  * The file name Resoph gives a title, without `.txt`: each character a
  * filename cannot hold written as Resoph writes it — `%2A` for `*` — and
  * nothing else touched. Spaces, leading and trailing, are part of his title.
- * The exact reverse of `titleOfResophName`.
+ * The exact reverse of `titleOfResophName`, except for a title Windows would
+ * take for a device: `CON` goes as `CON_`, since a file called `CON.txt` is
+ * one only b-notes could open.
  */
 export function resophNameFor(title: string): string {
-  return [...title].map((character) => ESCAPES.get(character) ?? character).join('');
+  return clearOfWindowsDevices([...title].map((character) => ESCAPES.get(character) ?? character).join(''));
 }
 
 /**

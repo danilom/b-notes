@@ -7,6 +7,7 @@
  */
 import { withoutDiacritics } from '../language/diacritics.ts';
 import { titleOfResophName } from './resoph-note.ts';
+import { isWindowsDeviceName } from './windows-device-names.ts';
 
 /**
  * Notes are `.txt`. Windows opens that in Notepad on a double-click while `.md`
@@ -125,9 +126,6 @@ export function versionName(when: Date): string {
   return `${day} ${two(when.getHours())}-${two(when.getMinutes())}-${two(when.getSeconds())}`;
 }
 
-/** Names Windows keeps for devices, which no file may take. */
-const RESERVED_ON_WINDOWS = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
-
 /**
  * The first unused name for `base`, treating `own` as free.
  *
@@ -197,7 +195,9 @@ export function safeTitle(title: string): string {
   }
 
   if (cleaned.length === 0) return NO_TITLE;
-  if (RESERVED_ON_WINDOWS.test(cleaned)) return `_${cleaned}`;
+  // Before, here: nobody sees this name, and `Con. Pismo` is a device to
+  // Windows as surely as `Con` is.
+  if (isWindowsDeviceName(cleaned)) return `_${cleaned}`;
   return cleaned;
 }
 

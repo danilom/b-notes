@@ -22,6 +22,12 @@ describe('the file name Resoph gives a title', () => {
       assert.equal(titleOfResophName(resophNameFor(title)), title);
     }
   });
+
+  it('keeps clear of the names Windows gives its devices, with an underscore after', () => {
+    assert.equal(resophNameFor('CON'), 'CON_');
+    assert.equal(resophNameFor('nul.txt'), 'nul_.txt');
+    assert.equal(resophNameFor('   CON'), '   CON');
+  });
 });
 
 describe('a text split the way Resoph keeps it', () => {

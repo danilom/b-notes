@@ -38,6 +38,11 @@ describe('a title made safe for a filename', () => {
   it('steers round the names Windows reserves for devices', () => {
     assert.equal(safeTitle('con'), '_con');
   });
+
+  it('steers round them where a dot follows, which Windows reads as the same device', () => {
+    assert.equal(safeTitle('Con. Pismo'), '_Con. Pismo');
+    assert.equal(safeTitle('nul.txt'), '_nul.txt');
+  });
 });
 
 describe('the tag that makes a name unique', () => {

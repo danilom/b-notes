@@ -10,6 +10,7 @@ import { createNoteStore } from '../src/notes/note-store.ts';
 import { createResophFolder } from '../src/notes/resoph-folder.ts';
 import { resophIdOf, titleOfResophName } from '../src/notes/resoph-note.ts';
 import { isStub } from '../src/notes/resoph-stub.ts';
+import { isWindowsDeviceName } from '../src/notes/windows-device-names.ts';
 import { silentLog } from './silent-log.ts';
 
 /**
@@ -91,6 +92,17 @@ const MOVED_TITLES: Record<string, string> = {
   'an emoji': 'Pismo 🌿',
 };
 
+/**
+ * Titles Windows takes for a device, and what they come back as. Moved all the
+ * same, into a file his other programs can open, one underscore different.
+ */
+const DEVICE_TITLES: Record<string, [title: string, shown: string]> = {
+  'a device name Windows keeps': ['CON', 'CON_'],
+  'a device name with an extension': ['nul.txt', 'nul_.txt'],
+  'a device name with a number': ['COM1', 'COM1_'],
+  'a device name and a dot': ['Aux. Pismo', 'Aux_. Pismo'],
+};
+
 /** Titles no file of Resoph's can carry, which have to stay in b-notes. */
 const KEPT_TITLES: Record<string, string> = {
   'a control character pasted in': 'Pismo\u000Bdrugo',
@@ -114,6 +126,19 @@ describe('a title nobody would choose, moved to Resoph', () => {
 
       assert.equal(await store.read(id), text);
       assert.deepEqual((await store.list()).map((note) => note.id), [id]);
+    });
+  }
+
+  for (const [shape, [title, shown]] of Object.entries(DEVICE_TITLES)) {
+    it(`goes into a file Windows can open, one underscore different: ${shape}`, async () => {
+      const { store, resoph, moved } = await moving(title);
+
+      const id = await moved;
+
+      const [name, ...more] = await readdir(resoph);
+      assert.equal(more.length, 0);
+      assert.equal(isWindowsDeviceName(name?.slice(0, -'.txt'.length) ?? ''), false, `${name} is a device`);
+      assert.equal(await store.read(id), `${shown}\n\nTekst.`);
     });
   }
 
