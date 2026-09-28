@@ -1107,6 +1107,18 @@ button svg {
   cursor: default;
 }
 
+/* The same mark on Premesti u Resoph, sized like the strip's other icons and
+   less faded than in the list: there it marks where a text is, here it is
+   what the button does. */
+.resoph-mark-button {
+  flex: none;
+  width: 0.95em;
+  height: 0.95em;
+  background: url(resoph-mark.png) center / contain no-repeat;
+  filter: grayscale(0.4);
+  opacity: 0.85;
+}
+
 .note-in-resoph.leaving {
   animation: resoph-mark-leaves 1.8s ease-in forwards;
 }
