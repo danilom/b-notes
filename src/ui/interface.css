@@ -1904,17 +1904,26 @@ dialog::backdrop {
   font-size: 0.9em;
 }
 
-/* The archive import: a console, wide enough for a folder's line to fit. */
+/* The archive import: nearly the whole window, the console taking all of it
+   the header and the buttons leave, so a long run reads without scrolling. */
 #archive-import {
-  padding: 1.5rem;
+  width: calc(100vw - 3rem);
+  height: calc(100vh - 3rem);
+  padding: 0.75rem;
 }
 
-.archive-import {
-  width: min(48rem, 100%);
+/* Both classes, to win over `.panel`'s own size, which comes later. */
+.panel.archive-import {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
 }
 
 .import-console {
-  height: 20rem;
+  flex: 1;
+  min-height: 0;
   margin: 0.8rem 0 0;
   padding: 0.6rem 0.8rem;
   overflow-y: auto;
@@ -1922,7 +1931,7 @@ dialog::backdrop {
   border-radius: 4px;
   background: var(--panel);
   font-family: Consolas, 'Courier New', monospace;
-  font-size: 0.85em;
+  font-size: 0.95em;
   line-height: 1.45;
   white-space: pre-wrap;
   overflow-wrap: anywhere;

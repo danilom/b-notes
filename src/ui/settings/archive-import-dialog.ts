@@ -30,7 +30,7 @@ function describe(archive: RawArchive): string {
   else {
     const on = new Date(state.record.importedAt).toLocaleString('en-GB');
     const failed = state.record.failed.length > 0 ? `, ${state.record.failed.length} failed` : '';
-    where = `imported ${on} (${state.record.written} texts${failed})`;
+    where = `imported ${on} (${state.record.written} ${state.record.written === 1 ? 'text' : 'texts'}${failed})`;
   }
   return `  ${archive.name.padEnd(28)} ${files.padStart(10)}   ${where}`;
 }
