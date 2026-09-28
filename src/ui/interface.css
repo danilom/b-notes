@@ -1763,7 +1763,7 @@ dialog::backdrop {
   Both classes, to win over `.panel`'s own thin border, which comes later.
 */
 .panel.advanced-panel {
-  border: 4px solid var(--chosen);
+  border: 8px solid var(--chosen);
 }
 
 /* The first thing anyone needs when he telephones, and until now it lived
@@ -2550,6 +2550,13 @@ dialog::backdrop {
   border-radius: 8px;
   background: var(--page);
   box-shadow: 0 12px 44px hsl(var(--grey-h) var(--surface) var(--l-shadow) / var(--shadow-alpha));
+}
+
+/* The panel is given focus only so the keyboard is inside the dialog; it is
+   not something to press, and the browser's ring around the whole of it read
+   as a second, coloured border. Its controls keep their own rings. */
+.panel:focus {
+  outline: none;
 }
 
 /*
