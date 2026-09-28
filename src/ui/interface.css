@@ -1744,23 +1744,24 @@ dialog::backdrop {
 /* ---- the settings that are not his ---- */
 
 /*
-  Not for him, and not hidden from him either. It sits at the end of the
-  last row of the panel he does use, in English and behind a word to type,
-  because whoever needs it will be at his machine years from now with no
-  checkout to hand — and a door you have to remember is a door you have
-  lost. Quiet rather than concealed: a gear is a mark he has no reason to
-  press and whoever is looking for it cannot miss.
+  Not for him, and not hidden from him either. It sits in the bottom-left
+  corner of Izgled, apart from both halves because it belongs to neither,
+  in English and behind a word to type, because whoever needs it will be
+  at his machine years from now with no checkout to hand — and a door you
+  have to remember is a door you have lost. Quiet rather than concealed: a
+  gear is a mark he has no reason to press and whoever is looking for it
+  cannot miss.
+
+  Written against the footer so it wins over the footer's own buttons,
+  which are sized to be pressed; this one is sized to be passed over.
 */
-.advanced-door {
+.panel footer .advanced-door {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  margin-left: auto;
-  /* Sitting on the same line as the size buttons rather than floating at
-     their middle. It is shorter than they are, and centred it read as
-     adrift between two rows instead of belonging to this one. */
-  align-self: flex-end;
-  padding: 0.3rem 0.6rem;
+  min-width: 0;
+  margin-right: 0.6rem;
+  padding: 0.3rem 0.4rem;
   border-color: transparent;
   background: none;
   color: var(--quiet);
@@ -2788,6 +2789,16 @@ dialog::backdrop {
 .appearance-panel footer {
   margin-top: 0.6rem;
   padding-bottom: 0.7rem;
+}
+
+/*
+  The first group of every row at least as wide as a size stepper — two
+  2.6rem buttons, a 2.9rem reading and two 0.4rem gaps — so what follows
+  starts at one line in every row: both fonts, and the colours under the
+  app's font. Change the stepper and this has to follow it.
+*/
+.appearance-panel .group-row > :first-child {
+  min-width: 8.9rem;
 }
 
 /* The two halves: his writing, and the app around it. */

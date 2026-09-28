@@ -140,8 +140,6 @@ interface Stepper {
   reads: string;
   nextFrom: (direction: 1 | -1) => number;
   setTo: (next: number) => void;
-  /** Something to sit at the far end of the same row, if anything does. */
-  beside?: HTMLElement;
   /**
    * A line under it, where the number alone doesn't say what it counts.
    *
@@ -189,7 +187,6 @@ function stepperGroup(words: ReturnType<typeof strings>, spec: Stepper): HTMLEle
     reading,
     step(1, words.appearanceLarger, '+'),
   );
-  if (spec.beside !== undefined) row.append(spec.beside);
   group.append(title, row);
 
   if (spec.note !== undefined) {
@@ -208,7 +205,6 @@ function scaleGroup(
   factor: number,
   setTo: (next: number) => void,
   ceiling?: number,
-  beside?: HTMLElement,
 ): HTMLElement {
   return stepperGroup(words, {
     heading,
@@ -216,7 +212,6 @@ function scaleGroup(
     reads: `${Math.round(factor * 100)}%`,
     nextFrom: (direction) => stepScale(factor, direction, ceiling),
     setTo,
-    ...(beside === undefined ? {} : { beside }),
   });
 }
 
@@ -328,9 +323,9 @@ function fill(
   /*
     Not for him, and not hidden from him either.
 
-    It sits at the end of the last row of the panel he does use, labelled in
-    English and behind a question only someone who meant to come here can
-    answer. Hiding it behind a keystroke was considered and dropped: whoever
+    It sits in the bottom-left corner, apart from both halves because it
+    belongs to neither, labelled in English and behind a question only
+    someone who meant to come here can answer. Hiding it behind a keystroke was considered and dropped: whoever
     needs it will be standing at his machine years from now with no checkout to
     hand, and a door you have to remember is a door you have lost.
   */
@@ -348,8 +343,6 @@ function fill(
     words.appearanceTextSize,
     chosen.writingSize,
     (size) => change({ ...chosen, writingSize: size }),
-    undefined,
-    advanced,
   );
 
   /*
@@ -419,15 +412,20 @@ function fill(
   cancel.type = 'button';
   cancel.textContent = words.appearanceCancel;
   cancel.addEventListener('click', handlers.onCancel);
-  footer.append(reset, keep, cancel);
+  footer.append(advanced, reset, keep, cancel);
 
   // The app first, then his writing: the zoom multiplies the writing size, so
   // the outer control has to be settled before the one nested inside it means
   // anything. Setting his text first and then the zoom would change it twice.
+  //
+  // The same shape in both halves — the size top-left, the font beside it —
+  // so the two sizes sit one above the other, and so do the two fonts: the
+  // steppers are the same width, which lines the fonts up without asking.
+  // Background and colour go together, being the two that colour the app.
   panel.replaceChildren(
     header,
-    half(words.appearanceApp, [row([modes, fonts], fonts), row([appSize, accents, recent], accents)]),
-    half(words.appearanceWriting, [row([writingFonts, writingSize], writingFonts)]),
+    half(words.appearanceApp, [row([appSize, fonts], fonts), row([modes, accents, recent], accents)]),
+    half(words.appearanceWriting, [row([writingSize, writingFonts], writingFonts)]),
     footer,
   );
   keep.focus();
