@@ -169,6 +169,12 @@ describe('the headings a search puts over what it found', () => {
     assert.deepEqual(headings('zima'), ['Pronađeni u naslovu', 'Svi tekstovi']);
   });
 
+  it('puts what it found only inside other words under a heading of its own, last', () => {
+    const inside = [...NOTES, note('Pisanje', 'O zivotu.', 500)];
+    // "ivo" in "zivotu" only.
+    assert.deepEqual(headings('ivo', inside), ['Pronađeni kao deo reči', 'Svi tekstovi']);
+  });
+
   it('says plainly that nothing was found, under one heading', () => {
     assert.deepEqual(headings('nepostojeće'), ['Pronađeni', 'Svi tekstovi']);
   });

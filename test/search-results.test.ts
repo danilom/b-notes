@@ -36,7 +36,36 @@ describe('what a search found, in two groups', () => {
   });
 
   it('finds nothing for nothing', () => {
-    assert.deepEqual(foundGroups([text('Andric')], '  ', NOW), { inTitle: [], inText: [] });
+    assert.deepEqual(foundGroups([text('Andric')], '  ', NOW), { inTitle: [], inText: [], asPart: [] });
+  });
+
+  it('puts texts where it is only inside other words in a group of their own, last', () => {
+    // "ivo" in "život" is a match, but seldom the one he meant.
+    const { inTitle, inText, asPart } = foundGroups(
+      [text('Zivot', 'Dug zivot.'), text('Pismo', 'Pozdrav od Ive i Ivo.'), text('Ivo Andric')],
+      'ivo',
+      NOW,
+    );
+    assert.deepEqual(names(inTitle), ['Ivo Andric']);
+    assert.deepEqual(names(inText), ['Pismo']);
+    assert.deepEqual(names(asPart), ['Zivot']);
+  });
+
+  it('counts a title that has it only inside a word as found in the text, where the text has the word', () => {
+    const { inText, asPart } = foundGroups([text('Zivot', 'Rekao je Ivo.')], 'ivo', NOW);
+    assert.deepEqual(names(inText), ['Zivot']);
+    assert.deepEqual(names(asPart), []);
+  });
+
+  it('reads his mark and the name glued to it as two words, as the list draws them', () => {
+    const { inTitle } = foundGroups([text('AAKafana u gradu'), text('A(E)IVO P')], 'kafana', NOW);
+    assert.deepEqual(names(inTitle), ['AAKafana u gradu']);
+    assert.deepEqual(names(foundGroups([text('A(E)IVO P')], 'ivo', NOW).inTitle), ['A(E)IVO P']);
+  });
+
+  it('takes a number glued to a word as the end of one word and the start of another', () => {
+    assert.deepEqual(names(foundGroups([text('5Nosac aviona')], 'nosac', NOW).inTitle), ['5Nosac aviona']);
+    assert.deepEqual(names(foundGroups([text('Pismo', 'Poglavlje 12Nosac.')], 'nosac', NOW).inText), ['Pismo']);
   });
 });
 
@@ -51,9 +80,27 @@ describe('the order within a group', () => {
     ]);
   });
 
-  it('puts a title where it starts a word before one where it is inside a word', () => {
-    const { inTitle } = foundGroups([text('Dandrica'), text('Andric')], 'andric', NOW);
-    assert.deepEqual(names(inTitle), ['Andric', 'Dandrica']);
+  it('puts a title with the whole word before one where it only starts a word', () => {
+    // A little better, not a lot: "Andrica" is Andrić all the same.
+    const { inTitle } = foundGroups([text('Andrica pisma'), text('Andric')], 'andric', NOW);
+    assert.deepEqual(names(inTitle), ['Andric', 'Andrica pisma']);
+  });
+
+  it('puts a text with the whole word before one where it only starts words, as often mentioned', () => {
+    const { inText } = foundGroups([text('A', 'O Andrica, kod Andricu'), text('B', 'Andric i Andric')], 'andric', NOW);
+    assert.deepEqual(names(inText), ['B', 'A']);
+  });
+
+  it('puts a text that mentions it more often before one with the whole word less often', () => {
+    const many = Array.from({ length: 5 }, () => 'Andrica').join(' ');
+    const { inText } = foundGroups([text('A', 'Andric.'), text('B', many)], 'andric', NOW);
+    assert.deepEqual(names(inText), ['B', 'A']);
+  });
+
+  it('counts only where it is a word, not where it is inside one', () => {
+    const inside = Array.from({ length: 15 }, () => 'zivot').join(' ');
+    const { inText } = foundGroups([text('A', `${inside} Ivo`), text('B', 'Ivo i Ivo')], 'ivo', NOW);
+    assert.deepEqual(names(inText), ['B', 'A']);
   });
 
   it('puts a text that is about it before one that mentions it in passing', () => {

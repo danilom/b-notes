@@ -4,6 +4,7 @@ import { type TitleParts, titlePartsOf } from '../notes/title-marks.ts';
 import type { LiveNote } from '../notes/writing.ts';
 import { toSearchable } from '../language/diacritics.ts';
 import { foundGroups } from './search-results.ts';
+import { matchesIn } from './text-match.ts';
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 
 export interface ListView {
@@ -197,14 +198,13 @@ export function sectionsFor(view: ListView): Section[] {
 
   // Two groups at most, each under a heading that says where he was found,
   // in the order search-results.ts explains. One heading when nothing was.
-  const { inTitle, inText } = foundGroups(all, view.query, view.now ?? Date.now());
-  const found: Section[] =
-    inTitle.length + inText.length === 0
-      ? [{ heading: words.sectionFound, rows: [] }]
-      : [
-          ...(inTitle.length > 0 ? [{ heading: words.sectionFoundInTitle, rows: inTitle }] : []),
-          ...(inText.length > 0 ? [{ heading: words.sectionFoundInText, rows: inText }] : []),
-        ];
+  const { inTitle, inText, asPart } = foundGroups(all, view.query, view.now ?? Date.now());
+  const groups: Section[] = [
+    { heading: words.sectionFoundInTitle, rows: inTitle },
+    { heading: words.sectionFoundInText, rows: inText },
+    { heading: words.sectionFoundAsPart, rows: asPart },
+  ].filter((group) => group.rows.length > 0);
+  const found: Section[] = groups.length > 0 ? groups : [{ heading: words.sectionFound, rows: [] }];
   return [...found, { heading: words.sectionAll, rows: all, aside: true }];
 }
 
@@ -224,7 +224,8 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
   const words = strings(view.language);
   // Only among what was found: the rest are there whatever he searched for.
   const code = aside ? null : foundByCode(row, view.query);
-  element.append(headingOf(row, words, code), when, ...resophMarkOf(row, view, words));
+  const query = aside ? '' : view.query;
+  element.append(headingOf(row, words, code, query), when, ...resophMarkOf(row, view, words));
   return element;
 }
 
@@ -250,7 +251,7 @@ function resophMarkOf(row: Row, view: ListView, words: ReturnType<typeof strings
  * Beside the name rather than in it, so a name long enough to be cut short
  * never takes a mark with it.
  */
-function headingOf(row: Row, words: ReturnType<typeof strings>, code: string | null): HTMLElement {
+function headingOf(row: Row, words: ReturnType<typeof strings>, code: string | null, query: string): HTMLElement {
   const heading = span('note-heading', '');
   const { mark, position, starred, name } = row.parts;
   const marked = mark !== null || starred;
@@ -271,7 +272,7 @@ function headingOf(row: Row, words: ReturnType<typeof strings>, code: string | n
     star.setAttribute('aria-hidden', 'true');
     heading.append(star);
   }
-  heading.append(span('note-title', marked ? name : row.title));
+  heading.append(titleWithMatches(marked ? name : row.title, query));
   if (code !== null) heading.append(span('note-code', code));
   return heading;
 }
@@ -289,6 +290,26 @@ function markOf(mark: string): HTMLElement {
   const sign = span('note-mark note-collection', 'UP');
   sign.setAttribute('aria-label', mark);
   return sign;
+}
+
+/**
+ * The name, with what a search found in it marked the way his text marks it,
+ * so a row says why it is there. Only in the name: his marks are drawn apart
+ * from it, and a match inside one of those goes unmarked, which is rare.
+ * Built of text and `mark` elements, never markup, like the marks in his text.
+ */
+function titleWithMatches(text: string, query: string): HTMLElement {
+  const title = span('note-title', '');
+  let from = 0;
+  for (const { start, end } of matchesIn(text, query)) {
+    const found = document.createElement('mark');
+    found.className = 'note-found';
+    found.textContent = text.slice(start, end);
+    title.append(text.slice(from, start), found);
+    from = end;
+  }
+  title.append(text.slice(from));
+  return title;
 }
 
 function span(className: string, text: string): HTMLElement {

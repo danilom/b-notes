@@ -38,3 +38,20 @@ test('draws (UP) as its letters in the bars\' box, standing on the line the bars
   // The bars stand on the title's baseline; so must the letters.
   expect(Math.abs(measured.upBaseline - measured.barsFoot)).toBeLessThan(0.5);
 });
+
+test('marks what a search found in the titles it found it in, and nowhere in the rest of the list', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#list .note').first()).toBeVisible();
+
+  // One of the pretend Resoph titles: "GRADSKE PRICE, prva".
+  await page.locator('#search').fill('price');
+  const found = page.locator('#list .section-block').first();
+  await expect(found.locator('.section')).toContainText('Pronađeni u naslovu');
+  const row = found.locator('.note').filter({ hasText: 'GRADSKE PRICE, prva' });
+  await expect(row.locator('.note-title mark.note-found')).toHaveText('PRICE');
+  // The whole title still reads as it did.
+  await expect(row.locator('.note-title')).toHaveText('GRADSKE PRICE, prva');
+
+  // Svi tekstovi is every text, whatever he searched for: nothing marked there.
+  await expect(page.locator('#list .note.aside mark.note-found')).toHaveCount(0);
+});

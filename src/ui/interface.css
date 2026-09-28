@@ -3107,6 +3107,14 @@ button:disabled {
   border-radius: 2px;
 }
 
+/* What a search found in a title in the list: the same mark as in his text,
+   over the words rather than behind them, so it keeps the title's own ink. */
+.note-title mark.note-found {
+  color: inherit;
+  background: var(--found);
+  border-radius: 2px;
+}
+
 /*
   The one he is standing on: the same highlight as the rest, framed.
 
