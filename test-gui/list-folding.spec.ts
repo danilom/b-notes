@@ -13,7 +13,7 @@ async function start(page: Page): Promise<void> {
 
 test('folds the list away to a tab at the edge, and the tab brings it back', async ({ page }) => {
   await start(page);
-  const tab = page.getByRole('button', { name: 'Lista tekstova' });
+  const tab = page.getByRole('button', { name: 'Prikaži listu tekstova' });
   await expect(tab).toBeHidden();
 
   await page.getByRole('button', { name: 'Sakrij listu tekstova' }).click();
@@ -47,7 +47,7 @@ test('always starts with the list showing, however it was left', async ({ page }
 
   await page.reload();
   await expect(page.locator('#list .note').first()).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Lista tekstova' })).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Prikaži listu tekstova' })).toBeHidden();
 });
 
 test('keeps the tab clear of his text on his own screens', async ({ page }) => {
@@ -69,4 +69,42 @@ test('keeps the tab clear of his text on his own screens', async ({ page }) => {
     expect(clearance, `on his ${laptop}`).not.toBeNull();
     expect(clearance ?? 0, `on his ${laptop}`).toBeGreaterThan(16);
   }
+});
+
+test('folds the header up into the corner, the same height, with the chevron where the other was', async ({ page }) => {
+  // Nothing moves under his pointer between the two: the one he pressed to
+  // fold the list is where the one to bring it back appears.
+  await page.setViewportSize({ width: 1280, height: 650 });
+  await start(page);
+  const middle = (selector: string) =>
+    page.locator(selector).evaluate((element) => {
+      const box = element.getBoundingClientRect();
+      return { middle: box.top + box.height / 2, height: box.height };
+    });
+  const header = await middle('#toolbar');
+  const before = await middle('#hide-list svg');
+
+  await page.getByRole('button', { name: 'Sakrij listu tekstova' }).click();
+  const tab = await middle('#show-list');
+  const after = await middle('#show-list svg');
+
+  expect(Math.abs(tab.height - header.height)).toBeLessThan(0.5);
+  expect(Math.abs(after.middle - before.middle)).toBeLessThan(0.5);
+});
+
+test('puts his text in the middle while the list is folded away', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 650 });
+  await start(page);
+  const margins = () =>
+    page.locator('#editor').evaluate((editor) => {
+      const seen = getComputedStyle(editor);
+      return { left: parseFloat(seen.paddingLeft), right: parseFloat(seen.paddingRight) };
+    });
+
+  const open = await margins();
+  expect(open.left).toBeLessThan(open.right);
+
+  await page.getByRole('button', { name: 'Sakrij listu tekstova' }).click();
+  const folded = await margins();
+  expect(Math.abs(folded.left - folded.right)).toBeLessThan(1);
 });

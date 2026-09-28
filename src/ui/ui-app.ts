@@ -104,7 +104,7 @@ const search = element('search', HTMLInputElement);
 const newNote = element('new-note', HTMLButtonElement);
 const hideList = element('hide-list', HTMLButtonElement);
 const showList = element('show-list', HTMLButtonElement);
-const showListLabel = element('show-list-label', HTMLSpanElement);
+const toolbar = element('toolbar', HTMLDivElement);
 const newNoteLabel = element('new-note-label', HTMLSpanElement);
 const appearanceButton = element('appearance-button', HTMLButtonElement);
 const appearanceLabel = element('appearance-label', HTMLSpanElement);
@@ -904,6 +904,10 @@ appearanceButton.addEventListener('click', () => panels.showAppearance());
  */
 function showsList(shown: boolean): void {
   if (document.body.classList.contains('list-hidden') === !shown) return;
+  // The header's height as it is now, taken before it goes, so the folded-up
+  // header is the same height and its chevron at the same place. It is as
+  // tall as what is in it, which his font decides, so it is read, not guessed.
+  if (!shown) showList.style.height = `${toolbar.getBoundingClientRect().height}px`;
   document.body.classList.toggle('list-hidden', !shown);
   showList.hidden = shown;
   editor.focus();
@@ -1223,9 +1227,9 @@ export async function startApp(runningOn: Host): Promise<void> {
   hideList.append(icon('hide-list'));
   hideList.title = words.hideList;
   hideList.setAttribute('aria-label', words.hideList);
-  showList.prepend(icon('show-list'));
-  showListLabel.textContent = words.listOfTexts;
+  showList.append(icon('show-list'));
   showList.title = words.showList;
+  showList.setAttribute('aria-label', words.showList);
   appearanceButton.prepend(icon('appearance'));
   search.placeholder = words.searchPlaceholder;
   search.setAttribute('aria-label', words.searchLabel);

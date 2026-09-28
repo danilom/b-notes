@@ -109,6 +109,23 @@ test('keeps the strip to its two rows at the size of his own windows', async ({ 
   }
 });
 
+test('puts the strip on one row where the list is folded away and there is room', async ({ page }) => {
+  // Every line the strip does not take is a line of his writing.
+  for (const { laptop, width, height } of HIS_WINDOWS) {
+    await page.setViewportSize({ width, height });
+    await page.getByRole('button', { name: 'Sakrij listu tekstova' }).click();
+    const rows = await page.locator('#status .status-action').evaluateAll((buttons) => {
+      const tops = buttons.map((button) => Math.round(button.getBoundingClientRect().top));
+      return new Set(tops).size;
+    });
+    const cut = await page.locator('#status-text').evaluate((element) => element.scrollWidth > element.clientWidth);
+
+    expect(rows, `on his ${laptop}`).toBe(1);
+    expect(cut, `the status line on his ${laptop}`).toBe(false);
+    await page.getByRole('button', { name: 'Prikaži listu tekstova' }).click();
+  }
+});
+
 test('shows the status line whole on his screens, and cut short with the whole of it on hover where it cannot be', async ({
   page,
 }) => {

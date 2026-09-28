@@ -465,19 +465,28 @@ button:hover:not(:disabled) svg {
 */
 #hide-list {
   margin-left: auto;
-  padding: 0.3rem 0.4rem;
+  /* As tall as the row Novi tekst makes, and no taller: the header is the
+     height it was before this was in it. */
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding: 0 0.4rem;
   border-color: transparent;
   background: none;
-  color: var(--quiet);
+  color: var(--faint);
+}
+
+#hide-list:hover,
+#show-list:hover {
+  color: var(--ink);
 }
 
 #hide-list:hover {
   border-color: var(--line);
-  color: var(--ink);
 }
 
-/* The same chevron both ways, whatever the text beside it: in rem, since the
-   tab's words are smaller than the toolbar's. */
+/* The same chevron both ways: in the dates' grey, which is as quiet as
+   anything he is meant to find. */
 #hide-list svg,
 #show-list svg {
   width: 1.3rem;
@@ -490,45 +499,44 @@ body.list-hidden #side {
 }
 
 /*
-  The way back while the list is folded away: a tab at the window's left
-  edge, level with where Novi tekst stood, in the toolbar's colour as if a
-  corner of the list were left showing. As tall as it needs, not the
-  window's height, and it says what it brings back, small, a word to a line.
+  The way back while the list is folded away: the list's header, folded up
+  into the window's corner. Its colour and the line under it, and its
+  height, which is set as it folds, so the chevron is at the height the
+  other one was and nothing jumps as he goes between the two.
 
   Over the page's left margin, which is wide wherever the list is gone:
   his text starts well to the right of it.
 */
 #show-list {
   position: fixed;
-  top: 0.55rem;
+  top: 0;
   left: 0;
   z-index: 5;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.15rem;
-  padding: 0.4rem 0.45rem 0.5rem;
-  border: 1px solid var(--line);
-  border-left: none;
-  border-radius: 0 6px 6px 0;
+  padding: 0 0.9rem;
+  border: none;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  border-radius: 0 0 6px 0;
   background: var(--toolbar);
-  color: var(--quiet);
-  font-size: 0.72em;
-  line-height: 1.15;
-  text-align: center;
+  color: var(--faint);
 }
 
 #show-list[hidden] {
   display: none;
 }
 
-/* One word to a line: "Lista" over "tekstova". */
-#show-list span {
-  width: min-content;
-}
-
-#show-list:hover {
-  color: var(--ink);
+/*
+  His text in the middle while the list is folded away. With the list there,
+  the room is split two to three so the text leans left, leaving the right
+  margin for the panel that counts what a search found; with the list gone
+  that margin is wide at an even split too, and a text off to one side of an
+  empty window looks as if something were missing.
+*/
+body.list-hidden {
+  --gutter-left: max(2rem, calc((100% - var(--measure)) * 0.5));
+  --gutter-right: max(2rem, calc((100% - var(--measure)) * 0.5));
 }
 
 /*
@@ -1225,6 +1233,36 @@ body.holding > #main {
     text size, rather than the window growing a bar he has never seen.
   */
   flex-wrap: wrap;
+}
+
+/*
+  One row where there is room for it: the status line, the buttons for his
+  text, and the quiet two, in that order along the bottom. That is his
+  screen with the list folded away, where every line the strip does not
+  take is a line of his writing. Decided by the strip's own width rather
+  than by whether the list is folded, so a larger text size that no longer
+  fits one row goes back to two by itself.
+
+  Wide enough that the status line is still whole at his sizes; where it is
+  not, it is the line that gives way, as it always is.
+*/
+#status {
+  container-type: inline-size;
+}
+
+@container (min-width: 62rem) {
+  #status-text {
+    order: -1;
+  }
+
+  #status-actions {
+    flex: none;
+  }
+
+  /* Still set apart from Obriši tekst, which is now beside it. */
+  #status-quiet {
+    margin-left: 0.8rem;
+  }
 }
 
 /*
