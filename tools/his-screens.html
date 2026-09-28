@@ -261,18 +261,40 @@
       `;
 
       const STYLES = {
+        /*
+          One grid for the whole strip, each column as wide as the widest
+          button in it: Premesti under Ranije verzije, Izgled under Obriši
+          tekst. The width it switches on is asked of #main, which is as wide
+          as the strip, because the strip cannot be asked about itself.
+        */
         a: `
           ${SAME_BUTTONS}
-          #status-actions, #status-quiet {
+          #main { container-type: inline-size; }
+          #status {
+            container-type: normal !important;
             display: grid !important;
-            grid-auto-flow: column;
-            grid-auto-columns: 11.5rem;
-            gap: 0.4rem !important;
-            justify-content: end;
-            margin-left: 0 !important;
+            grid-template-columns: minmax(0, 1fr) auto auto auto;
+            column-gap: 0.4rem !important;
+            row-gap: 0.25rem !important;
+            align-items: center;
           }
-          #status-quiet { flex: none; }
-          #status-actions .status-action, #status-quiet .status-action { justify-content: center; }
+          #status-actions, #status-quiet { display: contents !important; }
+          #status .status-action { justify-self: stretch; justify-content: center; margin: 0 !important; }
+          #copy-all { grid-area: 1 / 2; }
+          #see-versions { grid-area: 1 / 3; }
+          #delete-note { grid-area: 1 / 4; }
+          #status-text { grid-area: 2 / 1 / 3 / 3; }
+          #move-to-resoph { grid-area: 2 / 3; }
+          #appearance-button { grid-area: 2 / 4; }
+          @container (min-width: 62rem) {
+            #status { grid-template-columns: minmax(0, 1fr) auto auto auto auto auto; }
+            #status-text { grid-area: 1 / 1; }
+            #copy-all { grid-area: 1 / 2; }
+            #see-versions { grid-area: 1 / 3; }
+            #delete-note { grid-area: 1 / 4; }
+            #move-to-resoph { grid-area: 1 / 5; margin-left: 0.8rem !important; }
+            #appearance-button { grid-area: 1 / 6; }
+          }
         `,
         c: `
           ${SAME_BUTTONS}
