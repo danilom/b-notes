@@ -494,8 +494,61 @@ button:hover:not(:disabled) svg {
   color: inherit;
 }
 
+/*
+  Folded away by sliding out past the window's left edge: moved rather than
+  narrowed, so nothing in it squeezes on the way. Hidden once it is out, so
+  nothing in it can be reached with Tab. 22rem is its width, which it keeps:
+  the text beside it gives way long before it would.
+*/
 body.list-hidden #side {
-  display: none;
+  margin-left: -22rem;
+  visibility: hidden;
+}
+
+/*
+  A short slide rather than a jump, the list out and his text over to the
+  middle together, and the tab once the list has gone. Short, because it is
+  in the way of nothing only while it is quick; and none at all where
+  Windows is set to spare him animations.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  #side {
+    transition: margin-left 180ms ease-out;
+  }
+
+  /* Out of reach only once it is out of sight; back in sight at once. */
+  body.list-hidden #side {
+    transition:
+      margin-left 180ms ease-in,
+      visibility 0s linear 180ms;
+  }
+
+  /* The text and what is painted behind it move together, or the marks on
+     his matches would slide out from under the words. */
+  #editor,
+  #editor-marks {
+    transition: padding 180ms ease-out;
+  }
+
+  #found {
+    transition:
+      left 180ms ease-out,
+      right 180ms ease-out;
+  }
+
+  #show-list:not([hidden]) {
+    animation: tab-arrives 120ms ease-out 160ms both;
+  }
+}
+
+@keyframes tab-arrives {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 /*

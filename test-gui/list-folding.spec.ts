@@ -58,6 +58,7 @@ test('keeps the tab clear of his text on his own screens', async ({ page }) => {
     await page.setViewportSize({ width, height });
     await start(page);
     await page.getByRole('button', { name: 'Sakrij listu tekstova' }).click();
+    await expect(page.locator('#side')).toBeHidden();
 
     const clearance = await page.evaluate(() => {
       const tab = document.getElementById('show-list')?.getBoundingClientRect();
@@ -105,6 +106,45 @@ test('puts his text in the middle while the list is folded away', async ({ page 
   expect(open.left).toBeLessThan(open.right);
 
   await page.getByRole('button', { name: 'Sakrij listu tekstova' }).click();
-  const folded = await margins();
-  expect(Math.abs(folded.left - folded.right)).toBeLessThan(1);
+  // Once it has slid there.
+  await expect.poll(async () => {
+    const folded = await margins();
+    return Math.abs(folded.left - folded.right);
+  }).toBeLessThan(1);
+});
+
+/** Where the list's left edge is, frame by frame, from the click that folds it. */
+async function slideOf(page: Page): Promise<number[]> {
+  return page.evaluate(async () => {
+    const side = document.getElementById('side');
+    const button = document.getElementById('hide-list');
+    if (side === null || button === null) return [];
+    const seen: number[] = [];
+    button.click();
+    const until = performance.now() + 400;
+    while (performance.now() < until) {
+      seen.push(side.getBoundingClientRect().left);
+      await new Promise((frame) => requestAnimationFrame(frame));
+    }
+    return seen;
+  });
+}
+
+test('slides the list away rather than making it vanish', async ({ page }) => {
+  await start(page);
+  const edges = await slideOf(page);
+  const width = await page.locator('#side').evaluate((side) => side.getBoundingClientRect().width);
+
+  // Somewhere on the way out, not only in and then out.
+  expect(edges.some((left) => left < -1 && left > -width + 1)).toBe(true);
+  expect(edges.at(-1)).toBeCloseTo(-width, 0);
+});
+
+test('folds it at once where Windows is set to spare him animations', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await start(page);
+  const edges = await slideOf(page);
+  const width = await page.locator('#side').evaluate((side) => side.getBoundingClientRect().width);
+
+  expect(edges.every((left) => Math.abs(left + width) < 1)).toBe(true);
 });

@@ -114,6 +114,8 @@ test('puts the strip on one row where the list is folded away and there is room'
   for (const { laptop, width, height } of HIS_WINDOWS) {
     await page.setViewportSize({ width, height });
     await page.getByRole('button', { name: 'Sakrij listu tekstova' }).click();
+    // Once the list has slid out of the way.
+    await expect(page.locator('#side')).toBeHidden();
     const rows = await page.locator('#status .status-action').evaluateAll((buttons) => {
       const tops = buttons.map((button) => Math.round(button.getBoundingClientRect().top));
       return new Set(tops).size;
