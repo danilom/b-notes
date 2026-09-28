@@ -179,6 +179,8 @@ whether the sentence is about the screen, about a thing on it, or about an act
 | `settings.json` | b-notes' folder | which letters and which colour are taste, and travel with him |
 | `Obrisano/` | b-notes' folder | texts he has deleted, with what he wrote in them |
 | `Verzije/` | b-notes' folder | what a text said before he emptied it or Resoph changed it; `Obrisano/Verzije/` once the text itself is put away |
+| `Arhiva/` | b-notes' folder | writing from old machines and exports, one folder per source, in b-notes' shape; what the Arhiva strip lists |
+| `Arhiva-raw/` | b-notes' folder | the same sources as they arrived, never listed; Advanced settings imports each into `Arhiva/` once, leaving a `.b-notes-import.json` there |
 | `screen.json` | `userData` | how big the letters are is the screen in front of him, not taste — syncing it would have one machine keep undoing the other |
 | `session.json` | `userData` | which text he had open, on this machine |
 | `folders.json` | `userData` | where his Resoph folder and b-notes' are, if someone chose; otherwise Resoph's own settings say, and b-notes' goes beside it |
