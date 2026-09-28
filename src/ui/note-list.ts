@@ -52,6 +52,8 @@ export interface Row {
   inResoph: boolean;
   /** Folded, so `macka` finds `mačka` and `mačka` finds `macka`. */
   searchable: string;
+  /** The code in its file's name, which a search finds it by too. */
+  code: string | null;
   updatedAt: number;
 }
 
@@ -69,10 +71,33 @@ export interface Section {
  * so this is a plain comparison of plain strings, which is why searching got
  * quicker rather than slower when diacritics stopped mattering.
  */
-export function matches(row: { searchable: string }, query: string): boolean {
+export function matches(row: Searched, query: string): boolean {
   const needle = toSearchable(query.trim());
   if (needle.length === 0) return true;
-  return row.searchable.includes(needle);
+  return row.searchable.includes(needle) || foundByCode(row, query) !== null;
+}
+
+/** What a search looks through: his words, and the code in his file's name. */
+interface Searched {
+  searchable: string;
+  code?: string | null;
+}
+
+/**
+ * The code a text was found by, where its words did not match, or null.
+ *
+ * A text taken over from Resoph carries a code in its file name, `~K3F9A2`,
+ * and the stub left in Resoph tells him to search for it: the one way back to
+ * a text whose title he has since changed, or emptied, among titles that
+ * repeat. Searched like any of his words, so part of it finds it too; and
+ * shown on the row when that is what matched, since nothing in the text says
+ * why it is there.
+ */
+export function foundByCode(row: Searched, query: string): string | null {
+  const needle = toSearchable(query.trim());
+  if (needle.length === 0 || row.searchable.includes(needle)) return null;
+  const code = row.code ?? null;
+  return code !== null && toSearchable(code).includes(needle) ? code : null;
 }
 
 function titleOf(note: LiveNote, words: ReturnType<typeof strings>): string {
@@ -88,6 +113,7 @@ function toRow(note: LiveNote, words: ReturnType<typeof strings>): Row {
     parts: titlePartsOf(note.sortTitle),
     inResoph: isResophId(note.id),
     searchable: note.searchable,
+    code: note.code,
     updatedAt: note.updatedAt,
   };
 }
@@ -123,6 +149,7 @@ export function openRowFor(view: ListView): Row | null {
     parts: { mark: null, position: null, starred: false, name: words.untitledNew },
     inResoph: false,
     searchable: '',
+    code: null,
     updatedAt: view.draft.startedAt,
   };
 }
@@ -186,7 +213,9 @@ function rowElement(row: Row, view: ListView, aside: boolean): HTMLElement {
   when.textContent = describeWhen(row.updatedAt, view.language);
 
   const words = strings(view.language);
-  element.append(headingOf(row, words), when, ...resophMarkOf(row, view, words));
+  // Only among what was found: the rest are there whatever he searched for.
+  const code = aside ? null : foundByCode(row, view.query);
+  element.append(headingOf(row, words, code), when, ...resophMarkOf(row, view, words));
   return element;
 }
 
@@ -212,7 +241,7 @@ function resophMarkOf(row: Row, view: ListView, words: ReturnType<typeof strings
  * Beside the name rather than in it, so a name long enough to be cut short
  * never takes a mark with it.
  */
-function headingOf(row: Row, words: ReturnType<typeof strings>): HTMLElement {
+function headingOf(row: Row, words: ReturnType<typeof strings>, code: string | null): HTMLElement {
   const heading = span('note-heading', '');
   const { mark, position, starred, name } = row.parts;
   const marked = mark !== null || starred;
@@ -234,6 +263,7 @@ function headingOf(row: Row, words: ReturnType<typeof strings>): HTMLElement {
     heading.append(star);
   }
   heading.append(span('note-title', marked ? name : row.title));
+  if (code !== null) heading.append(span('note-code', code));
   return heading;
 }
 

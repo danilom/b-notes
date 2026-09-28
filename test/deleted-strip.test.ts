@@ -12,6 +12,7 @@ const noteOf = (title: string, text: string): DeletedNote => ({
   rank: 0,
   text,
   searchable: toSearchable(text),
+  code: null,
   updatedAt: 0,
   bytes: text.length,
   versions: 0,
@@ -43,6 +44,12 @@ describe('the strip under his list', () => {
     // A search that comes back with nothing is the moment he needs telling that
     // the text might be in here.
     assert.equal(deletedStripFor(THREE, 'zimi', 'sr').label, '2 obrisana teksta sadrže „zimi“');
+  });
+
+  it('finds one by the code the stub in Resoph gives him, where its words say nothing of it', () => {
+    // The stub for a deleted text sends him here with that code.
+    const retitled = { ...noteOf('Sasvim drugi naslov', 'I reci.'), code: '~K3F9A2' };
+    assert.equal(deletedStripFor([...THREE, retitled], '~K3F9A2', 'sr').label, '1 obrisan tekst sadrži „~K3F9A2“');
   });
 
   it('finds them without the marks he did not type', () => {

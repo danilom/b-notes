@@ -286,25 +286,34 @@ non-empty line, as it is. Length is cut only on screen, by the list itself.
   meanwhile, it is left as it is and shows as a text of its own.
 - **The copy's name** is worked out from the Resoph file's, the same on every
   machine (§4.7). Taken over a second time, it gets a number.
-- **He is told**, every time, by a quiet toast that stays while he types:
-  "Tekst je prenet iz Resopha u b-notes." The icon on its row fades out.
+- **He is told** by a quiet toast that stays while he types: "Tekst je
+  prenet iz Resopha u b-notes." The icon on its row fades out. Not when the
+  text is empty as it moves over: emptying is how he deletes, and the hint to
+  press Obriši tekst is what he needs then, where the toast would cover it.
 - **The stub**, in place of his words under the same file name, so Resoph
   still lists the title:
 
   ```
   !!! OVAJ TEKST JE PREMEŠTEN U B-NOTES !!!
   NE PIŠI OVDE — ovde ga više nema.
-  Otvori b-notes i nađi ga po naslovu.
+  Otvori b-notes i ukucaj ~K3F9A2 u pretragu.
 
   [b-notes] 2026-09-27 14:32, ASUS
   [b-notes] D:\Dropbox\b-notes\GRAD Kilim ~K3F9A2.txt
   [b-notes] https://github.com/danilom/b-notes/releases
   ```
 
-  For a deleted text, "OBRISAN U B-NOTES" and "Vrati ga u b-notes, iz
-  „Obrisani tekstovi"." The marked lines are for whoever has to recover a
-  text: when, on which machine, where the file went, and where b-notes can be
-  had on a machine that lacks it.
+  For a deleted text, "OBRISAN U B-NOTES" and "Otvori b-notes, ukucaj
+  ~K3F9A2 u pretragu i vrati ga iz „Obrisani tekstovi"." The marked lines are
+  for whoever has to recover a text: when, on which machine, where the file
+  went, and where b-notes can be had on a machine that lacks it.
+- **Found by its code, not its title.** The code at the end of the copy's
+  file name stays with the text however he retitles or empties it, and his
+  titles repeat. b-notes' search matches it like any of his words, whole or
+  in part, in his list, in the count of deleted texts under it and in
+  Obrisani tekstovi; a row found only by its code shows the code in grey
+  after the title, since nothing in the text says why it is there. A text he
+  has destroyed is gone, code and all.
 
 ### 4.5 After a text is taken over — *decided and built*
 

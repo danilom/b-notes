@@ -1,4 +1,5 @@
 import { toSearchable } from '../language/diacritics.ts';
+import { codeOf } from './note-naming.ts';
 import { rankOf, titleFrom, titleLineOf } from './note-title.ts';
 
 export interface Note {
@@ -23,6 +24,12 @@ export interface Note {
    * every letter he types costs that on every letter.
    */
   searchable: string;
+  /**
+   * The code in its file's name, `~K3F9A2`, for a text taken over from Resoph;
+   * null for any other. Searched as well as his words, because the stub left
+   * in Resoph tells him to search for it.
+   */
+  code: string | null;
   updatedAt: number;
   bytes: number;
 }
@@ -186,6 +193,7 @@ export function noteOf(id: string, text: string, updatedAt: number, bytes: numbe
     rank: rankOf(titleLine),
     text,
     searchable: toSearchable(text),
+    code: codeOf(id),
     updatedAt,
     bytes,
   };

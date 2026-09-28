@@ -5,8 +5,9 @@ import { describe, it } from 'node:test';
 
 import { DEFAULT_APPEARANCE } from '../src/ui/settings/appearance.ts';
 import { toSearchable } from '../src/language/diacritics.ts';
+import { codeOf } from '../src/notes/note-naming.ts';
 import type { Note } from '../src/notes/note.ts';
-import { type ListView, openRowFor, sectionsFor } from '../src/ui/note-list.ts';
+import { type ListView, foundByCode, openRowFor, sectionsFor } from '../src/ui/note-list.ts';
 import { rankOf, titleFrom, titleLineOf } from '../src/notes/note-title.ts';
 
 let minted = 0;
@@ -20,6 +21,7 @@ function note(title: string, text: string, updatedAt: number): LiveNote {
     rank: 0,
     text,
     searchable: toSearchable(text),
+    code: codeOf(title),
     updatedAt,
     bytes: text.length,
     handle: minted as NoteHandle,
@@ -144,6 +146,38 @@ describe('the list of texts', () => {
     const sections = sectionsFor(view({ query: 'nepostojeće' }));
     assert.deepEqual(titlesIn(sections, 'Pronađeni'), []);
     assert.deepEqual(titlesIn(sections, 'Svi tekstovi'), ['Amsterdam', 'Ponta', 'Zima']);
+  });
+});
+
+describe('finding a text by the code the stub in Resoph gives him', () => {
+  // Retitled since it was taken over: its file keeps the old title and the code.
+  const kafana = { ...note('Kafana na uglu ~K3F9A2', 'Sasvim drugi naslov\n\nI reci.', 500), title: 'Sasvim drugi naslov' };
+  const withCode = view({ notes: [...NOTES, kafana] });
+
+  it('finds it by the whole code, tilde and all, in any case', () => {
+    for (const query of ['~K3F9A2', '~k3f9a2', 'K3F9A2']) {
+      assert.deepEqual(titlesIn(sectionsFor({ ...withCode, query }), 'Pronađeni'), ['Sasvim drugi naslov'], query);
+    }
+  });
+
+  it('finds it by part of the code, as it would by part of a word', () => {
+    assert.deepEqual(titlesIn(sectionsFor({ ...withCode, query: 'f9a2' }), 'Pronađeni'), ['Sasvim drugi naslov']);
+  });
+
+  it('says which code it was found by, where his words did not match', () => {
+    assert.equal(foundByCode(kafana, '~K3F9A2'), '~K3F9A2');
+    assert.equal(foundByCode(kafana, 'f9a'), '~K3F9A2');
+  });
+
+  it('says nothing about the code where his words matched, since those say why', () => {
+    assert.equal(foundByCode(kafana, 'reci'), null);
+    // In his words and in the code both: the words are reason enough.
+    assert.equal(foundByCode(kafana, 'a'), null);
+    assert.equal(foundByCode(kafana, ''), null);
+  });
+
+  it('finds nothing by a code in a text that has none', () => {
+    assert.deepEqual(titlesIn(sectionsFor(view({ query: '~K3F9A2' })), 'Pronađeni'), []);
   });
 });
 

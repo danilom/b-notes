@@ -15,6 +15,7 @@ const noteOf = (title: string, text: string): Note => ({
   rank: 0,
   text,
   searchable: text.toLowerCase(),
+  code: null,
   updatedAt: 0,
   bytes: text.length,
 });

@@ -105,6 +105,33 @@ test('typing into a Resoph text takes it over, leaves a stub in Resoph, and says
   await expect(row.locator('.note-in-resoph')).toHaveCount(0);
 });
 
+test('finds a taken-over text by the code in the stub, however its title has changed, and says it was found by that', async ({
+  page,
+}) => {
+  await start(page);
+  const row = page.locator('#list .section-block').last().locator('.note').filter({ hasText: RANKED_NAME });
+  await row.first().click();
+  // A new first line: the title he would look for in b-notes is gone.
+  await page.locator('#editor').press('Control+Home');
+  await page.locator('#editor').pressSequentially('Sasvim novi naslov\n\n');
+  await page.clock.runFor(1200);
+
+  const stub = (await held(page))[`ResophNotes/${RANKED}.txt`]?.text ?? '';
+  const code = /ukucaj (~[0-9A-Z]{6}) u pretragu/.exec(stub)?.[1];
+  if (code === undefined) throw new Error(`no code in the stub: ${stub}`);
+
+  await page.locator('#search').fill(code);
+  const found = page.locator('#list .section-block').first().locator('.note');
+  await expect(found).toHaveCount(1);
+  await expect(found.locator('.note-title')).toHaveText('Sasvim novi naslov');
+  await expect(found.locator('.note-code')).toHaveText(code);
+
+  // Nothing in the text to point at, so the find bar in it stays shut.
+  await found.click();
+  await expect(page.locator('#editor')).toHaveValue(/^Sasvim novi naslov/);
+  await expect(page.locator('#found')).toBeHidden();
+});
+
 test('emptying a Resoph text takes it over without saying so, and leaves the hint to press Obriši tekst in view', async ({
   page,
 }) => {

@@ -2,7 +2,7 @@ import { type Language, strings } from '../../language/wording.ts';
 import { type LengthBands, bandOf, bytesOf } from '../../notes/text-length.ts';
 import { type Shown, showAsModal } from '../dialogs/modal.ts';
 import { type IconName, icon } from '../icons.ts';
-import { matches } from '../note-list.ts';
+import { foundByCode, matches } from '../note-list.ts';
 import { pageGlyph } from '../page-glyph.ts';
 import { titleOf } from '../dialogs/dialog-heading.ts';
 import { onOneLine } from './text-snippet.ts';
@@ -198,6 +198,7 @@ function rowFor<T extends ShelvedText>(
   lengths: LengthBands,
   show: (note: T) => void,
   aside = false,
+  code: string | null = null,
 ): HTMLElement {
   const row = document.createElement('button');
   row.type = 'button';
@@ -216,6 +217,13 @@ function rowFor<T extends ShelvedText>(
   // he emptied has no title and no snippet, and a blank row would read as the
   // app having lost track of something.
   title.textContent = note.title.length > 0 ? note.title : words.untitled;
+  // The code it was found by, where his words did not match, as in his list.
+  if (code !== null) {
+    const found = document.createElement('span');
+    found.className = 'note-code';
+    found.textContent = code;
+    title.append(' ', found);
+  }
 
   const when = document.createElement('span');
   when.className = 'review-when';
@@ -347,7 +355,7 @@ export function openTextShelf<T extends ShelvedText>(
       empty.textContent = words.nothingFound;
       list.push(empty);
     }
-    for (const note of found) list.push(rowFor(note, shelf, words, lengths, show));
+    for (const note of found) list.push(rowFor(note, shelf, words, lengths, show, false, foundByCode(note, filter)));
 
     if (rest.length > 0) {
       list.push(headingOf(`${words.shelfRest} · ${words.noteCount(rest.length)}`));

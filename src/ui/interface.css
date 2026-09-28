@@ -896,6 +896,21 @@ button svg {
   transform-origin: 50% 90%;
 }
 
+/*
+  The code a found text was found by, where his words did not match: the
+  `~K3F9A2` the stub in Resoph told him to search for. After the name, in
+  the date's grey, and never cut: the name gives way first, since this is
+  what answers why the row is there.
+*/
+.note-code {
+  flex: none;
+  color: var(--faint);
+  font-size: 0.8em;
+  /* In the shelves it sits inside a bold title. */
+  font-weight: normal;
+  white-space: nowrap;
+}
+
 /* His place in a series: the series he names, if he names one, and the number. */
 .note-series,
 .note-position {
