@@ -1052,9 +1052,9 @@ describe('writing brought in from somewhere else', () => {
     const { dir, store } = await storeWithArchive();
     await archived(dir, 'Pismo', 'Pismo' + '\n\n' + 'Jedno.');
 
-    assert.equal(await store.bringBack('Stari laptop 2021', 'Pismo'), 'Pismo');
+    const back = await store.bringBack('Stari laptop 2021', 'Pismo');
 
-    assert.deepEqual((await readdir(dir)).filter((n) => n.endsWith(EXTENSION)), ['Pismo.txt']);
+    assert.deepEqual((await readdir(dir)).filter((n) => n.endsWith(EXTENSION)), [`${back}${EXTENSION}`]);
     assert.deepEqual(await readdir(path.join(dir, ARCHIVE)), []);
   });
 
@@ -1064,10 +1064,10 @@ describe('writing brought in from somewhere else', () => {
     await mkdir(path.join(dir, ARCHIVE, VERSIONS_FOLDER, 'Pismo'), { recursive: true });
     await writeFile(path.join(dir, ARCHIVE, VERSIONS_FOLDER, 'Pismo', '2021-01-01 10-00-00.txt'), 'Staro', 'utf8');
 
-    await store.bringBack('Stari laptop 2021', 'Pismo');
+    const back = await store.bringBack('Stari laptop 2021', 'Pismo');
 
-    assert.deepEqual(await readdir(path.join(dir, VERSIONS_FOLDER, 'Pismo')), ['2021-01-01 10-00-00.txt']);
-    assert.equal(await store.countVersions('Pismo'), 1);
+    assert.deepEqual(await readdir(path.join(dir, VERSIONS_FOLDER, back)), ['2021-01-01 10-00-00.txt']);
+    assert.equal(await store.countVersions(back), 1);
   });
 
   it('puts it at the top of his list, where a text he just asked for belongs', async () => {
@@ -1201,10 +1201,57 @@ describe('writing brought in from somewhere else', () => {
 
     const back = await store.bringBack('Stari laptop 2021', '   %2AKOTOR');
 
-    assert.equal(back, '   %2AKOTOR');
     assert.equal(await readFile(path.join(dir, `${back}${EXTENSION}`), 'utf8'), '   *KOTOR\n\nZaliv je bio miran.');
     assert.deepEqual(await readdir(path.join(dir, ARCHIVE)), []);
     assert.deepEqual(await store.listArchives(), []);
+  });
+
+  it('names a text it brings back as b-notes names its own, not with its Resoph escapes and spaces', async () => {
+    const { dir, store } = await storeWithArchive();
+    await asItCame(dir, '   %2AKOTOR.md', 'Zaliv je bio miran.');
+
+    const back = await store.bringBack('Stari laptop 2021', '   %2AKOTOR');
+
+    assert.match(back, /^KOTOR ~[0-9A-Z]{6}$/);
+    // His title keeps its spaces and its star, inside the file where it is his.
+    assert.equal((await store.list()).find((note) => note.id === back)?.sortTitle, '   *KOTOR');
+  });
+
+  it('gives the same name in two archives two names, neither of them numbered', async () => {
+    // One note copied between his machines is in several archives under one
+    // name; bringing back the second must not take the first one's name, or
+    // pick "Pismo 2" by what happens to be in the folder.
+    const { dir, store } = await storeWithArchive();
+    await archived(dir, 'Pismo', 'Pismo' + '\n\n' + 'Sa starog laptopa.');
+    await mkdir(path.join(dir, 'Arhiva', 'Telefon'), { recursive: true });
+    await writeFile(path.join(dir, 'Arhiva', 'Telefon', `Pismo${EXTENSION}`), 'Pismo' + '\n\n' + 'Sa telefona.', 'utf8');
+
+    const first = await store.bringBack('Stari laptop 2021', 'Pismo');
+    const second = await store.bringBack('Telefon', 'Pismo');
+
+    assert.notEqual(first, second);
+    for (const back of [first, second]) assert.match(back, /^Pismo ~[0-9A-Z]{6}$/);
+  });
+
+  it('gives an archived file the same name whichever machine brings it back', async () => {
+    // Two machines offline, each bringing back the same file: one path, so
+    // Dropbox sees one file arrive twice rather than two texts.
+    const names = await Promise.all(
+      [1, 2].map(async () => {
+        const { dir, store } = await storeWithArchive();
+        await archived(dir, 'Pismo', 'Pismo' + '\n\n' + 'Jedno.');
+        return store.bringBack('Stari laptop 2021', 'Pismo');
+      }),
+    );
+
+    assert.equal(names[0], names[1]);
+  });
+
+  it('keeps the name of a file b-notes named itself', async () => {
+    const { dir, store } = await storeWithArchive();
+    await archived(dir, 'Pismo ~K3F9A2', 'Pismo' + '\n\n' + 'Iz starog b-notes.');
+
+    assert.equal(await store.bringBack('Stari laptop 2021', 'Pismo ~K3F9A2'), 'Pismo ~K3F9A2');
   });
 });
 

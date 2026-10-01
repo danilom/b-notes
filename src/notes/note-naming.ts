@@ -236,6 +236,25 @@ export function copyNameFor(resophStem: string): string {
   return `${safeTitle(titleOfResophName(resophStem))} ~${tagOf(resophStem)}`;
 }
 
+/**
+ * The name b-notes gives a text he brings back from an archive: the title made
+ * safe, and a tag worked out from where the file sat — its archive folder and
+ * its exact name.
+ *
+ * So the same archived file is named the same on every machine, and two that
+ * bring it back while offline write one file rather than two. The same name in
+ * two archives — one note, copied between his machines, which is most of what
+ * the archives hold — gives two tags. And the folder in it keeps an archived
+ * `Pismo` from taking the name of b-notes' copy of the Resoph `Pismo`, whose
+ * tag is worked out from the bare name.
+ *
+ * @param fileName the archived file's name, extension and all.
+ * @param title its first line once it is in b-notes' shape.
+ */
+export function broughtBackNameFor(archive: string, fileName: string, title: string): string {
+  return `${safeTitle(title)} ~${tagOf(`${archiveFolderFor(archive)}/${fileName}`)}`;
+}
+
 /*
   The code at the end of a copy's name, with the number a second copy of the
   same Resoph file is given after it. Nothing else b-notes names ends this

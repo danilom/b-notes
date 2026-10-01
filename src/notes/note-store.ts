@@ -14,6 +14,8 @@ import {
   ARCHIVE_FOLDER,
   archiveFolderFor,
   archivedVersionsFolderFor,
+  broughtBackNameFor,
+  isBNotesName,
   isNoteFile,
   newNameFor,
   nextFreeId,
@@ -487,10 +489,21 @@ export function createNoteStore(
       if (trouble !== null) throw new Error(`Not a text that can be brought back: ${archive}/${id}`);
       const { text } = note;
 
-      // Under its own name, as a .txt whatever it was. Nothing in his list is
-      // renamed to make room: a name built to be unique meeting itself is rare
-      // enough to count on past it.
-      const back = unusedName(stemOf(file), new Set((await noteFiles()).keys()));
+      /*
+        Named as b-notes names its own, from the title and where the file sat,
+        so the name means this one file on every machine — see
+        `broughtBackNameFor`. Its old name meant nothing of the kind: the same
+        name is in several archives, and bumping it to "Pismo 2" by what is in
+        the folder is how two offline machines come to write two texts to one
+        path. A file b-notes named itself keeps the name it was made with.
+
+        As a .txt whatever it was. Nothing in his list is renamed to make room,
+        and nothing is written over: a name built to be unique meeting itself
+        is rare enough to count on past it.
+      */
+      const stem = stemOf(file);
+      const named = isBNotesName(stem) ? stem : broughtBackNameFor(archive, nameOf(file.path), note.sortTitle);
+      const back = unusedName(named, new Set((await noteFiles()).keys()));
       await files.rename(file.path, at(`${back}${EXTENSION}`));
 
       /*
