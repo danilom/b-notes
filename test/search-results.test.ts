@@ -205,3 +205,36 @@ describe('a search of several words', () => {
     assert.deepEqual(names(asPart), ['A']);
   });
 });
+
+describe('ranking a text that has the word many times', () => {
+  // Counting stops once a word is there often enough for the top step; these
+  // are the texts where what decides comes after that point.
+  const often = (word: string, times: number) => Array.from({ length: times }, () => word).join(' ');
+
+  it('still sees a whole word that comes only after many that begin longer ones', () => {
+    const { inText } = foundGroups(
+      [text('A', often('Ivom', 20)), text('B', `${often('Ivom', 20)} Ivo`)],
+      'ivo',
+      NOW,
+    );
+    assert.deepEqual(names(inText), ['B', 'A']);
+  });
+
+  it('still sees words together that come only after many apart', () => {
+    const { inText } = foundGroups(
+      [text('A', often('Ivo i Andric', 20)), text('B', `${often('Ivo i Andric', 20)} Ivo Andric`)],
+      'ivo andric',
+      NOW,
+    );
+    assert.deepEqual(names(inText), ['B', 'A']);
+  });
+
+  it('still sees words together as whole words after many that only begin longer ones', () => {
+    const { inText } = foundGroups(
+      [text('A', often('Ivom Andricem', 20)), text('B', `${often('Ivom Andricem', 20)} Ivo Andric`)],
+      'ivo andric',
+      NOW,
+    );
+    assert.deepEqual(names(inText), ['B', 'A']);
+  });
+});

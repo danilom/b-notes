@@ -48,21 +48,33 @@ export function hasEveryWord(haystack: string, words: readonly string[]): boolea
  * @param most where to stop counting, for a search that would find thousands.
  */
 export function phrasesIn(haystack: string, words: readonly string[], most = Infinity): PhraseMatch[] {
-  const [first, ...rest] = words;
-  if (first === undefined) return [];
   const found: PhraseMatch[] = [];
+  for (const phrase of phrasesAlong(haystack, words)) {
+    if (found.length >= most) break;
+    found.push(phrase);
+  }
+  return found;
+}
+
+/**
+ * The same places, one at a time from the start, for whoever can stop before
+ * the end: ranking needs to know only whether a word is there a few times or
+ * many, and his longest texts have it thousands of times.
+ */
+export function* phrasesAlong(haystack: string, words: readonly string[]): Generator<PhraseMatch> {
+  const [first, ...rest] = words;
+  if (first === undefined) return;
   let at = haystack.indexOf(first);
-  while (at !== -1 && found.length < most) {
+  while (at !== -1) {
     const tail = restOfPhrase(haystack, at + first.length, rest);
     if (tail === null) {
       at = haystack.indexOf(first, at + first.length);
       continue;
     }
     const kind = !wordBreak(haystack, at) ? 'inside' : tail.whole ? 'whole' : 'start';
-    found.push({ start: at, end: tail.end, kind });
+    yield { start: at, end: tail.end, kind };
     at = haystack.indexOf(first, tail.end);
   }
-  return found;
 }
 
 /** Where the rest of the words end, if each begins the next word from `from`; null if one does not. */
@@ -98,7 +110,7 @@ const LETTER = /\p{L}/u;
 const DIGIT = /\p{N}/u;
 
 function isWordCharacter(character: string): boolean {
-  return LETTER.test(character) || DIGIT.test(character);
+  return kindOf(character) !== 'other';
 }
 
 /**
@@ -109,9 +121,53 @@ function isWordCharacter(character: string): boolean {
  */
 export function wordBreak(text: string, at: number): boolean {
   if (at === 0 || at === text.length) return true;
-  const kind = (character: string): 'letter' | 'digit' | 'other' =>
-    LETTER.test(character) ? 'letter' : DIGIT.test(character) ? 'digit' : 'other';
-  const before = kind(text.charAt(at - 1));
-  const after = kind(text.charAt(at));
+  const before = kindOf(text.charAt(at - 1));
+  const after = kindOf(text.charAt(at));
   return before === 'other' || after === 'other' || before !== after;
+}
+
+/**
+ * Whether a word is anywhere in it as a whole word, by the same rule as
+ * `wordBreak`: not run on from a character of the same kind as its own first
+ * or last. One pass of the regular expression engine rather than a look at
+ * every place the word begins — for a short word that only ever begins
+ * longer ones, thousands of places in a long text, every one of them a no.
+ */
+export function hasWholeWord(haystack: string, word: string): boolean {
+  if (word.length === 0) return false;
+  return wholeWordPattern(word).test(haystack);
+}
+
+const wholeWordPatterns = new Map<string, RegExp>();
+
+function wholeWordPattern(word: string): RegExp {
+  const known = wholeWordPatterns.get(word);
+  if (known !== undefined) return known;
+  const unlike = (kind: ReturnType<typeof kindOf>): string =>
+    kind === 'letter' ? '\\p{L}' : kind === 'digit' ? '\\p{N}' : '';
+  const before = unlike(kindOf(word.charAt(0)));
+  const after = unlike(kindOf(word.charAt(word.length - 1)));
+  const literal = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(
+    `${before === '' ? '' : `(?<!${before})`}${literal}${after === '' ? '' : `(?!${after})`}`,
+    'u',
+  );
+  // One search box's words at a time; a bound only so a long session cannot grow it.
+  if (wholeWordPatterns.size > 100) wholeWordPatterns.clear();
+  wholeWordPatterns.set(word, pattern);
+  return pattern;
+}
+
+/**
+ * What a character is, for telling where words are. Answered from its code
+ * where it is plain ASCII, which a folded text nearly all is: asking the
+ * Unicode classes about every letter was most of what ranking an archive cost.
+ */
+function kindOf(character: string): 'letter' | 'digit' | 'other' {
+  const code = character.charCodeAt(0);
+  if (code < 0x80) {
+    if ((code >= 0x61 && code <= 0x7a) || (code >= 0x41 && code <= 0x5a)) return 'letter';
+    return code >= 0x30 && code <= 0x39 ? 'digit' : 'other';
+  }
+  return LETTER.test(character) ? 'letter' : DIGIT.test(character) ? 'digit' : 'other';
 }

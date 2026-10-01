@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { toSearchable } from '../src/language/diacritics.ts';
-import { hasEveryWord, phrasesIn, wordsOf } from '../src/ui/phrase-match.ts';
+import { hasEveryWord, hasWholeWord, phrasesIn, wordsOf } from '../src/ui/phrase-match.ts';
 
 /** The phrases found in his text, as he would read them, with how each was matched. */
 const phrases = (text: string, query: string) =>
@@ -59,5 +59,27 @@ describe('a search of several words', () => {
 
   it('matches one word exactly as a search always has, inside words too', () => {
     assert.deepEqual(phrases('Ivo, zivot, Ivom', 'ivo'), ['Ivo:whole', 'ivo:inside', 'Ivo:start']);
+  });
+});
+
+describe('whether a word is there whole', () => {
+  it('finds it standing alone, at either end or between punctuation', () => {
+    assert.equal(hasWholeWord('ivo je bio', 'ivo'), true);
+    assert.equal(hasWholeWord('bio je (ivo)', 'ivo'), true);
+  });
+
+  it('does not count it beginning a longer word or inside one', () => {
+    assert.equal(hasWholeWord('ivom i zivot', 'ivo'), false);
+  });
+
+  it('counts it glued to a number, as his series numbers are', () => {
+    assert.equal(hasWholeWord('5nosac', 'nosac'), true);
+    assert.equal(hasWholeWord('nosac5', 'nosac'), true);
+  });
+
+  it('takes what he typed literally, brackets and dots included', () => {
+    assert.equal(hasWholeWord('vidi (up) 3', '(up)'), true);
+    assert.equal(hasWholeWord('vidi up 3', '(up)'), false);
+    assert.equal(hasWholeWord('ab', '.'), false);
   });
 });
