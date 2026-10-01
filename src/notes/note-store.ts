@@ -1,6 +1,7 @@
 import {
   type FileInfo,
   type FileSystem,
+  type StrictRead,
   FileMissing,
   FolderMissing,
 } from '../platform/file-system.ts';
@@ -28,6 +29,7 @@ import { titleFrom } from './note-title.ts';
 import {
   type Archive,
   type ArchivedNote,
+  type ArchivedTrouble,
   type DeletedNote,
   type Note,
   type NoteStore,
@@ -43,6 +45,9 @@ const ARCHIVED = /\.(md|txt)$/i;
 
 /** A file's name without its extension, whichever of the two it is. */
 const stemOf = (file: FileInfo): string => nameOf(file.path).replace(ARCHIVED, '');
+
+/** A file a machine leaves in a folder of its own accord: hidden, or Windows' own. */
+const isMachines = (name: string): boolean => name.startsWith('.') || /^(desktop\.ini|thumbs\.db)$/i.test(name);
 
 
 /**
@@ -304,35 +309,57 @@ export function createNoteStore(
   /**
    * Files in one archive folder, by id. Absence is ordinary: most folders have none.
    *
-   * `.md` as well as `.txt`, since both have come off his machines and an
-   * archive is read as it arrived. An id is the name without its extension,
-   * as everywhere else — except a `.md` with a `.txt` of the same name beside
-   * it, which keeps its `.md` so the two stay two texts.
+   * Every file in it, so that everything put in an archive is accounted for:
+   * `.md` and `.txt` as texts, since both have come off his machines, and
+   * anything else as a file that is not one. An id is the name without its
+   * extension, as everywhere else — except a `.md` with a `.txt` of the same
+   * name beside it, which keeps its `.md` so the two stay two texts, and a
+   * file that is not a text, which keeps its whole name.
+   *
+   * Hidden and Windows' own files aside — `.DS_Store`, `desktop.ini`,
+   * `Thumbs.db` — which a machine leaves in a folder and he never put there.
    */
   async function archivedFiles(archive: string): Promise<Map<string, FileInfo>> {
-    const found = (await filesIn(at(archiveFolderFor(archive)))).filter((file) => ARCHIVED.test(nameOf(file.path)));
+    const found = (await filesIn(at(archiveFolderFor(archive)))).filter((file) => !isMachines(nameOf(file.path)));
     const byId = new Map<string, FileInfo>();
     for (const file of found) if (isNoteFile(nameOf(file.path))) byId.set(idOf(nameOf(file.path)), file);
     for (const file of found) {
-      if (isNoteFile(nameOf(file.path))) continue;
-      const stem = stemOf(file);
-      byId.set(byId.has(stem) ? nameOf(file.path) : stem, file);
+      const name = nameOf(file.path);
+      if (isNoteFile(name)) continue;
+      const wanted = ARCHIVED.test(name) && !byId.has(stemOf(file)) ? stemOf(file) : name;
+      byId.set(unusedName(wanted, new Set(byId.keys())), file);
     }
     return byId;
   }
 
   /**
-   * An archived text as it is shown: read as it is, in whatever shape it
-   * left the machine it came from, and put into b-notes' — see
-   * `archived-text.ts`. A file that is not UTF-8 is read as Windows-1250,
-   * which is what an old Serbian Windows wrote, rather than with "�" for
-   * every letter that carries a mark.
+   * An archived file as it is shown, and what if anything stops it being a text.
+   *
+   * A text is read as it is, in whatever shape it left the machine it came
+   * from, and put into b-notes' — see `archived-text.ts`. One that is not
+   * UTF-8 is read as Windows-1250, which is what an old Serbian Windows wrote,
+   * rather than with "�" for every letter that carries a mark. A file that is
+   * not a text, or will not be read, is shown by its name and nothing else.
    */
-  async function archivedNoteFrom(id: string, file: FileInfo): Promise<Note> {
-    const read = await files.readStrict(file.path);
+  async function archivedNoteFrom(id: string, file: FileInfo): Promise<{ note: Note; trouble: ArchivedTrouble }> {
+    const named = (trouble: ArchivedTrouble) => ({
+      note: noteOf(id, `${nameOf(file.path)}\n\n`, file.updatedAt, file.bytes),
+      trouble,
+    });
+    if (!ARCHIVED.test(nameOf(file.path))) return named('not-text');
+    let read: StrictRead;
+    try {
+      read = await files.readStrict(file.path);
+    } catch (failure: unknown) {
+      log.warn('An archived file could not be read; listed by its name', {
+        file: file.path,
+        failure: describeError(failure),
+      });
+      return named('unreadable');
+    }
     if (read.kind === 'not-utf8') log.warn('An archived file is not UTF-8; read as Windows-1250', { file: file.path });
     const source = read.kind === 'text' ? read.text : read.asWindows1250;
-    return noteOf(id, archivedTextOf(stemOf(file), source).text, file.updatedAt, file.bytes);
+    return { note: noteOf(id, archivedTextOf(stemOf(file), source).text, file.updatedAt, file.bytes), trouble: null };
   }
 
   /**
@@ -430,7 +457,7 @@ export function createNoteStore(
           const kept = await copiesKeptIn(`${archiveFolderFor(archive)}/${VERSIONS_FOLDER}`);
           return Promise.all(
             [...(await archivedFiles(archive))].map(async ([id, file]): Promise<ArchivedNote> => {
-              const note = await archivedNoteFrom(id, file);
+              const { note, trouble } = await archivedNoteFrom(id, file);
               return {
                 ...note,
                 archive,
@@ -439,7 +466,8 @@ export function createNoteStore(
                 // the opening of, and it never claims two texts are the same,
                 // only that two of them start alike. That is the whole of what
                 // he needs to decide whether to bring one in.
-                alsoLive: liveTitles.has(note.title),
+                alsoLive: trouble === null && liveTitles.has(note.title),
+                trouble,
               };
             }),
           );
@@ -452,7 +480,11 @@ export function createNoteStore(
       const file = (await archivedFiles(archive)).get(requireNoteId(id));
       if (file === undefined) throw new Error(`No such archived note: ${archive}/${id}`);
       // As he saw it in the archive: titled, and read whatever it was written in.
-      const { text } = await archivedNoteFrom(id, file);
+      const { note, trouble } = await archivedNoteFrom(id, file);
+      // Not a text, or one that will not be read: nothing to bring in. The
+      // dialog offers no way to try, so this is a caller's mistake.
+      if (trouble !== null) throw new Error(`Not a text that can be brought back: ${archive}/${id}`);
+      const { text } = note;
 
       // Under its own name, as a .txt whatever it was. Nothing in his list is
       // renamed to make room: a name built to be unique meeting itself is rare

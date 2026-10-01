@@ -1135,6 +1135,56 @@ describe('writing brought in from somewhere else', () => {
     assert.ok(log.said.some((said) => said.message.includes('Windows-1250')), 'not logged');
   });
 
+  it('accounts for a file that is not a text, by its name, and counts it', async () => {
+    const { dir, store } = await storeWithArchive();
+    await asItCame(dir, 'Pismo.txt', 'Pismo\n\nTekst.');
+    await asItCame(dir, 'Slika s mora.jpg', Buffer.from([0xff, 0xd8, 0xff]));
+
+    const found = await store.listArchived(new Set());
+
+    assert.deepEqual(await store.listArchives(), [{ name: 'Stari laptop 2021', texts: 2 }]);
+    assert.deepEqual(
+      found.map((note) => [note.title, note.trouble]).sort(),
+      [['Pismo', null], ['Slika s mora.jpg', 'not-text']],
+    );
+  });
+
+  it('leaves out what a machine puts in a folder by itself', async () => {
+    const { dir, store } = await storeWithArchive();
+    await asItCame(dir, 'Pismo.txt', 'Pismo\n\nTekst.');
+    await asItCame(dir, 'desktop.ini', '[.ShellClassInfo]');
+    await asItCame(dir, 'Thumbs.db', 'x');
+    await asItCame(dir, '.DS_Store', 'x');
+
+    assert.deepEqual((await store.listArchived(new Set())).map((note) => note.title), ['Pismo']);
+  });
+
+  it('accounts for a file that will not be read, rather than failing the whole archive', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'b-notes-'));
+    await mkdir(path.join(dir, ARCHIVE), { recursive: true });
+    await writeFile(path.join(dir, ARCHIVE, 'Pismo.txt'), 'Pismo\n\nTekst.');
+    await writeFile(path.join(dir, ARCHIVE, 'Zakljucan.md'), 'Ne da se.');
+    const real = createFileSystem(path.join(tmpdir(), 'b-notes-staging'));
+    const refuses: FileSystem = {
+      ...real,
+      readStrict: async (at) => {
+        if (at.endsWith('Zakljucan.md')) throw new Error('EPERM: operation not permitted');
+        return real.readStrict(at);
+      },
+    };
+    const log = silentLog();
+    const store = createNoteStore(refuses, dir.replaceAll('\\', '/'), log);
+
+    const found = await store.listArchived(new Set());
+
+    assert.deepEqual(
+      found.map((note) => [note.title, note.trouble]).sort(),
+      [['Pismo', null], ['Zakljucan.md', 'unreadable']],
+    );
+    assert.ok(log.said.some((said) => said.message.includes('could not be read')), 'not logged');
+    await assert.rejects(() => store.bringBack('Stari laptop 2021', 'Zakljucan'), /Not a text that can be brought back/);
+  });
+
   it('brings a .md back as a .txt in his folder, titled, and leaves nothing behind in the archive', async () => {
     const { dir, store } = await storeWithArchive();
     await asItCame(dir, '   %2AKOTOR.md', 'Zaliv je bio miran.');

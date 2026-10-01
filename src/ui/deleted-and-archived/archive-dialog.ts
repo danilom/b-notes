@@ -15,11 +15,14 @@ import type { ArchivedNote } from '../../notes/note.ts';
 export interface ArchiveHandlers {
   onBringBack: (note: ArchivedNote) => void;
   onClose: () => void;
+  /** Reading the archives failed while the dialog waited for them. */
+  onUnreadable: (error: unknown) => void;
 }
 
 /** What this dialog is about: everything in the archives, and what he searched. */
 export interface ArchivedTexts {
-  archived: readonly ArchivedNote[];
+  /** Or the reading of them, which the dialog waits for with a spinner. */
+  archived: readonly ArchivedNote[] | Promise<readonly ArchivedNote[]>;
   query: string;
   /** The bands his own list is drawn by, so a page means the same thing here. */
   lengths: LengthBands;
@@ -28,6 +31,13 @@ export interface ArchivedTexts {
 function shelfFor(language: Language, handlers: ArchiveHandlers): Shelf<ArchivedNote> {
   const words = strings(language);
   const when = (note: ArchivedNote): string => describeWhen(note.updatedAt, language);
+  /*
+    A file in the archive that is no text to show: listed by its name with
+    what is wrong in red, because everything put in an archive is accounted
+    for, and with nothing offered to do with it.
+  */
+  const troubleOf = (note: ArchivedNote): string | null =>
+    note.trouble === 'unreadable' ? words.archiveFileUnreadable : note.trouble === 'not-text' ? words.archiveFileNotText : null;
 
   return {
     mark: 'archive',
@@ -51,17 +61,19 @@ function shelfFor(language: Language, handlers: ArchiveHandlers): Shelf<Archived
     // `markedFor` already puts the already-have-one line at the top of the
     // preview, so it is not repeated here.
     notesFor: (note) => [
+      troubleOf(note) ?? '',
       words.archiveOrigin(note.archive, when(note)),
       note.versions === 0 ? '' : words.archiveVersions(note.versions),
     ],
+    troubleFor: troubleOf,
     matching: words.archiveMatching,
     // Nothing outside this dialog can search the archive, because it is not
     // read until he asks for it. So the box is in here, and it starts empty.
     ownSearch: { placeholder: words.archiveSearch },
-    actionsFor: (note) => [
-      { label: words.archiveBring, strength: 'main', act: () => handlers.onBringBack(note) },
-    ],
+    actionsFor: (note) =>
+      note.trouble !== null ? [] : [{ label: words.archiveBring, strength: 'main', act: () => handlers.onBringBack(note) }],
     backLabel: words.archiveBack,
+    waiting: words.archiveLoading,
   };
 }
 
@@ -73,5 +85,6 @@ export function openArchiveDialog(
 ): () => void {
   return openTextShelf(container, shelfFor(language, handlers), { texts: archived, query, lengths }, language, {
     onClose: handlers.onClose,
+    onUnreadable: handlers.onUnreadable,
   });
 }

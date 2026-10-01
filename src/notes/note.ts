@@ -91,7 +91,16 @@ export interface ArchivedNote extends Note {
   archive: string;
   versions: number;
   alsoLive: boolean;
+  /**
+   * Why this file cannot be shown as a text, or null when it can. Such a file
+   * is listed all the same, by its name: everything put in an archive is
+   * accounted for, and a file that silently is not there is a file lost.
+   */
+  trouble: ArchivedTrouble;
 }
+
+/** A file that could not be read, or is not a text at all — a picture, a .docx. */
+export type ArchivedTrouble = 'unreadable' | 'not-text' | null;
 
 /** One folder of imported writing, and how much is in it. */
 export interface Archive {

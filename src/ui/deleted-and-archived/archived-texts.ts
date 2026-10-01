@@ -36,8 +36,8 @@ export interface ArchivedTexts {
   read(): Promise<void>;
   /** Paint the footnote from what was last counted. */
   drawStrip(): void;
-  /** Open the archive, reading it first. */
-  show(): Promise<void>;
+  /** Open the archive at once, and read it while it is open. */
+  show(): void;
 }
 
 /**
@@ -47,17 +47,29 @@ export interface ArchivedTexts {
  * copies of what he already has, and reading six hundred of them before his
  * writing appears would spend that second on the one thing he did not ask for.
  */
+/**
+ * Once what was just put on screen has been drawn: after the next frame, and
+ * then a turn of the loop so the frame is out. With a timer as well, so a
+ * window that draws no frames — hidden behind another — does not wait forever.
+ */
+function onScreen(): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, 100);
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        clearTimeout(timer);
+        resolve();
+      }, 0);
+    });
+  });
+}
+
 export function createArchivedTexts(parts: ArchivedParts): ArchivedTexts {
   const { pane, strip, stripLabel, writing, log } = parts;
 
+  // A second press while it is reading finds the dialog already open, which
+  // is what stops the archive being read twice.
   let archives: Archive[] = [];
-  /**
-   * Whether a read is already running.
-   *
-   * Reading six hundred texts takes long enough that he can press again before
-   * the dialog arrives, and twice would read them twice.
-   */
-  let reading = false;
 
   function drawStrip(): void {
     const shape = archiveStripFor(archives, parts.languageNow());
@@ -97,34 +109,30 @@ export function createArchivedTexts(parts: ArchivedParts): ArchivedTexts {
   }
 
   /**
-   * Opens the archive, reading it first.
+   * Opens the archive, and reads it while it is open.
    *
    * The one place in the app that goes to disk because he pressed something,
-   * so it says so: an import can be six hundred texts, and a button that does
-   * nothing for a second is a button he presses again.
+   * and on a first run that is thousands of files and some seconds. So the
+   * dialog is there at once, saying it is reading, rather than the button he
+   * pressed looking as though it did nothing — which is a button he presses
+   * again.
    */
-  async function show(): Promise<void> {
-    if (pane.open || reading) return;
+  function show(): void {
+    if (pane.open) return;
     const words = strings(parts.languageNow());
 
-    reading = true;
-    let found: ArchivedNote[];
-    try {
-      found = await writing.archived(parts.liveTitlesNow());
-    } catch (error: unknown) {
-      // A folder that is there and will not open. He gets a line he can read
-      // over the telephone; the reason goes where it can be looked at.
-      parts.say(words.archiveUnreadable);
-      log.error('Could not read the archive', describeError(error));
-      return;
-    } finally {
-      reading = false;
-    }
-
-    log.info('Looked at the archive', { count: found.length, archives: archives.length });
+    // Not until the dialog is on screen. Started first, the reading did its
+    // first stretch of work before the window could be drawn, and the
+    // spinner that was to show it had started never appeared.
+    const reading = onScreen()
+      .then(() => writing.archived(parts.liveTitlesNow()))
+      .then((found) => {
+        log.info('Looked at the archive', { count: found.length, archives: archives.length });
+        return found;
+      });
     const close = openArchiveDialog(
       pane,
-      { archived: found, query: parts.queryNow(), lengths: parts.lengthsNow() },
+      { archived: reading, query: parts.queryNow(), lengths: parts.lengthsNow() },
       parts.languageNow(),
       {
         onClose: () => {
@@ -135,6 +143,14 @@ export function createArchivedTexts(parts: ArchivedParts): ArchivedTexts {
         onBringBack: (note: ArchivedNote) => {
           close();
           void bringBack(note);
+        },
+        // A folder that is there and will not open. He gets a line he can
+        // read over the telephone; the reason goes where it can be looked at.
+        onUnreadable: (error: unknown) => {
+          close();
+          strip.focus();
+          parts.say(words.archiveUnreadable);
+          log.error('Could not read the archive', describeError(error));
         },
       },
     );

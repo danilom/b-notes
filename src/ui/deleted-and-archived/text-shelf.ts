@@ -105,11 +105,24 @@ export interface Shelf<T extends ShelvedText> {
   actionsFor: (note: T) => ShelfAction[];
   /** The word on the button back to the list. */
   backLabel: string;
+  /** What to say while the shelf is still being read, beside the spinner. */
+  waiting?: string;
+  /**
+   * What stops this one being a text, or null. Said on its row in place of
+   * the start of the text, which it does not have to show.
+   */
+  troubleFor?: (note: T) => string | null;
 }
 
 /** What he is looking at, and what he had searched for on the way in. */
 export interface ShelfContents<T extends ShelvedText> {
-  texts: readonly T[];
+  /**
+   * What is on the shelf, or the reading of it still under way. A shelf read
+   * from disk only when he asks — Arhiva, thousands of files on a first run —
+   * opens at once and fills when the reading is done, rather than leaving
+   * the button he pressed looking as if it did nothing.
+   */
+  texts: readonly T[] | Promise<readonly T[]>;
   /**
    * The bands his own texts are measured against, so a page here means what it
    * means in the list.
@@ -131,6 +144,8 @@ export interface ShelfContents<T extends ShelvedText> {
 
 export interface ShelfHandlers {
   onClose: () => void;
+  /** The reading of what is on the shelf failed; the dialog is still open. */
+  onUnreadable?: (error: unknown) => void;
 }
 
 /**
@@ -270,9 +285,16 @@ function rowFor<T extends ShelvedText>(
   // out: the row keeps the height of the others, which is the difference
   // between a comfortable target and a thin one, and "there is nothing in
   // this" is a fact about the text rather than a gap in the app.
+  // Or what is wrong with it, in its place, where a file is no text to show.
+  const trouble = shelf.troubleFor?.(note) ?? null;
   const snippet = document.createElement('span');
-  snippet.className = said.length > 0 ? 'review-snippet' : 'review-snippet review-snippet-none';
-  snippet.textContent = said.length > 0 ? said : words.untexted;
+  snippet.className =
+    trouble !== null
+      ? 'review-snippet review-trouble'
+      : said.length > 0
+        ? 'review-snippet'
+        : 'review-snippet review-snippet-none';
+  snippet.textContent = trouble ?? (said.length > 0 ? said : words.untexted);
 
   // The lines held together, so the page can sit against all of them. A row
   // here runs to three lines where his list runs to one, and a page level with
@@ -304,11 +326,13 @@ const CLASS_FOR: Record<ShelfAction['strength'], string> = {
 export function openTextShelf<T extends ShelvedText>(
   container: HTMLDialogElement,
   shelf: Shelf<T>,
-  { texts, query, lengths }: ShelfContents<T>,
+  { texts: given, query, lengths }: ShelfContents<T>,
   language: Language,
   handlers: ShelfHandlers,
 ): () => void {
   const words = strings(language);
+  /** What is on the shelf, once it has been read. */
+  let texts: readonly T[] | null = given instanceof Promise ? null : given;
   let filter = openingFilter(shelf.ownSearch !== undefined, query);
   let showing: T | null = null;
 
@@ -332,7 +356,10 @@ export function openTextShelf<T extends ShelvedText>(
 
   /** The open dialog, once it is open. */
   let modal: Shown | null = null;
+  /** Closed already, so a reading that arrives afterwards draws nothing. */
+  let closed = false;
   const close = (): void => {
+    closed = true;
     modal?.close();
   };
 
@@ -393,7 +420,7 @@ export function openTextShelf<T extends ShelvedText>(
     if (rows === null) return;
     const list: HTMLElement[] = [];
 
-    const { found, rest } = groupsFor(texts, filter);
+    const { found, rest } = groupsFor(texts ?? [], filter);
 
     if (filter.length === 0) {
       for (const note of found) list.push(place(rowOf(note), false, null));
@@ -560,9 +587,50 @@ export function openTextShelf<T extends ShelvedText>(
     main?.focus();
   }
 
+  /**
+   * The dialog at its full size while the shelf is read: the same title and
+   * sentence, a spinner where the list will be, and the way out.
+   */
+  function fillWaiting(): void {
+    const waiting = document.createElement('div');
+    waiting.className = 'shelf-waiting';
+    waiting.setAttribute('role', 'status');
+    const spinner = document.createElement('span');
+    spinner.className = 'spinner';
+    spinner.setAttribute('aria-hidden', 'true');
+    const said = document.createElement('span');
+    said.textContent = shelf.waiting ?? '';
+    waiting.append(spinner, said);
+
+    const footer = document.createElement('footer');
+    const done = document.createElement('button');
+    done.type = 'button';
+    done.className = 'keep';
+    done.textContent = words.close;
+    done.addEventListener('click', handlers.onClose);
+    footer.append(done);
+
+    panel.replaceChildren(headerFor(shelf.heading, shelf.intro), waiting, footer);
+  }
+
   function fill(): void {
-    if (showing === null) fillList();
+    if (texts === null) fillWaiting();
+    else if (showing === null) fillList();
     else fillText(showing);
+  }
+
+  if (given instanceof Promise) {
+    void given.then(
+      (arrived) => {
+        texts = arrived;
+        if (closed) return;
+        fill();
+        takeFocus();
+      },
+      (error: unknown) => {
+        if (!closed) handlers.onUnreadable?.(error);
+      },
+    );
   }
 
   fill();

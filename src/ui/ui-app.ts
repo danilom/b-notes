@@ -926,14 +926,14 @@ deletedBlock.addEventListener('click', () => {
   if (!deletedSee.disabled) putAway.show();
 });
 archiveBlock.addEventListener('click', () => {
-  void archived.show();
+  archived.show();
 });
 // A real button answers both of these on its own. This one is a strip wearing
 // the role, so it has to answer them itself or the archive is mouse-only.
 archiveBlock.addEventListener('keydown', (event: KeyboardEvent) => {
   if (event.key !== 'Enter' && event.key !== ' ') return;
   event.preventDefault();
-  void archived.show();
+  archived.show();
 });
 seeVersions.addEventListener('click', () => keptCopies.show());
 

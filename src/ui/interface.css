@@ -2054,6 +2054,41 @@ dialog::backdrop {
   padding: 0.6rem 0 1rem;
 }
 
+/* Where the list will be, while the shelf is still being read: a spinner,
+   so something on screen is plainly happening, and a line saying what. */
+.shelf-waiting {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  color: var(--quiet);
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid var(--line);
+  border-top-color: var(--chosen);
+  border-radius: 50%;
+  animation: spinner-turns 0.9s linear infinite;
+}
+
+@keyframes spinner-turns {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Slower where Windows is set to spare him animations, but still turning:
+   a spinner that stands still says nothing is happening. */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2.4s;
+  }
+}
+
 /*
   One row in either of the two lists he picks from: the texts he has put
   away, and the copies of one text. They are the same act in two places,
@@ -2351,6 +2386,11 @@ dialog::backdrop {
 /* Nothing in it, which is a fact about his text and not a gap here. */
 .review-snippet-none {
   font-style: italic;
+}
+
+/* What is wrong with a file that is no text to show, in its row's last line. */
+.review-trouble {
+  color: var(--danger);
 }
 
 /*
