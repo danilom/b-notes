@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { codeOf, copyNameFor, newNameFor, safeTitle, tagOf, unusedName } from '../src/notes/note-naming.ts';
+import { broughtBackNameFor, codeOf, copyNameFor, newNameFor, safeTitle, tagOf, unusedName } from '../src/notes/note-naming.ts';
 
 describe('a title made safe for a filename', () => {
   it('takes the diacritics off, which Windows zip mangles', () => {
@@ -122,5 +122,22 @@ describe('a free name, for the rare move inside b-notes own folder', () => {
 
   it('counts up past whatever is taken, never with brackets', () => {
     assert.equal(unusedName('Pismo', new Set(['Pismo', 'Pismo 2'])), 'Pismo 3');
+  });
+});
+
+describe('the name of a text brought back from an archive', () => {
+  it('is never the name of the copy of the Resoph text it shares a name with', () => {
+    assert.notEqual(broughtBackNameFor('Stari laptop', 'Pismo.txt', 'Pismo'), copyNameFor('Pismo'));
+  });
+
+  it('tells apart the .md and the .txt of one name in one archive', () => {
+    assert.notEqual(
+      broughtBackNameFor('Stari laptop', 'Pismo.md', 'Pismo'),
+      broughtBackNameFor('Stari laptop', 'Pismo.txt', 'Pismo'),
+    );
+  });
+
+  it('takes its readable part from the title, made safe', () => {
+    assert.match(broughtBackNameFor('Stari laptop', '   %2AKOTOR.md', '   *KOTOR'), /^KOTOR ~[0-9A-Z]{6}$/);
   });
 });
