@@ -2054,6 +2054,13 @@ dialog::backdrop {
   padding: 0.6rem 0 1rem;
 }
 
+/* What is on the shelf, counted, between the search and the list. */
+.shelf-summary {
+  margin: 0.5rem 0 0;
+  color: var(--quiet);
+  font-size: 0.9em;
+}
+
 /* Where the list will be, while the shelf is still being read: a spinner,
    so something on screen is plainly happening, and a line saying what. */
 .shelf-waiting {

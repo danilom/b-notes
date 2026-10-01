@@ -112,6 +112,12 @@ export interface Shelf<T extends ShelvedText> {
    * the start of the text, which it does not have to show.
    */
   troubleFor?: (note: T) => string | null;
+  /**
+   * A line over the list counting what is on the shelf, part by part; a part
+   * marked `trouble` is shown in red. Of everything on the shelf, not of what
+   * a search found, so it reads the same whatever he types.
+   */
+  summaryFor?: (texts: readonly T[]) => readonly { said: string; trouble?: boolean }[];
 }
 
 /** What he is looking at, and what he had searched for on the way in. */
@@ -498,6 +504,20 @@ export function openTextShelf<T extends ShelvedText>(
       });
       searchBox = box;
       parts.push(box);
+    }
+
+    const summary = shelf.summaryFor?.(texts ?? []) ?? [];
+    if (summary.length > 0) {
+      const line = document.createElement('p');
+      line.className = 'shelf-summary';
+      summary.forEach(({ said, trouble }, index) => {
+        if (index > 0) line.append(' · ');
+        const part = document.createElement('span');
+        if (trouble === true) part.className = 'review-trouble';
+        part.textContent = said;
+        line.append(part);
+      });
+      parts.push(line);
     }
 
     parts.push(rows, footer);

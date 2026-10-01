@@ -66,6 +66,16 @@ function shelfFor(language: Language, handlers: ArchiveHandlers): Shelf<Archived
       note.versions === 0 ? '' : words.archiveVersions(note.versions),
     ],
     troubleFor: troubleOf,
+    // Everything accounted for, in numbers: how many files, how many of them
+    // texts, and how many are not — in red while there are any.
+    summaryFor: (texts) => {
+      const failed = texts.filter((note) => note.trouble !== null).length;
+      return [
+        { said: words.archiveTotal(texts.length) },
+        { said: words.archiveReadable(texts.length - failed) },
+        { said: words.archiveFailed(failed), trouble: failed > 0 },
+      ];
+    },
     matching: words.archiveMatching,
     // Nothing outside this dialog can search the archive, because it is not
     // read until he asks for it. So the box is in here, and it starts empty.
