@@ -25,6 +25,10 @@ const archivedPaths = (page: Page): Promise<string[]> =>
 
 async function openArchive(page: Page): Promise<void> {
   await page.locator('#archive-block').click();
+  // The dialog waits for its spinner to be drawn before it reads, with a
+  // 100 ms timer behind the frame — and this page's clock is paused, so time
+  // has to be let pass as it would for him.
+  await page.clock.runFor(200);
   await expect(page.locator('#archive .review-row').first()).toBeVisible();
 }
 
