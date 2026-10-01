@@ -75,11 +75,15 @@ describe('how hard it should be to destroy one', () => {
 });
 
 
-const shelved = (title: string, text: string, updatedAt: number) => ({
+type Shelved = ReturnType<typeof shelved>;
+
+const shelved = (title: string, text: string, updatedAt: number, code: string | null = null) => ({
   id: title,
-  title,
+  title: title.trim(),
+  sortTitle: title,
   text,
   searchable: toSearchable(text),
+  code,
   updatedAt,
 });
 
@@ -89,41 +93,74 @@ const SOME = [
   shelved('Sneg', 'Sneg' + '\n\n' + 'Opet sneg.', 2000),
 ];
 
+/** What a search found and missed, as titles; fails where it was no search. */
+function searched(texts: readonly Shelved[], filter: string) {
+  const groups = groupsFor(texts, filter);
+  if (!groups.searched) throw new Error('not searched');
+  const titles = (found: readonly Shelved[]) => found.map((note) => note.title);
+  const { inTitle, inText, asPart } = groups.found;
+  return { inTitle: titles(inTitle), inText: titles(inText), asPart: titles(asPart), rest: titles(groups.rest) };
+}
+
 describe('what a search does to a shelf', () => {
-  it('puts everything in one group while he has typed nothing', () => {
-    const { found, rest } = groupsFor(SOME, '');
-    assert.deepEqual(found.map((n) => n.title), ['More', 'Sneg', 'Zima']);
-    assert.deepEqual(rest, []);
+  it('lists everything newest first while he has typed nothing', () => {
+    const groups = groupsFor(SOME, ' ');
+    assert.equal(groups.searched, false);
+    assert.deepEqual(!groups.searched && groups.all.map((note) => note.title), ['More', 'Sneg', 'Zima']);
   });
 
-  it('orders both groups newest first, whatever order it was handed', () => {
-    const { found, rest } = groupsFor(SOME, 'sneg');
-    assert.deepEqual(found.map((n) => n.title), ['Sneg', 'Zima']);
-    assert.deepEqual(rest.map((n) => n.title), ['More']);
+  it('puts what it found in the groups his list uses, and leaves the rest under them', () => {
+    assert.deepEqual(searched(SOME, 'sneg'), { inTitle: ['Sneg'], inText: ['Zima'], asPart: [], rest: ['More'] });
   });
 
-  it('keeps every text in one group or the other, never in neither', () => {
+  it('ranks within a group as his list does: a text full of the word before one that names it once', () => {
+    const texts = [
+      shelved('Jednom', 'Jednom' + '\n\n' + 'Bio je Ivo.', 3000),
+      shelved('Cesto', 'Cesto' + '\n\n' + 'Ivo. Ivo. Ivo. Ivo. Ivo.', 1000),
+    ];
+    assert.deepEqual(searched(texts, 'ivo').inText, ['Cesto', 'Jednom']);
+  });
+
+  it('puts none first for being recent, since nothing on a shelf is what he is working on', () => {
+    const texts = [
+      shelved('Jednom', 'Jednom' + '\n\n' + 'Bio je Ivo.', Date.now()),
+      shelved('Cesto', 'Cesto' + '\n\n' + 'Ivo. Ivo. Ivo. Ivo. Ivo.', 1000),
+    ];
+    assert.deepEqual(searched(texts, 'ivo').inText, ['Cesto', 'Jednom']);
+  });
+
+  it('breaks a tie by his order, where leading spaces rank a title, not by date', () => {
+    const texts = [shelved('Sneg u gradu', 'Sneg u gradu', 3000), shelved('  Sneg u selu', '  Sneg u selu', 1000)];
+    assert.deepEqual(searched(texts, 'sneg').inTitle, ['Sneg u selu', 'Sneg u gradu']);
+  });
+
+  it('leaves what it missed newest first, as the shelf is listed', () => {
+    // Avala comes first in his order and last by date.
+    const texts = [...SOME, shelved('Avala', 'Avala' + '\n\n' + 'Planina.', 500)];
+    assert.deepEqual(searched(texts, 'sneg').rest, ['More', 'Avala']);
+  });
+
+  it('keeps every text in exactly one place, found or not', () => {
     // Nothing is taken away: a row that goes when he types reads as a text
     // that has gone, which in a shelf reads as the shelf being incomplete.
-    const { found, rest } = groupsFor(SOME, 'sneg');
-    assert.equal(found.length + rest.length, SOME.length);
-  });
-
-  it('never shows a text in both groups', () => {
-    const { found, rest } = groupsFor(SOME, 'sneg');
-    const twice = found.filter((note) => rest.includes(note));
-    assert.deepEqual(twice, []);
+    const texts = [...SOME, shelved('Snegovi', 'Snegovi', 500), shelved('Pesak', 'Pesak' + '\n\n' + 'Usnegovan.', 400)];
+    const { inTitle, inText, asPart, rest } = searched(texts, 'sneg');
+    const everywhere = [...inTitle, ...inText, ...asPart, ...rest];
+    assert.deepEqual([...everywhere].sort(), texts.map((note) => note.title).sort());
   });
 
   it('pushes everything down when nothing matches at all', () => {
-    const { found, rest } = groupsFor(SOME, 'nepostojeće');
-    assert.deepEqual(found, []);
-    assert.equal(rest.length, SOME.length);
+    assert.deepEqual(searched(SOME, 'nepostojeće'), { inTitle: [], inText: [], asPart: [], rest: ['More', 'Sneg', 'Zima'] });
+  });
+
+  it('finds a text by the code in its name, as his list does', () => {
+    const texts = [shelved('Pismo', 'Pismo' + '\n\n' + 'Draga.', 1, 'K3F9A2')];
+    assert.deepEqual(searched(texts, 'k3f9').inTitle, ['Pismo']);
   });
 
   it('finds his writing whether or not either side has the accents', () => {
     const accented = [shelved('Mačka', 'Mačka je na krovu', 1)];
-    assert.equal(groupsFor(accented, 'macka').found.length, 1);
+    assert.deepEqual(searched(accented, 'macka').inTitle, ['Mačka']);
   });
 });
 

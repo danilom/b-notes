@@ -85,7 +85,6 @@ function shelfFor(language: Language, handlers: ArchiveHandlers): Shelf<Archived
       const readable = { said: words.archiveReadable(texts.length - failed) };
       return failed === 0 ? [readable] : [readable, { said: words.archiveFailed(failed), trouble: true }];
     },
-    matching: words.archiveMatching,
     // Nothing outside this dialog can search the archive, because it is not
     // read until he asks for it. So the box is in here, and it starts empty.
     ownSearch: { placeholder: words.archiveSearch },

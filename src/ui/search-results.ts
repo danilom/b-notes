@@ -26,7 +26,8 @@ import { hasWholeWord, phrasesAlong, wordsOf } from './phrase-match.ts';
  *
  * 1. The few he is working on now, newest first. Recency is worth a lot for
  *    a handful of texts and nothing after that: past the last few, he is as
- *    likely to be looking for something from years ago.
+ *    likely to be looking for something from years ago. Not on a shelf: what
+ *    is deleted or archived is nothing he is working on.
  * 2. The words together before the words apart.
  * 3. In the titles, the whole word before the start of one.
  * 4. In the texts, how often it is there as a word, in coarse steps: a text
@@ -67,9 +68,14 @@ const MENTION_STEPS = [15, 5, 2, 1] as const;
 
 /**
  * @param inHisOrder every text, in the order Svi tekstovi shows them.
- * @param now the moment "recent" is measured from.
+ * @param now the moment "recent" is measured from, or null where nothing
+ *   found counts as what he is working on now.
  */
-export function foundGroups<T extends Findable>(inHisOrder: readonly T[], query: string, now: number): FoundGroups<T> {
+export function foundGroups<T extends Findable>(
+  inHisOrder: readonly T[],
+  query: string,
+  now: number | null,
+): FoundGroups<T> {
   const words = wordsOf(query);
   if (words.length === 0) return { inTitle: [], inText: [], asPart: [] };
 
@@ -215,10 +221,10 @@ interface Ranked<T> {
   weight: number;
 }
 
-function ordered<T extends Findable>(found: Ranked<T>[], now: number): T[] {
+function ordered<T extends Findable>(found: Ranked<T>[], now: number | null): T[] {
   const working = new Set(
     found
-      .filter(({ text }) => now - text.updatedAt <= RECENT_MS)
+      .filter(({ text }) => now !== null && now - text.updatedAt <= RECENT_MS)
       .sort((a, b) => b.text.updatedAt - a.text.updatedAt)
       .slice(0, WORKING_ON),
   );

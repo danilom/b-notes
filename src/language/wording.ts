@@ -228,8 +228,6 @@ const TEXT = {
       `${plural(n, 'ranija verzija', 'ranije verzije', 'ranijih verzija')}.`,
     archiveBring: 'Prenesi među moje tekstove',
     archiveBack: 'Nazad na arhivu',
-    archiveMatching: (n: number, query: string) =>
-      `${n} ${plural(n, 'tekst iz arhive sadrži', 'teksta iz arhive sadrže', 'tekstova iz arhive sadrži')} „${query}“`,
     archiveBrought: 'Tekst je prenet među tvoje tekstove.',
     archiveNotBrought: 'Tekst nije prenet. Pokušaj ponovo.',
     archiveUnreadable: 'Arhiva se ne može otvoriti.',
@@ -513,8 +511,6 @@ const TEXT = {
       `${n} earlier version${n === 1 ? '' : 's'} come${n === 1 ? 's' : ''} with it.`,
     archiveBring: 'Bring this into my texts',
     archiveBack: 'Back to the archive',
-    archiveMatching: (n: number, query: string) =>
-      `${n} archived text${n === 1 ? '' : 's'} contain${n === 1 ? 's' : ''} "${query}"`,
     archiveBrought: 'The text is now among your texts.',
     archiveNotBrought: 'The text was not brought in. Try again.',
     archiveUnreadable: 'The archive cannot be opened.',
