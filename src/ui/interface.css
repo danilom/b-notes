@@ -2327,7 +2327,9 @@ dialog::backdrop {
 */
 .review-group {
   position: sticky;
-  top: 0;
+  /* Up through the list's own 0.6rem of padding, and a pixel past it, so no
+     sliver of the rows scrolling under it shows above it at any zoom. */
+  top: calc(-0.6rem - 1px);
   z-index: 1;
   padding: 1rem 0.2rem 0.3rem;
   background: var(--panel);

@@ -236,9 +236,8 @@ const TEXT = {
     archiveLoading: 'Čitam tekstove iz arhive…',
     archiveFileUnreadable: 'Ovo ne može da se pročita.',
     archiveFileNotText: 'Ovo nije tekst, pa ne može ovde da se otvori.',
-    // Label and number rather than a counted noun, so no plural can come out wrong.
-    archiveTotal: (n: number) => `U arhivi: ${n.toLocaleString('sr-RS')}`,
-    archiveReadable: (n: number) => `tekstova: ${n.toLocaleString('sr-RS')}`,
+    archiveReadable: (n: number) => `${n.toLocaleString('sr-RS')} ${plural(n, 'tekst', 'teksta', 'tekstova')} u arhivi`,
+    // Label and number, so no plural can come out wrong.
     archiveFailed: (n: number) => `ne može da se otvori: ${n.toLocaleString('sr-RS')}`,
     destroy: 'Uništi zauvek',
     destroyTitle: 'Uništi zauvek',
@@ -522,8 +521,7 @@ const TEXT = {
     archiveLoading: 'Reading the texts in the archive…',
     archiveFileUnreadable: 'This cannot be read.',
     archiveFileNotText: 'This is not a text, so it cannot be opened here.',
-    archiveTotal: (n: number) => `In the archive: ${n.toLocaleString('en')}`,
-    archiveReadable: (n: number) => `texts: ${n.toLocaleString('en')}`,
+    archiveReadable: (n: number) => `${n.toLocaleString('en')} text${n === 1 ? '' : 's'} in the archive`,
     archiveFailed: (n: number) => `cannot be opened: ${n.toLocaleString('en')}`,
     destroy: 'Destroy forever',
     destroyTitle: 'Destroy forever',

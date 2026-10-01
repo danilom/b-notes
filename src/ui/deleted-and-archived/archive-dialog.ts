@@ -66,15 +66,12 @@ function shelfFor(language: Language, handlers: ArchiveHandlers): Shelf<Archived
       note.versions === 0 ? '' : words.archiveVersions(note.versions),
     ],
     troubleFor: troubleOf,
-    // Everything accounted for, in numbers: how many files, how many of them
-    // texts, and how many are not — in red while there are any.
+    // Everything accounted for, in numbers: how many texts, and — in red,
+    // and only when there are any — how many files cannot be opened.
     summaryFor: (texts) => {
       const failed = texts.filter((note) => note.trouble !== null).length;
-      return [
-        { said: words.archiveTotal(texts.length) },
-        { said: words.archiveReadable(texts.length - failed) },
-        { said: words.archiveFailed(failed), trouble: failed > 0 },
-      ];
+      const readable = { said: words.archiveReadable(texts.length - failed) };
+      return failed === 0 ? [readable] : [readable, { said: words.archiveFailed(failed), trouble: true }];
     },
     matching: words.archiveMatching,
     // Nothing outside this dialog can search the archive, because it is not
