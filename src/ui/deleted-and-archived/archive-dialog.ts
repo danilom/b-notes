@@ -28,6 +28,17 @@ export interface ArchivedTexts {
   lengths: LengthBands;
 }
 
+/**
+ * Where an archived file is, exactly as it is named on disk: its archive
+ * folder over its file name. Every space is a `·`, because the tooltip it is
+ * shown in collapses runs of spaces and loses them at either end, and his
+ * names begin and end with spaces that are the whole of the difference
+ * between two files.
+ */
+export function fileNameShown(note: Pick<ArchivedNote, 'archive' | 'fileName'>): string {
+  return `${note.archive}\\\n${note.fileName}`.replaceAll(' ', '·');
+}
+
 function shelfFor(language: Language, handlers: ArchiveHandlers): Shelf<ArchivedNote> {
   const words = strings(language);
   const when = (note: ArchivedNote): string => describeWhen(note.updatedAt, language);
@@ -66,6 +77,7 @@ function shelfFor(language: Language, handlers: ArchiveHandlers): Shelf<Archived
       note.versions === 0 ? '' : words.archiveVersions(note.versions),
     ],
     troubleFor: troubleOf,
+    hoverFor: fileNameShown,
     // Everything accounted for, in numbers: how many texts, and — in red,
     // and only when there are any — how many files cannot be opened.
     summaryFor: (texts) => {

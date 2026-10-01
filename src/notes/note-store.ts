@@ -461,6 +461,7 @@ export function createNoteStore(
               return {
                 ...note,
                 archive,
+                fileName: nameOf(file.path),
                 versions: kept.get(id) ?? 0,
                 // By title, which is conservative: it misses a text he rewrote
                 // the opening of, and it never claims two texts are the same,
