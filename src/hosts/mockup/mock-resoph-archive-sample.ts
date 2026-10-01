@@ -1,18 +1,18 @@
-import { DAY, type SampleFile, rawArchiveFolderFor } from './mock-sample-files.ts';
+import { DAY, type SampleFile, archiveFolderPath } from './mock-sample-files.ts';
 
 /**
- * A folder in `Arhiva-raw` shaped like the ones off his machines, so the
- * import in Advanced settings has something real-shaped to work on in the
- * browser: `.md` files named the way Resoph names them, most with their
- * title only in the name, one Simplenote-era file with its title inside, an
- * empty jot, and a `.txt` among them.
+ * An archive shaped like the ones off his machines, so the browser build
+ * shows what Arhiva does with them: `.md` files named the way Resoph names
+ * them, most with their title only in the name, one Simplenote-era file with
+ * its title inside, an empty jot, and a `.txt` among them. All read as they
+ * are, and put into b-notes' shape on the way to the screen.
  *
  * The browser build used to show no sign of the trouble at all, because the
  * sample archives were `.txt` in b-notes' shape and the real ones were not.
  * Invented, like the rest of the corpus.
  */
-export function rawArchiveSample(notesFolder: string, now: number): SampleFile[] {
-  const folder = rawArchiveFolderFor(notesFolder, 'stari_laptop_2019');
+export function resophArchiveSample(notesFolder: string, now: number): SampleFile[] {
+  const folder = archiveFolderPath(notesFolder, 'stari_laptop_2019');
   const file = (name: string, text: string, ago: number): SampleFile => ({
     path: `${folder}/${name}`,
     text,

@@ -109,8 +109,13 @@ export function absenceIn(answer: unknown): FolderMissing | FileMissing | null {
   return null;
 }
 
-/** What a strict read found: the file's text, or that it is not UTF-8. */
-export type StrictRead = { kind: 'text'; text: string } | { kind: 'not-utf8' };
+/**
+ * What a strict read found: the file's text, or that it is not UTF-8 — with
+ * its bytes read as Windows-1250, which is what an old Serbian Windows
+ * machine wrote. That reading is a guess, so it is told apart rather than
+ * handed back as if it were the text.
+ */
+export type StrictRead = { kind: 'text'; text: string } | { kind: 'not-utf8'; asWindows1250: string };
 
 export interface FileInfo {
   path: string;
@@ -167,13 +172,8 @@ export interface FileSystem {
    * its way across from the other process. Throws `FileMissing` as `read` does.
    */
   readStrict(path: string): Promise<StrictRead>;
-  /**
-   * Must not be able to leave a half-written file behind.
-   *
-   * @param modifiedAt the file's time afterwards, in ms since the epoch, for a
-   * copy that should keep the date of what it was copied from. Now if omitted.
-   */
-  write(path: string, text: string, modifiedAt?: number): Promise<void>;
+  /** Must not be able to leave a half-written file behind. */
+  write(path: string, text: string): Promise<void>;
   /** Creates the destination folder if it doesn't exist yet. */
   rename(from: string, to: string): Promise<void>;
   /**

@@ -1822,8 +1822,8 @@ dialog::backdrop {
 }
 
 /*
-  A thick border in the accent, on this and the import opened from it: the
-  one sign, at a glance, that these are the setup's dialogs and not his.
+  A thick border in the accent: the one sign, at a glance, that this is the
+  setup's dialog and not his.
   Both classes, to win over `.panel`'s own thin border, which comes later.
 */
 .panel.advanced-panel {
@@ -1956,37 +1956,6 @@ dialog::backdrop {
   color: var(--quiet);
   font-size: 0.9em;
   line-height: 1.35;
-}
-
-/* The archive import: nearly the whole window, the console taking all of it
-   the header and the buttons leave, so a long run reads without scrolling. */
-#archive-import {
-  padding: 1.5rem;
-}
-
-/* Both classes, to win over `.panel`'s own size, which comes later. */
-.panel.archive-import {
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  width: 100%;
-  height: 100%;
-}
-
-.import-console {
-  flex: 1;
-  min-height: 0;
-  margin: 0.8rem 0 0;
-  padding: 0.6rem 0.8rem;
-  overflow-y: auto;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--panel);
-  font-family: Consolas, 'Courier New', monospace;
-  font-size: 0.95em;
-  line-height: 1.45;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }
 
 /* Almost the whole window: the list needs the width for a snippet, and a

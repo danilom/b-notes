@@ -5,7 +5,7 @@ import {
   FileMissing,
   FolderMissing,
 } from '../../platform/file-system.ts';
-import { rawArchiveSample } from './mock-raw-archive-sample.ts';
+import { resophArchiveSample } from './mock-resoph-archive-sample.ts';
 import { resophSample } from './mock-resoph-sample.ts';
 
 const KEY = 'b-notes:mock-files';
@@ -145,7 +145,7 @@ export function createMockFileSystem(): FileSystem {
       return { kind: 'text', text: file.text };
     },
 
-    async write(at: string, text: string, modifiedAt?: number): Promise<void> {
+    async write(at: string, text: string): Promise<void> {
       if (refusals > 0) {
         refusals -= 1;
         // What Windows gives when Dropbox is holding the file it is uploading.
@@ -154,7 +154,7 @@ export function createMockFileSystem(): FileSystem {
         });
       }
       const files = load();
-      files.set(at, { text, updatedAt: modifiedAt ?? Date.now() });
+      files.set(at, { text, updatedAt: Date.now() });
       store(files);
     },
 
@@ -258,7 +258,7 @@ export async function seedIfEmpty(): Promise<void> {
     const body = entry.text.split('\n').slice(1).join('\n').replace(/^\n/, '');
     seeded.set(`${MOCK_RESOPH_FOLDER}/${entry.id}`, { text: body, updatedAt: entry.updatedAt });
   }
-  for (const file of [...resophSample(MOCK_RESOPH_FOLDER, Date.now()), ...rawArchiveSample(MOCK_NOTES_FOLDER, Date.now())]) {
+  for (const file of [...resophSample(MOCK_RESOPH_FOLDER, Date.now()), ...resophArchiveSample(MOCK_NOTES_FOLDER, Date.now())]) {
     seeded.set(file.path, { text: file.text, updatedAt: file.updatedAt });
   }
   store(seeded);

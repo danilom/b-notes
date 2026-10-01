@@ -1091,6 +1091,61 @@ describe('writing brought in from somewhere else', () => {
     const { store } = await storeWithArchive();
     await assert.rejects(() => store.bringBack('Stari laptop 2021', 'Nema me'), /No such archived note/);
   });
+
+  /** A file put in the archive as it came off an old machine, whatever its name. */
+  const asItCame = async (dir: string, name: string, text: string | Buffer): Promise<void> => {
+    await writeFile(path.join(dir, ARCHIVE, name), text);
+  };
+
+  it('reads .md as well as .txt, each titled as Resoph showed it where only its name has the title', async () => {
+    const { dir, store } = await storeWithArchive();
+    await asItCame(dir, '   %2AKOTOR.md', 'Zaliv je bio miran.');
+    await asItCame(dir, 'Beleske.txt', 'Beleske\r\n\r\nVoz je kasnio.');
+
+    const found = await store.listArchived(new Set());
+
+    assert.deepEqual(await store.listArchives(), [{ name: 'Stari laptop 2021', texts: 2 }]);
+    assert.deepEqual(
+      found.map((note) => [note.id, note.text]).sort(),
+      [
+        ['   %2AKOTOR', '   *KOTOR\n\nZaliv je bio miran.'],
+        ['Beleske', 'Beleske\n\nVoz je kasnio.'],
+      ],
+    );
+  });
+
+  it('keeps a .md and a .txt of the same name as two texts', async () => {
+    const { dir, store } = await storeWithArchive();
+    await asItCame(dir, 'Pismo.md', 'Iz Resopha.');
+    await asItCame(dir, 'Pismo.txt', 'Pismo\n\nIz Simplenotea.');
+
+    const ids = (await store.listArchived(new Set())).map((note) => note.id).sort();
+
+    assert.deepEqual(ids, ['Pismo', 'Pismo.md']);
+  });
+
+  it('reads a file from an old Windows in its own letters rather than as "�"', async () => {
+    const { dir, store, log } = await storeWithArchive();
+    // "Češće" as an old Serbian Windows saved it.
+    await asItCame(dir, 'Stara.md', Buffer.from([0xc8, 0x65, 0x9a, 0xe6, 0x65]));
+
+    const [note] = await store.listArchived(new Set());
+
+    assert.equal(note?.text, 'Stara\n\nČešće');
+    assert.ok(log.said.some((said) => said.message.includes('Windows-1250')), 'not logged');
+  });
+
+  it('brings a .md back as a .txt in his folder, titled, and leaves nothing behind in the archive', async () => {
+    const { dir, store } = await storeWithArchive();
+    await asItCame(dir, '   %2AKOTOR.md', 'Zaliv je bio miran.');
+
+    const back = await store.bringBack('Stari laptop 2021', '   %2AKOTOR');
+
+    assert.equal(back, '   %2AKOTOR');
+    assert.equal(await readFile(path.join(dir, `${back}${EXTENSION}`), 'utf8'), '   *KOTOR\n\nZaliv je bio miran.');
+    assert.deepEqual(await readdir(path.join(dir, ARCHIVE)), []);
+    assert.deepEqual(await store.listArchives(), []);
+  });
 });
 
 

@@ -1,9 +1,7 @@
 import type { Language } from '../../language/wording.ts';
 import type { Host } from '../../platform/host.ts';
 import { type Log, describeError } from '../../platform/logging.ts';
-import { createArchiveImport } from '../../notes/archive-import.ts';
 import { openAdvancedPanel } from './advanced-panel.ts';
-import { openArchiveImportDialog } from './archive-import-dialog.ts';
 import { type AdvancedSettings, writeAdvanced } from './advanced-settings.ts';
 import { restartWithTestMode } from '../../test-mode/test-mode-setting.ts';
 import type { Appearance } from './appearance.ts';
@@ -14,8 +12,6 @@ import { openConfirmDialog } from '../dialogs/confirm-dialog.ts';
 export interface SettingsPanelsParts {
   appearancePane: HTMLDialogElement;
   advancedPane: HTMLDialogElement;
-  /** The archive import, opened from the advanced panel and over it. */
-  importPane: HTMLDialogElement;
   confirmPane: HTMLDialogElement;
   /** Where the keyboard goes when the appearance panel closes. */
   button: HTMLButtonElement;
@@ -32,8 +28,6 @@ export interface SettingsPanelsParts {
   /** He said keep it, so it is his now. */
   keep: (appearance: Appearance) => void;
   say: (notice: string) => void;
-  /** Something was written into Arhiva: count the archives again. */
-  archivesChanged: () => void;
 }
 
 export interface SettingsPanels {
@@ -66,7 +60,7 @@ export interface SettingsPanels {
  * whoever set the machine up, in English, behind a word he has to type.
  */
 export function createSettingsPanels(parts: SettingsPanelsParts): SettingsPanels {
-  const { appearancePane, advancedPane, importPane, confirmPane, button, host, log } = parts;
+  const { appearancePane, advancedPane, confirmPane, button, host, log } = parts;
 
   let panel: OpenPanel | null = null;
 
@@ -83,7 +77,6 @@ export function createSettingsPanels(parts: SettingsPanelsParts): SettingsPanels
       onClose: () => {
         close();
       },
-      onImportArchives: showImport,
       onKeep: (settings) => {
         close();
         /*
@@ -104,16 +97,6 @@ export function createSettingsPanels(parts: SettingsPanelsParts): SettingsPanels
             log.error('Could not keep the advanced settings', describeError(error));
           });
       },
-    });
-  }
-
-  /** Over the advanced panel, which stays open behind it. */
-  function showImport(): void {
-    if (importPane.open) return;
-    log.info('Opened the archive import');
-    const close = openArchiveImportDialog(importPane, createArchiveImport(host.files, host.notesFolder, log), log, {
-      onClose: () => close(),
-      onImported: parts.archivesChanged,
     });
   }
 

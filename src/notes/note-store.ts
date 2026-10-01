@@ -5,6 +5,7 @@ import {
   FolderMissing,
 } from '../platform/file-system.ts';
 import { type Log, describeError } from '../platform/logging.ts';
+import { archivedTextOf } from './archived-text.ts';
 import {
   DELETED_FOLDER,
   EXTENSION,
@@ -36,6 +37,12 @@ import {
 } from './note.ts';
 
 const nameOf = (path: string): string => path.split('/').at(-1) ?? path;
+
+/** What an archive holds a text in: both, since both have come off his machines. */
+const ARCHIVED = /\.(md|txt)$/i;
+
+/** A file's name without its extension, whichever of the two it is. */
+const stemOf = (file: FileInfo): string => nameOf(file.path).replace(ARCHIVED, '');
 
 
 /**
@@ -294,14 +301,38 @@ export function createNoteStore(
     await files.removeEmptyFolder(at(from.slice(0, from.lastIndexOf('/'))));
   }
 
-  /** Files in one archive folder, by id. Absence is ordinary: most folders have none. */
+  /**
+   * Files in one archive folder, by id. Absence is ordinary: most folders have none.
+   *
+   * `.md` as well as `.txt`, since both have come off his machines and an
+   * archive is read as it arrived. An id is the name without its extension,
+   * as everywhere else — except a `.md` with a `.txt` of the same name beside
+   * it, which keeps its `.md` so the two stay two texts.
+   */
   async function archivedFiles(archive: string): Promise<Map<string, FileInfo>> {
-    try {
-      return await noteFiles(at(archiveFolderFor(archive)));
-    } catch (failure: unknown) {
-      if (!(failure instanceof FolderMissing)) throw failure;
-      return new Map();
+    const found = (await filesIn(at(archiveFolderFor(archive)))).filter((file) => ARCHIVED.test(nameOf(file.path)));
+    const byId = new Map<string, FileInfo>();
+    for (const file of found) if (isNoteFile(nameOf(file.path))) byId.set(idOf(nameOf(file.path)), file);
+    for (const file of found) {
+      if (isNoteFile(nameOf(file.path))) continue;
+      const stem = stemOf(file);
+      byId.set(byId.has(stem) ? nameOf(file.path) : stem, file);
     }
+    return byId;
+  }
+
+  /**
+   * An archived text as it is shown: read as it is, in whatever shape it
+   * left the machine it came from, and put into b-notes' — see
+   * `archived-text.ts`. A file that is not UTF-8 is read as Windows-1250,
+   * which is what an old Serbian Windows wrote, rather than with "�" for
+   * every letter that carries a mark.
+   */
+  async function archivedNoteFrom(id: string, file: FileInfo): Promise<Note> {
+    const read = await files.readStrict(file.path);
+    if (read.kind === 'not-utf8') log.warn('An archived file is not UTF-8; read as Windows-1250', { file: file.path });
+    const source = read.kind === 'text' ? read.text : read.asWindows1250;
+    return noteOf(id, archivedTextOf(stemOf(file), source).text, file.updatedAt, file.bytes);
   }
 
   /**
@@ -399,7 +430,7 @@ export function createNoteStore(
           const kept = await copiesKeptIn(`${archiveFolderFor(archive)}/${VERSIONS_FOLDER}`);
           return Promise.all(
             [...(await archivedFiles(archive))].map(async ([id, file]): Promise<ArchivedNote> => {
-              const note = await noteFrom(id, file);
+              const note = await archivedNoteFrom(id, file);
               return {
                 ...note,
                 archive,
@@ -420,21 +451,28 @@ export function createNoteStore(
     async bringBack(archive: string, id: string): Promise<string> {
       const file = (await archivedFiles(archive)).get(requireNoteId(id));
       if (file === undefined) throw new Error(`No such archived note: ${archive}/${id}`);
+      // As he saw it in the archive: titled, and read whatever it was written in.
+      const { text } = await archivedNoteFrom(id, file);
 
-      // Under its own name. Nothing in his list is renamed to make room: a name
-      // built to be unique meeting itself is rare enough to count on past it.
-      const back = unusedName(id, new Set((await noteFiles()).keys()));
+      // Under its own name, as a .txt whatever it was. Nothing in his list is
+      // renamed to make room: a name built to be unique meeting itself is rare
+      // enough to count on past it.
+      const back = unusedName(stemOf(file), new Set((await noteFiles()).keys()));
       await files.rename(file.path, at(`${back}${EXTENSION}`));
 
       /*
-        Touched on the way in, exactly as a restored text is. Its old time is
-        when it was last written on a machine he no longer uses, which would
+        Then written in b-notes' shape: the title as its first line, in UTF-8.
+        Moved first and written second, so that whatever stops it half-way,
+        the file is somewhere and whole — the words he wrote, if not yet the
+        title over them.
+
+        Touched on the way in, too, exactly as a restored text is. Its old time
+        is when it was last written on a machine he no longer uses, which would
         file a text he asked for this minute among his 2019s — and the list he
         would go looking in is ordered by time. Now is the honest answer to
         "when did this last change", because bringing it in is a change to it.
       */
-      const text = await textOf(at(`${back}${EXTENSION}`));
-      if (text !== null) await files.write(at(`${back}${EXTENSION}`), text);
+      await files.write(at(`${back}${EXTENSION}`), text);
 
       // Its history comes with it. An archived text is often the only place an
       // early draft survives, and that is the reason to keep archives at all.

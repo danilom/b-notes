@@ -1,5 +1,4 @@
 import {
-  RAW_ARCHIVE_FOLDER,
   archiveFolderFor,
   archivedVersionsFolderFor,
   unusedName,
@@ -63,9 +62,9 @@ export interface ArchivedSample {
   copies?: readonly { text: string; takenAt: number }[];
 }
 
-/** Where one raw folder waits to be imported, as the app would look for it. */
-export function rawArchiveFolderFor(writingFolder: string, name: string): string {
-  return `${writingFolder}/${RAW_ARCHIVE_FOLDER}/${name}`;
+/** One archive's folder, as the app would look for it, for samples in their own shape. */
+export function archiveFolderPath(writingFolder: string, archive: string): string {
+  return `${writingFolder}/${archiveFolderFor(archive)}`;
 }
 
 /**

@@ -75,14 +75,6 @@ export const VERSIONS_FOLDER = 'Verzije';
  */
 export const ARCHIVE_FOLDER = 'Arhiva';
 
-/**
- * Where writing waits, as it came off an old machine or an export, until the
- * import in Advanced settings turns it into an archive. Never listed: its
- * files are in whatever shape they arrived in, which is why they are kept
- * apart from `Arhiva`, where everything is in the shape b-notes reads.
- */
-export const RAW_ARCHIVE_FOLDER = 'Arhiva-raw';
-
 /** One source's folder. `name` is the folder he or the importer chose. */
 export function archiveFolderFor(name: string): string {
   return `${ARCHIVE_FOLDER}/${name}`;
@@ -260,6 +252,23 @@ const COPY_CODE = /~([0-9A-Z]{6})(?: \d+)?$/;
 export function codeOf(id: string): string | null {
   const found = COPY_CODE.exec(id);
   return found === null ? null : `~${found[1] ?? ''}`;
+}
+
+/*
+  The end of a name b-notes gave a text it started: the moment and the
+  machine, with the number a second one of that name is given after it.
+*/
+const STARTED_HERE = / ~\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2} [A-Za-z0-9-]{1,20}(?: \d+)?$/;
+
+/**
+ * Whether a file name without its extension is one b-notes made: a copy of a
+ * Resoph text, `Pismo ~K3F9A2`, or a text started here, `Pismo ~2026-09-27
+ * 14-32-10 Dell`. Such a file has its title as its first line by
+ * construction, and its name is not that title — he may have retitled it
+ * since, and the name never changes.
+ */
+export function isBNotesName(stem: string): boolean {
+  return COPY_CODE.test(stem) || STARTED_HERE.test(stem);
 }
 
 /** A machine's name as it can stand in a filename. */

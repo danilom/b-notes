@@ -36,7 +36,7 @@ export function withAbsences(files: FileSystem): FileSystem {
     folderExists: (folder) => rebuilt(() => files.folderExists(folder)),
     read: (path) => rebuilt(() => files.read(path)),
     readStrict: (path) => rebuilt(() => files.readStrict(path)),
-    write: (path, text, modifiedAt) => rebuilt(() => files.write(path, text, modifiedAt)),
+    write: (path, text) => rebuilt(() => files.write(path, text)),
     rename: (from, to) => rebuilt(() => files.rename(from, to)),
     removeEmptyFolder: (folder) => rebuilt(() => files.removeEmptyFolder(folder)),
     removeEmptyFile: (path) => rebuilt(() => files.removeEmptyFile(path)),

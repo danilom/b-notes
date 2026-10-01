@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
@@ -123,12 +123,15 @@ describe('reading a file that has to be UTF-8', () => {
     });
   });
 
-  it('says so of one in Windows-1250, rather than reading its letters as "�"', async () => {
+  it('says so of one in Windows-1250, and reads its letters as that rather than as "�"', async () => {
     const root = await emptyFolder();
     // "Češće" as an old Windows editor would have saved it.
     await writeFile(path.join(root, 'Pismo.md'), Buffer.from([0xc8, 0x65, 0x9a, 0xe6, 0x65]));
 
-    assert.deepEqual(await files.readStrict(forwardSlashed(path.join(root, 'Pismo.md'))), { kind: 'not-utf8' });
+    assert.deepEqual(await files.readStrict(forwardSlashed(path.join(root, 'Pismo.md'))), {
+      kind: 'not-utf8',
+      asWindows1250: 'Češće',
+    });
   });
 
   it('says a missing file is missing, as a plain read does', async () => {
@@ -139,16 +142,6 @@ describe('reading a file that has to be UTF-8', () => {
 });
 
 describe('writing a file', () => {
-  it('keeps the time it is asked to, so a copy can carry the date of what it was copied from', async () => {
-    const root = await emptyFolder();
-    const files = createFileSystem(await emptyFolder());
-    const then = new Date(2019, 2, 12, 9, 30).getTime();
-
-    await files.write(forwardSlashed(path.join(root, 'Pismo.txt')), 'Dragi brate', then);
-
-    assert.equal((await stat(path.join(root, 'Pismo.txt'))).mtimeMs, then);
-  });
-
   it('leaves nothing of its own in the folder he syncs', async () => {
     const root = await emptyFolder();
     const staging = await emptyFolder();

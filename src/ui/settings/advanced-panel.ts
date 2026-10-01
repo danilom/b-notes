@@ -27,8 +27,6 @@ import { testModeRow } from '../../test-mode/test-mode-panel-row.ts';
  */
 export interface AdvancedHandlers {
   onClose: () => void;
-  /** Open the import, over this panel; nothing here is applied by it. */
-  onImportArchives: () => void;
   onKeep: (settings: ChosenPlaces & { ctrlCardAfterMs: number | null; testMode: boolean }) => void;
 }
 
@@ -163,27 +161,6 @@ function trayRow(host: Host): HTMLElement {
   return row;
 }
 
-/**
- * The way into the import: folders someone has put in `Arhiva-raw` become
- * archives he can see. Opens its own dialog, which only looks until told.
- */
-function importRow(onImport: () => void): HTMLElement {
-  const row = document.createElement('div');
-  row.className = 'advanced-row';
-
-  const name = document.createElement('span');
-  name.className = 'advanced-label';
-  name.textContent = 'Archives';
-
-  const open = document.createElement('button');
-  open.type = 'button';
-  open.className = 'advanced-change';
-  open.textContent = 'Import from Arhiva-raw…';
-  open.addEventListener('click', onImport);
-  row.append(name, open);
-  return row;
-}
-
 function waitRow(value: number | null, change: (to: number | null) => void): HTMLElement {
   const row = document.createElement('div');
   row.className = 'advanced-row';
@@ -298,7 +275,6 @@ export function openAdvancedPanel(
       // to be somewhere the app can find without being told.
       folderRow('Settings', host.appFolder, host, null),
       trayRow(host),
-      importRow(handlers.onImportArchives),
       waitRow(wait, (to) => {
         wait = to;
       }),
