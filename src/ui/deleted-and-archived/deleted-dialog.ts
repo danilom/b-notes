@@ -45,7 +45,6 @@ function shelfFor(language: Language, handlers: DeletedHandlers): Shelf<DeletedN
     whenFor: (note) => words.deletedWhen(describeWhen(note.updatedAt, language)),
     // What else is kept of it, and silent when there is nothing to say.
     notesFor: (note) => (note.versions === 0 ? [] : [words.deletedVersions(note.versions)]),
-    matching: words.deletedMatching,
     actionsFor: (note) => [
       { label: words.restore, strength: 'main', act: () => handlers.onRestore(note.id) },
       { label: words.destroy, strength: 'grave', act: () => handlers.onDestroy(note) },

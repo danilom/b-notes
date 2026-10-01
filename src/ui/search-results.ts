@@ -1,6 +1,6 @@
 import { toSearchable } from '../language/diacritics.ts';
 import { titlePartsOf } from '../notes/title-marks.ts';
-import { phrasesIn, wordsOf } from './phrase-match.ts';
+import { hasWholeWord, phrasesAlong, wordsOf } from './phrase-match.ts';
 
 /**
  * What a search found, in the order it is worth his looking at.
@@ -26,7 +26,8 @@ import { phrasesIn, wordsOf } from './phrase-match.ts';
  *
  * 1. The few he is working on now, newest first. Recency is worth a lot for
  *    a handful of texts and nothing after that: past the last few, he is as
- *    likely to be looking for something from years ago.
+ *    likely to be looking for something from years ago. Not on a shelf: what
+ *    is deleted or archived is nothing he is working on.
  * 2. The words together before the words apart.
  * 3. In the titles, the whole word before the start of one.
  * 4. In the texts, how often it is there as a word, in coarse steps: a text
@@ -67,9 +68,14 @@ const MENTION_STEPS = [15, 5, 2, 1] as const;
 
 /**
  * @param inHisOrder every text, in the order Svi tekstovi shows them.
- * @param now the moment "recent" is measured from.
+ * @param now the moment "recent" is measured from, or null where nothing
+ *   found counts as what he is working on now.
  */
-export function foundGroups<T extends Findable>(inHisOrder: readonly T[], query: string, now: number): FoundGroups<T> {
+export function foundGroups<T extends Findable>(
+  inHisOrder: readonly T[],
+  query: string,
+  now: number | null,
+): FoundGroups<T> {
   const words = wordsOf(query);
   if (words.length === 0) return { inTitle: [], inText: [], asPart: [] };
 
@@ -129,16 +135,29 @@ function placeOf(
  * word of its own here as it is on screen.
  */
 function titleAsRead(sortTitle: string): string {
+  const known = titlesRead.get(sortTitle);
+  if (known !== undefined) return known;
   const { mark, position, name } = titlePartsOf(sortTitle);
-  return toSearchable([mark, position?.series, position?.number, name].filter((part) => part != null).join(' '));
+  const read = toSearchable([mark, position?.series, position?.number, name].filter((part) => part != null).join(' '));
+  // Bounded by the titles he has, his list and his shelves together; cleared
+  // only so a title he has since changed cannot be held for good.
+  if (titlesRead.size > 20_000) titlesRead.clear();
+  titlesRead.set(sortTitle, read);
+  return read;
 }
 
+/**
+ * Each title as read, worked out once rather than for every text on every
+ * letter typed: the title is the same, and an archive is thousands of them.
+ */
+const titlesRead = new Map<string, string>();
+
 interface Matches {
-  /** How many times the words stand together as words, beginning a word or whole. */
+  /** How many times the words stand together as words, beginning a word or whole; up to `ENOUGH`. */
   phrase: number;
   /** Whether the phrase is there once at least as whole words. */
   wholePhrase: boolean;
-  /** How many times each word is there as a word, in the order he typed them. */
+  /** How many times each word is there as a word, in the order he typed them; up to `ENOUGH`. */
   mentions: number[];
   /** Whether each word is there once at least as a whole word. */
   wholeWords: boolean[];
@@ -154,16 +173,44 @@ interface Matches {
  * him for mentioning life fifty times.
  */
 function matchIn(haystack: string, words: readonly string[]): Matches {
-  const phrases = phrasesIn(haystack, words).filter(({ kind }) => kind !== 'inside');
-  const each = words.map((word) => phrasesIn(haystack, [word]).filter(({ kind }) => kind !== 'inside'));
-  const mentions = each.map((found) => found.length);
+  const phrase = tally(haystack, words);
+  // One word is its own phrase, and looking for it twice is half the cost of
+  // ranking a whole archive by it.
+  const each = words.length === 1 ? [phrase] : words.map((word) => tally(haystack, [word]));
+  const mentions = each.map(({ count }) => count);
   return {
-    phrase: phrases.length,
-    wholePhrase: phrases.some(({ kind }) => kind === 'whole'),
+    phrase: phrase.count,
+    wholePhrase: phrase.whole,
     mentions,
-    wholeWords: each.map((found) => found.some(({ kind }) => kind === 'whole')),
+    wholeWords: each.map(({ whole }) => whole),
     everyWord: mentions.every((count) => count > 0),
   };
+}
+
+/** Past this many, more mentions change nothing: it is the top step. */
+const ENOUGH = MENTION_STEPS[0];
+
+/**
+ * How many times the words stand together as words, up to `ENOUGH`, and
+ * whether once as whole words. Counting stops as soon as both are settled,
+ * which in an ordinary text is within the first few lines: counting every
+ * "je" in three thousand archived texts was most of a second per letter.
+ */
+function tally(haystack: string, words: readonly string[]): { count: number; whole: boolean } {
+  let count = 0;
+  let whole = false;
+  const [only] = words.length === 1 ? words : [];
+  for (const { kind } of phrasesAlong(haystack, words)) {
+    if (kind === 'inside') continue;
+    count += 1;
+    whole ||= kind === 'whole';
+    if (count < ENOUGH) continue;
+    if (whole) break;
+    // Counted enough, and every one so far only begins a longer word: one
+    // word is asked once whether it is whole anywhere further on.
+    if (only !== undefined) return { count, whole: hasWholeWord(haystack, only) };
+  }
+  return { count, whole };
 }
 
 interface Ranked<T> {
@@ -174,10 +221,10 @@ interface Ranked<T> {
   weight: number;
 }
 
-function ordered<T extends Findable>(found: Ranked<T>[], now: number): T[] {
+function ordered<T extends Findable>(found: Ranked<T>[], now: number | null): T[] {
   const working = new Set(
     found
-      .filter(({ text }) => now - text.updatedAt <= RECENT_MS)
+      .filter(({ text }) => now !== null && now - text.updatedAt <= RECENT_MS)
       .sort((a, b) => b.text.updatedAt - a.text.updatedAt)
       .slice(0, WORKING_ON),
   );

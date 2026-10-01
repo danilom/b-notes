@@ -2,8 +2,9 @@ import { type Language, strings } from '../../language/wording.ts';
 import { type LengthBands, bandOf, bytesOf } from '../../notes/text-length.ts';
 import { type Shown, showAsModal } from '../dialogs/modal.ts';
 import { type IconName, icon } from '../icons.ts';
-import { foundByCode, matches } from '../note-list.ts';
+import { compareInHisOrder, foundByCode } from '../note-list.ts';
 import { pageGlyph } from '../page-glyph.ts';
+import { type FoundGroups, foundGroups } from '../search-results.ts';
 import { titleOf } from '../dialogs/dialog-heading.ts';
 import { onOneLine } from './text-snippet.ts';
 
@@ -41,9 +42,13 @@ const SNIPPET = 320;
 export interface ShelvedText {
   id: string;
   title: string;
+  /** His first line as he typed it, which a search ranks by as his list does. */
+  sortTitle: string;
   text: string;
   /** Folded, so a search here finds his writing the way the list does. */
   searchable: string;
+  /** The code in its file's name, which a search finds it by too. */
+  code?: string | null;
   updatedAt: number;
 }
 
@@ -86,8 +91,6 @@ export interface Shelf<T extends ShelvedText> {
   markedFor?: (note: T) => string | null;
   /** Lines above the text in the preview. Empty ones are left out. */
   notesFor?: (note: T) => string[];
-  /** How the heading over the matches counts them, and names what he asked for. */
-  matching: (found: number, query: string) => string;
   /**
    * A search box of its own, and what stands in it while it is empty.
    *
@@ -162,38 +165,61 @@ export interface ShelfHandlers {
  * Without the title, which is already on the row above it: repeating it would
  * spend the one line that exists to tell three similar texts apart.
  */
-/** What a search put on top, and what it left underneath. */
-export interface ShelfGroups<T extends ShelvedText> {
-  found: readonly T[];
-  /**
-   * What the search missed — not everything, as the list's own Svi tekstovi
-   * is. A dialog he opened to answer one question is not the place to show him
-   * the same text twice.
-   */
-  rest: readonly T[];
+/** Everything on the shelf while he has typed nothing, or what a search made of it. */
+export type ShelfGroups<T extends ShelvedText> =
+  | { searched: false; all: readonly T[] }
+  | {
+      searched: true;
+      /** In the list's own groups and order: see search-results.ts. */
+      found: FoundGroups<T>;
+      /**
+       * What the search missed — not everything, as the list's own Svi
+       * tekstovi is. A dialog he opened to answer one question is not the
+       * place to show him the same text twice.
+       */
+      rest: readonly T[];
+    };
+
+/**
+ * The shelf as a search leaves it, with nothing left out.
+ *
+ * Found the way his list finds, and ranked the way it ranks — the same groups,
+ * and within them the same words-together, whole-word and how-often — except
+ * for the few he is working on now, which nothing on a shelf is. Ties go to
+ * his order, as in his list, since his marks rank a title wherever it is.
+ *
+ * Newest first otherwise, as the shelf is listed while he has typed nothing:
+ * whoever hands the texts over has sorted them already, and sorting here is
+ * what makes the order a property of this screen rather than a habit of theirs.
+ */
+export function groupsFor<T extends ShelvedText>(texts: readonly T[], filter: string): ShelfGroups<T> {
+  const { newestFirst, inHisOrder } = ordersOf(texts);
+  if (filter.trim().length === 0) return { searched: false, all: newestFirst };
+
+  const found = foundGroups(inHisOrder, filter, null);
+  // Whatever no group took, so a text is always in one place or the other.
+  const taken = new Set<T>([...found.inTitle, ...found.inText, ...found.asPart]);
+  return { searched: true, found, rest: newestFirst.filter((note) => !taken.has(note)) };
 }
 
 /**
- * The two groups, newest first in each, with nothing left out of both.
- *
- * Whoever hands the texts over has sorted them already; sorting here is what
- * makes the order a property of this screen rather than a habit of theirs.
- *
- * An empty search is not a search: everything is `found`, and there is no
- * remainder to push down.
+ * The shelf in both its orders, sorted once for as long as the shelf is open
+ * rather than on every letter typed: his order compares titles the way
+ * Resoph does, which across three thousand of them is most of what a search
+ * that finds nothing costs.
  */
-export function groupsFor<T extends ShelvedText>(
-  texts: readonly T[],
-  filter: string,
-): ShelfGroups<T> {
-  const ordered = [...texts].sort((first, second) => second.updatedAt - first.updatedAt);
-  const looking = filter.trim();
-  if (looking.length === 0) return { found: ordered, rest: [] };
-  // One pass, so each text is matched once per keystroke rather than twice.
-  const found: T[] = [];
-  const rest: T[] = [];
-  for (const note of ordered) (matches(note, looking) ? found : rest).push(note);
-  return { found, rest };
+const sorted = new WeakMap<readonly ShelvedText[], { newestFirst: ShelvedText[]; inHisOrder: ShelvedText[] }>();
+
+function ordersOf<T extends ShelvedText>(texts: readonly T[]): { newestFirst: readonly T[]; inHisOrder: readonly T[] } {
+  const known = sorted.get(texts);
+  // Only ever filled from `texts` itself, so what comes back is a T.
+  if (known !== undefined) return known as { newestFirst: T[]; inHisOrder: T[] };
+  const orders = {
+    newestFirst: [...texts].sort((first, second) => second.updatedAt - first.updatedAt),
+    inHisOrder: [...texts].sort(compareInHisOrder),
+  };
+  sorted.set(texts, orders);
+  return orders;
 }
 
 /**
@@ -428,31 +454,52 @@ export function openTextShelf<T extends ShelvedText>(
    */
   function renderRows(): void {
     if (rows === null) return;
-    const list: HTMLElement[] = [];
 
-    const { found, rest } = groupsFor(texts ?? [], filter);
-
-    if (filter.length === 0) {
-      for (const note of found) list.push(place(rowOf(note), false, null));
-      rows.replaceChildren(...list);
+    const groups = groupsFor(texts ?? [], filter);
+    if (!groups.searched) {
+      rows.replaceChildren(...groups.all.map((note) => place(rowOf(note), false, null)));
       return;
     }
 
-    list.push(headingOf(shelf.matching(found.length, filter), true));
+    // Under the headings his list uses, the ones with anything in them; one
+    // heading when nothing was found.
+    const { inTitle, inText, asPart } = groups.found;
+    const found = [
+      { heading: words.sectionFoundInTitle, texts: inTitle },
+      { heading: words.sectionFoundInText, texts: inText },
+      { heading: words.sectionFoundAsPart, texts: asPart },
+    ].filter((group) => group.texts.length > 0);
+    const blocks = found.map(({ heading, texts: inGroup }) =>
+      blockOf(
+        `${heading} · ${words.noteCount(inGroup.length)}`,
+        true,
+        inGroup.map((note) => place(rowOf(note), false, foundByCode(note, filter))),
+      ),
+    );
     if (found.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'empty';
       empty.textContent = words.nothingFound;
-      list.push(empty);
+      blocks.push(blockOf(`${words.sectionFound} · ${words.noteCount(0)}`, true, [empty]));
     }
-    for (const note of found) list.push(place(rowOf(note), false, foundByCode(note, filter)));
-
-    if (rest.length > 0) {
-      list.push(headingOf(`${words.shelfRest} · ${words.noteCount(rest.length)}`));
-      for (const note of rest) list.push(place(rowOf(note), true, null));
+    if (groups.rest.length > 0) {
+      const restHeading = `${words.shelfRest} · ${words.noteCount(groups.rest.length)}`;
+      blocks.push(blockOf(restHeading, false, groups.rest.map((note) => place(rowOf(note), true, null))));
     }
 
-    rows.replaceChildren(...list);
+    rows.replaceChildren(...blocks);
+  }
+
+  /**
+   * A heading and its rows, as a block of their own. A sticky heading holds
+   * at the top of whatever contains it, so each is held only while its own
+   * rows are on screen and the next pushes it off — as in his list.
+   */
+  function blockOf(said: string, found: boolean, inBlock: readonly HTMLElement[]): HTMLElement {
+    const block = document.createElement('div');
+    block.className = 'review-block';
+    block.append(headingOf(said, found), ...inBlock);
+    return block;
   }
 
   function show(note: T): void {

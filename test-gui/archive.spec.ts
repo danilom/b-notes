@@ -131,7 +131,10 @@ test('searching the archive pushes the rest down rather than taking it away', as
   // Nothing is ever hidden: a row that goes when he types reads as a text that
   // has gone, which in a shelf reads as the shelf being incomplete.
   await expect(rows).toHaveCount(total);
-  await expect(page.locator('#archive .review-group')).toHaveCount(2);
+  // What it found under one heading or more, the way his list groups it, and
+  // the rest under one of its own.
+  expect(await page.locator('#archive .review-group.found').count()).toBeGreaterThan(0);
+  await expect(page.locator('#archive .review-group:not(.found)')).toHaveCount(1);
   const dimmed = await page.locator('#archive .review-row.aside').count();
   expect(dimmed).toBeGreaterThan(0);
   expect(dimmed).toBeLessThan(total);

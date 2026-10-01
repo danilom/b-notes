@@ -106,6 +106,27 @@ export function foundByCode(row: Searched, query: string): string | null {
   return code !== null && toSearchable(code).includes(needle) ? code : null;
 }
 
+/**
+ * His order, the one Svi tekstovi is in: by his first line as he typed it, in
+ * the order Resoph lists it. A space sorts before any letter, so the more
+ * leading spaces, the higher — his way of ranking a text, and why this is his
+ * order rather than an alphabet. His marks work the same way, by where they
+ * sort.
+ *
+ * Texts reading the same fall back to their id, which is what their number
+ * is read from — so a run of them counts up rather than arriving in whatever
+ * order the folder was read in. Numerically, or `(10)` would sort above `(2)`.
+ */
+export function compareInHisOrder(
+  first: { sortTitle: string; id: string | null },
+  second: { sortTitle: string; id: string | null },
+): number {
+  return (
+    compareTitles(first.sortTitle, second.sortTitle) ||
+    (first.id ?? '').localeCompare(second.id ?? '', 'sr', { numeric: true })
+  );
+}
+
 function titleOf(note: LiveNote, words: ReturnType<typeof strings>): string {
   return note.title.length > 0 ? note.title : words.untitled;
 }
@@ -181,15 +202,7 @@ export function sectionsFor(view: ListView): Section[] {
   // Texts reading the same fall back to their id, which is what their number
   // is read from — so a run of them counts up rather than arriving in whatever
   // order the folder was read in. Numerically, or `(10)` would sort above `(2)`.
-  const all = [...rows].sort(
-    (a, b) =>
-      // By his first line as he typed it, in the order Resoph lists it: a
-      // space sorts before any letter, so the more leading spaces, the higher
-      // — his way of ranking a text, and why this is his order rather than an
-      // alphabet. His marks work the same way, by where they sort.
-      compareTitles(a.sortTitle, b.sortTitle) ||
-      (a.id ?? '').localeCompare(b.id ?? '', 'sr', { numeric: true }),
-  );
+  const all = [...rows].sort(compareInHisOrder);
 
   if (view.query.trim().length === 0) {
     return [
