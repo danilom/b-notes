@@ -89,6 +89,12 @@ export interface NoteVersion {
  */
 export interface ArchivedNote extends Note {
   archive: string;
+  /**
+   * The file's own name in its archive folder, extension and all, exactly as
+   * it is on disk. Not the id, which drops the extension and may be changed
+   * to keep two files apart.
+   */
+  fileName: string;
   versions: number;
   alsoLive: boolean;
   /**

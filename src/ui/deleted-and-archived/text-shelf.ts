@@ -112,6 +112,8 @@ export interface Shelf<T extends ShelvedText> {
    * the start of the text, which it does not have to show.
    */
   troubleFor?: (note: T) => string | null;
+  /** Shown on hover over a row, when there is something the row cannot say. */
+  hoverFor?: (note: T) => string;
   /**
    * A line over the list counting what is on the shelf, part by part; a part
    * marked `trouble` is shown in red. Of everything on the shelf, not of what
@@ -318,6 +320,8 @@ function rowFor<T extends ShelvedText>(
   }
 
   row.append(length, lines);
+  const hover = shelf.hoverFor?.(note);
+  if (hover !== undefined) row.title = hover;
 
   row.addEventListener('click', () => show(note));
   return { row, code };

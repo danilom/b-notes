@@ -1124,6 +1124,16 @@ describe('writing brought in from somewhere else', () => {
     assert.deepEqual(ids, ['Pismo', 'Pismo.md']);
   });
 
+  it('carries each file name exactly as it is on disk, extension, escapes and spaces', async () => {
+    const { dir, store } = await storeWithArchive();
+    await asItCame(dir, '  %2APismo .md', 'Iz Resopha.');
+    await asItCame(dir, '  %2APismo .txt', 'Iz Simplenotea.');
+
+    const names = (await store.listArchived(new Set())).map((note) => note.fileName).sort();
+
+    assert.deepEqual(names, ['  %2APismo .md', '  %2APismo .txt']);
+  });
+
   it('reads a file from an old Windows in its own letters rather than as "�"', async () => {
     const { dir, store, log } = await storeWithArchive();
     // "Češće" as an old Serbian Windows saved it.
