@@ -253,7 +253,18 @@ function wordsPart(kind: DiffPart['kind'], text: string): (HTMLElement | string)
   if (words.length <= EASY_TO_MISS) part.classList.add('diff-small');
   part.textContent = words;
 
-  return [text.slice(0, start), part, text.slice(start + words.length)];
+  return [text.slice(0, start), part, text.slice(start + words.length)].filter((node) => node !== '');
+}
+
+/**
+ * Moves the spaces at either end of a change out of it, so that what marks the
+ * change as current goes around its words. Spaces between what was removed and
+ * what was added stay: those are inside it.
+ */
+function movingSpacesOutOf(change: HTMLElement): void {
+  const { firstChild: first, lastChild: last } = change;
+  if (first instanceof Text) change.before(first);
+  if (last instanceof Text && last !== first) change.after(last);
 }
 
 const markedPart = ({ kind, text }: DiffPart, symbols: SpacingSymbols): (HTMLElement | string)[] =>
@@ -279,17 +290,20 @@ function paragraphBlock({ parts, changed }: DiffParagraph, symbols: SpacingSymbo
   let open: HTMLElement | null = null;
   for (const part of parts) {
     if (part.kind === 'same') {
+      if (open !== null) movingSpacesOutOf(open);
       block.append(part.text);
       open = null;
       continue;
     }
     if (part.opensChange) {
+      if (open !== null) movingSpacesOutOf(open);
       open = document.createElement('span');
       open.className = 'diff-change';
       block.append(open);
     }
     (open ?? block).append(...markedPart(part, symbols));
   }
+  if (open !== null) movingSpacesOutOf(open);
   return block;
 }
 

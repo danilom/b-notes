@@ -2636,12 +2636,16 @@ dialog::backdrop {
   text-decoration: line-through 2px var(--diff-gone-ink);
 }
 
+/* One gap between what went and what replaced it, whatever their sizes. */
+.diff-gone + .diff-new {
+  margin-left: 3px;
+}
+
 /*
   A change too small to be seen as a word: a comma, a space, a paragraph break.
   Bigger than the text around it, so it cannot be taken for a smudge.
 */
 .diff-small {
-  margin: 0 2px;
   padding: 0.05em 0.45em;
   font-size: 1.2em;
   font-weight: 700;
@@ -2669,10 +2673,11 @@ dialog::backdrop {
   border-top: 0;
 }
 
-/* The change the stepper is on. One outline around all of it, in the accent. */
-.diff-current {
-  outline: 4px solid var(--chosen);
-  outline-offset: 2px;
+/* The change the stepper is on: a thick bar in the accent, directly under each
+   mark. A shadow and not a border, so no text moves when the stepper arrives. */
+.diff-current .diff-new,
+.diff-current .diff-gone {
+  box-shadow: 0 5px 0 var(--chosen);
 }
 
 /*
