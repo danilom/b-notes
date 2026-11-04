@@ -177,7 +177,7 @@ whether the sentence is about the screen, about a thing on it, or about an act
 | `src/notes/` | everywhere | what a note is: the store, titles, naming, save decisions |
 | `src/platform/` | everywhere | what a platform must provide: the filesystem contract, the log bridge, build identity |
 | `src/language/` | everywhere | every word he reads, in both languages |
-| `src/ui/` | everywhere | the screen he writes on: the list, the editor's search, the strip along the bottom |
+| `src/ui/` | everywhere | the screen he writes on: the list, the editor's search, the strip along the bottom; the diff view, which is not about any one screen |
 | `src/ui/deleted-and-archived/` | everywhere | Obrisano and Arhiva: the strips under his list, the dialogs behind them, the way a text comes back |
 | `src/ui/versions/` | everywhere | the copies kept of a text, and stepping through what changed |
 | `src/ui/settings/` | everywhere | how the app looks and where it reads from, and what remembers both |

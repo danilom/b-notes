@@ -1,12 +1,10 @@
 import { type Shown, showAsModal } from '../dialogs/modal.ts';
 import { type Language, describeWhen, strings } from '../../language/wording.ts';
 import type { NoteVersion } from '../../notes/note.ts';
-import { type DiffPiece, type DiffRun, LINE_BREAK, diffParagraphs, runsOf } from '../../notes/paragraph-diff.ts';
+import { diffParagraphs } from '../../notes/paragraph-diff.ts';
+import { type DiffViewOptions, createDiffView } from '../diff-view.ts';
 import { icon } from '../icons.ts';
-import { scrollShowing } from './change-in-view.ts';
-import { createStepper } from '../stepper.ts';
 import { type Titled, titleOf } from '../dialogs/dialog-heading.ts';
-import { beginningAndEnd } from '../deleted-and-archived/text-snippet.ts';
 import { countWords } from '../../notes/word-count.ts';
 import { type LengthBands, bandOf, bytesOf } from '../../notes/text-length.ts';
 import { pageGlyph } from '../page-glyph.ts';
@@ -132,104 +130,25 @@ function rowFor(
   return row;
 }
 
-/** How much of a paragraph he can read elsewhere is worth repeating here. */
-const REMINDER = 150;
-
 /**
- * One run of paragraphs, tagged once.
+ * A copy read against his text.
  *
  * What the copy holds is shown in full: it is the only place he can read it.
  * What the active text holds is shortened to its two ends, because he can read
- * that by closing this dialog, and printing it whole would bury what he came
- * for under what he already has.
+ * that by closing this dialog. The copy is the older of the two, so inside a
+ * changed paragraph the active text's words are the new ones.
  */
-function blockFor(run: DiffRun, words: ReturnType<typeof strings>): HTMLElement {
-  if (run.kind === 'same') {
-    const plain = document.createElement('div');
-    plain.append(...run.pieces.map((piece) => paragraphOf(piece.text)));
-    return plain;
-  }
-
-  const block = document.createElement('div');
-  block.className = `review-run review-run-${run.kind}`;
-  block.append(tagFor(run.kind, words), ...run.pieces.map(paragraphFor));
-  return block;
-}
-
-function tagFor(kind: DiffRun['kind'], words: ReturnType<typeof strings>): HTMLElement {
-  const said = {
-    added: [words.versionAddedTag, words.versionAddedWhy],
-    missing: [words.versionMissingTag, words.versionMissingWhy],
-    changed: [words.versionChangedTag, words.versionChangedWhy],
-    same: ['', ''],
-  }[kind];
-
-  const tag = document.createElement('span');
-  tag.className = 'review-tag';
-
-  const why = document.createElement('span');
-  why.className = 'review-tag-why';
-  why.textContent = said[1] ?? '';
-
-  tag.append(`${said[0] ?? ''} `, why);
-  return tag;
-}
-
-function paragraphFor(piece: DiffPiece): HTMLParagraphElement {
-  if (piece.kind === 'changed') return rewordedOf(piece.words);
-  if (piece.kind === 'missing') return shortenedOf(piece.text);
-  return paragraphOf(piece.text);
-}
-
-function paragraphOf(text: string): HTMLParagraphElement {
-  const paragraph = document.createElement('p');
-  paragraph.textContent = text;
-  return paragraph;
-}
-
-/** One paragraph shown once, with only the words that changed marked. */
-function rewordedOf(words: readonly { kind: string; text: string }[]): HTMLParagraphElement {
-  const paragraph = document.createElement('p');
-
-  for (const word of words) {
-    // A break he made inside the paragraph, drawn as one. A break only one
-    // side has is drawn too: a line cannot be struck through.
-    if (word.text === LINE_BREAK) {
-      paragraph.append(document.createElement('br'));
-      continue;
-    }
-    if (word.kind === 'same') {
-      paragraph.append(`${word.text} `);
-      continue;
-    }
-    const marked = document.createElement('span');
-    marked.className = word.kind === 'added' ? 'word-gone' : 'word-new';
-    marked.textContent = word.text;
-    paragraph.append(marked, ' ');
-  }
-  return paragraph;
-}
-
-/**
- * A paragraph with its middle dropped, and something in the gap that he cannot
- * have typed.
- *
- * Not an ellipsis: he uses those, and one of ours sitting in a paragraph of his
- * would read as his own trailing off rather than as the app having cut
- * something out. Three middle dots in the colour of the block instead, which
- * belong to nothing on his keyboard.
- */
-function shortenedOf(text: string): HTMLParagraphElement {
-  const { head, tail } = beginningAndEnd(text, REMINDER);
-  const paragraph = paragraphOf(head);
-  if (tail === null) return paragraph;
-
-  const cut = document.createElement('span');
-  cut.className = 'review-cut';
-  cut.textContent = '···';
-
-  paragraph.append(' ', cut, ` ${tail}`);
-  return paragraph;
+function diffViewOptions(words: ReturnType<typeof strings>): DiffViewOptions {
+  return {
+    tags: {
+      added: { tag: words.versionAddedTag, why: words.versionAddedWhy },
+      missing: { tag: words.versionMissingTag, why: words.versionMissingWhy },
+      changed: { tag: words.versionChangedTag, why: words.versionChangedWhy },
+    },
+    stepper: { previous: words.changePrevious, next: words.changeNext, at: words.changeAt },
+    newWords: 'missing',
+    shortenMissing: true,
+  };
 }
 
 /**
@@ -362,45 +281,6 @@ export function openVersionsDialog(
   );
   index.append(...rows);
 
-  function stepper(body: HTMLElement): HTMLElement {
-    const changes = [...body.querySelectorAll<HTMLElement>('.review-run')];
-
-    let showing = 0;
-    const steps = createStepper(
-      { previous: words.changePrevious, next: words.changeNext },
-      { onPrevious: () => goTo(showing - 1), onNext: () => goTo(showing + 1) },
-    );
-    steps.root.classList.add('review-steps');
-    // Held back until it is known whether there is anywhere to go, which needs
-    // the panel laid out. Hidden is the safe state to start in.
-    steps.root.hidden = true;
-
-    function goTo(which: number): void {
-      showing = Math.max(0, Math.min(which, changes.length - 1));
-      steps.showing(words.changeAt(showing + 1, changes.length), {
-        canGoBack: showing > 0,
-        canGoOn: showing < changes.length - 1,
-      });
-
-      const change = changes[showing];
-      if (change === undefined) return;
-      body.scrollTop = scrollShowing(
-        { top: change.offsetTop - body.offsetTop, height: change.offsetHeight },
-        { height: body.clientHeight, scrollable: body.scrollHeight - body.clientHeight },
-      );
-    }
-
-    // After the panel is in the document, or every measurement here is zero.
-    queueMicrotask(() => {
-      // A copy short enough to read without scrolling has nothing to steer
-      // through: he can see all of it, and a stepper over it is chrome.
-      if (changes.length === 0 || body.scrollHeight <= body.clientHeight) return;
-      steps.root.hidden = false;
-      goTo(0);
-    });
-    return steps.root;
-  }
-
   /** One copy, with both ways it differs from the active text marked in place. */
   /**
    * Puts one copy in the right-hand pane.
@@ -412,11 +292,6 @@ export function openVersionsDialog(
   /** @param version The copy to show, or null for his text as it stands. */
   function fillPreview(version: NoteVersion | null): void {
     const { pieces, unrelated } = diffParagraphs(version?.text ?? current, current);
-    const runs = runsOf(pieces);
-
-    const text = document.createElement('div');
-    text.className = 'review-text';
-    text.append(...runs.map((run) => blockFor(run, words)));
 
     const aside = document.createElement('p');
     aside.className = 'review-note-aside';
@@ -433,16 +308,9 @@ export function openVersionsDialog(
         ? words.activeTextNow
         : words.versionWhen(describeWhen(version.takenAt, language));
 
-    // The stepper floats over the box, so the box is what it is placed
-    // against. Hung on the column instead, it lands on whatever lines are
-    // above the box — and how many of those there are varies.
-    const framed = document.createElement('div');
-    framed.className = 'review-framed';
-    framed.append(text, stepper(text));
-
     const column = document.createElement('div');
     column.className = 'review-body';
-    column.append(aside, about, framed);
+    column.append(aside, about, createDiffView(pieces, diffViewOptions(words)));
 
     preview.replaceChildren(column);
   }
