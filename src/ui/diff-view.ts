@@ -200,9 +200,6 @@ export function createDiffView(pieces: readonly DiffPiece[], options: DiffViewOp
   return framed;
 }
 
-/** The most characters a change can have and still be hard to see. */
-const EASY_TO_MISS = 2;
-
 const markClass = (kind: DiffPart['kind']): string => (kind === 'removed' ? 'diff-gone' : 'diff-new');
 
 /**
@@ -213,9 +210,15 @@ const markClass = (kind: DiffPart['kind']): string => (kind === 'removed' ? 'dif
 function spacingPart(kind: DiffPart['kind'], text: string): HTMLElement {
   const part = document.createElement('span');
   part.className = `${markClass(kind)} diff-small diff-spacing`;
-  part.textContent = text.replace(/(\r?\n)+/g, '↵').replace(/\s/g, '␣');
+  part.textContent = text.includes('\n') ? '↵' : text.replace(/\s/g, '␣');
   return part;
 }
+
+const isOnlySpacing = (part: DiffPart | undefined): boolean => part !== undefined && !/\S/.test(part.text);
+
+/** The space a paragraph break took the place of, or the other way about: the break says it all. */
+const isSpaceBesideBreak = (part: DiffPart, other: DiffPart | undefined): boolean =>
+  isOnlySpacing(part) && !part.text.includes('\n') && isOnlySpacing(other) && (other?.text.includes('\n') ?? false);
 
 /**
  * The words of a part marked, and the spaces around them left plain.
@@ -230,7 +233,8 @@ function wordsPart(kind: DiffPart['kind'], text: string): (HTMLElement | string)
 
   const part = document.createElement('span');
   part.className = markClass(kind);
-  if (words.length <= EASY_TO_MISS) part.classList.add('diff-small');
+  // A single character is the one size of change that is easy to miss.
+  if ([...words].length === 1) part.classList.add('diff-small');
   part.textContent = words;
 
   return [text.slice(0, start), part, text.slice(start + words.length)].filter((node) => node !== '');
@@ -314,7 +318,7 @@ function paragraphBlock({ parts, changed }: DiffParagraph): HTMLElement {
   block.className = changed ? 'diff-paragraph diff-paragraph-changed' : 'diff-paragraph';
 
   let open: HTMLElement | null = null;
-  for (const part of parts) {
+  for (const [at, part] of parts.entries()) {
     if (part.kind === 'same' || part.kind === 'tidied' || part.kind === 'tidied-away') {
       if (open !== null) movingSpacesOutOf(open);
       if (part.kind === 'same') block.append(part.text);
@@ -329,7 +333,8 @@ function paragraphBlock({ parts, changed }: DiffParagraph): HTMLElement {
       open.className = 'diff-change';
       block.append(open);
     }
-    (open ?? block).append(...markedPart(part));
+    const other = part.kind === 'removed' ? parts[at + 1] : parts[at - 1];
+    if (!isSpaceBesideBreak(part, other)) (open ?? block).append(...markedPart(part));
   }
   if (open !== null) movingSpacesOutOf(open);
   return block;
