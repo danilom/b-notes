@@ -310,23 +310,9 @@ describe('setting apart the changes nobody needs to read', () => {
     assert.equal(changesIn(separateTidying(pieces, { lineBreaks: true })).length, 1);
   });
 
-  it('keeps a diacritic in front of him on a word the text spells both ways', () => {
-    assert.deepEqual(left('Sto si dosao? Bilo je sto ljudi.', 'Što si došao? Bilo je sto ljudi.'), [['Sto', 'Što']]);
-  });
-
-  it('keeps both in front of him when a word is restored two different ways', () => {
-    assert.deepEqual(left('Cak je tu. Cak je tamo.', 'Čak je tu. Ćak je tamo.'), [
-      ['Cak', 'Čak'],
-      ['Cak', 'Ćak'],
-    ]);
-  });
-
-  it('does not take a word at the start of a sentence for another spelling', () => {
-    assert.ok(isHidden('Cuvala je. Pa cuvala opet.', 'Čuvala je. Pa čuvala opet.'));
-  });
-
-  it('cannot tell when a word comes out only one way, even wrongly', () => {
-    // Recorded rather than wanted: this is the limit of having no dictionary.
+  it('treats every restored diacritic alike, however the word comes out elsewhere', () => {
+    // Which of these are right takes knowing the meaning, which two texts cannot say.
+    assert.ok(isHidden('Sto si dosao? Bilo je sto ljudi.', 'Što si došao? Bilo je sto ljudi.'));
     assert.ok(isHidden('Nas pas je tu.', 'Naš paš je tu.'));
   });
 

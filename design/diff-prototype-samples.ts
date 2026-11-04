@@ -172,8 +172,8 @@ export const DIFF_SAMPLES: readonly DiffSample[] = [
   { name: 'Dugačak tekst, pomera se', ...longPair() },
   { name: 'Dugačak neuredan tekst: razmaci, prelomi, slova bez kukica', ...untidyPair() },
   {
-    // `sto` and `kuca` come out two ways, so those are to be flagged. `pas` turned
-    // into `paš` comes out one way, so it cannot be: that is the limit of the check.
+    // Some right and one wrong: `pas` should not have become `paš`. Nothing can tell
+    // which, so they all look the same, and he has to be able to read each.
     name: 'Dvosmislene kukice',
     current: [
       'Sto si dosao tako kasno? Na stolu je bilo sto casa i niko ih nije brojao.',

@@ -129,36 +129,6 @@ function isTidying({ removed, added }: Pick<Change, 'removed' | 'added'>, lineBr
   return true;
 }
 
-const plainWordOf = (word: string): string => withoutDiacritics(word.toLowerCase());
-
-const hasLetters = (token: string): boolean => /[\p{L}\p{N}]/u.test(token);
-
-/**
- * The words that come out in more than one spelling, by their plain form: `sto`
- * standing in one place and `što` in another.
- *
- * Restoring a diacritic can be a judgement call, because `sto` and `što` are both
- * words, and so are `kuca` and `kuća`. Without a dictionary this cannot say which
- * plain words are words. What it can see is the text disagreeing with itself,
- * which means the choice was made word by word and could have gone wrong.
- */
-function wordsSpelledBothWays(text: string): Set<string> {
-  const spellings = new Map<string, string>();
-  const both = new Set<string>();
-  for (const token of tokensOf(text)) {
-    if (!hasLetters(token)) continue;
-    const spelling = comparedAs(token).toLowerCase();
-    const plain = plainWordOf(token);
-    if ((spellings.get(plain) ?? spelling) !== spelling) both.add(plain);
-    spellings.set(plain, spelling);
-  }
-  return both;
-}
-
-/** What the whole list reads as, once its changes are taken. */
-const proposedText = (pieces: readonly TextPiece[]): string =>
-  pieces.map((piece) => (piece.kind === 'same' ? piece.text : piece.added)).join('');
-
 export interface TidyingOptions {
   /** Whether a line break inside a paragraph, coming or going, counts as tidying. */
   lineBreaks: boolean;
@@ -167,20 +137,12 @@ export interface TidyingOptions {
 /**
  * The same pieces, with the changes nobody needs to read set apart as `tidy`.
  *
- * A diacritic on a word the text spells both ways stays a change, for him to look
- * at, since that one is the likeliest to be wrong.
+ * Some of those diacritics will be wrong, since `sto` and `što` are both words and
+ * only the meaning says which. Nothing here can tell which ones from two texts, so
+ * they are all treated alike, and each stays visible as a letter in colour.
  */
-export function separateTidying(pieces: readonly TextPiece[], { lineBreaks }: TidyingOptions): TextPiece[] {
-  const uncertain = wordsSpelledBothWays(proposedText(pieces));
-  const isUncertain = (added: string): boolean =>
-    tokensOf(added).some((token) => hasLetters(token) && uncertain.has(plainWordOf(token)));
-
-  return pieces.map((piece) =>
-    piece.kind === 'change' && isTidying(piece, lineBreaks) && !isUncertain(piece.added)
-      ? { ...piece, kind: 'tidy' }
-      : piece,
-  );
-}
+export const separateTidying = (pieces: readonly TextPiece[], { lineBreaks }: TidyingOptions): TextPiece[] =>
+  pieces.map((piece) => (piece.kind === 'change' && isTidying(piece, lineBreaks) ? { ...piece, kind: 'tidy' } : piece));
 
 /** A run of a tidied word, and whether its letters are the ones that changed. */
 export interface TidiedLetters {
