@@ -27,6 +27,53 @@ function longPair(): Pick<DiffSample, 'current' | 'proposed'> {
   return { current: paragraphs.join('\n\n'), proposed: edited.join('\n\n') };
 }
 
+const WITHOUT_DIACRITICS = new Map([
+  ['š', 's'],
+  ['đ', 'd'],
+  ['ž', 'z'],
+  ['č', 'c'],
+  ['ć', 'c'],
+  ['Š', 'S'],
+  ['Đ', 'D'],
+  ['Ž', 'Z'],
+  ['Č', 'C'],
+  ['Ć', 'C'],
+]);
+
+const withoutDiacritics = (text: string): string =>
+  text.replace(/[šđžčćŠĐŽČĆ]/g, (letter) => WITHOUT_DIACRITICS.get(letter) ?? letter);
+
+/** Double spaces every so many words, and a line broken in the middle of some. */
+function untidySpacing(paragraph: string, at: number): string {
+  const words = paragraph.split(' ');
+  return words
+    .map((word, index) => {
+      if (at % 3 === 0 && index === 9) return `${word}\n`;
+      return word + (index === words.length - 1 ? '' : index % 7 === 3 ? '  ' : ' ');
+    })
+    .join('');
+}
+
+/**
+ * What a proofreader would make of a long text typed his way: diacritics dropped,
+ * spacing and line breaks untidy, and only here and there a change of wording.
+ */
+function untidyPair(): Pick<DiffSample, 'current' | 'proposed'> {
+  const sentences = [ROADS, WINTER, LETTER, HOUSE];
+  const clean = Array.from(
+    { length: 120 },
+    (_, at) => `${at + 1}. ${sentences[at % sentences.length] ?? ''} ${sentences[(at + 1) % sentences.length] ?? ''}`,
+  );
+
+  const reworded = (paragraph: string, at: number): string =>
+    at % 37 === 20 ? paragraph.replace('djed je govorio', 'stari je pričao').replace('prazna godinama', 'pusta decenijama') : paragraph;
+
+  const untidy = clean.map((paragraph, at) => withoutDiacritics(untidySpacing(paragraph, at)));
+  const breaks = untidy.map((paragraph, at) => paragraph + (at % 5 === 4 ? '  \n\n\n' : '\n\n'));
+
+  return { current: breaks.join('').trimEnd(), proposed: clean.map(reworded).join('\n\n') };
+}
+
 /**
  * Each pair is one kind of edit a proofreader makes, rather than a realistic
  * essay, so that when one reads badly it is plain which kind that was.
@@ -123,5 +170,6 @@ export const DIFF_SAMPLES: readonly DiffSample[] = [
     proposed: [LETTER, HOUSE].join('\n\n'),
   },
   { name: 'Dugačak tekst, pomera se', ...longPair() },
+  { name: 'Dugačak neuredan tekst: razmaci, prelomi, slova bez kukica', ...untidyPair() },
   { name: 'Prazno', current: '', proposed: '' },
 ];
