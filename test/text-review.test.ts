@@ -107,8 +107,23 @@ describe('the letters offered for a corrected word', () => {
     assert.equal(slots.length, 2);
   });
 
-  it('offers nothing for what has no alternatives, such as a comma', () => {
-    assert.deepEqual(letterSegmentsOf('', ','), [{ kind: 'fixed', text: ',' }]);
+  it('offers letters side by side each by itself, not as one', () => {
+    assert.deepEqual(letterSegmentsOf('sc', 'šć'), [
+      { kind: 'slot', proposed: 'š', choices: ['s', 'š'] },
+      { kind: 'slot', proposed: 'ć', choices: ['c', 'č', 'ć'] },
+    ]);
+  });
+
+  it('offers nothing for what has no alternatives, such as a comma, but knows it was put there', () => {
+    assert.deepEqual(letterSegmentsOf('', ','), [{ kind: 'fixed', text: ',', put: true }]);
+  });
+
+  it('keeps what was put there apart from what stood there all along', () => {
+    assert.deepEqual(letterSegmentsOf('ab', 'a,b'), [
+      { kind: 'fixed', text: 'a' },
+      { kind: 'fixed', text: ',', put: true },
+      { kind: 'fixed', text: 'b' },
+    ]);
   });
 
   it('builds the word from what was chosen, and what was proposed where nothing was', () => {
@@ -188,7 +203,15 @@ describe('drawing what he has decided', () => {
     const pieces = piecesAfter(reviewed('Tu je sumu.', 'Tu je šumu.'), { changes: new Map(), letters: new Map([[0, ['s']]]) });
     const part = paragraphsOf(pieces, { showTidied: true })[0]?.parts.find((one) => one.kind === 'tidied');
 
-    assert.deepEqual(part, { kind: 'tidied', text: 'sumu', was: 'sumu', proposed: 'šumu', tidyAt: 0, opensChange: false });
+    assert.deepEqual(part, {
+      kind: 'tidied',
+      text: 'sumu',
+      was: 'sumu',
+      proposed: 'šumu',
+      letters: ['s'],
+      tidyAt: 0,
+      opensChange: false,
+    });
   });
 
   it('numbers tidied words in reading order', () => {

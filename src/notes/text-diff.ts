@@ -13,13 +13,21 @@ import { alignSequences } from './sequence-alignment.ts';
  * `tidy` is a change like any other in what it holds, and only ever made by
  * {@link separateTidying}, for a change nobody needs to read.
  *
- * `resolved`, `undone` and `proposed` are what a review leaves on a piece: see
+ * `resolved`, `undone`, `proposed` and `letters` are what a review leaves on a piece: see
  * `text-review.ts`. A resolved change is one he has dealt with, and `undone` says
  * it went back to what was there.
  */
 export type TextPiece =
   | { kind: 'same'; text: string }
-  | { kind: 'change' | 'tidy'; removed: string; added: string; resolved?: boolean; undone?: boolean; proposed?: string };
+  | {
+      kind: 'change' | 'tidy';
+      removed: string;
+      added: string;
+      resolved?: boolean;
+      undone?: boolean;
+      proposed?: string;
+      letters?: readonly string[];
+    };
 
 /**
  * A word, a run of spaces and breaks, or one mark of punctuation.
@@ -181,10 +189,12 @@ export interface DiffPart {
   text: string;
   /** The first part of a change, where a change is carried across paragraphs. */
   opensChange: boolean;
-  /** What `tidied` text was before, so what was put there can be told. */
+  /** What `tidied` or `tidied-away` text was before, so what was done there can be told. */
   was?: string;
-  /** What was proposed for a `tidied` word, if he has since chosen other letters. */
+  /** What was proposed for a `tidied` word, if he has since chosen letters. */
   proposed?: string;
+  /** The letters he chose for a `tidied` word, slot by slot. */
+  letters?: readonly string[];
   /** A `tidied` word's place among the tidied, which is how a choice of letter finds it. */
   tidyAt?: number;
 }
@@ -253,12 +263,13 @@ export function paragraphsOf(pieces: readonly TextPiece[], { showTidied = false 
           text: piece.added,
           was: piece.removed,
           ...(piece.proposed === undefined ? {} : { proposed }),
+          ...(piece.letters === undefined ? {} : { letters: piece.letters }),
           tidyAt: at,
           opensChange: false,
         });
         continue;
       }
-      if (showTidied) addPart({ kind: 'tidied-away', text: '', opensChange: false });
+      if (showTidied) addPart({ kind: 'tidied-away', text: '', was: piece.removed, opensChange: false });
       addSplit('same', piece.added, false);
       continue;
     }

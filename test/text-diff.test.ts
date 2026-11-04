@@ -479,6 +479,13 @@ describe('laying out what was tidied, when it is to be seen', () => {
     assert.deepEqual(kinds('Tu je, vidio', 'Tu je vidio'), [['same', 'tidied-away', 'same']]);
   });
 
+  it('knows what went away, so that a mark can say whether it was spacing', () => {
+    const was = (before: string, after: string) => tidied(before, after)[0]?.parts.find((part) => part.kind === 'tidied-away')?.was;
+
+    assert.equal(was('Tu je, vidio', 'Tu je vidio'), ',');
+    assert.equal(was('Pao  je.', 'Pao je.'), '  ');
+  });
+
   it('marks tidied blank lines at the end of the paragraph, and still breaks there', () => {
     assert.deepEqual(kinds('Prvi.\n\n\nDrugi.', 'Prvi.\n\nDrugi.'), [['same', 'tidied-away'], ['same']]);
   });

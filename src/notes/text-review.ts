@@ -16,9 +16,13 @@ export type ChangeDecision = { kind: 'accepted' } | { kind: 'undone' } | { kind:
 
 export const noDecisions = (): ReviewDecisions => ({ changes: new Map(), letters: new Map() });
 
-/** A run of a tidied word: either as it stands, or a place where a letter was put right. */
+/**
+ * A run of a tidied word: as it stands, or a place where a letter was put right. A
+ * `fixed` run marked `put` is something put there that has no alternatives, such as
+ * a comma.
+ */
 export type LetterSegment =
-  | { kind: 'fixed'; text: string }
+  | { kind: 'fixed'; text: string; put?: true }
   | { kind: 'slot'; proposed: string; choices: readonly string[] };
 
 /** The letters a plain one can stand for. `dj` is how he types `đ`. */
@@ -41,31 +45,35 @@ function choicesFor(original: string, proposed: string): string[] {
 
 /**
  * A tidied word taken apart at the letters that were put right, so that each can be
- * offered with what else it might have been. What has no alternatives, such as a
- * comma, simply stands as it is.
+ * offered by itself with what else it might have been, neighbours included. What has
+ * no alternatives, such as a comma, simply stands as it is.
  */
 export function letterSegmentsOf(was: string, proposed: string): LetterSegment[] {
   const segments: LetterSegment[] = [];
-  let [gone, arrived] = ['', ''];
+  let [gone, arrived]: [string[], string[]] = [[], []];
+
+  const addLetter = (original: string, letter: string): void => {
+    const choices = choicesFor(original, letter);
+    if (choices.length > 0) segments.push({ kind: 'slot', proposed: letter, choices });
+    else segments.push({ kind: 'fixed', text: letter, put: true });
+  };
 
   const flush = (): void => {
-    if (arrived === '') {
-      gone = '';
-      return;
-    }
-    const choices = choicesFor(gone, arrived);
-    if (choices.length > 0) segments.push({ kind: 'slot', proposed: arrived, choices });
-    else segments.push({ kind: 'fixed', text: arrived });
-    [gone, arrived] = ['', ''];
+    // Letter for letter where they pair up. Otherwise it is `dj` becoming `đ`, or
+    // something put there with nothing gone, and what went stands for each.
+    arrived.forEach((letter, at) => {
+      addLetter(gone.length === arrived.length ? (gone[at] ?? '') : gone.join(''), letter);
+    });
+    [gone, arrived] = [[], []];
   };
 
   for (const { kind, text } of alignSequences([...was.normalize('NFC')], [...proposed.normalize('NFC')])) {
-    if (kind === 'onlyFrom') gone += text;
-    else if (kind === 'onlyTo') arrived += text;
+    if (kind === 'onlyFrom') gone.push(text);
+    else if (kind === 'onlyTo') arrived.push(text);
     else {
       flush();
       const open = segments.at(-1);
-      if (open?.kind === 'fixed') open.text += text;
+      if (open?.kind === 'fixed' && open.put !== true) open.text += text;
       else segments.push({ kind: 'fixed', text });
     }
   }
@@ -104,7 +112,7 @@ export function piecesAfter(pieces: readonly TextPiece[], { changes, letters }: 
       tidyAt += 1;
       if (chosen === undefined) return piece;
       const added = wordWithLetters(letterSegmentsOf(piece.removed, piece.added), chosen);
-      return { ...piece, added, proposed: piece.added };
+      return { ...piece, added, proposed: piece.added, letters: chosen };
     }
     return piece;
   });
