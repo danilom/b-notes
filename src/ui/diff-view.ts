@@ -1,5 +1,11 @@
 import { type DiffPiece, type DiffRun, LINE_BREAK, type WordPiece, runsOf } from '../notes/paragraph-diff.ts';
-import { type DiffParagraph, type DiffPart, type TextPiece, paragraphsOf } from '../notes/text-diff.ts';
+import {
+  type DiffParagraph,
+  type DiffPart,
+  type TextPiece,
+  paragraphsOf,
+  tidiedLettersOf,
+} from '../notes/text-diff.ts';
 import { scrollShowing } from './change-in-view.ts';
 import { beginningAndEnd } from './deleted-and-archived/text-snippet.ts';
 import { createStepper } from './stepper.ts';
@@ -271,6 +277,17 @@ function movingSpacesOutOf(change: HTMLElement): void {
 const markedPart = ({ kind, text }: DiffPart, symbols: SpacingSymbols): (HTMLElement | string)[] =>
   /\S/.test(text) ? wordsPart(kind, text) : spacingPart(kind, text, symbols);
 
+/** A word as it would be, with only the letters that were put right in colour. */
+function tidiedPart({ text, was = '' }: DiffPart): (HTMLElement | string)[] {
+  return tidiedLettersOf({ removed: was, added: text }).map((letters) => {
+    if (!letters.changed) return letters.text;
+    const part = document.createElement('span');
+    part.className = 'diff-tidied';
+    part.textContent = letters.text;
+    return part;
+  });
+}
+
 /** Shows which change the stepper is on, among the others like it. */
 function markCurrentChange(change: HTMLElement, isCurrent: boolean): void {
   change.classList.toggle('diff-current', isCurrent);
@@ -317,9 +334,9 @@ function paragraphBlock({ parts, changed }: DiffParagraph, symbols: SpacingSymbo
 
   let open: HTMLElement | null = null;
   for (const part of parts) {
-    if (part.kind === 'same') {
+    if (part.kind === 'same' || part.kind === 'tidied') {
       if (open !== null) movingSpacesOutOf(open);
-      block.append(part.text);
+      block.append(...(part.kind === 'same' ? [part.text] : tidiedPart(part)));
       open = null;
       continue;
     }
@@ -345,11 +362,11 @@ function paragraphBlock({ parts, changed }: DiffParagraph, symbols: SpacingSymbo
 export function createTextDiffView(
   pieces: readonly TextPiece[],
   stepper: DiffViewOptions['stepper'],
-  symbols: SpacingSymbols = SPACING_SYMBOLS,
+  { symbols = SPACING_SYMBOLS, showTidied = false }: { symbols?: SpacingSymbols; showTidied?: boolean } = {},
 ): HTMLElement {
   const text = document.createElement('div');
   text.className = 'review-text';
-  text.append(...paragraphsOf(pieces).map((paragraph) => paragraphBlock(paragraph, symbols)));
+  text.append(...paragraphsOf(pieces, { showTidied }).map((paragraph) => paragraphBlock(paragraph, symbols)));
 
   const framed = document.createElement('div');
   framed.className = 'review-framed diff-framed';

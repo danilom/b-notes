@@ -115,6 +115,10 @@
   --diff-new-ink: hsl(0 0% 100%);
   --diff-gone-fill: hsl(4 75% 36%);
   --diff-gone-ink: hsl(0 0% 100%);
+  /* A letter put right. Neither of the diff's two colours, because nothing here
+     is for or against: magenta keeps its red on a warm screen, where a blue or a
+     green turns as dark as the text around it. */
+  --diff-tidied-ink: hsl(325 85% 38%);
   --diff-current-fill: rgb(0 0 0 / 0.035);
   --diff-current-seen: rgb(0 0 0 / 0.088);
   --l-thumb: 82%;
@@ -259,6 +263,7 @@
   --diff-new-ink: hsl(0 0% 5%);
   --diff-gone-fill: hsl(4 75% 72%);
   --diff-gone-ink: hsl(0 0% 5%);
+  --diff-tidied-ink: hsl(325 90% 74%);
   --diff-current-fill: rgb(255 255 255 / 0.03);
   --diff-current-seen: rgb(255 255 255 / 0.098);
   --l-thumb: 34%;
@@ -2654,6 +2659,11 @@ dialog::backdrop {
   padding: 0.05em 0.45em;
   font-size: 1.2em;
   font-weight: 700;
+}
+
+/* A letter put right: colour only, so that it reads as part of his sentence. */
+.diff-tidied {
+  color: var(--diff-tidied-ink);
 }
 
 /* A space or a break, drawn as a symbol. In the interface's face, because his
