@@ -13,11 +13,13 @@ import { alignSequences } from './sequence-alignment.ts';
  * `tidy` is a change like any other in what it holds, and only ever made by
  * {@link separateTidying}, for a change nobody needs to read.
  *
- * `undone` and `proposed` are what a review leaves on a piece: see `text-review.ts`.
+ * `resolved`, `undone` and `proposed` are what a review leaves on a piece: see
+ * `text-review.ts`. A resolved change is one he has dealt with, and `undone` says
+ * it went back to what was there.
  */
 export type TextPiece =
   | { kind: 'same'; text: string }
-  | { kind: 'change' | 'tidy'; removed: string; added: string; undone?: boolean; proposed?: string };
+  | { kind: 'change' | 'tidy'; removed: string; added: string; resolved?: boolean; undone?: boolean; proposed?: string };
 
 /**
  * A word, a run of spaces and breaks, or one mark of punctuation.
@@ -175,7 +177,7 @@ export function tidiedLettersOf({ removed, added }: Pick<Change, 'removed' | 'ad
 /** A run of text in one paragraph as drawn, and whose it is. */
 export interface DiffPart {
   /** `tidied-away` holds no text: it says something was corrected at this spot and left nothing to show. */
-  kind: 'same' | 'removed' | 'added' | 'undone' | 'tidied' | 'tidied-away';
+  kind: 'same' | 'removed' | 'added' | 'resolved' | 'tidied' | 'tidied-away';
   text: string;
   /** The first part of a change, where a change is carried across paragraphs. */
   opensChange: boolean;
@@ -193,8 +195,8 @@ export interface DiffParagraph {
   changed: boolean;
 }
 
-/** Whether a part earns its paragraph a mark in the margin. */
-const isMarkedChange = ({ kind }: DiffPart): boolean => kind === 'removed' || kind === 'added' || kind === 'undone';
+/** Whether a part earns its paragraph a mark in the margin. What he has resolved does not: that paragraph is done. */
+const isMarkedChange = ({ kind }: DiffPart): boolean => kind === 'removed' || kind === 'added';
 
 /**
  * The pieces laid out as paragraphs, for drawing: which ones get a mark in the
@@ -261,10 +263,16 @@ export function paragraphsOf(pieces: readonly TextPiece[], { showTidied = false 
       continue;
     }
     const { removed, added } = piece;
-    if (piece.undone === true) {
-      // Still a part even with nothing in it, or an addition he undid could not be found again.
-      if (/\S/.test(removed)) addSplit('undone', removed, true);
-      else addPart({ kind: 'undone', text: removed, opensChange: true });
+    if (piece.resolved === true) {
+      const text = piece.undone === true ? removed : added;
+      if (/\S/.test(text)) {
+        addSplit('resolved', text, true);
+      } else {
+        // A part with no text, or something with nothing left to show could not be
+        // found again. What spacing there is goes on as what it is.
+        addPart({ kind: 'resolved', text: '', opensChange: true });
+        addSplit('same', text, false);
+      }
       continue;
     }
     if (removed.length > 0) {

@@ -12,7 +12,7 @@ export interface ReviewDecisions {
   letters: ReadonlyMap<number, readonly string[]>;
 }
 
-export type ChangeDecision = { kind: 'undone' } | { kind: 'edited'; text: string };
+export type ChangeDecision = { kind: 'accepted' } | { kind: 'undone' } | { kind: 'edited'; text: string };
 
 export const noDecisions = (): ReviewDecisions => ({ changes: new Map(), letters: new Map() });
 
@@ -94,8 +94,9 @@ export function piecesAfter(pieces: readonly TextPiece[], { changes, letters }: 
     if (piece.kind === 'change') {
       const decision = changes.get(changeAt);
       changeAt += 1;
-      if (decision?.kind === 'undone') return { ...piece, undone: true };
-      if (decision?.kind === 'edited') return { ...piece, added: decision.text };
+      if (decision?.kind === 'accepted') return { ...piece, resolved: true };
+      if (decision?.kind === 'undone') return { ...piece, resolved: true, undone: true };
+      if (decision?.kind === 'edited') return { ...piece, resolved: true, added: decision.text };
       return piece;
     }
     if (piece.kind === 'tidy') {

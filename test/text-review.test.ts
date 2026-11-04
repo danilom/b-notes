@@ -124,27 +124,64 @@ describe('drawing what he has decided', () => {
   const drawn = (before: string, proposed: string, changes: [number, ChangeDecision][]) =>
     paragraphsOf(piecesAfter(reviewed(before, proposed), { changes: new Map(changes), letters: new Map() }), { showTidied: true });
 
-  it('draws what he undid as plain text, still marked as his decision', () => {
-    const [paragraph] = drawn('Stara kuća.', 'Nova kuća.', [[0, { kind: 'undone' }]]);
+  /** The one resolved part of a paragraph, and whether the paragraph still wants a mark in the margin. */
+  const resolvedIn = (before: string, proposed: string, decision: ChangeDecision) => {
+    const [paragraph] = drawn(before, proposed, [[0, decision]]);
+    return {
+      part: paragraph?.parts.find((part) => part.kind === 'resolved'),
+      stillOpen: paragraph?.parts.some((part) => part.kind === 'removed' || part.kind === 'added'),
+      marked: paragraph?.changed,
+    };
+  };
 
-    assert.deepEqual(paragraph?.parts.at(0), { kind: 'undone', text: 'Stara', opensChange: true });
-    assert.equal(paragraph?.parts.some((part) => part.kind === 'removed' || part.kind === 'added'), false);
+  it('draws what he undid as resolved, showing his old text', () => {
+    assert.deepEqual(resolvedIn('Stara kuća.', 'Nova kuća.', { kind: 'undone' }), {
+      part: { kind: 'resolved', text: 'Stara', opensChange: true },
+      stillOpen: false,
+      marked: false,
+    });
+  });
+
+  it('draws what he accepted as resolved, showing the new text', () => {
+    assert.deepEqual(resolvedIn('Stara kuća.', 'Nova kuća.', { kind: 'accepted' }), {
+      part: { kind: 'resolved', text: 'Nova', opensChange: true },
+      stillOpen: false,
+      marked: false,
+    });
+  });
+
+  it('draws what he edited as resolved, with his wording and no sign of the old', () => {
+    assert.deepEqual(resolvedIn('Stara kuća.', 'Nova kuća.', { kind: 'edited', text: 'Moja' }), {
+      part: { kind: 'resolved', text: 'Moja', opensChange: true },
+      stillOpen: false,
+      marked: false,
+    });
+  });
+
+  it('keeps a part for what left nothing to show, so that it can be found again', () => {
+    const empty = { kind: 'resolved', text: '', opensChange: true };
+
+    assert.deepEqual(resolvedIn('Prvi kraj.', 'Prvi novi kraj.', { kind: 'undone' }).part, empty);
+    assert.deepEqual(resolvedIn('Prvi stari kraj.', 'Prvi kraj.', { kind: 'accepted' }).part, empty);
+    assert.deepEqual(resolvedIn('Stara kuća.', 'Nova kuća.', { kind: 'edited', text: '' }).part, empty);
+  });
+
+  it('keeps marking a paragraph with another change still open', () => {
+    const [paragraph] = drawn('Stara kuća i dugo pričamo o tome i pala je.', 'Nova kuća i dugo pričamo o tome i stoji.', [[0, { kind: 'accepted' }]]);
+
     assert.equal(paragraph?.changed, true);
   });
 
-  it('keeps a part for an addition he undid, empty as it is, so that it can be found again', () => {
-    const [paragraph] = drawn('Prvi kraj.', 'Prvi novi kraj.', [[0, { kind: 'undone' }]]);
+  it('breaks the paragraph where he accepted a split, and joins it where he undid one', () => {
+    const texts = (decision: ChangeDecision) =>
+      drawn('Prvi. Drugi.', 'Prvi.\n\nDrugi.', [[0, decision]]).map((paragraph) => paragraph.parts.map((part) => part.text).join(''));
 
-    assert.deepEqual(paragraph?.parts.find((part) => part.kind === 'undone'), { kind: 'undone', text: '', opensChange: true });
+    assert.deepEqual(texts({ kind: 'accepted' }), ['Prvi.', 'Drugi.']);
+    assert.deepEqual(texts({ kind: 'undone' }), ['Prvi. Drugi.']);
   });
 
-  it('draws what he edited as a change like any other', () => {
-    const [paragraph] = drawn('Stara kuća.', 'Nova kuća.', [[0, { kind: 'edited', text: 'Moja' }]]);
-
-    assert.deepEqual(paragraph?.parts.filter((part) => part.kind !== 'same').map((part) => [part.kind, part.text]), [
-      ['removed', 'Stara'],
-      ['added', 'Moja'],
-    ]);
+  it('leaves no way for accepting to change the text', () => {
+    assert.equal(after(BEFORE, PROPOSED, [[0, { kind: 'accepted' }], [1, { kind: 'accepted' }]]), PROPOSED);
   });
 
   it('keeps a word whose letter he put back as a part, so that it can be changed again', () => {
