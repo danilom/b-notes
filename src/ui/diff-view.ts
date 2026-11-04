@@ -289,7 +289,7 @@ function currentChangeKey(): SVGElement {
   const shapes: [string, Record<string, string>][] = [
     ['rect', { class: 'diff-current-key-page', x: '4', y: '5', width: '19', height: '14', stroke: 'currentColor', 'stroke-width': '1.2' }],
     ['rect', { x: '1', y: '4.4', width: '5', height: '15.2', fill: 'currentColor' }],
-    ['path', { d: 'M9 15.5h10.5', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-dasharray': '3 1.5' }],
+    ['path', { d: 'M8.5 15.5h12', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-dasharray': '3 1.5' }],
   ];
 
   const svg = document.createElementNS(namespace, 'svg');
