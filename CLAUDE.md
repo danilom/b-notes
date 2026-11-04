@@ -6,6 +6,12 @@ You are working as a senior TypeScript developer. Write production-quality code 
 b-notes: who the app is for and the constraints that follow from that, the
 stack, how it's packaged and shipped, and what to log. This file stays general.
 
+**First priority: don't disturb what the client has.** v1 is in his hands and
+working, and nothing new is worth a regression there. Never publish a GitHub
+release that isn't marked pre-release, or change one to live, unless told to
+that time: it installs on his machines by itself and can't be taken back. See
+*First priority* and *How an update reaches him* in `DESIGN.md`.
+
 ## TypeScript
 
 - Use strict TypeScript. Avoid `any`; use `unknown` and narrow properly.

@@ -3,6 +3,21 @@
 Everything specific to this app: who it's for, what it's built from, how it
 ships, and what it records. General coding rules live in `CLAUDE.md`.
 
+## First priority: don't disturb what he has
+
+b-notes is in his hands and working. That build is tagged `v1` (version 0.8.4).
+**Not disturbing it comes before anything new.** No improvement is worth a
+regression on his machines, and he has no way to report one except by phone,
+vaguely, days later.
+
+- **Commits, branches and tags reach nobody.** Only a GitHub release does — see
+  *How an update reaches him*.
+- **Never make a release live for him unless Danilo says to, that time.** It
+  installs without asking and cannot be taken back (below).
+- **What is written to disk must stay safe for the versions already out there.**
+  His machines share a folder through Dropbox and update whenever each is next
+  opened, so a new build's files will be read by 0.8.4.
+
 ## Who this is for
 
 b-notes is a Windows desktop app for editing long-form essays, built for one
@@ -267,19 +282,48 @@ needs to agree with it, so there's no divergence to prevent.
 - The update host must support `Accept-Ranges`, or electron-updater can't do a differential download and falls back to fetching the whole installer — 98MB instead of roughly 1MB for a small fix. GitHub Releases supports it; check before moving to any other host.
 - Updates are silent, so a broken updater is silent too. Everything electron-updater reports is routed into the log file; that's the only place it will ever surface.
 
+### How an update reaches him
+
+Each time the packaged app starts, once (`app-updates.ts`):
+
+1. It asks `github.com/danilom/b-notes/releases/latest` which tag is the latest release.
+2. It reads `latest.yml` from that release. If that version is higher than its own, it downloads the installer in the background.
+3. The installer runs when he next closes the app. He is never asked, and the new version is there the next time he opens it.
+
+The first step is the whole gate. **GitHub's "latest" is never a draft or a release marked pre-release**, and a stable build only ever follows "latest". What that means:
+
+| what is on GitHub | does it reach him? |
+| --- | --- |
+| a commit, a branch, a bare tag | no |
+| a draft | no |
+| a release marked pre-release | no |
+| a release not marked pre-release, with a higher version | **yes, the next time each machine starts** |
+
+- **The mark on the release protects him, not the version number.** The version check is a plain "is it higher", and `0.9.0-beta.1` is higher than `0.8.4`, so a `-beta` build published as an ordinary release reaches him.
+- **`gh release create` makes an ordinary release unless told otherwise**, and so does publishing from GitHub's web page. Forgetting `--prerelease` once is all it takes.
+- **There is no taking it back.** Downgrades are off. Deleting a bad release stops machines that haven't started yet, and "latest" falls back to the release before it; a machine that already has it stays on it until a higher version is shipped.
+- **His builds cannot be changed to protect him.** This rests on how GitHub's releases are set, because the build he has decides what it follows. A change to `app-updates.ts` only applies from the release that carries it.
+
 ### Shipping a new version
 
-1. Bump `version` in `package.json` and commit. electron-updater compares versions, so an unbumped build is invisible to it.
+1. Bump `version` in `package.json` and commit. electron-updater compares versions, so an unbumped build is invisible to it. Use a plain next number with no `-beta`: the same files are later made live as they are, so the version has to be right already.
 2. `npm run dist` builds the installer locally into `release/` without publishing. Test it.
 3. **Tag that commit and push the tag** (`git tag -a v0.1.3 -m "Version 0.1.3" && git push origin v0.1.3`). GitHub refuses to create a non-draft release without an existing tag, and `releaseType: release` means ours are never drafts. Skip this and electron-builder tags the *default branch* instead, producing a release that points at code you didn't build.
-4. Publish with `gh`, not electron-builder:
+4. Publish with `gh`, not electron-builder, **always as a pre-release first**:
 
-   `gh release create v0.1.5 --title v0.1.5 --notes "" release/b-notes-setup-*.exe release/latest.yml release/*.blockmap`
+   `gh release create v0.1.5 --prerelease --title v0.1.5 --notes "" release/b-notes-setup-*.exe release/latest.yml release/*.blockmap`
 
    Add `--clobber` via `gh release upload` instead if the release already exists.
 
 5. **Check the release has all three assets** — the installer, its `.blockmap`, and `latest.yml` — and that `latest.yml`'s `sha512` matches the local one. A missing `latest.yml` means no client can update at all; a missing `.blockmap` silently costs a full 98MB download instead of a differential one.
 6. Expect up to a minute of 404s on the asset URLs afterwards; that's CDN propagation, not a failed upload.
+7. **Check it did not go live:** `gh api repos/danilom/b-notes/releases/latest --jq .tag_name` must still name the version he has.
+8. Try the installer from the release on a machine that isn't his. Nothing fetches a pre-release for you: download it and run it.
+9. **Only when Danilo says so, make it live.** This is the step that reaches him, and it changes nothing but the mark, so what was tried is what he gets:
+
+   `gh release edit v0.1.5 --prerelease=false --latest`
+
+   Then run the check in step 7 again; it should now name the new version.
 
 **Don't use electron-builder's `--publish`.** It runs two publishers in parallel that race to create the release: one wins, the other dies with a 422, and the run aborts before generating `latest.yml` — leaving a release no client can update from. It failed this way on all four attempts, each time dropping a different file while reporting some success. `npm run dist` produces a complete, internally consistent set every time; uploading it with `gh` is the reliable path.
 
