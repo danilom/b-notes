@@ -315,11 +315,9 @@ The first step is the whole gate. **GitHub's "latest" is never a draft or a rele
 
 5. Expect up to a minute of 404s on the asset URLs afterwards; that's CDN propagation, not a failed upload.
 6. Try the installer from the release on a machine that isn't his. Nothing fetches a pre-release for you: download it and run it.
-7. **Only when Danilo says so, make it live.** This is the step that reaches him, and it changes nothing but the mark, so what was tried is what he gets:
+7. **Danilo makes it live, at the keyboard: `npm run release -- --live`.** This is the step that reaches him, and it changes nothing but the mark, so what was tried is what he gets.
 
-   `gh release edit v0.1.5 --prerelease=false --latest`
-
-   Then check it landed: `gh api repos/danilom/b-notes/releases/latest --jq .tag_name` should name the new version.
+   It takes the newest pre-release and stops unless its version is higher than the live one, all three files are there, and `latest.yml` matches the release. It then shows what replaces what and asks for that version number to be typed; anything else changes nothing. It refuses to run without a terminal, so nothing can pipe the answer in, and afterwards it confirms GitHub's latest release moved. To send an older pre-release instead, delete the newer one first. An agent must not run this, or do the same with `gh release edit`.
 
 **Don't use electron-builder's `--publish`.** It runs two publishers in parallel that race to create the release: one wins, the other dies with a 422, and the run aborts before generating `latest.yml` — leaving a release no client can update from. It failed this way on all four attempts, each time dropping a different file while reporting some success. `npm run dist` produces a complete, internally consistent set every time, which is why `npm run release` uploads it with `gh`. `releaseType: prerelease` in `electron-builder.yml` is only there so that anything publishing that way by mistake cannot reach him.
 
