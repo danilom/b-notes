@@ -2621,7 +2621,6 @@ dialog::backdrop {
 .diff-new,
 .diff-gone {
   padding: 0.05em 3px;
-  border-radius: 1px;
   box-decoration-break: clone;
 }
 
@@ -2633,7 +2632,7 @@ dialog::backdrop {
 .diff-gone {
   background: var(--diff-gone-fill);
   color: var(--diff-gone-ink);
-  text-decoration: line-through 2px var(--diff-gone-ink);
+  text-decoration: line-through 1px var(--diff-gone-ink);
 }
 
 /* One gap between what went and what replaced it, whatever their sizes. */
