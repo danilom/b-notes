@@ -284,11 +284,11 @@ function movingSpacesOutOf(change: HTMLElement): void {
   if (last instanceof Text && last !== first) change.after(last);
 }
 
-/** A change he has dealt with: just its text, in quiet colour. With none left, a tick, so it can be found again. */
+/** A change he has dealt with: just its text, in quiet colour. With none left, a dotted circle, so it can be found again. */
 function resolvedPart(text: string): HTMLElement {
   const part = document.createElement('span');
   part.className = 'diff-resolved';
-  part.textContent = text === '' ? '✓' : text;
+  part.textContent = text === '' ? '◌' : text;
   return part;
 }
 

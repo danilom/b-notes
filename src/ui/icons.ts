@@ -25,6 +25,7 @@ export type IconName =
   | 'versions'
   | 'previous'
   | 'next'
+  | 'undo'
   | 'settings'
   | 'move-out'
   | 'hide-list'
@@ -84,6 +85,8 @@ const PATHS = {
   // page, and that is the direction he will actually travel.
   previous: ['m18 15-6-6-6 6'],
   next: ['m6 9 6 6 6-6'],
+  // Going back on a decision. Lucide's undo-2.
+  undo: ['M9 14 4 9l5-5', 'M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11'],
 } as const satisfies Record<IconName, readonly string[]>;
 
 /** The paint spots on the palette, which are dots rather than strokes. */

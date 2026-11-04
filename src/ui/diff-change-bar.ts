@@ -4,6 +4,9 @@ import { icon } from './icons.ts';
 export interface DiffEditing {
   /** The change to start on, by its place among the changes. */
   startAt?: number;
+  /** Whether the bar over that change was closed before this drawing of it. */
+  startsClosed?: boolean;
+  onBarClosed: (closed: boolean) => void;
   isResolved: (changeAt: number) => boolean;
   /** The wording an edit of this change starts from: whatever it is now showing. */
   wordingOf: (changeAt: number) => string;
@@ -124,7 +127,13 @@ export function createDiffChangeBar(
   let showTimer: ReturnType<typeof setTimeout> | undefined;
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
   let isEditing = false;
-  let isOutOfTheWay = false;
+  /** Whether he closed the bar over the current change. Kept by the caller, across redraws. */
+  let isOutOfTheWay = editing.startsClosed === true;
+
+  const setOutOfTheWay = (closed: boolean): void => {
+    isOutOfTheWay = closed;
+    editing.onBarClosed(closed);
+  };
 
   const fragmentsAll = (): Element[] => [...box.querySelectorAll('.diff-change, .diff-change-carried')];
 
@@ -147,7 +156,10 @@ export function createDiffChangeBar(
     });
 
     if (editing.isResolved(at)) {
-      bar.replaceChildren(edit, barButton('Vrati predlog', 'diff-bar-new', () => editing.onReopen(at)), closeButton());
+      // Plain, unlike the choices: this is a step back, and not one more decision.
+      const reopen = barButton('Vrati predlog', 'diff-bar-reopen', () => editing.onReopen(at));
+      reopen.prepend(icon('undo'));
+      bar.replaceChildren(edit, reopen, closeButton());
       return;
     }
     bar.replaceChildren(
@@ -160,12 +172,13 @@ export function createDiffChangeBar(
 
   /**
    * Out of the way, for reading the line it was covering. Until the pointer goes back
-   * over a change or another is stepped to; the change stays current meanwhile.
+   * onto that change, or he steps or clicks to one; passing over anything else on the
+   * way does not bring it back. The change stays current meanwhile.
    */
   function closeButton(): HTMLButtonElement {
     const close = barButton('', 'stepper-close', () => {
       cancelTimers();
-      isOutOfTheWay = true;
+      setOutOfTheWay(true);
       hide();
     });
     close.title = 'Zatvori';
@@ -228,8 +241,13 @@ export function createDiffChangeBar(
     shownOver = null;
   }
 
+  /**
+   * The bar stays up by itself only over a change still open. One he has dealt with
+   * goes quiet, which is how he sees it is done, and answers when the pointer is on it.
+   */
   const showCurrent = (): void => {
-    if (current === null || isEditing || isOutOfTheWay) hide();
+    const isOpen = current !== null && !editing.isResolved(changes.indexOf(current));
+    if (current === null || !isOpen || isEditing || isOutOfTheWay) hide();
     else showOver(current);
   };
 
@@ -253,7 +271,7 @@ export function createDiffChangeBar(
       return;
     }
     showTimer = setTimeout(() => {
-      isOutOfTheWay = false;
+      if (isOutOfTheWay && changeOfFragment(over, changes, fragmentsAll()) === current) setOutOfTheWay(false);
       showOver(over);
     }, SHOW_AFTER_MS);
   });
@@ -275,8 +293,10 @@ export function createDiffChangeBar(
 
   return {
     setCurrent(change) {
+      // The first call only restores where a redraw left off. After that it is him
+      // stepping or clicking to a change, which brings the bar back.
+      if (current !== null && isOutOfTheWay) setOutOfTheWay(false);
       current = change;
-      isOutOfTheWay = false;
       cancelTimers();
       showCurrent();
     },
