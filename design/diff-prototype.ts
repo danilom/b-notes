@@ -35,11 +35,13 @@ const tidyingNote = (pieces: readonly TextPiece[]): string =>
 const changeDecisions = new Map<number, ChangeDecision>();
 const letterDecisions = new Map<number, string[]>();
 let currentChange: number | undefined;
+let isBarClosed = false;
 
 function forgetDecisions(): void {
   changeDecisions.clear();
   letterDecisions.clear();
   currentChange = undefined;
+  isBarClosed = false;
 }
 
 function editingOf(after: readonly TextPiece[]): DiffEditing {
@@ -51,11 +53,16 @@ function editingOf(after: readonly TextPiece[]): DiffEditing {
     if (decision === null) changeDecisions.delete(at);
     else changeDecisions.set(at, decision);
     currentChange = at;
+    isBarClosed = false;
     renderKeepingPlace();
   };
 
   return {
     ...(currentChange === undefined ? {} : { startAt: currentChange }),
+    startsClosed: isBarClosed,
+    onBarClosed: (closed) => {
+      isBarClosed = closed;
+    },
     isResolved: (at) => changeDecisions.has(at),
     wordingOf: (at) => wording[at] ?? '',
     onUndo: (at) => decide(at, { kind: 'undone' }),
