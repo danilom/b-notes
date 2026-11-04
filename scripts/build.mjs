@@ -77,6 +77,15 @@ const targets = [
     platform: 'browser',
     format: 'iife',
   },
+  {
+    // A page for trying out the diff view. Into dist-browser/ only, because
+    // dist/ is what gets packaged and this is not part of the app.
+    ...shared,
+    entryPoints: ['design/diff-prototype.ts'],
+    outfile: 'dist-browser/diff-prototype.js',
+    platform: 'browser',
+    format: 'iife',
+  },
 ];
 
 await mkdir('dist', { recursive: true });

@@ -23,6 +23,16 @@ const CONTENT_TYPES = new Map([
   ['.map', 'application/json; charset=utf-8'],
 ]);
 
+/*
+  Pages that are tools rather than part of the app, so they live outside dist/.
+  Served from the same address as it: his-screens frames the app, which puts
+  whichever corpus this server has in the frame.
+*/
+const TOOL_PAGES = new Map([
+  ['his-screens', 'tools/his-screens.html'],
+  ['diff-prototype', 'design/diff-prototype.html'],
+]);
+
 const server = createServer((request, response) => {
   const requested = new URL(request.url ?? '/', 'http://localhost');
   const relative = requested.pathname === '/' ? 'index.html' : requested.pathname.slice(1);
@@ -35,17 +45,15 @@ const server = createServer((request, response) => {
     return;
   }
 
-  // The app framed at the size of his screens, for tuning how it looks. A
-  // tool, not part of the app, so it lives outside dist/ and is served from
-  // the same address, which puts whichever corpus this server has in its frame.
-  if (relative === 'his-screens') {
-    readFile(path.resolve('tools/his-screens.html')).then(
+  const toolPage = TOOL_PAGES.get(relative);
+  if (toolPage !== undefined) {
+    readFile(path.resolve(toolPage)).then(
       (body) => {
         response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
         response.end(body);
       },
       (error) => {
-        console.error('Failed to serve the his-screens page', error);
+        console.error('Failed to serve', toolPage, error);
         response.writeHead(500).end('Server error');
       },
     );

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Diff prototype</title>
+    <link rel="icon" href="/icon.svg" />
+    <!--
+      The diff view with two boxes to feed it, for finding out what it gets wrong
+      and what it lacks. Not part of the app: served by scripts/serve.mjs at
+      /diff-prototype, and its script is built into dist-browser/ only.
+
+      The view's own look comes from the app's stylesheet, so what is seen here
+      is what the app draws. Only this page's scaffolding is styled below.
+    -->
+    <link rel="stylesheet" href="/interface.css" />
+    <style>
+      body {
+        flex-direction: column;
+        gap: 0.6rem;
+        box-sizing: border-box;
+        padding: 0.8rem 1.2rem;
+        background: var(--page);
+        color: var(--ink);
+      }
+
+      .prototype-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem 1rem;
+      }
+
+      .prototype-controls button {
+        padding: 0.25rem 0.7rem;
+      }
+
+      .prototype-controls label {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+      }
+
+      .prototype-boxes {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.8rem;
+      }
+
+      .prototype-boxes label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        font-weight: 600;
+      }
+
+      .prototype-boxes textarea {
+        box-sizing: border-box;
+        width: 100%;
+        height: 24vh;
+        padding: 0.5rem 0.7rem;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--page);
+        color: var(--ink);
+        font-family: var(--writing-font);
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.4;
+      }
+
+      #view {
+        flex: 1;
+        min-height: 12rem;
+        display: flex;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="prototype-controls">
+      <label>
+        Sample
+        <select id="sample"></select>
+      </label>
+      <button type="button" id="swap">Swap the two boxes</button>
+      <label title="What Ranije verzije does with the side he can read elsewhere">
+        <input type="checkbox" id="shorten" />
+        Shorten removed paragraphs
+      </label>
+      <label>
+        <input type="checkbox" id="dark" />
+        Dark
+      </label>
+    </div>
+    <div class="prototype-boxes">
+      <label>
+        Current
+        <textarea id="current" spellcheck="false"></textarea>
+      </label>
+      <label>
+        Proposed
+        <textarea id="proposed" spellcheck="false"></textarea>
+      </label>
+    </div>
+    <div id="view"></div>
+    <script src="/diff-prototype.js"></script>
+  </body>
+</html>
