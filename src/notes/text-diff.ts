@@ -12,10 +12,12 @@ import { alignSequences } from './sequence-alignment.ts';
  *
  * `tidy` is a change like any other in what it holds, and only ever made by
  * {@link separateTidying}, for a change nobody needs to read.
+ *
+ * `undone` and `proposed` are what a review leaves on a piece: see `text-review.ts`.
  */
 export type TextPiece =
   | { kind: 'same'; text: string }
-  | { kind: 'change' | 'tidy'; removed: string; added: string };
+  | { kind: 'change' | 'tidy'; removed: string; added: string; undone?: boolean; proposed?: string };
 
 /**
  * A word, a run of spaces and breaks, or one mark of punctuation.
@@ -41,7 +43,7 @@ const comparedAs = (token: string): string => token.replace(/\r\n?/g, '\n').norm
 const BLANK_LINES = /\r?\n[ \t]*\r?\n(?:[ \t]*\r?\n)*/;
 
 /** The letters under their diacritics: `š` to `s`. `đ` has none to take off, being its own letter. */
-const withoutDiacritics = (text: string): string =>
+export const withoutDiacritics = (text: string): string =>
   text.replaceAll('đ', 'd').replaceAll('Đ', 'D').normalize('NFD').replace(/\p{M}/gu, '');
 
 /**
@@ -173,12 +175,16 @@ export function tidiedLettersOf({ removed, added }: Pick<Change, 'removed' | 'ad
 /** A run of text in one paragraph as drawn, and whose it is. */
 export interface DiffPart {
   /** `tidied-away` holds no text: it says something was corrected at this spot and left nothing to show. */
-  kind: 'same' | 'removed' | 'added' | 'tidied' | 'tidied-away';
+  kind: 'same' | 'removed' | 'added' | 'undone' | 'tidied' | 'tidied-away';
   text: string;
   /** The first part of a change, where a change is carried across paragraphs. */
   opensChange: boolean;
   /** What `tidied` text was before, so what was put there can be told. */
   was?: string;
+  /** What was proposed for a `tidied` word, if he has since chosen other letters. */
+  proposed?: string;
+  /** A `tidied` word's place among the tidied, which is how a choice of letter finds it. */
+  tidyAt?: number;
 }
 
 export interface DiffParagraph {
@@ -186,6 +192,9 @@ export interface DiffParagraph {
   /** Whether anything in it differs, or the break that opens it does. */
   changed: boolean;
 }
+
+/** Whether a part earns its paragraph a mark in the margin. */
+const isMarkedChange = ({ kind }: DiffPart): boolean => kind === 'removed' || kind === 'added' || kind === 'undone';
 
 /**
  * The pieces laid out as paragraphs, for drawing: which ones get a mark in the
@@ -212,7 +221,7 @@ export function paragraphsOf(pieces: readonly TextPiece[], { showTidied = false 
     const open = paragraphs.at(-1);
     if (open === undefined) return;
     open.parts.push(part);
-    open.changed ||= part.kind === 'removed' || part.kind === 'added';
+    open.changed ||= isMarkedChange(part);
   };
 
   const addSplit = (kind: DiffPart['kind'], text: string, opensChange: boolean): void => {
@@ -225,15 +234,26 @@ export function paragraphsOf(pieces: readonly TextPiece[], { showTidied = false 
     });
   };
 
+  let tidyAt = 0;
   for (const piece of pieces) {
     if (piece.kind === 'same') {
       addSplit('same', piece.text, false);
       continue;
     }
     if (piece.kind === 'tidy') {
-      const putSomethingThere = tidiedLettersOf(piece).some((letters) => letters.changed);
-      if (showTidied && putSomethingThere && !BLANK_LINES.test(piece.added)) {
-        addPart({ kind: 'tidied', text: piece.added, was: piece.removed, opensChange: false });
+      const proposed = piece.proposed ?? piece.added;
+      const at = tidyAt;
+      tidyAt += 1;
+      const putSomethingThere = tidiedLettersOf({ removed: piece.removed, added: proposed }).some((letters) => letters.changed);
+      if (showTidied && putSomethingThere && !BLANK_LINES.test(proposed)) {
+        addPart({
+          kind: 'tidied',
+          text: piece.added,
+          was: piece.removed,
+          ...(piece.proposed === undefined ? {} : { proposed }),
+          tidyAt: at,
+          opensChange: false,
+        });
         continue;
       }
       if (showTidied) addPart({ kind: 'tidied-away', text: '', opensChange: false });
@@ -241,6 +261,12 @@ export function paragraphsOf(pieces: readonly TextPiece[], { showTidied = false 
       continue;
     }
     const { removed, added } = piece;
+    if (piece.undone === true) {
+      // Still a part even with nothing in it, or an addition he undid could not be found again.
+      if (/\S/.test(removed)) addSplit('undone', removed, true);
+      else addPart({ kind: 'undone', text: removed, opensChange: true });
+      continue;
+    }
     if (removed.length > 0) {
       if (/\S/.test(removed)) addSplit('removed', removed, true);
       else addPart({ kind: 'removed', text: removed, opensChange: true });
@@ -287,8 +313,7 @@ function withoutLastNewline(parts: readonly DiffPart[]): DiffPart[] {
   return text.length > 0 ? [...parts.slice(0, -1), { ...last, text }] : [...parts.slice(0, -1)];
 }
 
-const hasMarkedChange = (parts: readonly DiffPart[]): boolean =>
-  parts.some((part) => part.kind === 'removed' || part.kind === 'added');
+const hasMarkedChange = (parts: readonly DiffPart[]): boolean => parts.some(isMarkedChange);
 
 /**
  * A paragraph cut at its star lines, so that the frame and the bar in the margin

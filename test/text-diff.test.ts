@@ -454,6 +454,7 @@ describe('laying out what was tidied, when it is to be seen', () => {
       kind: 'tidied',
       text: 'šumu',
       was: 'sumu',
+      tidyAt: 0,
       opensChange: false,
     });
   });
