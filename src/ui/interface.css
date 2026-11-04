@@ -2670,25 +2670,20 @@ dialog::backdrop {
 }
 
 /* The change the stepper is on: one dashed line in the accent under all of it,
-   with a thin line of the page above, because a dark accent under a dark mark
-   would otherwise read as one thicker mark. Painted in the padding of what holds
-   the change; padding on inline text moves no lines. */
+   with a small gap above, because a dark accent against a dark mark would read as
+   one thicker mark. Painted in the padding of what holds the change; padding on
+   inline text moves no lines. Each tile is a dash with half a gap either side,
+   and `round` fits a whole number of them, so no dash is cut off at the end. */
 .diff-current {
   --underline: 4px;
   --parting: 2px;
   /* Below the marks inside, which themselves reach a little below the text. */
   --marks-reach: 0.05em;
   padding-bottom: calc(var(--marks-reach) + var(--parting) + var(--underline));
-  background-image:
-    repeating-linear-gradient(90deg, var(--chosen) 0 8px, transparent 8px 12px),
-    linear-gradient(var(--page), var(--page));
-  background-position:
-    left bottom,
-    left bottom var(--underline);
-  background-repeat: no-repeat;
-  background-size:
-    100% var(--underline),
-    100% var(--parting);
+  background-image: linear-gradient(90deg, transparent 2px, var(--chosen) 2px 10px, transparent 10px);
+  background-position: left bottom;
+  background-repeat: round no-repeat;
+  background-size: 12px var(--underline);
   box-decoration-break: clone;
 }
 
