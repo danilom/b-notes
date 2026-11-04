@@ -2653,11 +2653,15 @@ dialog::backdrop {
 }
 
 /* A space or a break, drawn as a symbol. In the interface's face, because his
-   writing font puts these wherever it likes. Not struck through: a line across a
-   symbol this small makes a new shape of it. */
+   writing font puts these wherever it likes. */
 .diff-spacing {
-  background-image: none;
   font-family: var(--ui-font);
+}
+
+/* A drawn space is short and sits low, so the usual height for the strikethrough
+   would run along its open top and close it into a box. */
+.diff-gone:has(.diff-space-drawn) {
+  background-position: 50% 68%;
 }
 
 /* A space, drawn rather than typed: no font's symbol for one is wide enough, and
