@@ -45,7 +45,8 @@ publish:
   provider: github
   owner: danilom
   repo: b-notes
-  # electron-builder drafts releases by default, and electron-updater cannot see
-  # a draft — so a forgotten "publish" button would silently mean no updates
-  # ever. Test the build locally with `npm run dist` before `npm run release`.
-  releaseType: release
+  # Only electron-builder's `--publish` reads this, and nothing here uses it:
+  # releases go out through `npm run release`. Should anything ever publish that
+  # way, a pre-release cannot reach him. It is also copied into each build's
+  # app-update.yml, where electron-updater ignores it.
+  releaseType: prerelease
