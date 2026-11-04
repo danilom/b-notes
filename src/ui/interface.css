@@ -2615,7 +2615,7 @@ dialog::backdrop {
   --bar: 10px;
   margin-left: calc(-1 * (var(--run-inset) + var(--bar)));
   padding-left: var(--run-inset);
-  border-left: var(--bar) solid var(--diff-bar, var(--chosen));
+  border-left: var(--bar) solid var(--quiet);
 }
 
 .diff-new,
@@ -2673,11 +2673,15 @@ dialog::backdrop {
   border-top: 0;
 }
 
-/* The change the stepper is on: a thick bar in the accent, directly under each
-   mark. A shadow and not a border, so no text moves when the stepper arrives. */
+/* The change the stepper is on: a thick bar in the accent under each mark, with
+   a thin line of the page between them, because a dark accent under a dark mark
+   would otherwise read as one thicker mark. Shadows and not borders, so no text
+   moves when the stepper arrives. */
 .diff-current .diff-new,
 .diff-current .diff-gone {
-  box-shadow: 0 5px 0 var(--chosen);
+  box-shadow:
+    0 2px 0 var(--page),
+    0 7px 0 var(--chosen);
 }
 
 /*

@@ -75,13 +75,6 @@ element('swap', HTMLButtonElement).addEventListener('click', () => {
   render();
 });
 
-const bars = element('bars', HTMLSelectElement);
-const showBars = (): void => {
-  view.dataset['bars'] = bars.value;
-};
-bars.addEventListener('change', showBars);
-showBars();
-
 dark.addEventListener('change', () => {
   document.documentElement.dataset['mode'] = dark.checked ? 'dark' : 'light';
 });
