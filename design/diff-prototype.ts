@@ -43,7 +43,10 @@ function forgetDecisions(): void {
 }
 
 function editingOf(after: readonly TextPiece[]): DiffEditing {
-  const added = after.flatMap((piece) => (piece.kind === 'change' ? [piece.added] : []));
+  const wording = after.flatMap((piece) => {
+    if (piece.kind !== 'change') return [];
+    return [piece.undone === true ? piece.removed : piece.added];
+  });
   const decide = (at: number, decision: ChangeDecision | null): void => {
     if (decision === null) changeDecisions.delete(at);
     else changeDecisions.set(at, decision);
@@ -53,10 +56,11 @@ function editingOf(after: readonly TextPiece[]): DiffEditing {
 
   return {
     ...(currentChange === undefined ? {} : { startAt: currentChange }),
-    isUndone: (at) => changeDecisions.get(at)?.kind === 'undone',
-    addedOf: (at) => added[at] ?? '',
+    isResolved: (at) => changeDecisions.has(at),
+    wordingOf: (at) => wording[at] ?? '',
     onUndo: (at) => decide(at, { kind: 'undone' }),
-    onRestore: (at) => decide(at, null),
+    onAccept: (at) => decide(at, { kind: 'accepted' }),
+    onReopen: (at) => decide(at, null),
     onEdit: (at, text) => decide(at, { kind: 'edited', text }),
     onCancelEdit: renderKeepingPlace,
     lettersOf: (tidyAt) => letterDecisions.get(tidyAt) ?? [],
@@ -145,9 +149,9 @@ const isDiffSample = (value: unknown): value is DiffSample =>
   typeof value.proposed === 'string';
 
 /**
- * Puts his real texts at the top of the list, where the server has any: they are
- * kept out of the repository, so a checkout may well have none. Whatever is on
- * the page stays as it is, since he may already be looking at it.
+ * Puts his real texts at the top of the list and opens on the first, where the
+ * server has any: they are kept out of the repository, so a checkout may well have
+ * none. If something has been done on the page by then, it stays as it is.
  */
 async function addRealSamples(): Promise<void> {
   try {
@@ -157,8 +161,13 @@ async function addRealSamples(): Promise<void> {
     if (!Array.isArray(received)) throw new Error('The samples are not a list');
 
     const real = received.filter(isDiffSample);
+    const stillOpening = Number(sample.value) === opening && current.value === samples[opening]?.current && changeDecisions.size === 0;
     samples.unshift(...real);
     listSamples(Number(sample.value) + real.length);
+    if (stillOpening && real.length > 0) {
+      sample.value = '0';
+      showSample(0);
+    }
   } catch (error) {
     console.error('Could not load the real samples', error);
   }
