@@ -285,17 +285,17 @@ function movingSpacesOutOf(change: HTMLElement): void {
   if (last instanceof Text && last !== first) change.after(last);
 }
 
-/** What he put back: his own text, plain. An addition he undid leaves a caret, so it can be found again. */
-function undonePart(text: string): HTMLElement {
+/** A change he has dealt with: just its text, in quiet colour. With none left, a caret, so it can be found again. */
+function resolvedPart(text: string): HTMLElement {
   const part = document.createElement('span');
-  part.className = 'diff-undone';
+  part.className = 'diff-resolved';
   if (text === '') part.append(correctionMark());
   else part.textContent = text;
   return part;
 }
 
 function markedPart({ kind, text }: DiffPart): (HTMLElement | string)[] {
-  if (kind === 'undone') return [undonePart(text)];
+  if (kind === 'resolved') return [resolvedPart(text)];
   return /\S/.test(text) ? wordsPart(kind, text) : [spacingPart(kind, text)];
 }
 
@@ -370,9 +370,13 @@ function markCurrentChange(change: HTMLElement, isCurrent: boolean): void {
  */
 function changeAt(clicked: Element): HTMLElement | null {
   const paragraph = clicked.closest('.diff-paragraph');
-  if (paragraph === null || !paragraph.classList.contains('diff-paragraph-changed')) return null;
+  if (paragraph === null) return null;
 
-  const fragment = clicked.closest<HTMLElement>(CHANGE_FRAGMENT) ?? paragraph.querySelector<HTMLElement>(CHANGE_FRAGMENT);
+  const onChange = clicked.closest<HTMLElement>(CHANGE_FRAGMENT);
+  // Not a paragraph that is all resolved: only what is resolved in it answers there.
+  if (onChange === null && !paragraph.classList.contains('diff-paragraph-changed')) return null;
+
+  const fragment = onChange ?? paragraph.querySelector<HTMLElement>(CHANGE_FRAGMENT);
   if (fragment?.classList.contains('diff-change')) return fragment;
 
   const isAtOrBefore = (other: HTMLElement): boolean =>

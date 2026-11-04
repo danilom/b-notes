@@ -4,11 +4,13 @@ import { letterSegmentsOf } from '../notes/text-review.ts';
 export interface DiffEditing {
   /** The change to start on, by its place among the changes. */
   startAt?: number;
-  isUndone: (changeAt: number) => boolean;
-  /** What the change would now put there, for editing. */
-  addedOf: (changeAt: number) => string;
+  isResolved: (changeAt: number) => boolean;
+  /** The wording an edit of this change starts from: whatever it is now showing. */
+  wordingOf: (changeAt: number) => string;
   onUndo: (changeAt: number) => void;
-  onRestore: (changeAt: number) => void;
+  onAccept: (changeAt: number) => void;
+  /** Back to the proposal, red and green, from where any of it can be chosen again. */
+  onReopen: (changeAt: number) => void;
   onEdit: (changeAt: number, text: string) => void;
   /** Called when an edit is backed out of, so that what it disturbed can be drawn again. */
   onCancelEdit: () => void;
@@ -52,15 +54,15 @@ function changeOfFragment(fragment: Element, changes: readonly HTMLElement[], al
 }
 
 /**
- * Turns the wording a change proposes into a place to type, right there in the
- * sentence. Clicking anywhere else keeps what was typed, the way everything in the
- * app saves; Escape backs out.
+ * Turns the wording of a change into a place to type, right there in the sentence.
+ * Enter confirms, and so does clicking anywhere else, so that what was typed is not
+ * lost; Escape backs out. Shift+Enter makes a new line for whoever knows of it.
  */
 function startEditing(change: HTMLElement, fragments: readonly Element[], at: number, editing: DiffEditing): void {
-  const added = editing.addedOf(at);
-  const words = added.trim();
-  const start = added.indexOf(words);
-  const [lead, trail] = [added.slice(0, start), added.slice(start + words.length)];
+  const wording = editing.wordingOf(at);
+  const words = wording.trim();
+  const start = wording.indexOf(words);
+  const [lead, trail] = [wording.slice(0, start), wording.slice(start + words.length)];
 
   const field = document.createElement('span');
   field.className = 'diff-edit';
@@ -68,31 +70,35 @@ function startEditing(change: HTMLElement, fragments: readonly Element[], at: nu
   field.spellcheck = false;
   field.textContent = words;
 
-  const place = fragments.flatMap((fragment) => [...fragment.querySelectorAll('.diff-new')]);
+  const place = fragments.flatMap((fragment) => [...fragment.querySelectorAll('.diff-new, .diff-resolved')]);
   const [first, ...rest] = place;
   if (first === undefined) change.append(field);
   else first.replaceWith(field);
   for (const other of rest) other.remove();
 
-  let isBackingOut = false;
+  let leaving: 'confirming' | 'backing out' | null = null;
   field.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') return;
-    isBackingOut = true;
+    if (event.key === 'Escape') leaving = 'backing out';
+    else if (event.key === 'Enter' && !event.shiftKey) leaving = 'confirming';
+    else return;
+    event.preventDefault();
     event.stopPropagation();
     field.blur();
   });
   field.addEventListener('blur', () => {
-    if (isBackingOut) {
-      editing.onCancelEdit();
-      return;
-    }
-    const typed = field.textContent ?? '';
-    if (typed === words) editing.onCancelEdit();
-    else editing.onEdit(at, lead + typed + trail);
+    // The browser keeps one extra line break after a last line he ended with Shift+Enter.
+    const typed = (field.textContent ?? '').replace(/\n$/, '');
+    // Clicking away from something not changed is not a decision. Enter is.
+    const isDecision = leaving === 'confirming' || (leaving === null && typed !== words);
+    if (isDecision) editing.onEdit(at, lead + typed + trail);
+    else editing.onCancelEdit();
   });
 
+  // With the cursor at the end and nothing selected: this is for mending what is
+  // there, and with it all selected the first key pressed would wipe it.
   field.focus();
   getSelection()?.selectAllChildren(field);
+  getSelection()?.collapseToEnd();
 }
 
 /**
@@ -133,19 +139,20 @@ export function createDiffChangeBar(
 
   function fillForChange(change: HTMLElement): void {
     const at = changes.indexOf(change);
-    const undone = editing.isUndone(at);
+    const edit = barButton('Izmeni', 'diff-bar-edit', () => {
+      isEditing = true;
+      hide();
+      startEditing(change, fragmentsOf(change), at, editing);
+    });
+
+    if (editing.isResolved(at)) {
+      bar.replaceChildren(edit, barButton('Vrati predlog', 'diff-bar-new', () => editing.onReopen(at)));
+      return;
+    }
     bar.replaceChildren(
-      undone
-        ? barButton('Vrati predlog', 'diff-bar-new', () => editing.onRestore(at))
-        : barButton('Vrati staro', 'diff-bar-old', () => editing.onUndo(at)),
-    );
-    if (undone) return;
-    bar.append(
-      barButton('Izmeni', 'diff-bar-edit', () => {
-        isEditing = true;
-        hide();
-        startEditing(change, fragmentsOf(change), at, editing);
-      }),
+      barButton('Vrati staro', 'diff-bar-old diff-bar-choice', () => editing.onUndo(at)),
+      barButton('Prihvati', 'diff-bar-new diff-bar-choice', () => editing.onAccept(at)),
+      edit,
     );
   }
 

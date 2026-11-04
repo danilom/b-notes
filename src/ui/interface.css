@@ -119,6 +119,7 @@
      on a warm screen, where a blue or a green turns as dark as the text. It does
      not read as a removal, which is a white word struck through on a red block. */
   --diff-tidied-ink: hsl(4 85% 42%);
+  --diff-resolved-ink: hsl(142 75% 25%);
   --diff-current-fill: rgb(0 0 0 / 0.035);
   --diff-current-seen: rgb(0 0 0 / 0.088);
   --l-thumb: 82%;
@@ -264,6 +265,7 @@
   --diff-gone-fill: hsl(4 75% 72%);
   --diff-gone-ink: hsl(0 0% 5%);
   --diff-tidied-ink: hsl(4 90% 72%);
+  --diff-resolved-ink: hsl(142 55% 66%);
   --diff-current-fill: rgb(255 255 255 / 0.03);
   --diff-current-seen: rgb(255 255 255 / 0.098);
   --l-thumb: 34%;
@@ -2620,13 +2622,22 @@ dialog::backdrop {
   Out by its own width and inset, so the paragraph's text stays on the same left
   margin as the unmarked ones around it.
 */
-.diff-paragraph-changed {
+.diff-paragraph-changed,
+.diff-paragraph-current {
   --bar: 8px;
   margin-left: calc(-1 * (var(--run-inset) + var(--bar)));
   padding-left: var(--run-inset);
+}
+
+.diff-paragraph-changed {
   border-left: var(--bar) solid var(--hint);
   /* A click makes it the current one. */
   cursor: pointer;
+}
+
+/* A change he has dealt with: still different, but no longer asking for anything. */
+.diff-resolved {
+  color: var(--diff-resolved-ink);
 }
 
 .diff-new,
@@ -2686,7 +2697,17 @@ dialog::backdrop {
 }
 
 .diff-bar button {
-  padding: 0.1rem 0.55rem;
+  /* The same size as Prethodna and Sledeća: something to aim at, not a detail. */
+  padding: 0.25rem 0.6rem;
+}
+
+.diff-bar .diff-bar-edit {
+  background: var(--page);
+}
+
+/* Neither of these is the preferred answer, and neither looks it. */
+.diff-bar .diff-bar-choice {
+  min-width: 6.5em;
 }
 
 .diff-bar .diff-bar-old {
