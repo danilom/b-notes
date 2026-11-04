@@ -229,6 +229,59 @@ describe('laying the comparison out as paragraphs', () => {
   it('draws nothing for nothing', () => {
     assert.deepEqual(drawn('', ''), []);
   });
+
+  it('parts stanzas at a line of stars, marking only the stanza that changed', () => {
+    assert.deepEqual(drawn('Prvi red\nDrugi red\n*\nStari red\nZadnji red', 'Prvi red\nDrugi red\n*\nNovi red\nZadnji red'), [
+      '  Prvi red\nDrugi red',
+      '  *',
+      '| [-Stari][+Novi] red\nZadnji red',
+    ]);
+  });
+
+  it('finds a line of stars however it is indented or how many there are', () => {
+    assert.deepEqual(drawn('Prvi\n     *   \nDrugi\n***\nTreći', 'Prvi\n     *   \nDrugi\n***\nTreći'), [
+      '  Prvi',
+      '       *   ',
+      '  Drugi',
+      '  ***',
+      '  Treći',
+    ]);
+  });
+
+  it('draws no empty stanza where the stars open or close the text', () => {
+    assert.deepEqual(drawn('*\nPrvi\n*', '*\nPrvi\n*'), ['  *', '  Prvi', '  *']);
+  });
+
+  it('finds a line of stars with Windows line endings', () => {
+    assert.equal(drawn('Prvi\r\n*\r\nDrugi', 'Prvi\r\n*\r\nDrugi').length, 3);
+  });
+
+  it('finds a line of stars when the spacing around it is being tidied', () => {
+    const shown = paragraphsOf(separateTidying(diffTexts('Prvi\n     *\nDrugi', 'Prvi\n*\nDrugi')), { showTidied: true });
+
+    assert.deepEqual(shown.map((stanza) => stanza.parts.map((part) => part.text).join('').trim()), ['Prvi', '*', 'Drugi']);
+  });
+
+  it('leaves stars that have words beside them where they are', () => {
+    assert.equal(drawn('Prvi\n* izbaciti\nDrugi * treći', 'Prvi\n* izbaciti\nDrugi * treći').length, 1);
+  });
+
+  it('leaves a star that was added as the change it is', () => {
+    assert.deepEqual(drawn('Prvi red\n\nDrugi', 'Prvi red\n*\n\nDrugi').at(0)?.includes('[+'), true);
+  });
+
+  it('keeps a text with no stars exactly as it was', () => {
+    assert.deepEqual(drawn('Prvi red\nDrugi stari', 'Prvi red\nDrugi novi'), ['| Prvi red\nDrugi [-stari][+novi]']);
+  });
+
+  it('goes on marking the first stanza when the break that opens it is what changed', () => {
+    assert.deepEqual(drawn('Prvi. Drugi\n*\nTreći', 'Prvi.\n\nDrugi\n*\nTreći'), [
+      '| Prvi.[- ][+\n\n]',
+      '| Drugi',
+      '  *',
+      '  Treći',
+    ]);
+  });
 });
 
 describe('setting apart the changes nobody needs to read', () => {
@@ -459,8 +512,8 @@ describe('joining changes that sit close together', () => {
     assert.deepEqual(mergeCloseChanges(pieces), pieces);
   });
 
-  it('never joins across tidying that holds a line break', () => {
-    const pieces = [change('stara', 'nova'), tidy('\n', ' '), change('kuća', 'zgrada')];
+  it('never joins across tidying that holds a blank line', () => {
+    const pieces = [change('stara', 'nova'), tidy('\n\n\n', '\n\n'), change('kuća', 'zgrada')];
 
     assert.deepEqual(mergeCloseChanges(pieces), pieces);
   });
@@ -489,19 +542,40 @@ describe('joining changes that sit close together', () => {
     assert.deepEqual(changesIn(mergeCloseChanges(pieces)), [['Cuvala', 'Čuvala'], ['lose', 'loše']]);
   });
 
-  it('never joins across a line break, even a short one', () => {
+  it('joins across a plain line break, so a stanza rewritten does not come apart line by line', () => {
     const pieces = [change('stara', 'nova'), same('\n'), change('kuća', 'zgrada')];
 
+    assert.deepEqual(mergeCloseChanges(pieces), [change('stara\nkuća', 'nova\nzgrada')]);
+  });
+
+  it('never joins across a blank line, even a short one', () => {
+    const pieces = [change('stara', 'nova'), same('\n\n'), change('kuća', 'zgrada')];
+
     assert.deepEqual(mergeCloseChanges(pieces), pieces);
   });
 
-  it('never joins across a line break that has words beside it', () => {
-    const pieces = [change('stara kuća', 'nova zgrada'), same('a\nb'), change('stara kuća', 'nova zgrada')];
+  it('never joins across a blank line that has words beside it', () => {
+    const pieces = [change('stara kuća', 'nova zgrada'), same('a\n\nb'), change('stara kuća', 'nova zgrada')];
 
     assert.deepEqual(mergeCloseChanges(pieces), pieces);
   });
 
-  it('never joins a change that itself holds a line break to the one beside it', () => {
+  it('never joins across a line of stars', () => {
+    const between = [same('\n*\n'), same('\n**'), same('*\n')];
+
+    for (const stars of between) {
+      const pieces = [change('stara kuća', 'nova zgrada'), stars, change('stara kuća', 'nova zgrada')];
+      assert.deepEqual(mergeCloseChanges(pieces), pieces);
+    }
+  });
+
+  it('joins across a star that is not on a line of its own', () => {
+    const pieces = [change('stara', 'nova'), same('*'), change('kuća', 'zgrada')];
+
+    assert.deepEqual(mergeCloseChanges(pieces), [change('stara*kuća', 'nova*zgrada')]);
+  });
+
+  it('never joins a change that itself ends a paragraph to the one beside it', () => {
     const before = [change('  \n\n\n', '\n\n'), same('16. '), change('Kuca', 'Kuća')];
     const after = [change('Kuca', 'Kuća'), same('a'), change('\n', '\n\n')];
 
@@ -509,9 +583,9 @@ describe('joining changes that sit close together', () => {
     assert.deepEqual(mergeCloseChanges(after), after);
   });
 
-  it('counts a line break on either side of a change', () => {
-    const goneOnly = [change('stara\n', 'nova'), same('x'), change('kuća', 'zgrada')];
-    const arrivedOnly = [change('stara', 'nova\n'), same('x'), change('kuća', 'zgrada')];
+  it('counts a paragraph ending on either side of a change', () => {
+    const goneOnly = [change('stara\n\n', 'nova'), same('x'), change('kuća', 'zgrada')];
+    const arrivedOnly = [change('stara', 'nova\n\n'), same('x'), change('kuća', 'zgrada')];
 
     assert.deepEqual(mergeCloseChanges(goneOnly), goneOnly);
     assert.deepEqual(mergeCloseChanges(arrivedOnly), arrivedOnly);

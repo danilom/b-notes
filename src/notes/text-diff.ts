@@ -255,7 +255,67 @@ export function paragraphsOf(pieces: readonly TextPiece[], { showTidied = false 
       }
     }
   }
-  return paragraphs.filter((paragraph) => paragraph.parts.length > 0);
+  return paragraphs.filter((paragraph) => paragraph.parts.length > 0).flatMap(stanzasOf);
+}
+
+/** A line of nothing but stars, which is how he often parts his stanzas. */
+const STAR_LINE = /^[ \t]*\*+[ \t]*\r?\n?$/;
+
+/** A paragraph's parts, line by line. Only what is the same is cut: a change stays whole. */
+function linesOf(parts: readonly DiffPart[]): DiffPart[][] {
+  const lines: DiffPart[][] = [[]];
+  for (const part of parts) {
+    if (part.kind !== 'same') {
+      lines.at(-1)?.push(part);
+      continue;
+    }
+    for (const text of part.text.split(/(?<=\n)/)) {
+      lines.at(-1)?.push({ ...part, text });
+      if (text.endsWith('\n')) lines.push([]);
+    }
+  }
+  return lines;
+}
+
+const isStarLine = (line: readonly DiffPart[]): boolean => STAR_LINE.test(line.map((part) => part.text).join(''));
+
+/** The newline that ended a stanza's last line, which the gap to the next now stands for. */
+function withoutLastNewline(parts: readonly DiffPart[]): DiffPart[] {
+  const last = parts.at(-1);
+  if (last?.kind !== 'same') return [...parts];
+  const text = last.text.replace(/\r?\n$/, '');
+  return text.length > 0 ? [...parts.slice(0, -1), { ...last, text }] : [...parts.slice(0, -1)];
+}
+
+const hasMarkedChange = (parts: readonly DiffPart[]): boolean =>
+  parts.some((part) => part.kind === 'removed' || part.kind === 'added');
+
+/**
+ * A paragraph cut at its star lines, so that the frame and the bar in the margin
+ * can say which stanza a change is in rather than wrapping a whole poem.
+ *
+ * Only where there are any: he does this some days and not others, and a text
+ * without them is left as it is. A change of break that opened the paragraph goes
+ * on marking the first stanza.
+ */
+function stanzasOf(paragraph: DiffParagraph): DiffParagraph[] {
+  const lines = linesOf(paragraph.parts);
+  if (!lines.some(isStarLine)) return [paragraph];
+
+  const groups: DiffPart[][] = [[]];
+  for (const line of lines) {
+    if (isStarLine(line)) groups.push(line, []);
+    else groups.at(-1)?.push(...line);
+  }
+
+  const stanzas = groups
+    .map(withoutLastNewline)
+    .filter((parts) => parts.length > 0)
+    .map((parts): DiffParagraph => ({ parts, changed: hasMarkedChange(parts) }));
+
+  const first = stanzas[0];
+  if (first !== undefined && paragraph.changed && !hasMarkedChange(paragraph.parts)) first.changed = true;
+  return stanzas;
 }
 
 type Change = Extract<TextPiece, { kind: 'change' | 'tidy' }>;
@@ -270,17 +330,20 @@ const sizeOf = ({ removed, added }: Change): number => Math.max(removed.length, 
  * rewritten clauses matched by accident, while the same `je` between two
  * one-letter corrections is most of what is there to read.
  *
- * Never across a line break, whether it stands between the two or is part of one
- * of them. His lines and paragraphs are his, and a change that spanned one could
- * not be read as old sentence, then new sentence.
+ * Never across the end of a paragraph or stanza, whether it stands between the two
+ * or is part of one of them: that could not be read as old sentence, then new
+ * sentence. A plain line break is another matter, since in a poem there is one
+ * every few words, and a stanza rewritten would otherwise come apart line by line.
  */
-const holdsBreak = ({ removed, added }: Pick<Change, 'removed' | 'added'>): boolean =>
-  removed.includes('\n') || added.includes('\n');
+const ENDS_A_PARAGRAPH = /\n[ \t]*\r?\n|\n[ \t]*\*+[ \t]*(?:\r?\n|$)|^[ \t]*\*+[ \t]*\r?\n/;
+
+const holdsParagraphEnd = ({ removed, added }: Pick<Change, 'removed' | 'added'>): boolean =>
+  ENDS_A_PARAGRAPH.test(removed) || ENDS_A_PARAGRAPH.test(added);
 
 const isAbsorbed = (between: Pick<Change, 'removed' | 'added'>, left: Change, right: Change): boolean =>
-  !holdsBreak(between) &&
-  !holdsBreak(left) &&
-  !holdsBreak(right) &&
+  !holdsParagraphEnd(between) &&
+  !holdsParagraphEnd(left) &&
+  !holdsParagraphEnd(right) &&
   Math.max(between.removed.length, between.added.length) <= sizeOf(left) &&
   Math.max(between.removed.length, between.added.length) <= sizeOf(right);
 
