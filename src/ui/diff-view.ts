@@ -203,47 +203,18 @@ export function createDiffView(pieces: readonly DiffPiece[], options: DiffViewOp
 /** The most characters a change can have and still be hard to see. */
 const EASY_TO_MISS = 2;
 
-/** What stands in for spacing, where spacing is all that changed. */
-export interface SpacingSymbols {
-  /** Null draws a wide, flat-bottomed basin instead of typing a character. */
-  space: string | null;
-  lineBreak: string;
-  /** Left at the spot where spacing was tidied. Null leaves nothing there. */
-  correction: string | null;
-}
-
-/** Something like the space bar, the mark on his Enter key, and a proofreader's caret. */
-const SPACING_SYMBOLS: SpacingSymbols = { space: null, lineBreak: '↵', correction: '‸' };
-
-function drawnSpace(): HTMLElement {
-  const space = document.createElement('span');
-  space.className = 'diff-space-drawn';
-  return space;
-}
-
 const markClass = (kind: DiffPart['kind']): string => (kind === 'removed' ? 'diff-gone' : 'diff-new');
 
 /**
- * Spaces and breaks made visible, where they are all that changed: a struck-out
- * space cannot be seen, and a paragraph split in two would otherwise be reported
- * as a change with nothing on the screen to show for it.
- *
- * A single added line break is kept as well as marked, because it is where the
- * text would now break. A blank line is not: that is already the gap between
- * this paragraph and the next. Removed ones are only marked, or the text would
- * break in a place neither version does.
+ * Spacing made visible, where it is a change he has to read: almost always a
+ * paragraph split or joined, the mark on his Enter key. The rest is the spaces
+ * that open his first line, which a struck-out space could not show.
  */
-function spacingPart(kind: DiffPart['kind'], text: string, symbols: SpacingSymbols): (HTMLElement | string)[] {
+function spacingPart(kind: DiffPart['kind'], text: string): HTMLElement {
   const part = document.createElement('span');
   part.className = `${markClass(kind)} diff-small diff-spacing`;
-  part.append(
-    ...[...text.replace(/\r\n?/g, '\n').replace(/\n+/g, '\n')].map((character) =>
-      character === '\n' ? symbols.lineBreak : (symbols.space ?? drawnSpace()),
-    ),
-  );
-
-  const breaksHere = kind === 'added' && /^[^\n]*\n[^\n]*$/.test(text);
-  return breaksHere ? [part, '\n'] : [part];
+  part.textContent = text.replace(/(\r?\n)+/g, '↵').replace(/\s/g, '␣');
+  return part;
 }
 
 /**
@@ -276,8 +247,8 @@ function movingSpacesOutOf(change: HTMLElement): void {
   if (last instanceof Text && last !== first) change.after(last);
 }
 
-const markedPart = ({ kind, text }: DiffPart, symbols: SpacingSymbols): (HTMLElement | string)[] =>
-  /\S/.test(text) ? wordsPart(kind, text) : spacingPart(kind, text, symbols);
+const markedPart = ({ kind, text }: DiffPart): (HTMLElement | string)[] =>
+  /\S/.test(text) ? wordsPart(kind, text) : [spacingPart(kind, text)];
 
 /** A word as it would be, with only the letters that were put right in colour. */
 function tidiedPart({ text, was = '' }: DiffPart): (HTMLElement | string)[] {
@@ -290,10 +261,11 @@ function tidiedPart({ text, was = '' }: DiffPart): (HTMLElement | string)[] {
   });
 }
 
-function spacingMark(symbol: string): HTMLElement {
+/** A proofreader's caret, where something was corrected and left nothing else to show. */
+function correctionMark(): HTMLElement {
   const mark = document.createElement('span');
-  mark.className = 'diff-spacing-mark';
-  mark.textContent = symbol;
+  mark.className = 'diff-correction-mark';
+  mark.textContent = '‸';
   return mark;
 }
 
@@ -337,17 +309,17 @@ function currentChangeKey(): SVGElement {
  * is lit as one thing. The part of a change carried over from the paragraph above
  * stands alone, and is not counted again.
  */
-function paragraphBlock({ parts, changed }: DiffParagraph, symbols: SpacingSymbols): HTMLElement {
+function paragraphBlock({ parts, changed }: DiffParagraph): HTMLElement {
   const block = document.createElement('div');
   block.className = changed ? 'diff-paragraph diff-paragraph-changed' : 'diff-paragraph';
 
   let open: HTMLElement | null = null;
   for (const part of parts) {
-    if (part.kind === 'same' || part.kind === 'tidied' || part.kind === 'spacing-tidied') {
+    if (part.kind === 'same' || part.kind === 'tidied' || part.kind === 'tidied-away') {
       if (open !== null) movingSpacesOutOf(open);
       if (part.kind === 'same') block.append(part.text);
       else if (part.kind === 'tidied') block.append(...tidiedPart(part));
-      else if (symbols.correction !== null) block.append(spacingMark(symbols.correction));
+      else block.append(correctionMark());
       open = null;
       continue;
     }
@@ -357,7 +329,7 @@ function paragraphBlock({ parts, changed }: DiffParagraph, symbols: SpacingSymbo
       open.className = 'diff-change';
       block.append(open);
     }
-    (open ?? block).append(...markedPart(part, symbols));
+    (open ?? block).append(...markedPart(part));
   }
   if (open !== null) movingSpacesOutOf(open);
   return block;
@@ -373,11 +345,11 @@ function paragraphBlock({ parts, changed }: DiffParagraph, symbols: SpacingSymbo
 export function createTextDiffView(
   pieces: readonly TextPiece[],
   stepper: DiffViewOptions['stepper'],
-  { symbols = SPACING_SYMBOLS, showTidied = false }: { symbols?: SpacingSymbols; showTidied?: boolean } = {},
+  { showTidied = false }: { showTidied?: boolean } = {},
 ): HTMLElement {
   const text = document.createElement('div');
   text.className = 'review-text';
-  text.append(...paragraphsOf(pieces, { showTidied }).map((paragraph) => paragraphBlock(paragraph, symbols)));
+  text.append(...paragraphsOf(pieces, { showTidied }).map(paragraphBlock));
 
   const framed = document.createElement('div');
   framed.className = 'review-framed diff-framed';

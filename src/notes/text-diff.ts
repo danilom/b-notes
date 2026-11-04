@@ -52,7 +52,8 @@ const withoutDiacritics = (text: string): string =>
  * and `staru kucu` against `novu kuću` comes back as `kucu` becoming `novu kuću`.
  * Whether they count as changed is decided afterwards.
  */
-const linedUpBy = (token: string): string => (/\S/.test(token) ? withoutDiacritics(token) : ' ');
+const linedUpBy = (token: string): string =>
+  /\S/.test(token) ? withoutDiacritics(token).replace(/dj/gi, (digraph) => digraph.charAt(0)) : ' ';
 
 /**
  * @param before The text as it stands.
@@ -96,42 +97,35 @@ export function diffTexts(before: string, after: string): TextPiece[] {
   return pieces;
 }
 
-/**
- * Whether a change only tidies: nobody needs to read it to know it does no harm.
- *
- * He drops his diacritics and his spacing wanders, so a proofreader's reply is
- * mostly this, and every one marked hides the few changes of wording among them.
- * But hiding the wrong thing is a change to his writing he never saw, so this
- * says yes only to what is plainly safe, and everything else stays in front of
- * him:
- *
- * - A plain letter gaining its diacritic. Not one losing it, nor `ć` becoming
- *   `č`, which can be a correction, and can be a mistake.
- * - One run of spacing becoming another. Not a space appearing or going between
- *   words, which makes them different words; and not at the start of a line,
- *   where his leading spaces are how he ranks his titles.
- * - As long as the paragraphs stay as they are. One split or joined is his
- *   structure, not his spacing.
- * - And his lines inside a paragraph, unless told otherwise: three changes written
- *   one under the other are three lines, which an AI could flatten.
- */
-function isTidying({ removed, added }: Pick<Change, 'removed' | 'added'>, lineBreaks: boolean): boolean {
-  if (BLANK_LINES.test(removed) !== BLANK_LINES.test(added)) return false;
-  if (!lineBreaks && removed.includes('\n') !== added.includes('\n')) return false;
+/** The letters and digits of a text, which is what its wording is made of. */
+const lettersOf = (text: string): string => text.normalize('NFC').replace(/[^\p{L}\p{N}]/gu, '');
 
-  const [was, now] = [removed, added].map((text) => text.normalize('NFC').replace(/\s+/g, ' '));
-  if (was === undefined || now === undefined || was.length !== now.length) return false;
-
-  for (let at = 0; at < was.length; at += 1) {
-    const [before, after] = [was.charAt(at), now.charAt(at)];
-    if (before !== after && withoutDiacritics(after) !== before) return false;
+/** Whether `now` is `was` with diacritics restored and nothing else: `dj` counts as `đ`, how he types it. */
+function isWithDiacriticsRestored(was: string, now: string): boolean {
+  let at = 0;
+  for (const letter of now) {
+    const before = was.charAt(at);
+    if (letter !== before && withoutDiacritics(letter) !== before) return false;
+    at += 1;
+    if (letter !== before && 'đĐ'.includes(letter) && 'jJ'.includes(was.charAt(at) || '-')) at += 1;
   }
-  return true;
+  return at === was.length;
 }
 
-export interface TidyingOptions {
-  /** Whether a line break inside a paragraph, coming or going, counts as tidying. */
-  lineBreaks: boolean;
+/**
+ * Whether a change only tidies: the wording is what it was.
+ *
+ * He drops his diacritics and his spacing and punctuation wander, so a
+ * proofreader's reply is mostly this, and every one marked hides the few changes
+ * of wording among them. So: any spacing, any punctuation, and a plain letter
+ * gaining its diacritic. Not a letter losing one, nor `ć` becoming `č`, which may
+ * be right or wrong but is a decision about the word.
+ *
+ * Not a paragraph split or joined either, which is his structure.
+ */
+function isTidying({ removed, added }: Pick<Change, 'removed' | 'added'>): boolean {
+  if (BLANK_LINES.test(removed) !== BLANK_LINES.test(added)) return false;
+  return isWithDiacriticsRestored(lettersOf(removed), lettersOf(added));
 }
 
 /**
@@ -140,45 +134,50 @@ export interface TidyingOptions {
  * Some of those diacritics will be wrong, since `sto` and `što` are both words and
  * only the meaning says which. Nothing here can tell which ones from two texts, so
  * they are all treated alike, and each stays visible as a letter in colour.
+ *
+ * Spaces at the very start of a text stay in front of him: that is his first line,
+ * where more spaces rank a text higher in his list.
  */
-export const separateTidying = (pieces: readonly TextPiece[], { lineBreaks }: TidyingOptions): TextPiece[] =>
-  pieces.map((piece) => (piece.kind === 'change' && isTidying(piece, lineBreaks) ? { ...piece, kind: 'tidy' } : piece));
+export const separateTidying = (pieces: readonly TextPiece[]): TextPiece[] =>
+  pieces.map((piece, at) => {
+    if (piece.kind !== 'change' || !isTidying(piece)) return piece;
+    const isHisRanking = at === 0 && !/\S/.test(piece.removed + piece.added);
+    return isHisRanking ? piece : { ...piece, kind: 'tidy' };
+  });
 
-/** A run of a tidied word, and whether its letters are the ones that changed. */
+/** A run of a tidied text, and whether it is what was put there. */
 export interface TidiedLetters {
   text: string;
   changed: boolean;
 }
 
 /**
- * Which letters of a tidied word are different from what stood there.
- *
- * Told letter by letter, so that he sees what was done for him: one letter in a
- * word, and not the word replaced. Where the two do not line up letter for letter
- * nothing is singled out.
+ * Which characters of tidied text were put there, one by one, so that he sees what
+ * was done for him: one letter in a word, or one comma, and not the word replaced.
+ * Spacing is never singled out, having nothing to show.
  */
 export function tidiedLettersOf({ removed, added }: Pick<Change, 'removed' | 'added'>): TidiedLetters[] {
-  const [was, now] = [removed.normalize('NFC'), added.normalize('NFC')];
-  if (was.length !== now.length) return [{ text: added, changed: false }];
-
   const runs: TidiedLetters[] = [];
-  for (let at = 0; at < now.length; at += 1) {
-    const changed = was.charAt(at) !== now.charAt(at) && /\S/.test(now.charAt(at));
+  const aligned = alignSequences([...removed.normalize('NFC')], [...added.normalize('NFC')]);
+
+  for (const { kind, text } of aligned) {
+    if (kind === 'onlyFrom') continue;
+    const changed = kind === 'onlyTo' && /\S/.test(text);
     const open = runs.at(-1);
-    if (open?.changed === changed) open.text += now.charAt(at);
-    else runs.push({ text: now.charAt(at), changed });
+    if (open?.changed === changed) open.text += text;
+    else runs.push({ text, changed });
   }
   return runs;
 }
 
 /** A run of text in one paragraph as drawn, and whose it is. */
 export interface DiffPart {
-  /** `spacing-tidied` holds no text: it says spacing was corrected at this spot. */
-  kind: 'same' | 'removed' | 'added' | 'tidied' | 'spacing-tidied';
+  /** `tidied-away` holds no text: it says something was corrected at this spot and left nothing to show. */
+  kind: 'same' | 'removed' | 'added' | 'tidied' | 'tidied-away';
   text: string;
   /** The first part of a change, where a change is carried across paragraphs. */
   opensChange: boolean;
-  /** What a `tidied` word was before, so its changed letters can be told. */
+  /** What `tidied` text was before, so what was put there can be told. */
   was?: string;
 }
 
@@ -194,9 +193,9 @@ export interface DiffParagraph {
  *
  * For the screen only. Unlike the pieces, this does not keep his exact spacing:
  * a blank line becomes the gap between two paragraphs. What is `tidy` is drawn as
- * it would be, in no way marking the paragraph as changed. With `showTidied` a
- * tidied word comes as a part of its own, and tidied spacing leaves a part with
- * no text where it was, having nothing else left to show.
+ * it would be, in no way marking the paragraph as changed. With `showTidied`,
+ * what was put there comes as a part of its own, and what only went away leaves a
+ * part with no text where it was, having nothing else left to show.
  *
  * A change that is nothing but spacing is not split, because it has no text to
  * show on either side of the break: it stays a part, for the view to make
@@ -232,11 +231,12 @@ export function paragraphsOf(pieces: readonly TextPiece[], { showTidied = false 
       continue;
     }
     if (piece.kind === 'tidy') {
-      if (showTidied && /\S/.test(piece.added)) {
+      const putSomethingThere = tidiedLettersOf(piece).some((letters) => letters.changed);
+      if (showTidied && putSomethingThere && !BLANK_LINES.test(piece.added)) {
         addPart({ kind: 'tidied', text: piece.added, was: piece.removed, opensChange: false });
         continue;
       }
-      if (showTidied) addPart({ kind: 'spacing-tidied', text: '', opensChange: false });
+      if (showTidied) addPart({ kind: 'tidied-away', text: '', opensChange: false });
       addSplit('same', piece.added, false);
       continue;
     }

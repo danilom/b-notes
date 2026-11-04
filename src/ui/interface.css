@@ -2672,9 +2672,10 @@ dialog::backdrop {
   text-underline-offset: 2px;
 }
 
-/* Where spacing was corrected, which leaves nothing else to see. Below the line
-   and taking up no width, so that his text sits exactly as it would without it. */
-.diff-spacing-mark {
+/* Where something was corrected and left nothing else to see: spacing, or a mark
+   of punctuation gone. Below the line and taking up no width, so that his text
+   sits exactly as it would without it. */
+.diff-correction-mark {
   display: inline-block;
   position: relative;
   top: 0.42em;
@@ -2692,23 +2693,6 @@ dialog::backdrop {
    writing font puts these wherever it likes. */
 .diff-spacing {
   font-family: var(--ui-font);
-}
-
-/* A drawn space is short and sits low, so the usual height for the strikethrough
-   would run along its open top and close it into a box. */
-.diff-gone:has(.diff-space-drawn) {
-  background-position: 50% 68%;
-}
-
-/* A space, drawn rather than typed: no font's symbol for one is wide enough, and
-   how they sit side by side would depend on what each of his machines has. */
-.diff-space-drawn {
-  display: inline-block;
-  width: 0.75em;
-  height: 0.3em;
-  margin: 0 0.06em;
-  border: 0.12em solid currentColor;
-  border-top: 0;
 }
 
 /* The change the stepper is on: one dashed line in the text's own ink under all

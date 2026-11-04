@@ -234,12 +234,33 @@ describe('laying the comparison out as paragraphs', () => {
 describe('setting apart the changes nobody needs to read', () => {
   /** What is left for him to read, once the tidying is set aside. */
   const left = (before: string, after: string): [string, string][] =>
-    changesIn(separateTidying(diffTexts(before, after), { lineBreaks: false }));
-  const isHidden = (before: string, after: string): boolean => left(before, after).length === 0;
+    changesIn(separateTidying(diffTexts(before, after)));
+  const isMinor = (before: string, after: string): boolean => left(before, after).length === 0;
 
   it('sets apart a plain letter gaining its diacritic', () => {
-    assert.ok(isHidden('Cuvala je kucu i zenu, sumu i dedu.', 'Čuvala je kuću i ženu, šumu i dedu.'));
-    assert.ok(isHidden('Dorde je tu.', 'Đorđe je tu.'));
+    assert.ok(isMinor('Cuvala je kucu i zenu, sumu i dedu.', 'Čuvala je kuću i ženu, šumu i dedu.'));
+    assert.ok(isMinor('Dorde je tu.', 'Đorđe je tu.'));
+  });
+
+  it('sets apart dj becoming đ, the way he types it', () => {
+    assert.ok(isMinor('Usadjen je u Gradjanima, medju ledjima.', 'Usađen je u Građanima, među leđima.'));
+    assert.ok(isMinor('Djed je tu. DJED je tu.', 'Đed je tu. ĐED je tu.'));
+  });
+
+  it('keeps a j that was not part of the đ in front of him', () => {
+    assert.ok(!isMinor('Ladja je tu.', 'Lađja je tu.'));
+  });
+
+  it('does not let any other letter swallow a j the way đ does', () => {
+    assert.ok(!isMinor('Sjaj je tu.', 'Šaj je tu.'));
+  });
+
+  it('lines dj up with đ, so a word removed beside it is all that stays in front of him', () => {
+    assert.deepEqual(left('Vidio staru ledja tu.', 'Vidio leđa tu.'), [['staru ', '']]);
+  });
+
+  it('reads a letter spelled as two as the one letter it is', () => {
+    assert.ok(!isMinor('Kuća je tu.', 'Kuča je tu.'));
   });
 
   it('keeps a letter losing its diacritic in front of him', () => {
@@ -254,9 +275,31 @@ describe('setting apart the changes nobody needs to read', () => {
     assert.deepEqual(left('Zena je tu.', 'Žane je tu.'), [['Zena', 'Žane']]);
   });
 
-  it('sets apart one run of spacing becoming another', () => {
-    assert.ok(isHidden('Pao  je   snijeg.', 'Pao je snijeg.'));
-    assert.ok(isHidden('Prvi.  \n\n\nDrugi.', 'Prvi.\n\nDrugi.'));
+  it('keeps a word that loses or gains letters at the end in front of him', () => {
+    assert.ok(!isMinor('Kuca je tu.', 'Kuc je tu.'));
+    assert.ok(!isMinor('Kuc je tu.', 'Kuca je tu.'));
+  });
+
+  it('sets apart any spacing', () => {
+    assert.ok(isMinor('Pao  je   snijeg.', 'Pao je snijeg.'));
+    assert.ok(isMinor('Prvi.  \n\n\nDrugi.', 'Prvi.\n\nDrugi.'));
+    assert.ok(isMinor('Prvi red\nDrugi red', 'Prvi red Drugi red'));
+    assert.ok(isMinor('Prvi red Drugi red', 'Prvi red\nDrugi red'));
+    assert.ok(isMinor('Rekao,da je.', 'Rekao, da je.'));
+  });
+
+  it('keeps two words joined into one in front of him, which is a different word', () => {
+    assert.ok(!isMinor('Na primer tu.', 'Naprimer tu.'));
+  });
+
+  it('sets apart spaces at the start of a line that is not his first', () => {
+    assert.ok(isMinor('Prvi red\n   Drugi red', 'Prvi red\nDrugi red'));
+  });
+
+  it('sets apart any punctuation', () => {
+    assert.ok(isMinor('Ispod kreveta i dalje.', 'Ispod kreveta, i dalje.'));
+    assert.ok(isMinor('Kraj.???', 'Kraj.'));
+    assert.ok(isMinor('radio antena - i (ovo)', 'radio-antena — i ovo'));
   });
 
   it('keeps a paragraph split or joined in front of him', () => {
@@ -264,18 +307,10 @@ describe('setting apart the changes nobody needs to read', () => {
     assert.deepEqual(left('Prvi.\n\nDrugi.', 'Prvi. Drugi.'), [['\n\n', ' ']]);
   });
 
-  it('keeps a space between words appearing or going in front of him', () => {
-    assert.deepEqual(left('Rekao,da je.', 'Rekao, da je.'), [['', ' ']]);
-    assert.ok(!isHidden('Na primer tu.', 'Naprimer tu.'));
-  });
-
   it('keeps the leading spaces that rank his titles in front of him', () => {
     assert.deepEqual(left('   Pismo Marku', 'Pismo Marku'), [['   ', '']]);
     assert.deepEqual(left('Pismo Marku', '   Pismo Marku'), [['', '   ']]);
-  });
-
-  it('keeps punctuation in front of him', () => {
-    assert.deepEqual(left('Ispod kreveta i dalje.', 'Ispod kreveta, i dalje.'), [['', ',']]);
+    assert.deepEqual(left('   Pismo Marku', ' Pismo Marku'), [['   ', ' ']]);
   });
 
   it('keeps the wording in front of him, among any amount of tidying', () => {
@@ -283,41 +318,21 @@ describe('setting apart the changes nobody needs to read', () => {
   });
 
   it('still joins back into exactly either text', () => {
-    const [before, after] = ['Cuvala  je  staru\nkucu.', 'Čuvala je novu kuću.'];
-    const pieces = mergeCloseChanges(separateTidying(diffTexts(before, after), { lineBreaks: true }));
+    const [before, after] = ['Cuvala  je, staru\nkucu.', 'Čuvala je novu kuću.'];
+    const pieces = mergeCloseChanges(separateTidying(diffTexts(before, after)));
 
     assert.equal(side(pieces, 'removed'), before);
     assert.equal(side(pieces, 'added'), after);
   });
 
-  it('keeps a line break inside a paragraph in front of him, unless told it is tidying', () => {
-    const pieces = diffTexts('Prvi red\nDrugi red', 'Prvi red Drugi red');
-
-    assert.equal(changesIn(separateTidying(pieces, { lineBreaks: false })).length, 1);
-    assert.equal(changesIn(separateTidying(pieces, { lineBreaks: true })).length, 0);
-  });
-
-  it('keeps a line break that arrives in front of him too', () => {
-    const pieces = diffTexts('Prvi red Drugi red', 'Prvi red\nDrugi red');
-
-    assert.equal(changesIn(separateTidying(pieces, { lineBreaks: false })).length, 1);
-    assert.equal(changesIn(separateTidying(pieces, { lineBreaks: true })).length, 0);
-  });
-
-  it('never calls a paragraph break tidying, whatever it is told about line breaks', () => {
-    const pieces = diffTexts('Prvi red Drugi red', 'Prvi red\n\nDrugi red');
-
-    assert.equal(changesIn(separateTidying(pieces, { lineBreaks: true })).length, 1);
-  });
-
   it('treats every restored diacritic alike, however the word comes out elsewhere', () => {
     // Which of these are right takes knowing the meaning, which two texts cannot say.
-    assert.ok(isHidden('Sto si dosao? Bilo je sto ljudi.', 'Što si došao? Bilo je sto ljudi.'));
-    assert.ok(isHidden('Nas pas je tu.', 'Naš paš je tu.'));
+    assert.ok(isMinor('Sto si dosao? Bilo je sto ljudi.', 'Što si došao? Bilo je sto ljudi.'));
+    assert.ok(isMinor('Nas pas je tu.', 'Naš paš je tu.'));
   });
 
   it('draws what is set apart as it would be, with no mark and no bar', () => {
-    const paragraphs = paragraphsOf(separateTidying(diffTexts('Cuvala  je.\n\nSumu.', 'Čuvala je.\n\nŠumu.'), { lineBreaks: false }));
+    const paragraphs = paragraphsOf(separateTidying(diffTexts('Cuvala  je.\n\nSumu.', 'Čuvala je.\n\nŠumu.')));
 
     assert.deepEqual(
       paragraphs.map(({ changed, parts }) => [changed, parts.map((part) => part.text).join('')]),
@@ -329,7 +344,7 @@ describe('setting apart the changes nobody needs to read', () => {
   });
 });
 
-describe('telling which letters of a tidied word changed', () => {
+describe('telling what was put into tidied text', () => {
   it('singles out only the letters that changed', () => {
     assert.deepEqual(tidiedLettersOf({ removed: 'cuvala', added: 'čuvala' }), [
       { text: 'č', changed: true },
@@ -338,6 +353,14 @@ describe('telling which letters of a tidied word changed', () => {
     assert.deepEqual(tidiedLettersOf({ removed: 'kuca', added: 'kuća' }), [
       { text: 'ku', changed: false },
       { text: 'ć', changed: true },
+      { text: 'a', changed: false },
+    ]);
+  });
+
+  it('singles out the đ that stands for dj, and nothing after it', () => {
+    assert.deepEqual(tidiedLettersOf({ removed: 'ledja', added: 'leđa' }), [
+      { text: 'le', changed: false },
+      { text: 'đ', changed: true },
       { text: 'a', changed: false },
     ]);
   });
@@ -354,15 +377,22 @@ describe('telling which letters of a tidied word changed', () => {
     ]);
   });
 
-  it('singles out nothing where the two do not line up', () => {
-    assert.deepEqual(tidiedLettersOf({ removed: 'abc', added: 'ab' }), [{ text: 'ab', changed: false }]);
-    assert.deepEqual(tidiedLettersOf({ removed: 'ab', added: 'abc' }), [{ text: 'abc', changed: false }]);
+  it('singles out punctuation put there', () => {
+    assert.deepEqual(tidiedLettersOf({ removed: '', added: ',' }), [{ text: ',', changed: true }]);
+  });
+
+  it('has nothing to single out where something only went away, or only spacing changed', () => {
+    assert.deepEqual(tidiedLettersOf({ removed: ',', added: '' }), []);
+    assert.deepEqual(tidiedLettersOf({ removed: '  ', added: ' ' }), [{ text: ' ', changed: false }]);
+    assert.deepEqual(tidiedLettersOf({ removed: '', added: ' ' }), [{ text: ' ', changed: false }]);
   });
 });
 
 describe('laying out what was tidied, when it is to be seen', () => {
   const tidied = (before: string, after: string) =>
-    paragraphsOf(separateTidying(diffTexts(before, after), { lineBreaks: false }), { showTidied: true });
+    paragraphsOf(separateTidying(diffTexts(before, after)), { showTidied: true });
+  const kinds = (before: string, after: string) =>
+    tidied(before, after).map((paragraph) => paragraph.parts.map((part) => part.kind));
 
   it('gives a tidied word a part of its own, knowing what it was', () => {
     const [paragraph] = tidied('Tu je sumu vidio.', 'Tu je šumu vidio.');
@@ -375,29 +405,38 @@ describe('laying out what was tidied, when it is to be seen', () => {
     });
   });
 
+  it('gives punctuation put there a part of its own too', () => {
+    assert.deepEqual(kinds('Tu je vidio', 'Tu je, vidio'), [['same', 'tidied', 'same']]);
+  });
+
   it('does not count it as the paragraph having changed', () => {
-    assert.deepEqual(tidied('Tu je sumu vidio.', 'Tu je šumu vidio.').map((paragraph) => paragraph.changed), [false]);
+    assert.deepEqual(tidied('Tu je sumu vidio, on.', 'Tu je šumu vidio on.').map((paragraph) => paragraph.changed), [false]);
   });
 
   it('leaves a part with no text where spacing was tidied, and the spacing as it would be', () => {
     const [paragraph] = tidied('Pao  je.', 'Pao je.');
 
-    assert.deepEqual(paragraph?.parts.map((part) => part.kind), ['same', 'spacing-tidied', 'same', 'same']);
+    assert.deepEqual(paragraph?.parts.map((part) => part.kind), ['same', 'tidied-away', 'same', 'same']);
     assert.equal(paragraph?.parts.map((part) => part.text).join(''), 'Pao je.');
     assert.equal(paragraph?.changed, false);
   });
 
-  it('marks tidied blank lines at the end of the paragraph, and still breaks there', () => {
-    const paragraphs = tidied('Prvi.\n\n\nDrugi.', 'Prvi.\n\nDrugi.');
+  it('leaves a part with no text where punctuation went away', () => {
+    assert.deepEqual(kinds('Tu je, vidio', 'Tu je vidio'), [['same', 'tidied-away', 'same']]);
+  });
 
-    assert.deepEqual(
-      paragraphs.map((paragraph) => paragraph.parts.map((part) => part.kind)),
-      [['same', 'spacing-tidied'], ['same']],
-    );
+  it('marks tidied blank lines at the end of the paragraph, and still breaks there', () => {
+    assert.deepEqual(kinds('Prvi.\n\n\nDrugi.', 'Prvi.\n\nDrugi.'), [['same', 'tidied-away'], ['same']]);
   });
 
   it('leaves nothing where spacing was tidied, unless asked to show it', () => {
-    const pieces = separateTidying(diffTexts('Pao  je.', 'Pao je.'), { lineBreaks: false });
+    const pieces = separateTidying(diffTexts('Pao  je.', 'Pao je.'));
+
+    assert.deepEqual(paragraphsOf(pieces)[0]?.parts.map((part) => part.kind), ['same', 'same', 'same']);
+  });
+
+  it('gives a tidied word no part of its own, unless asked to show it', () => {
+    const pieces = separateTidying(diffTexts('Tu je sumu.', 'Tu je šumu.'));
 
     assert.deepEqual(paragraphsOf(pieces)[0]?.parts.map((part) => part.kind), ['same', 'same', 'same']);
   });
