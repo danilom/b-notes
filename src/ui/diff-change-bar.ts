@@ -19,7 +19,7 @@ export interface DiffEditing {
 }
 
 /** Long enough that a pointer passing over on its way somewhere raises nothing. */
-const SHOW_AFTER_MS = 150;
+const SHOW_AFTER_MS = 100;
 /** Long enough for an unsteady hand to get from the word up to the button. */
 const HIDE_AFTER_MS = 400;
 const GAP_ABOVE_PX = 3;

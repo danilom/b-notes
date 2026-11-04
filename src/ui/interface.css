@@ -3631,6 +3631,33 @@ button:disabled {
   white-space: nowrap;
 }
 
+/*
+  These buttons are small and he is not steady, so each one answers well beyond what
+  it draws: from the top of the box to the bottom, halfway across the gap to its
+  neighbour, and out to the side of the box at either end. The offsets are the box's
+  padding and gap, plus the button's own border, which they are measured from inside.
+*/
+.stepper button {
+  position: relative;
+}
+
+.stepper button::before {
+  content: '';
+  position: absolute;
+  top: calc(-0.3rem - 1px);
+  right: calc(-0.15rem - 1px);
+  bottom: calc(-0.3rem - 1px);
+  left: calc(-0.15rem - 1px);
+}
+
+.stepper > button:first-child::before {
+  left: calc(-0.4rem - 1px);
+}
+
+.stepper > button:last-child::before {
+  right: calc(-0.4rem - 1px);
+}
+
 .stepper svg {
   width: 14px;
   height: 14px;
