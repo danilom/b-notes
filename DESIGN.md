@@ -300,7 +300,7 @@ The first step is the whole gate. **GitHub's "latest" is never a draft or a rele
 | a release not marked pre-release, with a higher version | **yes, the next time each machine starts** |
 
 - **The mark on the release protects him, not the version number.** The version check is a plain "is it higher", and `0.9.0-beta.1` is higher than `0.8.4`, so a `-beta` build published as an ordinary release reaches him.
-- **`gh release create` makes an ordinary release unless told otherwise**, and so does publishing from GitHub's web page. Forgetting `--prerelease` once is all it takes.
+- **By hand, `gh release create` makes an ordinary release unless told otherwise**, and so does publishing from GitHub's web page. Forgetting `--prerelease` once is all it takes, which is why releases go out through `npm run release`.
 - **There is no taking it back.** Downgrades are off. Deleting a bad release stops machines that haven't started yet, and "latest" falls back to the release before it; a machine that already has it stays on it until a higher version is shipped.
 - **His builds cannot be changed to protect him.** This rests on how GitHub's releases are set, because the build he has decides what it follows. A change to `app-updates.ts` only applies from the release that carries it.
 
@@ -308,24 +308,20 @@ The first step is the whole gate. **GitHub's "latest" is never a draft or a rele
 
 1. Bump `version` in `package.json` and commit. electron-updater compares versions, so an unbumped build is invisible to it. Use a plain next number with no `-beta`: the same files are later made live as they are, so the version has to be right already.
 2. `npm run dist` builds the installer locally into `release/` without publishing. Test it.
-3. **Tag that commit and push the tag** (`git tag -a v0.1.3 -m "Version 0.1.3" && git push origin v0.1.3`). GitHub refuses to create a non-draft release without an existing tag, and `releaseType: release` means ours are never drafts. Skip this and electron-builder tags the *default branch* instead, producing a release that points at code you didn't build.
-4. Publish with `gh`, not electron-builder, **always as a pre-release first**:
+3. **Tag that commit and push the tag** (`git tag -a v0.1.3 -m "Version 0.1.3" && git push origin v0.1.3`). The next step refuses to run without it, because a release made without a tag gets one on the *default branch*, pointing at code you didn't build.
+4. **`npm run release`** (`-- --notes-file notes.md` for release notes) builds this commit and publishes it as a pre-release.
 
-   `gh release create v0.1.5 --prerelease --title v0.1.5 --notes "" release/b-notes-setup-*.exe release/latest.yml release/*.blockmap`
+   Before building, it stops unless the version is a plain number higher than the live release, nothing is uncommitted, the tag is on this commit both here and on GitHub, and no release exists for that tag. It stops before uploading unless `latest.yml` describes this installer. Afterwards it checks that the release is marked pre-release, that all three files arrived at the right size, and that the live release has not moved, and it fails loudly if not. A missing `latest.yml` means no client can update at all; a missing `.blockmap` silently costs a full 98MB download instead of a differential one.
 
-   Add `--clobber` via `gh release upload` instead if the release already exists.
-
-5. **Check the release has all three assets** — the installer, its `.blockmap`, and `latest.yml` — and that `latest.yml`'s `sha512` matches the local one. A missing `latest.yml` means no client can update at all; a missing `.blockmap` silently costs a full 98MB download instead of a differential one.
-6. Expect up to a minute of 404s on the asset URLs afterwards; that's CDN propagation, not a failed upload.
-7. **Check it did not go live:** `gh api repos/danilom/b-notes/releases/latest --jq .tag_name` must still name the version he has.
-8. Try the installer from the release on a machine that isn't his. Nothing fetches a pre-release for you: download it and run it.
-9. **Only when Danilo says so, make it live.** This is the step that reaches him, and it changes nothing but the mark, so what was tried is what he gets:
+5. Expect up to a minute of 404s on the asset URLs afterwards; that's CDN propagation, not a failed upload.
+6. Try the installer from the release on a machine that isn't his. Nothing fetches a pre-release for you: download it and run it.
+7. **Only when Danilo says so, make it live.** This is the step that reaches him, and it changes nothing but the mark, so what was tried is what he gets:
 
    `gh release edit v0.1.5 --prerelease=false --latest`
 
-   Then run the check in step 7 again; it should now name the new version.
+   Then check it landed: `gh api repos/danilom/b-notes/releases/latest --jq .tag_name` should name the new version.
 
-**Don't use electron-builder's `--publish`.** It runs two publishers in parallel that race to create the release: one wins, the other dies with a 422, and the run aborts before generating `latest.yml` — leaving a release no client can update from. It failed this way on all four attempts, each time dropping a different file while reporting some success. `npm run dist` produces a complete, internally consistent set every time; uploading it with `gh` is the reliable path.
+**Don't use electron-builder's `--publish`.** It runs two publishers in parallel that race to create the release: one wins, the other dies with a 422, and the run aborts before generating `latest.yml` — leaving a release no client can update from. It failed this way on all four attempts, each time dropping a different file while reporting some success. `npm run dist` produces a complete, internally consistent set every time, which is why `npm run release` uploads it with `gh`. `releaseType: prerelease` in `electron-builder.yml` is only there so that anything publishing that way by mistake cannot reach him.
 
 ## Logging
 
