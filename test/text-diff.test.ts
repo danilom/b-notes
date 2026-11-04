@@ -9,6 +9,9 @@ const changesIn = (pieces: readonly TextPiece[]): [string, string][] =>
 const side = (pieces: readonly TextPiece[], which: 'removed' | 'added'): string =>
   pieces.map((piece) => (piece.kind === 'same' ? piece.text : piece[which])).join('');
 
+/** Two ways of storing a text that show the same on screen, made one. */
+const storedAlike = (text: string): string => text.replace(/\r\n?/g, '\n').normalize('NFC');
+
 const OPENING = 'Bilo je hladno te zime i sjedili smo oko peci.';
 
 describe('comparing two texts', () => {
@@ -95,9 +98,56 @@ describe('comparing two texts', () => {
 
       for (const shown of [pieces, mergeCloseChanges(pieces)]) {
         assert.equal(side(shown, 'removed'), before);
-        assert.equal(side(shown, 'added'), after);
+        assert.equal(storedAlike(side(shown, 'added')), storedAlike(after));
       }
     }
+  });
+
+  it('sees no change in how a text ends its lines', () => {
+    const windows = 'Prvi red\r\nDrugi red\r\n\r\nNovi pasus.';
+
+    assert.deepEqual(diffTexts(windows, windows.replaceAll('\r\n', '\n')), [{ kind: 'same', text: windows }]);
+    assert.deepEqual(changesIn(diffTexts(windows.replaceAll('\r\n', '\n'), windows)), []);
+  });
+
+  it('keeps the line endings he has, around a change that is real', () => {
+    const pieces = diffTexts('Prvi stari\r\nDrugi red', 'Prvi novi\nDrugi red');
+
+    assert.deepEqual(changesIn(pieces), [['stari', 'novi']]);
+    assert.equal(side(pieces, 'added'), 'Prvi novi\r\nDrugi red');
+  });
+
+  it('sees no change in how a letter is spelled underneath', () => {
+    const [together, apart] = ['Čuvala je čovjek.', 'Čuvala je čovjek.'.normalize('NFD')];
+
+    assert.notEqual(together, apart);
+    assert.deepEqual(diffTexts(apart, together), [{ kind: 'same', text: apart }]);
+  });
+
+  it('finds thousands of small changes through a long text, and does not call it replaced', () => {
+    const words = Array.from({ length: 60_001 }, (_, at) => `rijec${at}`);
+    const edited = words.map((word, at) => (at % 4 === 0 ? `novo${at}` : word));
+    const [before, after] = [words.join(' '), edited.join(' ')];
+
+    const pieces = diffTexts(before, after);
+
+    assert.equal(changesIn(pieces).length, 15_001);
+    // Ending on a change, so that nothing can be lost off the end unnoticed.
+    assert.equal(side(pieces, 'removed'), before);
+    assert.equal(side(pieces, 'added'), after);
+  });
+
+  it('calls only the stretch replaced where nothing in it can be matched, past the limit', () => {
+    const keptStart = Array.from({ length: 300 }, (_, at) => `pocetak${at}`).join(' ');
+    const keptEnd = Array.from({ length: 300 }, (_, at) => `kraj${at}`).join(' ');
+    const [was, now] = ['a', 'b'].map((letter) =>
+      Array.from({ length: 6000 }, (_, at) => `${letter}${at}`).join(' '),
+    );
+
+    const changes = changesIn(diffTexts(`${keptStart} ${was} ${keptEnd}`, `${keptStart} ${now} ${keptEnd}`));
+
+    assert.ok(changes.length > 0 && changes.length < 7000, `${changes.length} changes`);
+    assert.ok(changes.every(([removed]) => !removed.includes('pocetak') && !removed.includes('kraj')));
   });
 });
 
@@ -155,6 +205,10 @@ describe('laying the comparison out as paragraphs', () => {
 
   it('treats a blank line with spaces on it as a blank line', () => {
     assert.deepEqual(drawn('Prvi.\n \t\nDrugi.', 'Prvi.\n \t\nDrugi.'), ['  Prvi.', '  Drugi.']);
+  });
+
+  it('finds the paragraphs in a text with Windows line endings', () => {
+    assert.deepEqual(drawn('Prvi.\r\n\r\nDrugi stari.', 'Prvi.\n\nDrugi novi.'), ['  Prvi.', '| Drugi [-stari][+novi].']);
   });
 
   it('counts each change once, however many paragraphs it runs across', () => {

@@ -229,7 +229,7 @@ function spacingPart(kind: DiffPart['kind'], text: string, symbols: SpacingSymbo
   const part = document.createElement('span');
   part.className = `${markClass(kind)} diff-small diff-spacing`;
   part.append(
-    ...[...text.replace(/\n+/g, '\n')].map((character) =>
+    ...[...text.replace(/\r\n?/g, '\n').replace(/\n+/g, '\n')].map((character) =>
       character === '\n' ? symbols.lineBreak : (symbols.space ?? drawnSpace()),
     ),
   );

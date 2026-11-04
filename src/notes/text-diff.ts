@@ -5,9 +5,10 @@ import { alignSequences } from './sequence-alignment.ts';
  * one where the other has something else.
  *
  * Nothing is left out or tidied. The `same` and `removed` parts joined are the
- * first text exactly, and the `same` and `added` parts the second, spaces and
- * all. So taking one change and not another is only a matter of which side of
- * it to join, and nothing here has to know that is ever done.
+ * first text exactly, spaces and all, and the `same` and `added` parts the second,
+ * but for how it stores its line endings and letters, which `same` takes from the
+ * first. So taking one change and not another is only a matter of which side of
+ * it to join, and what he has keeps its own line endings whichever he takes.
  */
 export type TextPiece =
   | { kind: 'same'; text: string }
@@ -26,23 +27,42 @@ const TOKEN = /\s+|[\p{L}\p{M}\p{N}]+|[^\s\p{L}\p{M}\p{N}]/gu;
 const tokensOf = (text: string): string[] => text.match(TOKEN) ?? [];
 
 /**
+ * What a token is compared as, leaving out differences no reader could see.
+ *
+ * Windows and everything else end a line differently, and an AI's reply or a
+ * pasted text can spell `č` as a `c` and a mark. Left in, either marks every line
+ * or every such word of a text as changed, burying the changes that are real.
+ */
+const comparedAs = (token: string): string => token.replace(/\r\n?/g, '\n').normalize('NFC');
+
+/**
  * @param before The text as it stands.
  * @param after The text it would become.
  */
 export function diffTexts(before: string, after: string): TextPiece[] {
+  const [beforeTokens, afterTokens] = [tokensOf(before), tokensOf(after)];
   const pieces: TextPiece[] = [];
+  let [beforeAt, afterAt] = [0, 0];
 
-  for (const { kind, text } of alignSequences(tokensOf(before), tokensOf(after))) {
+  for (const { kind } of alignSequences(beforeTokens.map(comparedAs), afterTokens.map(comparedAs))) {
     const open = pieces.at(-1);
     if (kind === 'same') {
+      const text = beforeTokens[beforeAt] ?? '';
+      beforeAt += 1;
+      afterAt += 1;
       if (open?.kind === 'same') open.text += text;
       else pieces.push({ kind: 'same', text });
       continue;
     }
     const change = open?.kind === 'change' ? open : { kind: 'change' as const, removed: '', added: '' };
     if (change !== open) pieces.push(change);
-    if (kind === 'onlyFrom') change.removed += text;
-    else change.added += text;
+    if (kind === 'onlyFrom') {
+      change.removed += beforeTokens[beforeAt] ?? '';
+      beforeAt += 1;
+    } else {
+      change.added += afterTokens[afterAt] ?? '';
+      afterAt += 1;
+    }
   }
   return pieces;
 }
@@ -61,7 +81,7 @@ export interface DiffParagraph {
   changed: boolean;
 }
 
-const BLANK_LINES = /\n[ \t]*\n(?:[ \t]*\n)*/;
+const BLANK_LINES = /\r?\n[ \t]*\r?\n(?:[ \t]*\r?\n)*/;
 
 /**
  * The pieces laid out as paragraphs, for drawing: which ones get a mark in the
