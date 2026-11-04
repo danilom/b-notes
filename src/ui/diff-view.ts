@@ -126,7 +126,7 @@ function stepperOver(
   box: HTMLElement,
   marked: string,
   words: DiffViewOptions['stepper'],
-  review?: { markCurrent: (change: HTMLElement, isCurrent: boolean) => void },
+  review?: { markCurrent: (change: HTMLElement, isCurrent: boolean) => void; key: SVGElement },
 ): HTMLElement {
   const changes = [...box.querySelectorAll<HTMLElement>(marked)];
 
@@ -136,6 +136,7 @@ function stepperOver(
     { onPrevious: () => goTo(showing - 1), onNext: () => goTo(showing + 1) },
   );
   steps.root.classList.add('review-steps');
+  if (review !== undefined) steps.root.prepend(review.key);
   // Held back until it is known whether there is anywhere to go, which needs
   // the panel laid out. Hidden is the safe state to start in.
   steps.root.hidden = true;
@@ -277,6 +278,33 @@ function markCurrentChange(change: HTMLElement, isCurrent: boolean): void {
 }
 
 /**
+ * A small picture of how the current change looks: the bar, the frame and the
+ * dashed line under it. It ties the stepper's count to the thing it counts.
+ *
+ * Drawn here rather than taken from the app's icon set, which has no such thing,
+ * because it has to look like this screen rather than like any other icon.
+ */
+function currentChangeKey(): SVGElement {
+  const namespace = 'http://www.w3.org/2000/svg';
+  const shapes: [string, Record<string, string>][] = [
+    ['rect', { x: '1', y: '4', width: '5', height: '16', fill: 'currentColor' }],
+    ['rect', { x: '4', y: '5', width: '19', height: '14', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }],
+    ['path', { d: 'M9 12.5h10', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.5', 'stroke-dasharray': '3 1.5' }],
+  ];
+
+  const svg = document.createElementNS(namespace, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('class', 'diff-current-key');
+  svg.setAttribute('aria-hidden', 'true');
+  for (const [name, attributes] of shapes) {
+    const shape = document.createElementNS(namespace, name);
+    for (const [attribute, value] of Object.entries(attributes)) shape.setAttribute(attribute, value);
+    svg.append(shape);
+  }
+  return svg;
+}
+
+/**
  * One paragraph, with what was removed and what replaced it held in one element.
  *
  * That element is what the stepper counts and what it outlines, so a replacement
@@ -325,6 +353,6 @@ export function createTextDiffView(
 
   const framed = document.createElement('div');
   framed.className = 'review-framed diff-framed';
-  framed.append(text, stepperOver(text, '.diff-change', stepper, { markCurrent: markCurrentChange }));
+  framed.append(text, stepperOver(text, '.diff-change', stepper, { markCurrent: markCurrentChange, key: currentChangeKey() }));
   return framed;
 }

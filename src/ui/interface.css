@@ -2717,9 +2717,18 @@ dialog::backdrop {
   margin-right: calc(-1 * (var(--frame) + var(--frame-room)));
   margin-bottom: calc(1em - var(--frame) - var(--frame-room));
   padding: var(--frame-room) var(--frame-room) var(--frame-room) var(--run-inset);
-  border: var(--frame) solid var(--chosen);
-  border-left: var(--bar) solid var(--chosen);
+  border: var(--frame) solid var(--ink);
+  border-left: var(--bar) solid var(--ink);
   background: var(--wash-firm);
+}
+
+/* In the stepper: a small picture of what it is pointing at. */
+.stepper .diff-current-key {
+  flex: none;
+  width: 1.6em;
+  height: 1.6em;
+  margin-left: 0.2rem;
+  color: var(--ink);
 }
 
 .diff-paragraph-current:last-child {
