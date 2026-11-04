@@ -5,8 +5,8 @@ export interface AlignedItem {
 }
 
 /**
- * How many insertions and deletions an alignment will look for before calling
- * the two sides simply replaced.
+ * How many insertions and deletions one search will look for before giving up on
+ * the stretch it was given.
  *
  * The search keeps about edits²/2 numbers, so this is what bounds it: some 32 MB
  * at the limit, on a laptop with 4 GB.
@@ -92,13 +92,94 @@ function pathThrough(trace: readonly Int32Array[], from: readonly string[], to: 
   return backwards.reverse();
 }
 
+/** Where one item stands in each list. */
+interface Anchor {
+  from: number;
+  to: number;
+}
+
+/** Each item that appears exactly once in the list, and where. */
+function placesOfUnique(items: readonly string[]): Map<string, number> {
+  const places = new Map<string, number>();
+  const repeated = new Set<string>();
+  items.forEach((item, at) => {
+    if (places.has(item)) repeated.add(item);
+    places.set(item, at);
+  });
+  for (const item of repeated) places.delete(item);
+  return places;
+}
+
+/**
+ * The items each list has exactly once, as many of them as stand in the same
+ * order in both. These cannot be matched wrongly, which is what makes them safe
+ * to divide the lists at: Bram Cohen's patience diff.
+ *
+ * Finding the longest run in order is the classic patience sort: each anchor goes
+ * on the leftmost pile whose top is further along than it, and remembers the top
+ * of the pile before.
+ */
+function anchorsBetween(from: readonly string[], to: readonly string[]): Anchor[] {
+  const placesInTo = placesOfUnique(to);
+  const candidates: Anchor[] = [];
+  for (const [item, place] of placesOfUnique(from)) {
+    const other = placesInTo.get(item);
+    if (other !== undefined) candidates.push({ from: place, to: other });
+  }
+
+  const piles: number[] = [];
+  const before = new Int32Array(candidates.length);
+  candidates.forEach((candidate, at) => {
+    let low = 0;
+    let high = piles.length;
+    while (low < high) {
+      const middle = (low + high) >> 1;
+      if ((candidates[piles[middle] ?? 0]?.to ?? 0) < candidate.to) low = middle + 1;
+      else high = middle;
+    }
+    before[at] = low > 0 ? (piles[low - 1] ?? -1) : -1;
+    piles[low] = at;
+  });
+
+  const anchors: Anchor[] = [];
+  for (let at = piles.at(-1) ?? -1; at >= 0; at = before[at] ?? -1) {
+    const anchor = candidates[at];
+    if (anchor !== undefined) anchors.push(anchor);
+  }
+  return anchors.reverse();
+}
+
+/**
+ * For two lists too far apart to search whole: divided at their anchors, with
+ * each stretch between searched by itself. So many small edits spread through a
+ * long text stay many small edits. This need not keep the most items in common
+ * that could be kept, which is why it comes second.
+ *
+ * What has no anchors at all has nothing that can be matched with confidence,
+ * and is called replaced, but only that stretch.
+ */
+function alignInStretches(from: readonly string[], to: readonly string[]): AlignedItem[] {
+  const aligned: AlignedItem[] = [];
+  let [fromAt, toAt] = [0, 0];
+
+  for (const anchor of anchorsBetween(from, to)) {
+    for (const item of alignSequences(from.slice(fromAt, anchor.from), to.slice(toAt, anchor.to))) aligned.push(item);
+    aligned.push({ kind: 'same', text: from[anchor.from] ?? '' });
+    fromAt = anchor.from + 1;
+    toAt = anchor.to + 1;
+  }
+
+  if (fromAt === 0) {
+    for (const text of from) aligned.push({ kind: 'onlyFrom', text });
+    for (const text of to) aligned.push({ kind: 'onlyTo', text });
+    return aligned;
+  }
+  for (const item of alignSequences(from.slice(fromAt), to.slice(toAt))) aligned.push(item);
+  return aligned;
+}
+
 /** Lines two lists up, keeping as many items in common as can be kept in order. */
 export function alignSequences(from: readonly string[], to: readonly string[]): AlignedItem[] {
   const trace = furthestReached(from, to);
-  if (trace !== null) return pathThrough(trace, from, to);
-
-  return [
-    ...from.map((text): AlignedItem => ({ kind: 'onlyFrom', text })),
-    ...to.map((text): AlignedItem => ({ kind: 'onlyTo', text })),
-  ];
+  return trace !== null ? pathThrough(trace, from, to) : alignInStretches(from, to);
 }

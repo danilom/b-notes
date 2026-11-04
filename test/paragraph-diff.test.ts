@@ -220,17 +220,25 @@ describe('finding the alignment', () => {
     assert.equal(changedWords(was, now).length, 600);
   });
 
-  it('stops looking after thousands of differences, and calls the paragraph replaced', () => {
+  it('stops looking after thousands of differences, where nothing can be matched with confidence', () => {
     // Most of it still matches, so without the limit this would be one paragraph
-    // changed. What the limit protects is a machine with less memory than this one.
-    const was = Array.from({ length: 24_000 }, (_, at) => `w${at}`);
-    const now = was.map((word, at) => (at % 8 === 0 ? `n${at}` : word));
+    // changed. Every word repeats, so there is nothing to divide it at. What the
+    // limit protects is a machine with less memory than this one.
+    const was = wordsOfLength(24_000);
+    const now = was.map((word, at) => (at % 8 === 0 ? 'novo' : word));
 
     const kinds = diffParagraphs(joined('N', was.join(' ')), joined('N', now.join(' '))).pieces.map(
       (piece) => piece.kind,
     );
 
     assert.deepEqual(kinds, ['same', 'added', 'missing']);
+  });
+
+  it('goes on past that limit where words it can be sure of divide the paragraph', () => {
+    const was = Array.from({ length: 24_000 }, (_, at) => `w${at}`);
+    const now = was.map((word, at) => (at % 8 === 0 ? `n${at}` : word));
+
+    assert.equal(changedWords(was, now).length, 6000);
   });
 
   it('calls two long paragraphs with nothing to do with each other replaced, rather than running out of memory', () => {
