@@ -132,7 +132,11 @@ function stepperOver(
   box: HTMLElement,
   marked: string,
   words: DiffViewOptions['stepper'],
-  review?: { markCurrent: (change: HTMLElement, isCurrent: boolean) => void; key: SVGElement },
+  review?: {
+    markCurrent: (change: HTMLElement, isCurrent: boolean) => void;
+    changeAt: (clicked: Element) => HTMLElement | null;
+    key: SVGElement;
+  },
 ): HTMLElement {
   const changes = [...box.querySelectorAll<HTMLElement>(marked)];
 
@@ -172,15 +176,12 @@ function stepperOver(
   }
 
   /**
-   * The change clicked on, or the first in the paragraph clicked on, made current.
-   * Without scrolling, since he is already looking at it. A drag that selected
-   * some text was for that, and a paragraph with no change has nothing to offer.
+   * What was clicked on made current, without scrolling, since he is already looking
+   * at it. A drag that selected some text was for that.
    */
   function selectClicked(event: MouseEvent): void {
     if (!(event.target instanceof Element) || getSelection()?.isCollapsed === false) return;
-    const clicked =
-      event.target.closest<HTMLElement>(marked) ??
-      event.target.closest('.diff-paragraph')?.querySelector<HTMLElement>(marked);
+    const clicked = review?.changeAt(event.target);
     const which = clicked === null || clicked === undefined ? -1 : changes.indexOf(clicked);
     if (which >= 0) select(which);
   }
@@ -293,10 +294,55 @@ function correctionMark(): HTMLElement {
   return mark;
 }
 
-/** Shows which change the stepper is on, among the others like it. */
+const CHANGE_FRAGMENT = '.diff-change, .diff-change-carried';
+
+/** Every fragment of a change in reading order, in the view it belongs to. */
+const allFragments = (inside: Element): HTMLElement[] => [
+  ...(inside.closest('.review-text')?.querySelectorAll<HTMLElement>(CHANGE_FRAGMENT) ?? []),
+];
+
+/** A change and what it carries on into later paragraphs. */
+function fragmentsOf(change: HTMLElement): HTMLElement[] {
+  const all = allFragments(change);
+  const fragments = [change];
+  for (let at = all.indexOf(change) + 1; all[at]?.classList.contains('diff-change-carried'); at += 1) {
+    const carried = all[at];
+    if (carried !== undefined) fragments.push(carried);
+  }
+  return fragments;
+}
+
+/** The paragraphs a change is in, and the one after, if the break that opens it is what changed. */
+function paragraphsOfChange(change: HTMLElement): Element[] {
+  const paragraphs = fragmentsOf(change).flatMap((fragment) => fragment.closest('.diff-paragraph') ?? []);
+  const next = paragraphs.at(-1)?.nextElementSibling;
+  const opensWithBreak = next?.classList.contains('diff-paragraph-changed') && next.querySelector(CHANGE_FRAGMENT) === null;
+  return opensWithBreak && next !== null && next !== undefined ? [...paragraphs, next] : paragraphs;
+}
+
+/** Shows which change the stepper is on, among the others like it, all of it. */
 function markCurrentChange(change: HTMLElement, isCurrent: boolean): void {
-  change.classList.toggle('diff-current', isCurrent);
-  change.closest('.diff-paragraph')?.classList.toggle('diff-paragraph-current', isCurrent);
+  for (const fragment of fragmentsOf(change)) fragment.classList.toggle('diff-current', isCurrent);
+  for (const paragraph of paragraphsOfChange(change)) paragraph.classList.toggle('diff-paragraph-current', isCurrent);
+}
+
+/**
+ * The change something clicked on belongs to, or the first in the paragraph clicked
+ * on. A fragment carried over from the paragraph above belongs to the change it
+ * came from, and so does a paragraph marked only for the break that opens it.
+ * Null for a paragraph with no change in it.
+ */
+function changeAt(clicked: Element): HTMLElement | null {
+  const paragraph = clicked.closest('.diff-paragraph');
+  if (paragraph === null || !paragraph.classList.contains('diff-paragraph-changed')) return null;
+
+  const fragment = clicked.closest<HTMLElement>(CHANGE_FRAGMENT) ?? paragraph.querySelector<HTMLElement>(CHANGE_FRAGMENT);
+  if (fragment?.classList.contains('diff-change')) return fragment;
+
+  const isAtOrBefore = (other: HTMLElement): boolean =>
+    other === fragment ||
+    (other.compareDocumentPosition(fragment ?? paragraph) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+  return allFragments(paragraph).findLast((other) => other.classList.contains('diff-change') && isAtOrBefore(other)) ?? null;
 }
 
 /**
@@ -347,14 +393,14 @@ function paragraphBlock({ parts, changed }: DiffParagraph): HTMLElement {
       open = null;
       continue;
     }
-    if (part.opensChange) {
+    if (part.opensChange || open === null) {
       if (open !== null) movingSpacesOutOf(open);
       open = document.createElement('span');
-      open.className = 'diff-change';
+      open.className = part.opensChange ? 'diff-change' : 'diff-change-carried';
       block.append(open);
     }
     const other = part.kind === 'removed' ? parts[at + 1] : parts[at - 1];
-    if (!isSpaceBesideBreak(part, other)) (open ?? block).append(...markedPart(part));
+    if (!isSpaceBesideBreak(part, other)) open.append(...markedPart(part));
   }
   if (open !== null) movingSpacesOutOf(open);
   return block;
@@ -378,6 +424,6 @@ export function createTextDiffView(
 
   const framed = document.createElement('div');
   framed.className = 'review-framed diff-framed';
-  framed.append(text, stepperOver(text, '.diff-change', stepper, { markCurrent: markCurrentChange, key: currentChangeKey() }));
+  framed.append(text, stepperOver(text, '.diff-change', stepper, { markCurrent: markCurrentChange, changeAt, key: currentChangeKey() }));
   return framed;
 }
