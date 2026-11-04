@@ -1,5 +1,7 @@
 import { strings } from '../src/language/wording.ts';
 import { type TextPiece, diffTexts, mergeCloseChanges, separateTidying } from '../src/notes/text-diff.ts';
+import { type ChangeDecision, piecesAfter, textAfter } from '../src/notes/text-review.ts';
+import type { DiffEditing } from '../src/ui/diff-change-bar.ts';
 import { createTextDiffView } from '../src/ui/diff-view.ts';
 import { DIFF_SAMPLES, type DiffSample } from './diff-prototype-samples.ts';
 
@@ -11,6 +13,7 @@ function element<T extends HTMLElement>(id: string, kind: new () => T): T {
 
 const current = element('current', HTMLTextAreaElement);
 const proposed = element('proposed', HTMLTextAreaElement);
+const result = element('result', HTMLTextAreaElement);
 const sample = element('sample', HTMLSelectElement);
 const merging = element('merging', HTMLInputElement);
 const tidying = element('tidying', HTMLSelectElement);
@@ -28,12 +31,58 @@ function aside(text: string): HTMLParagraphElement {
 const tidyingNote = (pieces: readonly TextPiece[]): string =>
   `Sitne popravke: ${pieces.filter((piece) => piece.kind === 'tidy').length}.`;
 
+/** What he has done to the proposal in front of him. Everything else counts as accepted. */
+const changeDecisions = new Map<number, ChangeDecision>();
+const letterDecisions = new Map<number, string[]>();
+let currentChange: number | undefined;
+
+function forgetDecisions(): void {
+  changeDecisions.clear();
+  letterDecisions.clear();
+  currentChange = undefined;
+}
+
+function editingOf(after: readonly TextPiece[]): DiffEditing {
+  const added = after.flatMap((piece) => (piece.kind === 'change' ? [piece.added] : []));
+  const decide = (at: number, decision: ChangeDecision | null): void => {
+    if (decision === null) changeDecisions.delete(at);
+    else changeDecisions.set(at, decision);
+    currentChange = at;
+    renderKeepingPlace();
+  };
+
+  return {
+    ...(currentChange === undefined ? {} : { startAt: currentChange }),
+    isUndone: (at) => changeDecisions.get(at)?.kind === 'undone',
+    addedOf: (at) => added[at] ?? '',
+    onUndo: (at) => decide(at, { kind: 'undone' }),
+    onRestore: (at) => decide(at, null),
+    onEdit: (at, text) => decide(at, { kind: 'edited', text }),
+    onCancelEdit: renderKeepingPlace,
+    lettersOf: (tidyAt) => letterDecisions.get(tidyAt) ?? [],
+    onPickLetter: (tidyAt, slot, letter) => {
+      const chosen = [...(letterDecisions.get(tidyAt) ?? [])];
+      chosen[slot] = letter;
+      letterDecisions.set(tidyAt, chosen);
+      renderKeepingPlace();
+    },
+    onCurrent: (at) => {
+      currentChange = at;
+    },
+  };
+}
+
 function render(): void {
   const words = strings('sr');
   const compared = diffTexts(current.value, proposed.value);
   const pieces = separateTidying(compared);
   const hasTidying = pieces.some((piece) => piece.kind === 'tidy');
   const shown = tidying.value === 'full' ? compared : pieces;
+  const after = piecesAfter(merging.checked ? mergeCloseChanges(shown) : shown, {
+    changes: changeDecisions,
+    letters: letterDecisions,
+  });
+  result.value = textAfter(after);
 
   const column = document.createElement('div');
   column.className = 'review-body';
@@ -41,9 +90,9 @@ function render(): void {
   if (hasTidying && tidying.value !== 'full') column.append(aside(tidyingNote(pieces)));
   column.append(
     createTextDiffView(
-      merging.checked ? mergeCloseChanges(shown) : shown,
+      after,
       { previous: words.changePrevious, next: words.changeNext, at: words.changeAt },
-      { showTidied: tidying.value === 'coloured' },
+      { showTidied: tidying.value === 'coloured', editing: editingOf(after) },
     ),
   );
   view.replaceChildren(column);
@@ -63,6 +112,12 @@ function renderKeepingPlace(): void {
   });
 }
 
+/** The decisions were about what was there before, and mean nothing now. */
+function startOver(): void {
+  forgetDecisions();
+  renderKeepingPlace();
+}
+
 const samples: DiffSample[] = [...DIFF_SAMPLES];
 
 function showSample(at: number): void {
@@ -70,6 +125,7 @@ function showSample(at: number): void {
   if (chosen === undefined) return;
   current.value = chosen.current;
   proposed.value = chosen.proposed;
+  forgetDecisions();
   render();
 }
 
@@ -110,15 +166,28 @@ async function addRealSamples(): Promise<void> {
 
 sample.addEventListener('change', () => showSample(Number(sample.value)));
 
-current.addEventListener('input', renderKeepingPlace);
-proposed.addEventListener('input', renderKeepingPlace);
-merging.addEventListener('change', renderKeepingPlace);
-tidying.addEventListener('change', renderKeepingPlace);
+current.addEventListener('input', startOver);
+proposed.addEventListener('input', startOver);
+merging.addEventListener('change', startOver);
+tidying.addEventListener('change', startOver);
 
 element('swap', HTMLButtonElement).addEventListener('click', () => {
   [current.value, proposed.value] = [proposed.value, current.value];
+  forgetDecisions();
   render();
 });
+
+// Nothing is saved from this page. Here the main button only stands for what the
+// real panel would do: the text becomes what the result says, and nothing is left
+// to compare.
+element('apply', HTMLButtonElement).addEventListener('click', () => {
+  current.value = result.value;
+  proposed.value = result.value;
+  forgetDecisions();
+  render();
+});
+
+element('close', HTMLButtonElement).addEventListener('click', startOver);
 
 dark.addEventListener('change', () => {
   document.documentElement.dataset['mode'] = dark.checked ? 'dark' : 'light';

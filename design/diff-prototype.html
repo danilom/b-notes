@@ -40,9 +40,19 @@
         gap: 0.35rem;
       }
 
+      .prototype-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+      }
+
+      .prototype-footer button {
+        padding: 0.3rem 0.9rem;
+      }
+
       .prototype-boxes {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
         gap: 0.8rem;
       }
 
@@ -56,7 +66,7 @@
       .prototype-boxes textarea {
         box-sizing: border-box;
         width: 100%;
-        height: 24vh;
+        height: 16vh;
         padding: 0.5rem 0.7rem;
         resize: vertical;
         border: 1px solid var(--line);
@@ -114,8 +124,16 @@
         Predlog
         <textarea id="proposed" spellcheck="false"></textarea>
       </label>
+      <label>
+        Rezultat
+        <textarea id="result" spellcheck="false" readonly></textarea>
+      </label>
     </div>
     <div id="view"></div>
+    <div class="prototype-footer">
+      <button type="button" id="close">Zatvori</button>
+      <button type="button" id="apply" class="keep">Unesi izmene u tekst</button>
+    </div>
     <script src="/diff-prototype.js"></script>
   </body>
 </html>
