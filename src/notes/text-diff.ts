@@ -112,9 +112,12 @@ export function diffTexts(before: string, after: string): TextPiece[] {
  *   where his leading spaces are how he ranks his titles.
  * - As long as the paragraphs stay as they are. One split or joined is his
  *   structure, not his spacing.
+ * - And his lines inside a paragraph, unless told otherwise: three changes written
+ *   one under the other are three lines, which an AI could flatten.
  */
-function isTidying({ removed, added }: Pick<Change, 'removed' | 'added'>): boolean {
+function isTidying({ removed, added }: Pick<Change, 'removed' | 'added'>, lineBreaks: boolean): boolean {
   if (BLANK_LINES.test(removed) !== BLANK_LINES.test(added)) return false;
+  if (!lineBreaks && removed.includes('\n') !== added.includes('\n')) return false;
 
   const [was, now] = [removed, added].map((text) => text.normalize('NFC').replace(/\s+/g, ' '));
   if (was === undefined || now === undefined || was.length !== now.length) return false;
@@ -126,16 +129,94 @@ function isTidying({ removed, added }: Pick<Change, 'removed' | 'added'>): boole
   return true;
 }
 
-/** The same pieces, with the changes nobody needs to read set apart as `tidy`. */
-export const separateTidying = (pieces: readonly TextPiece[]): TextPiece[] =>
-  pieces.map((piece) => (piece.kind === 'change' && isTidying(piece) ? { ...piece, kind: 'tidy' } : piece));
+const plainWordOf = (word: string): string => withoutDiacritics(word.toLowerCase());
+
+const hasLetters = (token: string): boolean => /[\p{L}\p{N}]/u.test(token);
+
+/**
+ * The words that come out in more than one spelling, by their plain form: `sto`
+ * standing in one place and `što` in another.
+ *
+ * Restoring a diacritic can be a judgement call, because `sto` and `što` are both
+ * words, and so are `kuca` and `kuća`. Without a dictionary this cannot say which
+ * plain words are words. What it can see is the text disagreeing with itself,
+ * which means the choice was made word by word and could have gone wrong.
+ */
+function wordsSpelledBothWays(text: string): Set<string> {
+  const spellings = new Map<string, string>();
+  const both = new Set<string>();
+  for (const token of tokensOf(text)) {
+    if (!hasLetters(token)) continue;
+    const spelling = comparedAs(token).toLowerCase();
+    const plain = plainWordOf(token);
+    if ((spellings.get(plain) ?? spelling) !== spelling) both.add(plain);
+    spellings.set(plain, spelling);
+  }
+  return both;
+}
+
+/** What the whole list reads as, once its changes are taken. */
+const proposedText = (pieces: readonly TextPiece[]): string =>
+  pieces.map((piece) => (piece.kind === 'same' ? piece.text : piece.added)).join('');
+
+export interface TidyingOptions {
+  /** Whether a line break inside a paragraph, coming or going, counts as tidying. */
+  lineBreaks: boolean;
+}
+
+/**
+ * The same pieces, with the changes nobody needs to read set apart as `tidy`.
+ *
+ * A diacritic on a word the text spells both ways stays a change, for him to look
+ * at, since that one is the likeliest to be wrong.
+ */
+export function separateTidying(pieces: readonly TextPiece[], { lineBreaks }: TidyingOptions): TextPiece[] {
+  const uncertain = wordsSpelledBothWays(proposedText(pieces));
+  const isUncertain = (added: string): boolean =>
+    tokensOf(added).some((token) => hasLetters(token) && uncertain.has(plainWordOf(token)));
+
+  return pieces.map((piece) =>
+    piece.kind === 'change' && isTidying(piece, lineBreaks) && !isUncertain(piece.added)
+      ? { ...piece, kind: 'tidy' }
+      : piece,
+  );
+}
+
+/** A run of a tidied word, and whether its letters are the ones that changed. */
+export interface TidiedLetters {
+  text: string;
+  changed: boolean;
+}
+
+/**
+ * Which letters of a tidied word are different from what stood there.
+ *
+ * Told letter by letter, so that he sees what was done for him: one letter in a
+ * word, and not the word replaced. Where the two do not line up letter for letter
+ * nothing is singled out.
+ */
+export function tidiedLettersOf({ removed, added }: Pick<Change, 'removed' | 'added'>): TidiedLetters[] {
+  const [was, now] = [removed.normalize('NFC'), added.normalize('NFC')];
+  if (was.length !== now.length) return [{ text: added, changed: false }];
+
+  const runs: TidiedLetters[] = [];
+  for (let at = 0; at < now.length; at += 1) {
+    const changed = was.charAt(at) !== now.charAt(at) && /\S/.test(now.charAt(at));
+    const open = runs.at(-1);
+    if (open?.changed === changed) open.text += now.charAt(at);
+    else runs.push({ text: now.charAt(at), changed });
+  }
+  return runs;
+}
 
 /** A run of text in one paragraph as drawn, and whose it is. */
 export interface DiffPart {
-  kind: 'same' | 'removed' | 'added';
+  kind: 'same' | 'removed' | 'added' | 'tidied';
   text: string;
   /** The first part of a change, where a change is carried across paragraphs. */
   opensChange: boolean;
+  /** What a `tidied` word was before, so its changed letters can be told. */
+  was?: string;
 }
 
 export interface DiffParagraph {
@@ -150,14 +231,15 @@ export interface DiffParagraph {
  *
  * For the screen only. Unlike the pieces, this does not keep his exact spacing:
  * a blank line becomes the gap between two paragraphs. What is `tidy` is drawn as
- * it would be, with nothing to say it changed.
+ * it would be, in no way marking the paragraph as changed. With `showTidied` a
+ * tidied word comes as a part of its own; spacing has nothing left to show.
  *
  * A change that is nothing but spacing is not split, because it has no text to
  * show on either side of the break: it stays a part, for the view to make
  * visible. An added one does still break the paragraph, and the text after it
  * counts as changed, since it now starts a paragraph it did not start before.
  */
-export function paragraphsOf(pieces: readonly TextPiece[]): DiffParagraph[] {
+export function paragraphsOf(pieces: readonly TextPiece[], { showTidied = false } = {}): DiffParagraph[] {
   const paragraphs: DiffParagraph[] = [{ parts: [], changed: false }];
   const startParagraph = (changed: boolean): void => {
     paragraphs.push({ parts: [], changed });
@@ -167,7 +249,7 @@ export function paragraphsOf(pieces: readonly TextPiece[]): DiffParagraph[] {
     const open = paragraphs.at(-1);
     if (open === undefined) return;
     open.parts.push(part);
-    open.changed ||= part.kind !== 'same';
+    open.changed ||= part.kind === 'removed' || part.kind === 'added';
   };
 
   const addSplit = (kind: DiffPart['kind'], text: string, opensChange: boolean): void => {
@@ -186,7 +268,11 @@ export function paragraphsOf(pieces: readonly TextPiece[]): DiffParagraph[] {
       continue;
     }
     if (piece.kind === 'tidy') {
-      addSplit('same', piece.added, false);
+      if (showTidied && /\S/.test(piece.added)) {
+        addPart({ kind: 'tidied', text: piece.added, was: piece.removed, opensChange: false });
+      } else {
+        addSplit('same', piece.added, false);
+      }
       continue;
     }
     const { removed, added } = piece;
