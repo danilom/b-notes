@@ -284,11 +284,17 @@ function movingSpacesOutOf(change: HTMLElement): void {
   if (last instanceof Text && last !== first) change.after(last);
 }
 
-/** A change he has dealt with: just its text, in quiet colour. With none left, a dotted circle, so it can be found again. */
+/**
+ * A change he has dealt with: just its text, in quiet colour. With none left, an
+ * empty dotted box, so it can be found again; a single character, heavier, because
+ * a lone green comma is otherwise lost.
+ */
 function resolvedPart(text: string): HTMLElement {
   const part = document.createElement('span');
   part.className = 'diff-resolved';
-  part.textContent = text === '' ? '◌' : text;
+  part.textContent = text;
+  if (text === '') part.classList.add('diff-resolved-empty');
+  else if ([...text.trim()].length === 1) part.classList.add('diff-resolved-small');
   return part;
 }
 

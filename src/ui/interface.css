@@ -2640,6 +2640,22 @@ dialog::backdrop {
   color: var(--diff-resolved-ink);
 }
 
+.diff-resolved-small {
+  font-size: 1.2em;
+  font-weight: 700;
+}
+
+/* Where he resolved something that left no text. Drawn rather than typed, because
+   a symbol from a font comes out as thin as that font makes it. */
+.diff-resolved-empty {
+  display: inline-block;
+  width: 0.66em;
+  height: 0.66em;
+  margin: 0 0.12em;
+  border: 3px dotted var(--diff-resolved-ink);
+  vertical-align: -0.06em;
+}
+
 /* A letter he has chosen: dealt with, so green, still a small mark to be seen. */
 .diff-tidied.diff-tidied-chosen {
   color: var(--diff-resolved-ink);
