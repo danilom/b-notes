@@ -21,7 +21,7 @@ export interface DiffEditing {
 /** Long enough that a pointer passing over on its way somewhere raises nothing. */
 const SHOW_AFTER_MS = 100;
 /** Long enough for an unsteady hand to get from the word up to the button. */
-const HIDE_AFTER_MS = 400;
+const HIDE_AFTER_MS = 700;
 const GAP_ABOVE_PX = 3;
 
 const HOVERABLE = '.diff-change, .diff-change-carried, .diff-tidied-letter';
@@ -181,7 +181,11 @@ export function createDiffChangeBar(
       return;
     }
     bar.hidden = false;
-    const left = Math.min(line.left - frame.left, frame.width - bar.offsetWidth);
+    // Over a single letter, centred on it: the pointer is right there, and has the
+    // shortest way to go whichever letter it wants. A change is read from its start.
+    const isLetter = over.classList.contains('diff-tidied-letter');
+    const wanted = isLetter ? (line.left + line.right) / 2 - bar.offsetWidth / 2 : line.left;
+    const left = Math.min(wanted - frame.left, frame.width - bar.offsetWidth);
     bar.style.left = `${Math.max(0, left)}px`;
     bar.style.top = `${line.top - frame.top - bar.offsetHeight - GAP_ABOVE_PX}px`;
   }
