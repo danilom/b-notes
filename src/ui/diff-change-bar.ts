@@ -115,7 +115,7 @@ export function createDiffChangeBar(
   editing: DiffEditing,
 ): DiffChangeBar {
   const bar = document.createElement('div');
-  bar.className = 'diff-bar';
+  bar.className = 'stepper diff-bar';
   bar.hidden = true;
   framed.append(bar);
 
@@ -150,8 +150,8 @@ export function createDiffChangeBar(
       return;
     }
     bar.replaceChildren(
-      barButton('Vrati staro', 'diff-bar-old diff-bar-choice', () => editing.onUndo(at)),
-      barButton('Prihvati', 'diff-bar-new diff-bar-choice', () => editing.onAccept(at)),
+      barButton('Vrati staro', 'diff-bar-old', () => editing.onUndo(at)),
+      barButton('Prihvati', 'diff-bar-new', () => editing.onAccept(at)),
       edit,
     );
   }

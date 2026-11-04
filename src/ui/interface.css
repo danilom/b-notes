@@ -2638,6 +2638,7 @@ dialog::backdrop {
 /* A change he has dealt with: still different, but no longer asking for anything. */
 .diff-resolved {
   color: var(--diff-resolved-ink);
+  font-weight: 700;
 }
 
 .diff-new,
@@ -2675,39 +2676,23 @@ dialog::backdrop {
 }
 
 /*
-  The small bar above a change. The buttons wear the colours of what they bring
-  back: red for his old text, green for the proposal.
+  The small bar above a change: a .stepper in looks, so that there is one floating
+  box to learn and not two. What it adds is where it sits, and buttons that wear the
+  colours of what they bring back: red for his old text, green for the proposal.
 */
 .diff-bar {
   position: absolute;
   z-index: 3;
-  display: flex;
-  gap: 0.25rem;
-  padding: 0.2rem;
-  border: 1px solid var(--line);
-  background: var(--page);
-  box-shadow: 0 2px 8px hsl(var(--grey-h) var(--surface) var(--l-shadow) / var(--shadow-alpha));
-  font-family: var(--ui-font);
-  font-size: calc(var(--ui-size) * 0.85);
-  white-space: nowrap;
 }
 
 .diff-bar[hidden] {
   display: none;
 }
 
+/* All one width, so that none of them looks like the preferred answer. */
 .diff-bar button {
-  /* The same size as Prethodna and Sledeća: something to aim at, not a detail. */
-  padding: 0.25rem 0.6rem;
-}
-
-.diff-bar .diff-bar-edit {
-  background: var(--page);
-}
-
-/* Neither of these is the preferred answer, and neither looks it. */
-.diff-bar .diff-bar-choice {
-  min-width: 6.5em;
+  justify-content: center;
+  min-width: 7.2em;
 }
 
 .diff-bar .diff-bar-old {
