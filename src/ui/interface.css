@@ -2625,6 +2625,8 @@ dialog::backdrop {
   margin-left: calc(-1 * (var(--run-inset) + var(--bar)));
   padding-left: var(--run-inset);
   border-left: var(--bar) solid var(--hint);
+  /* A click makes it the current one. */
+  cursor: pointer;
 }
 
 .diff-new,

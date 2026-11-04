@@ -147,7 +147,7 @@ function stepperOver(
   // the panel laid out. Hidden is the safe state to start in.
   steps.root.hidden = true;
 
-  function goTo(which: number): void {
+  function select(which: number): HTMLElement | undefined {
     const was = changes[showing];
     if (was !== undefined) review?.markCurrent(was, false);
 
@@ -158,12 +158,31 @@ function stepperOver(
     });
 
     const change = changes[showing];
+    if (change !== undefined) review?.markCurrent(change, true);
+    return change;
+  }
+
+  function goTo(which: number): void {
+    const change = select(which);
     if (change === undefined) return;
-    review?.markCurrent(change, true);
     box.scrollTop = scrollShowing(
       { top: change.offsetTop - box.offsetTop, height: change.offsetHeight },
       { height: box.clientHeight, scrollable: box.scrollHeight - box.clientHeight },
     );
+  }
+
+  /**
+   * The change clicked on, or the first in the paragraph clicked on, made current.
+   * Without scrolling, since he is already looking at it. A drag that selected
+   * some text was for that, and a paragraph with no change has nothing to offer.
+   */
+  function selectClicked(event: MouseEvent): void {
+    if (!(event.target instanceof Element) || getSelection()?.isCollapsed === false) return;
+    const clicked =
+      event.target.closest<HTMLElement>(marked) ??
+      event.target.closest('.diff-paragraph')?.querySelector<HTMLElement>(marked);
+    const which = clicked === null || clicked === undefined ? -1 : changes.indexOf(clicked);
+    if (which >= 0) select(which);
   }
 
   // After the view is in the document, or every measurement here is zero.
@@ -175,6 +194,7 @@ function stepperOver(
     const worthShowing = review !== undefined ? changes.length > 1 : box.scrollHeight > box.clientHeight;
     if (changes.length === 0 || !worthShowing) return;
     steps.root.hidden = false;
+    if (review !== undefined) box.addEventListener('click', selectClicked);
     goTo(0);
   });
   return steps.root;
