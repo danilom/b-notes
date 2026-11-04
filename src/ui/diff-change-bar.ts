@@ -1,5 +1,3 @@
-import { letterSegmentsOf } from '../notes/text-review.ts';
-
 /** What the reviewer of a proposal can do to it, from the bar above each change. */
 export interface DiffEditing {
   /** The change to start on, by its place among the changes. */
@@ -26,7 +24,7 @@ const SHOW_AFTER_MS = 150;
 const HIDE_AFTER_MS = 400;
 const GAP_ABOVE_PX = 3;
 
-const HOVERABLE = '.diff-change, .diff-change-carried, .diff-tidied-word';
+const HOVERABLE = '.diff-change, .diff-change-carried, .diff-tidied-letter';
 
 export interface DiffChangeBar {
   /** The change whose bar shows when the pointer is over no other. */
@@ -156,30 +154,20 @@ export function createDiffChangeBar(
     );
   }
 
-  function fillForWord(word: HTMLElement): void {
-    const tidyAt = Number(word.dataset['tidyAt']);
-    const chosen = editing.lettersOf(tidyAt);
-    const segments = letterSegmentsOf(word.dataset['was'] ?? '', word.dataset['proposed'] ?? '');
+  function fillForLetter(letter: HTMLElement): void {
+    const [tidyAt, slot] = [Number(letter.dataset['tidyAt']), Number(letter.dataset['slot'])];
+    const choices: unknown = JSON.parse(letter.dataset['choices'] ?? '[]');
+    if (!Array.isArray(choices)) return;
 
-    let slot = -1;
     bar.replaceChildren(
-      ...segments.flatMap((segment) => {
-        if (segment.kind !== 'slot') return [];
-        slot += 1;
-        const thisSlot = slot;
-        const showing = chosen[thisSlot] ?? segment.proposed;
-        const group = document.createElement('span');
-        group.className = 'diff-bar-letters';
-        group.append(
-          ...segment.choices.map((letter) =>
-            barButton(
-              letter,
-              letter === showing ? 'diff-bar-letter diff-bar-letter-chosen' : 'diff-bar-letter',
-              () => editing.onPickLetter(tidyAt, thisSlot, letter),
-            ),
+      ...choices.flatMap((choice: unknown) => {
+        if (typeof choice !== 'string') return [];
+        const isShowing = choice === letter.textContent;
+        return [
+          barButton(choice, isShowing ? 'diff-bar-letter diff-bar-letter-chosen' : 'diff-bar-letter', () =>
+            editing.onPickLetter(tidyAt, slot, choice),
           ),
-        );
-        return [group];
+        ];
       }),
     );
   }
@@ -201,8 +189,8 @@ export function createDiffChangeBar(
   function showOver(over: Element): void {
     if (isEditing) return;
     shownOver = over;
-    if (over.classList.contains('diff-tidied-word') && over instanceof HTMLElement) {
-      fillForWord(over);
+    if (over.classList.contains('diff-tidied-letter') && over instanceof HTMLElement) {
+      fillForLetter(over);
     } else {
       const change = changeOfFragment(over, changes, fragmentsAll());
       if (change === null) return;

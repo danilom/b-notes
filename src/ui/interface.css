@@ -2638,7 +2638,11 @@ dialog::backdrop {
 /* A change he has dealt with: still different, but no longer asking for anything. */
 .diff-resolved {
   color: var(--diff-resolved-ink);
-  font-weight: 700;
+}
+
+/* A letter he has chosen: dealt with, so green, still a small mark to be seen. */
+.diff-tidied.diff-tidied-chosen {
+  color: var(--diff-resolved-ink);
 }
 
 .diff-new,
@@ -2695,26 +2699,25 @@ dialog::backdrop {
   min-width: 7.2em;
 }
 
+/* A little faint until the pointer is on them, which is what the plain buttons say
+   by lighting up, and these are too strong in colour to do it that way. */
 .diff-bar .diff-bar-old {
   border-color: var(--diff-gone-fill);
   background: var(--diff-gone-fill);
   color: var(--diff-gone-ink);
+  opacity: 0.8;
 }
 
 .diff-bar .diff-bar-new {
   border-color: var(--diff-new-fill);
   background: var(--diff-new-fill);
   color: var(--diff-new-ink);
+  opacity: 0.8;
 }
 
-/* One group for each letter of a word that can be chosen. */
-.diff-bar-letters {
-  display: flex;
-  gap: 0.15rem;
-}
-
-.diff-bar-letters + .diff-bar-letters {
-  margin-left: 0.5rem;
+.diff-bar .diff-bar-old:hover,
+.diff-bar .diff-bar-new:hover {
+  opacity: 1;
 }
 
 .diff-bar .diff-bar-letter {
@@ -2763,6 +2766,16 @@ dialog::backdrop {
   line-height: 0;
   text-indent: -0.25em;
   user-select: none;
+}
+
+/* The mark is a speck, and has a tooltip that takes aiming at. */
+.diff-correction-mark::after {
+  content: '';
+  position: absolute;
+  top: -0.7em;
+  left: -0.5em;
+  width: 1em;
+  height: 1.1em;
 }
 
 /* A space or a break, drawn as a symbol. In the interface's face, because his

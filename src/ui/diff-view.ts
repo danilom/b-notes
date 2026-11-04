@@ -4,7 +4,6 @@ import {
   type DiffPart,
   type TextPiece,
   paragraphsOf,
-  tidiedLettersOf,
 } from '../notes/text-diff.ts';
 import { letterSegmentsOf } from '../notes/text-review.ts';
 import { scrollShowing } from './change-in-view.ts';
@@ -299,33 +298,39 @@ function markedPart({ kind, text }: DiffPart): (HTMLElement | string)[] {
 }
 
 /**
- * A word as it would be, with only the letters that were put right in colour. Held
- * together with what it needs for offering other letters, where any can be offered.
+ * A word as it would be, with only what was put right in colour. Each such letter
+ * is a target of its own, carrying what else it could be, and turns green once he
+ * has chosen for it, which is how the rest of a review shows what is dealt with.
  */
-function tidiedPart({ text, was = '', proposed = text, tidyAt = 0 }: DiffPart): (HTMLElement | string)[] {
-  const letters = tidiedLettersOf({ removed: was, added: text }).map((run) => {
-    if (!run.changed) return run.text;
+function tidiedPart({ text, was = '', proposed = text, tidyAt = 0, letters = [] }: DiffPart): (HTMLElement | string)[] {
+  let slot = -1;
+  return letterSegmentsOf(was, proposed).map((segment) => {
+    if (segment.kind === 'fixed' && segment.put !== true) return segment.text;
+
     const part = document.createElement('span');
     part.className = 'diff-tidied';
-    part.textContent = run.text;
+    if (segment.kind === 'fixed') {
+      part.textContent = segment.text;
+      return part;
+    }
+    slot += 1;
+    const chosen = letters[slot];
+    part.classList.add('diff-tidied-letter');
+    if (chosen !== undefined) part.classList.add('diff-tidied-chosen');
+    part.textContent = chosen ?? segment.proposed;
+    part.dataset['tidyAt'] = String(tidyAt);
+    part.dataset['slot'] = String(slot);
+    part.dataset['choices'] = JSON.stringify(segment.choices);
     return part;
   });
-  if (!letterSegmentsOf(was, proposed).some((segment) => segment.kind === 'slot')) return letters;
-
-  const word = document.createElement('span');
-  word.className = 'diff-tidied-word';
-  word.dataset['tidyAt'] = String(tidyAt);
-  word.dataset['was'] = was;
-  word.dataset['proposed'] = proposed;
-  word.append(...letters);
-  return [word];
 }
 
 /** A proofreader's caret, where something was corrected and left nothing else to show. */
-function correctionMark(): HTMLElement {
+function correctionMark(was: string): HTMLElement {
   const mark = document.createElement('span');
   mark.className = 'diff-correction-mark';
   mark.textContent = '‸';
+  mark.title = /\S/.test(was) ? 'Uklonjen znak' : 'Ispravljen razmak';
   return mark;
 }
 
@@ -428,7 +433,7 @@ function paragraphBlock({ parts, changed }: DiffParagraph): HTMLElement {
       if (open !== null) movingSpacesOutOf(open);
       if (part.kind === 'same') block.append(part.text);
       else if (part.kind === 'tidied') block.append(...tidiedPart(part));
-      else block.append(correctionMark());
+      else block.append(correctionMark(part.was ?? ''));
       open = null;
       continue;
     }
