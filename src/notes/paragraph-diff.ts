@@ -89,55 +89,104 @@ const wordsOf = (text: string): string[] =>
 const countOf = (words: readonly string[]): number => words.filter((word) => word !== LINE_BREAK).length;
 
 /**
- * The classic longest-common-subsequence table, filled from the end.
+ * How many insertions and deletions an alignment will look for before calling
+ * the two sides simply replaced.
  *
- * A flat Int32Array rather than nested arrays: his longest essay is around
- * seven hundred paragraphs, and half a million boxed numbers to draw one dialog
- * is a cost with nothing to show for it.
+ * The search keeps about edits²/2 numbers, so this is what bounds it: some 32 MB
+ * at the limit, on a laptop with 4 GB. Two sides further apart than this have
+ * thousands of words between them that differ, where a closer alignment would
+ * not say anything he could read anyway.
  */
-function commonLengths(from: readonly string[], to: readonly string[]): Int32Array {
-  const width = to.length + 1;
-  const table = new Int32Array((from.length + 1) * width);
+const MOST_EDITS = 4000;
 
-  for (let row = from.length - 1; row >= 0; row -= 1) {
-    for (let column = to.length - 1; column >= 0; column -= 1) {
-      table[row * width + column] =
-        from[row] === to[column]
-          ? (table[(row + 1) * width + column + 1] ?? 0) + 1
-          : Math.max(table[(row + 1) * width + column] ?? 0, table[row * width + column + 1] ?? 0);
+/** How far along `from` a path gets by taking one more of its items, or -1 where none leads here. */
+const reachedAcross = (before: Int32Array, slot: number): number =>
+  slot > 0 ? (before[slot - 1] ?? 0) + 1 : -1;
+
+/** How far along `from` a path stands after taking one more of `to`, or -1 where none leads here. */
+const reachedDown = (before: Int32Array, slot: number, edits: number): number =>
+  slot < edits ? (before[slot] ?? 0) : -1;
+
+/**
+ * Myers' greedy search: for each number of edits in turn, how far along `from`
+ * each diagonal can get. Done when one reaches the end of both.
+ *
+ * Its cost follows how much the two differ rather than how long they are, and
+ * that is why it is here. The table it replaced cost words × words whatever the
+ * edit, so a proofreader's few changes to a long paragraph took seventeen
+ * seconds at 30,000 words and ran out of memory at 60,000.
+ *
+ * Nothing stops a path running off the end of a side, and nothing needs to: it
+ * can never come back, and getting that far costs more edits than the real end
+ * does, so the real end is always found first.
+ *
+ * @returns One row per number of edits, for walking back; null past MOST_EDITS.
+ */
+function furthestReached(from: readonly string[], to: readonly string[]): Int32Array[] | null {
+  const trace: Int32Array[] = [];
+  const most = Math.min(from.length + to.length, MOST_EDITS);
+
+  for (let edits = 0; edits <= most; edits += 1) {
+    const before = trace.at(-1) ?? new Int32Array(0);
+    const row = new Int32Array(edits + 1);
+
+    for (let slot = 0; slot <= edits; slot += 1) {
+      const diagonal = 2 * slot - edits;
+      let x = edits === 0 ? 0 : Math.max(reachedAcross(before, slot), reachedDown(before, slot, edits));
+      while (x < from.length && x - diagonal < to.length && from[x] === to[x - diagonal]) x += 1;
+      row[slot] = x;
+      if (x === from.length && x - diagonal === to.length) {
+        trace.push(row);
+        return trace;
+      }
+    }
+    trace.push(row);
+  }
+  return null;
+}
+
+/**
+ * Walks the search back from the end to the path it found, in reading order.
+ *
+ * Where either step would do, the step taken last is one of `to`, which reads
+ * as what `from` had coming before what `to` has in its place.
+ */
+function pathThrough(trace: readonly Int32Array[], from: readonly string[], to: readonly string[]): WordPiece[] {
+  const backwards: WordPiece[] = [];
+  let x = from.length;
+  let y = to.length;
+
+  for (let edits = trace.length - 1; edits > 0; edits -= 1) {
+    const before = trace[edits - 1] ?? new Int32Array(0);
+    const slot = (x - y + edits) / 2;
+    const across = reachedAcross(before, slot);
+    const down = reachedDown(before, slot, edits);
+    const start = Math.max(across, down);
+
+    for (; x > start; x -= 1, y -= 1) backwards.push({ kind: 'same', text: from[x - 1] ?? '' });
+
+    if (down >= across) {
+      y -= 1;
+      backwards.push({ kind: 'missing', text: to[y] ?? '' });
+    } else {
+      x -= 1;
+      backwards.push({ kind: 'added', text: from[x] ?? '' });
     }
   }
-  return table;
+  for (; x > 0; x -= 1) backwards.push({ kind: 'same', text: from[x - 1] ?? '' });
+
+  return backwards.reverse();
 }
 
 /** One alignment, used for paragraphs and then again for the words inside one. */
 function align(from: readonly string[], to: readonly string[]): WordPiece[] {
-  const table = commonLengths(from, to);
-  const width = to.length + 1;
-  const ahead = (row: number, column: number): number => table[row * width + column] ?? 0;
+  const trace = furthestReached(from, to);
+  if (trace !== null) return pathThrough(trace, from, to);
 
-  const pieces: WordPiece[] = [];
-  let row = 0;
-  let column = 0;
-
-  while (row < from.length && column < to.length) {
-    const [here, there] = [from[row] ?? '', to[column] ?? ''];
-    if (here === there) {
-      pieces.push({ kind: 'same', text: here });
-      row += 1;
-      column += 1;
-    } else if (ahead(row + 1, column) >= ahead(row, column + 1)) {
-      pieces.push({ kind: 'added', text: here });
-      row += 1;
-    } else {
-      pieces.push({ kind: 'missing', text: there });
-      column += 1;
-    }
-  }
-  for (; row < from.length; row += 1) pieces.push({ kind: 'added', text: from[row] ?? '' });
-  for (; column < to.length; column += 1) pieces.push({ kind: 'missing', text: to[column] ?? '' });
-
-  return pieces;
+  return [
+    ...from.map((text): WordPiece => ({ kind: 'added', text })),
+    ...to.map((text): WordPiece => ({ kind: 'missing', text })),
+  ];
 }
 
 /** Null unless these two are alike enough to be called one paragraph reworded. */
