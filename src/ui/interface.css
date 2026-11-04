@@ -2661,9 +2661,15 @@ dialog::backdrop {
   font-weight: 700;
 }
 
-/* A letter put right: colour only, so that it reads as part of his sentence. */
+/* A letter put right. Still part of his sentence, with no box around it, but
+   heavy and underlined too, since one letter in colour alone is easy to miss and
+   on a warm screen the colour is the first thing to go. */
 .diff-tidied {
   color: var(--diff-tidied-ink);
+  font-weight: 700;
+  text-decoration: underline 2px;
+  text-decoration-skip-ink: none;
+  text-underline-offset: 2px;
 }
 
 /* A space or a break, drawn as a symbol. In the interface's face, because his
