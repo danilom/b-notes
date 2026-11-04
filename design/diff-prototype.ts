@@ -1,9 +1,8 @@
 import { strings } from '../src/language/wording.ts';
 import { type TextPiece, diffTexts, mergeCloseChanges, separateTidying } from '../src/notes/text-diff.ts';
-import { type ChangeDecision, piecesAfter, textAfter } from '../src/notes/text-review.ts';
-import type { DiffEditing } from '../src/ui/diff-change-bar.ts';
+import { type DiffReview, createDiffReview } from '../src/ui/diff-review.ts';
 import { createTextDiffView } from '../src/ui/diff-view.ts';
-import { DIFF_SAMPLES, type DiffSample } from './diff-prototype-samples.ts';
+import { DIFF_SAMPLES, type DiffSample, fetchRealSamples } from './diff-prototype-samples.ts';
 
 function element<T extends HTMLElement>(id: string, kind: new () => T): T {
   const found = document.getElementById(id);
@@ -31,56 +30,11 @@ function aside(text: string): HTMLParagraphElement {
 const tidyingNote = (pieces: readonly TextPiece[]): string =>
   `Sitne popravke: ${pieces.filter((piece) => piece.kind === 'tidy').length}.`;
 
-/** What he has done to the proposal in front of him. Everything else counts as accepted. */
-const changeDecisions = new Map<number, ChangeDecision>();
-const letterDecisions = new Map<number, string[]>();
-let currentChange: number | undefined;
-let isBarClosed = false;
+/** The proposal in front of him, which starts over whenever what is compared changes. */
+let review: DiffReview | null = null;
 
 function forgetDecisions(): void {
-  changeDecisions.clear();
-  letterDecisions.clear();
-  currentChange = undefined;
-  isBarClosed = false;
-}
-
-function editingOf(after: readonly TextPiece[]): DiffEditing {
-  const wording = after.flatMap((piece) => {
-    if (piece.kind !== 'change') return [];
-    return [piece.undone === true ? piece.removed : piece.added];
-  });
-  const decide = (at: number, decision: ChangeDecision | null): void => {
-    if (decision === null) changeDecisions.delete(at);
-    else changeDecisions.set(at, decision);
-    currentChange = at;
-    isBarClosed = false;
-    renderKeepingPlace();
-  };
-
-  return {
-    ...(currentChange === undefined ? {} : { startAt: currentChange }),
-    startsClosed: isBarClosed,
-    onBarClosed: (closed) => {
-      isBarClosed = closed;
-    },
-    isResolved: (at) => changeDecisions.has(at),
-    wordingOf: (at) => wording[at] ?? '',
-    onUndo: (at) => decide(at, { kind: 'undone' }),
-    onAccept: (at) => decide(at, { kind: 'accepted' }),
-    onReopen: (at) => decide(at, null),
-    onEdit: (at, text) => decide(at, { kind: 'edited', text }),
-    onCancelEdit: renderKeepingPlace,
-    lettersOf: (tidyAt) => letterDecisions.get(tidyAt) ?? [],
-    onPickLetter: (tidyAt, slot, letter) => {
-      const chosen = [...(letterDecisions.get(tidyAt) ?? [])];
-      chosen[slot] = letter;
-      letterDecisions.set(tidyAt, chosen);
-      renderKeepingPlace();
-    },
-    onCurrent: (at) => {
-      currentChange = at;
-    },
-  };
+  review = null;
 }
 
 function render(): void {
@@ -89,11 +43,8 @@ function render(): void {
   const pieces = separateTidying(compared);
   const hasTidying = pieces.some((piece) => piece.kind === 'tidy');
   const shown = tidying.value === 'full' ? compared : pieces;
-  const after = piecesAfter(merging.checked ? mergeCloseChanges(shown) : shown, {
-    changes: changeDecisions,
-    letters: letterDecisions,
-  });
-  result.value = textAfter(after);
+  review ??= createDiffReview(merging.checked ? mergeCloseChanges(shown) : shown, renderKeepingPlace);
+  result.value = review.textNow();
 
   const column = document.createElement('div');
   column.className = 'review-body';
@@ -101,9 +52,9 @@ function render(): void {
   if (hasTidying && tidying.value !== 'full') column.append(aside(tidyingNote(pieces)));
   column.append(
     createTextDiffView(
-      after,
+      review.piecesNow(),
       { previous: words.changePrevious, next: words.changeNext, at: words.changeAt },
-      { showTidied: tidying.value === 'coloured', editing: editingOf(after) },
+      { showTidied: tidying.value === 'coloured', editing: review.editing() },
     ),
   );
   view.replaceChildren(column);
@@ -145,38 +96,18 @@ function listSamples(selectedAt: number): void {
   sample.value = String(selectedAt);
 }
 
-const isDiffSample = (value: unknown): value is DiffSample =>
-  typeof value === 'object' &&
-  value !== null &&
-  'name' in value &&
-  typeof value.name === 'string' &&
-  'current' in value &&
-  typeof value.current === 'string' &&
-  'proposed' in value &&
-  typeof value.proposed === 'string';
-
 /**
  * Puts his real texts at the top of the list and opens on the first, where the
- * server has any: they are kept out of the repository, so a checkout may well have
- * none. If something has been done on the page by then, it stays as it is.
+ * server has any. If something has been done on the page by then, it stays as it is.
  */
 async function addRealSamples(): Promise<void> {
-  try {
-    const response = await fetch('/diff-samples.json');
-    if (!response.ok) throw new Error(`Server answered ${response.status}`);
-    const received: unknown = await response.json();
-    if (!Array.isArray(received)) throw new Error('The samples are not a list');
-
-    const real = received.filter(isDiffSample);
-    const stillOpening = Number(sample.value) === opening && current.value === samples[opening]?.current && changeDecisions.size === 0;
-    samples.unshift(...real);
-    listSamples(Number(sample.value) + real.length);
-    if (stillOpening && real.length > 0) {
-      sample.value = '0';
-      showSample(0);
-    }
-  } catch (error) {
-    console.error('Could not load the real samples', error);
+  const real = await fetchRealSamples();
+  const stillOpening = Number(sample.value) === opening && current.value === samples[opening]?.current;
+  samples.unshift(...real);
+  listSamples(Number(sample.value) + real.length);
+  if (stillOpening && real.length > 0) {
+    sample.value = '0';
+    showSample(0);
   }
 }
 

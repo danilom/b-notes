@@ -5,6 +5,33 @@ export interface DiffSample {
   proposed: string;
 }
 
+const isDiffSample = (value: unknown): value is DiffSample =>
+  typeof value === 'object' &&
+  value !== null &&
+  'name' in value &&
+  typeof value.name === 'string' &&
+  'current' in value &&
+  typeof value.current === 'string' &&
+  'proposed' in value &&
+  typeof value.proposed === 'string';
+
+/**
+ * His real texts, where the server has any. They are kept out of the repository, so
+ * a checkout may well have none, and a page goes on with the invented ones.
+ */
+export async function fetchRealSamples(): Promise<DiffSample[]> {
+  try {
+    const response = await fetch('/diff-samples.json');
+    if (!response.ok) throw new Error(`Server answered ${response.status}`);
+    const received: unknown = await response.json();
+    if (!Array.isArray(received)) throw new Error('The samples are not a list');
+    return received.filter(isDiffSample);
+  } catch (error) {
+    console.error('Could not load the real samples', error);
+    return [];
+  }
+}
+
 const ROADS =
   'Put do starog mosta vodio je kroz šumu, a djed je govorio da ga pamti još iz vremena kad su tuda prolazili vozovi.';
 const WINTER =
