@@ -40,14 +40,21 @@
         gap: 0.35rem;
       }
 
-      .prototype-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 0.5rem;
+      /* The footer of a real dialog, so that its buttons are those of one. The rest of
+         a dialog's panel has no business on this page. */
+      .prototype-panel {
+        flex: none;
+        width: 100%;
+        padding: 0;
+        border: 0;
+        box-shadow: none;
+        overflow: visible;
       }
 
-      .prototype-footer button {
-        padding: 0.3rem 0.9rem;
+      .prototype-panel footer {
+        margin-top: 0;
+        padding: 0.4rem 0 0;
+        border-top: 0;
       }
 
       .prototype-boxes {
@@ -130,9 +137,11 @@
       </label>
     </div>
     <div id="view"></div>
-    <div class="prototype-footer">
-      <button type="button" id="close">Zatvori</button>
-      <button type="button" id="apply" class="keep">Unesi izmene u tekst</button>
+    <div class="panel prototype-panel">
+      <footer>
+        <button type="button" id="apply" class="keep">Unesi izmene u tekst</button>
+        <button type="button" id="close">Zatvori</button>
+      </footer>
     </div>
     <script src="/diff-prototype.js"></script>
   </body>
