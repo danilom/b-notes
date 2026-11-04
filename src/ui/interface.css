@@ -2672,15 +2672,29 @@ dialog::backdrop {
   border-top: 0;
 }
 
-/* The change the stepper is on: a thick bar in the accent under each mark, with
+/* The change the stepper is on: a dashed line in the accent under each mark, with
    a thin line of the page between them, because a dark accent under a dark mark
-   would otherwise read as one thicker mark. Shadows and not borders, so no text
-   moves when the stepper arrives. */
+   would otherwise read as one thicker mark. Painted in the mark's own padding,
+   since a shadow cannot be dashed; padding on inline text moves no lines. */
 .diff-current .diff-new,
 .diff-current .diff-gone {
-  box-shadow:
-    0 2px 0 var(--page),
-    0 7px 0 var(--chosen);
+  --underline: 4px;
+  --parting: 2px;
+  --underline-room: calc(var(--underline) + var(--parting));
+  padding-bottom: calc(0.05em + var(--underline-room));
+  background-image:
+    repeating-linear-gradient(90deg, var(--chosen) 0 8px, transparent 8px 12px),
+    linear-gradient(var(--page), var(--page));
+  background-position: bottom;
+  background-repeat: no-repeat;
+  background-size:
+    100% var(--underline),
+    100% var(--underline-room);
+}
+
+/* These are blocks in the line, so their padding would push the lines apart. */
+.diff-current .diff-spacing {
+  margin-bottom: calc(-1 * var(--underline-room));
 }
 
 /*
