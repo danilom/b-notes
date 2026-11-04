@@ -2663,6 +2663,74 @@ dialog::backdrop {
   font-weight: 700;
 }
 
+/*
+  The small bar above a change. The buttons wear the colours of what they bring
+  back: red for his old text, green for the proposal.
+*/
+.diff-bar {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border: 1px solid var(--line);
+  background: var(--page);
+  box-shadow: 0 2px 8px hsl(var(--grey-h) var(--surface) var(--l-shadow) / var(--shadow-alpha));
+  font-family: var(--ui-font);
+  font-size: calc(var(--ui-size) * 0.85);
+  white-space: nowrap;
+}
+
+.diff-bar[hidden] {
+  display: none;
+}
+
+.diff-bar button {
+  padding: 0.1rem 0.55rem;
+}
+
+.diff-bar .diff-bar-old {
+  border-color: var(--diff-gone-fill);
+  background: var(--diff-gone-fill);
+  color: var(--diff-gone-ink);
+}
+
+.diff-bar .diff-bar-new {
+  border-color: var(--diff-new-fill);
+  background: var(--diff-new-fill);
+  color: var(--diff-new-ink);
+}
+
+/* One group for each letter of a word that can be chosen. */
+.diff-bar-letters {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.diff-bar-letters + .diff-bar-letters {
+  margin-left: 0.5rem;
+}
+
+.diff-bar .diff-bar-letter {
+  min-width: 2em;
+  font-family: var(--writing-font);
+  font-size: 1.1em;
+}
+
+.diff-bar .diff-bar-letter-chosen {
+  border-color: var(--diff-tidied-ink);
+  color: var(--diff-tidied-ink);
+  font-weight: 700;
+}
+
+/* The proposal being typed over, in the sentence and in his own letters. */
+.diff-edit {
+  padding: 0 3px;
+  outline: 2px solid var(--ink);
+  background: var(--page);
+  color: var(--ink);
+}
+
 /* A letter put right. Still part of his sentence, with no box around it, but
    heavy and underlined too, since one letter in colour alone is easy to miss and
    on a warm screen the colour is the first thing to go. */

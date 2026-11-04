@@ -6,7 +6,9 @@ import {
   paragraphsOf,
   tidiedLettersOf,
 } from '../notes/text-diff.ts';
+import { letterSegmentsOf } from '../notes/text-review.ts';
 import { scrollShowing } from './change-in-view.ts';
+import { type DiffChangeBar, type DiffEditing, createDiffChangeBar } from './diff-change-bar.ts';
 import { beginningAndEnd } from './deleted-and-archived/text-snippet.ts';
 import { createStepper } from './stepper.ts';
 
@@ -136,6 +138,8 @@ function stepperOver(
     markCurrent: (change: HTMLElement, isCurrent: boolean) => void;
     changeAt: (clicked: Element) => HTMLElement | null;
     key: SVGElement;
+    /** Set where changes can be acted on: there is then always a current one, even the only one. */
+    editing?: { startAt: number | undefined };
   },
 ): HTMLElement {
   const changes = [...box.querySelectorAll<HTMLElement>(marked)];
@@ -188,6 +192,15 @@ function stepperOver(
 
   // After the view is in the document, or every measurement here is zero.
   queueMicrotask(() => {
+    if (review?.editing !== undefined) {
+      if (changes.length === 0) return;
+      steps.root.hidden = changes.length < 2;
+      box.addEventListener('click', selectClicked);
+      const { startAt } = review.editing;
+      if (startAt === undefined) goTo(0);
+      else select(startAt);
+      return;
+    }
     // A text short enough to read without scrolling has nothing to steer
     // through: he can see all of it, and a stepper over it is chrome. Unless he
     // is reviewing, where going through the changes one by one is the work, and
@@ -272,18 +285,41 @@ function movingSpacesOutOf(change: HTMLElement): void {
   if (last instanceof Text && last !== first) change.after(last);
 }
 
-const markedPart = ({ kind, text }: DiffPart): (HTMLElement | string)[] =>
-  /\S/.test(text) ? wordsPart(kind, text) : [spacingPart(kind, text)];
+/** What he put back: his own text, plain. An addition he undid leaves a caret, so it can be found again. */
+function undonePart(text: string): HTMLElement {
+  const part = document.createElement('span');
+  part.className = 'diff-undone';
+  if (text === '') part.append(correctionMark());
+  else part.textContent = text;
+  return part;
+}
 
-/** A word as it would be, with only the letters that were put right in colour. */
-function tidiedPart({ text, was = '' }: DiffPart): (HTMLElement | string)[] {
-  return tidiedLettersOf({ removed: was, added: text }).map((letters) => {
-    if (!letters.changed) return letters.text;
+function markedPart({ kind, text }: DiffPart): (HTMLElement | string)[] {
+  if (kind === 'undone') return [undonePart(text)];
+  return /\S/.test(text) ? wordsPart(kind, text) : [spacingPart(kind, text)];
+}
+
+/**
+ * A word as it would be, with only the letters that were put right in colour. Held
+ * together with what it needs for offering other letters, where any can be offered.
+ */
+function tidiedPart({ text, was = '', proposed = text, tidyAt = 0 }: DiffPart): (HTMLElement | string)[] {
+  const letters = tidiedLettersOf({ removed: was, added: text }).map((run) => {
+    if (!run.changed) return run.text;
     const part = document.createElement('span');
     part.className = 'diff-tidied';
-    part.textContent = letters.text;
+    part.textContent = run.text;
     return part;
   });
+  if (!letterSegmentsOf(was, proposed).some((segment) => segment.kind === 'slot')) return letters;
+
+  const word = document.createElement('span');
+  word.className = 'diff-tidied-word';
+  word.dataset['tidyAt'] = String(tidyAt);
+  word.dataset['was'] = was;
+  word.dataset['proposed'] = proposed;
+  word.append(...letters);
+  return [word];
 }
 
 /** A proofreader's caret, where something was corrected and left nothing else to show. */
@@ -416,7 +452,7 @@ function paragraphBlock({ parts, changed }: DiffParagraph): HTMLElement {
 export function createTextDiffView(
   pieces: readonly TextPiece[],
   stepper: DiffViewOptions['stepper'],
-  { showTidied = false }: { showTidied?: boolean } = {},
+  { showTidied = false, editing }: { showTidied?: boolean; editing?: DiffEditing } = {},
 ): HTMLElement {
   const text = document.createElement('div');
   text.className = 'review-text';
@@ -424,6 +460,25 @@ export function createTextDiffView(
 
   const framed = document.createElement('div');
   framed.className = 'review-framed diff-framed';
-  framed.append(text, stepperOver(text, '.diff-change', stepper, { markCurrent: markCurrentChange, changeAt, key: currentChangeKey() }));
+
+  const changes = [...text.querySelectorAll<HTMLElement>('.diff-change')];
+  const bar: DiffChangeBar | null = editing === undefined ? null : createDiffChangeBar(framed, text, changes, editing);
+
+  const markCurrent = (change: HTMLElement, isCurrent: boolean): void => {
+    markCurrentChange(change, isCurrent);
+    if (!isCurrent) return;
+    bar?.setCurrent(change);
+    editing?.onCurrent(changes.indexOf(change));
+  };
+
+  framed.prepend(
+    text,
+    stepperOver(text, '.diff-change', stepper, {
+      markCurrent,
+      changeAt,
+      key: currentChangeKey(),
+      ...(editing === undefined ? {} : { editing: { startAt: editing.startAt } }),
+    }),
+  );
   return framed;
 }
