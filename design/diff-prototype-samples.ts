@@ -108,6 +108,20 @@ export const DIFF_SAMPLES: readonly DiffSample[] = [
     current: [ROADS, `${WINTER} ${LETTER} ${HOUSE}`, LETTER].join('\n\n'),
     proposed: [ROADS, LETTER].join('\n\n'),
   },
+  {
+    name: 'Prepisan ceo pasus',
+    current: [ROADS, WINTER, LETTER].join('\n\n'),
+    proposed: [
+      ROADS,
+      'Zima je te godine stigla prije vremena, snijeg se nije topio sve do marta, a djeca su do škole hodala po ledu.',
+      LETTER,
+    ].join('\n\n'),
+  },
+  {
+    name: 'Sasvim drugi tekst',
+    current: [ROADS, WINTER].join('\n\n'),
+    proposed: [LETTER, HOUSE].join('\n\n'),
+  },
   { name: 'Dugačak tekst, pomera se', ...longPair() },
   { name: 'Prazno', current: '', proposed: '' },
 ];

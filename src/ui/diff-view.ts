@@ -1,4 +1,5 @@
 import { type DiffPiece, type DiffRun, LINE_BREAK, type WordPiece, runsOf } from '../notes/paragraph-diff.ts';
+import type { TextPiece } from '../notes/text-diff.ts';
 import { scrollShowing } from './change-in-view.ts';
 import { beginningAndEnd } from './deleted-and-archived/text-snippet.ts';
 import { createStepper } from './stepper.ts';
@@ -121,8 +122,8 @@ function blockFor(run: DiffRun, options: DiffViewOptions): HTMLElement {
   return block;
 }
 
-function stepperOver(box: HTMLElement, words: DiffViewOptions['stepper']): HTMLElement {
-  const changes = [...box.querySelectorAll<HTMLElement>('.review-run')];
+function stepperOver(box: HTMLElement, marked: string, words: DiffViewOptions['stepper']): HTMLElement {
+  const changes = [...box.querySelectorAll<HTMLElement>(marked)];
 
   let showing = 0;
   const steps = createStepper(
@@ -176,6 +177,59 @@ export function createDiffView(pieces: readonly DiffPiece[], options: DiffViewOp
   // and how many of those there are varies.
   const framed = document.createElement('div');
   framed.className = 'review-framed';
-  framed.append(text, stepperOver(text, options.stepper));
+  framed.append(text, stepperOver(text, '.review-run', options.stepper));
+  return framed;
+}
+
+/**
+ * Spaces and breaks made visible, where they are all that changed: a struck-out
+ * space cannot be seen, and a paragraph split in two would otherwise be reported
+ * as a change with nothing on the screen to show for it.
+ *
+ * Added breaks are kept as well as marked, because they are where the text would
+ * now break. Removed ones are only marked, or the text would break in a place
+ * neither version does.
+ */
+function visibleSpacing(text: string, keepBreaks: boolean): string {
+  if (/\S/.test(text)) return text;
+  return text.replace(/\n+/g, (breaks) => (keepBreaks ? `¶${breaks}` : '¶')).replace(/[^\S\n]/g, '·');
+}
+
+function changeOf(removed: string, added: string): HTMLElement {
+  const change = document.createElement('span');
+  change.className = 'diff-change';
+
+  if (removed.length > 0) {
+    const gone = document.createElement('span');
+    gone.className = 'word-gone';
+    gone.textContent = visibleSpacing(removed, false);
+    change.append(gone);
+  }
+  if (added.length > 0) {
+    const arrived = document.createElement('span');
+    arrived.className = 'word-new';
+    arrived.textContent = visibleSpacing(added, true);
+    change.append(arrived);
+  }
+  return change;
+}
+
+/**
+ * Two whole texts read as one, with each change marked where it falls.
+ *
+ * The box wraps and breaks text as he wrote it, so what they share goes in
+ * untouched. Put it in the document in the same task it is made in, as with
+ * {@link createDiffView}.
+ */
+export function createTextDiffView(pieces: readonly TextPiece[], stepper: DiffViewOptions['stepper']): HTMLElement {
+  const text = document.createElement('div');
+  text.className = 'review-text';
+  text.append(
+    ...pieces.map((piece) => (piece.kind === 'same' ? piece.text : changeOf(piece.removed, piece.added))),
+  );
+
+  const framed = document.createElement('div');
+  framed.className = 'review-framed';
+  framed.append(text, stepperOver(text, '.diff-change', stepper));
   return framed;
 }

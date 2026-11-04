@@ -1,6 +1,6 @@
 import { strings } from '../src/language/wording.ts';
-import { diffParagraphs } from '../src/notes/paragraph-diff.ts';
-import { type DiffViewOptions, createDiffView } from '../src/ui/diff-view.ts';
+import { diffTexts } from '../src/notes/text-diff.ts';
+import { createTextDiffView } from '../src/ui/diff-view.ts';
 import { DIFF_SAMPLES } from './diff-prototype-samples.ts';
 
 function element<T extends HTMLElement>(id: string, kind: new () => T): T {
@@ -12,43 +12,26 @@ function element<T extends HTMLElement>(id: string, kind: new () => T): T {
 const current = element('current', HTMLTextAreaElement);
 const proposed = element('proposed', HTMLTextAreaElement);
 const sample = element('sample', HTMLSelectElement);
-const shorten = element('shorten', HTMLInputElement);
 const dark = element('dark', HTMLInputElement);
 const view = element('view', HTMLElement);
 
-/**
- * The proposal goes first because the first text is the one whose paragraphs
- * read as added, and what a proofreader proposes is what would be added. Its
- * words are the new ones for the same reason, which is the opposite of how
- * Ranije verzije calls the view.
- */
-function optionsNow(): DiffViewOptions {
-  const words = strings('sr');
-  return {
-    tags: {
-      added: { tag: '(+) Novo', why: '(u predlogu, nema ga u trenutnom tekstu)' },
-      missing: { tag: '(−) Uklonjeno', why: '(u trenutnom tekstu, nema ga u predlogu)' },
-      changed: { tag: '(±) Izmenjeno', why: '(u oba teksta; precrtano je trenutno, zeleno je predlog)' },
-    },
-    stepper: { previous: words.changePrevious, next: words.changeNext, at: words.changeAt },
-    newWords: 'added',
-    shortenMissing: shorten.checked,
-  };
-}
-
 function render(): void {
-  const { pieces, unrelated } = diffParagraphs(proposed.value, current.value);
+  const words = strings('sr');
+
+  const legend = document.createElement('p');
+  legend.className = 'review-note-aside';
+  legend.textContent = 'Precrtano je trenutni tekst, zeleno je predlog.';
 
   const column = document.createElement('div');
   column.className = 'review-body';
-
-  if (unrelated) {
-    const aside = document.createElement('p');
-    aside.className = 'review-note-aside';
-    aside.textContent = 'Prikazano kao nepovezano: nijedan pasus se ne poklapa, pa ništa nije označeno.';
-    column.append(aside);
-  }
-  column.append(createDiffView(pieces, optionsNow()));
+  column.append(
+    legend,
+    createTextDiffView(diffTexts(current.value, proposed.value), {
+      previous: words.changePrevious,
+      next: words.changeNext,
+      at: words.changeAt,
+    }),
+  );
   view.replaceChildren(column);
 }
 
@@ -79,7 +62,6 @@ sample.addEventListener('change', () => showSample(Number(sample.value)));
 
 current.addEventListener('input', renderKeepingPlace);
 proposed.addEventListener('input', renderKeepingPlace);
-shorten.addEventListener('change', renderKeepingPlace);
 
 element('swap', HTMLButtonElement).addEventListener('click', () => {
   [current.value, proposed.value] = [proposed.value, current.value];
