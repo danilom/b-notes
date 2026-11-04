@@ -2629,10 +2629,12 @@ dialog::backdrop {
   color: var(--diff-new-ink);
 }
 
+/* Struck through by a line drawn across the mark rather than by text-decoration,
+   which stops at the letters and looks stubby on a short word. */
 .diff-gone {
-  background: var(--diff-gone-fill);
+  background: linear-gradient(var(--diff-gone-ink), var(--diff-gone-ink)) 50% 58% / calc(100% - 4px) 1px no-repeat
+    var(--diff-gone-fill);
   color: var(--diff-gone-ink);
-  text-decoration: line-through 1px var(--diff-gone-ink);
 }
 
 /* One gap between what went and what replaced it, whatever their sizes. */
@@ -2654,8 +2656,8 @@ dialog::backdrop {
    writing font puts these wherever it likes. Not struck through: a line across a
    symbol this small makes a new shape of it. */
 .diff-spacing {
+  background-image: none;
   font-family: var(--ui-font);
-  text-decoration: none;
 }
 
 /* A space, drawn rather than typed: no font's symbol for one is wide enough, and
