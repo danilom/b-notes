@@ -1,5 +1,5 @@
 import { strings } from '../src/language/wording.ts';
-import { diffTexts, mergeCloseChanges } from '../src/notes/text-diff.ts';
+import { type TextPiece, diffTexts, mergeCloseChanges, separateTidying } from '../src/notes/text-diff.ts';
 import { createTextDiffView } from '../src/ui/diff-view.ts';
 import { DIFF_SAMPLES } from './diff-prototype-samples.ts';
 
@@ -13,25 +13,42 @@ const current = element('current', HTMLTextAreaElement);
 const proposed = element('proposed', HTMLTextAreaElement);
 const sample = element('sample', HTMLSelectElement);
 const merging = element('merging', HTMLInputElement);
+const showTidying = element('show-tidying', HTMLInputElement);
 const spaceSymbol = element('space-symbol', HTMLSelectElement);
 const breakSymbol = element('break-symbol', HTMLSelectElement);
 const dark = element('dark', HTMLInputElement);
 const view = element('view', HTMLElement);
 
+function aside(text: string): HTMLParagraphElement {
+  const line = document.createElement('p');
+  line.className = 'review-note-aside';
+  line.textContent = text;
+  return line;
+}
+
+/** What the view is leaving out, so that hiding it is never a secret. */
+function tidyingNote(pieces: readonly TextPiece[]): string {
+  const tidied = pieces.filter((piece) => piece.kind === 'tidy').length;
+  const spacing = pieces.filter((piece) => piece.kind === 'tidy' && !/\S/.test(piece.removed)).length;
+  return (
+    `Sitne popravke se ne prikazuju: ${tidied} ` +
+    `(samo razmaci i prelomi: ${spacing}, slova s kukicama: ${tidied - spacing}).`
+  );
+}
+
 function render(): void {
   const words = strings('sr');
-  const pieces = diffTexts(current.value, proposed.value);
-
-  const legend = document.createElement('p');
-  legend.className = 'review-note-aside';
-  legend.textContent = 'Precrtano je trenutni tekst, zeleno je predlog.';
+  const pieces = separateTidying(diffTexts(current.value, proposed.value));
+  const hasTidying = pieces.some((piece) => piece.kind === 'tidy');
+  const shown = showTidying.checked ? diffTexts(current.value, proposed.value) : pieces;
 
   const column = document.createElement('div');
   column.className = 'review-body';
+  column.append(aside('Precrtano je trenutni tekst, zeleno je predlog.'));
+  if (hasTidying && !showTidying.checked) column.append(aside(tidyingNote(pieces)));
   column.append(
-    legend,
     createTextDiffView(
-      merging.checked ? mergeCloseChanges(pieces) : pieces,
+      merging.checked ? mergeCloseChanges(shown) : shown,
       { previous: words.changePrevious, next: words.changeNext, at: words.changeAt },
       { space: spaceSymbol.value === '' ? null : spaceSymbol.value, lineBreak: breakSymbol.value },
     ),
@@ -67,6 +84,7 @@ sample.addEventListener('change', () => showSample(Number(sample.value)));
 current.addEventListener('input', renderKeepingPlace);
 proposed.addEventListener('input', renderKeepingPlace);
 merging.addEventListener('change', renderKeepingPlace);
+showTidying.addEventListener('change', renderKeepingPlace);
 spaceSymbol.addEventListener('change', renderKeepingPlace);
 breakSymbol.addEventListener('change', renderKeepingPlace);
 
