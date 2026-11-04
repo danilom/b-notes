@@ -74,6 +74,17 @@
         min-height: 12rem;
         display: flex;
       }
+
+      /* Ways of drawing the margin bars, to compare. Whichever is kept moves to
+         interface.css. */
+      #view[data-bars='grey'] {
+        --diff-bar: var(--quiet);
+      }
+
+      #view[data-bars='unframed'] .diff-paragraph-current {
+        --frame: 0px;
+        --frame-room: 0px;
+      }
     </style>
   </head>
   <body>
@@ -90,6 +101,7 @@
       <label>
         Znak za razmak
         <select id="space-symbol">
+          <option value="">Nacrtan</option>
           <option>␣</option>
           <option>⎵</option>
           <option>_</option>
@@ -106,6 +118,14 @@
           <option>¶</option>
           <option>§</option>
           <option>⏎</option>
+        </select>
+      </label>
+      <label>
+        Trake
+        <select id="bars">
+          <option value="same">Iste, tekuća uokvirena</option>
+          <option value="grey">Sive, tekuća u boji i uokvirena</option>
+          <option value="unframed">Iste, bez okvira</option>
         </select>
       </label>
       <label>

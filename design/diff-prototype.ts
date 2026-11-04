@@ -33,7 +33,7 @@ function render(): void {
     createTextDiffView(
       merging.checked ? mergeCloseChanges(pieces) : pieces,
       { previous: words.changePrevious, next: words.changeNext, at: words.changeAt },
-      { space: spaceSymbol.value, lineBreak: breakSymbol.value },
+      { space: spaceSymbol.value === '' ? null : spaceSymbol.value, lineBreak: breakSymbol.value },
     ),
   );
   view.replaceChildren(column);
@@ -74,6 +74,13 @@ element('swap', HTMLButtonElement).addEventListener('click', () => {
   [current.value, proposed.value] = [proposed.value, current.value];
   render();
 });
+
+const bars = element('bars', HTMLSelectElement);
+const showBars = (): void => {
+  view.dataset['bars'] = bars.value;
+};
+bars.addEventListener('change', showBars);
+showBars();
 
 dark.addEventListener('change', () => {
   document.documentElement.dataset['mode'] = dark.checked ? 'dark' : 'light';
