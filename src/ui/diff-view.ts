@@ -126,7 +126,7 @@ function stepperOver(
   box: HTMLElement,
   marked: string,
   words: DiffViewOptions['stepper'],
-  markCurrent?: (change: HTMLElement, isCurrent: boolean) => void,
+  review?: { markCurrent: (change: HTMLElement, isCurrent: boolean) => void },
 ): HTMLElement {
   const changes = [...box.querySelectorAll<HTMLElement>(marked)];
 
@@ -142,7 +142,7 @@ function stepperOver(
 
   function goTo(which: number): void {
     const was = changes[showing];
-    if (was !== undefined) markCurrent?.(was, false);
+    if (was !== undefined) review?.markCurrent(was, false);
 
     showing = Math.max(0, Math.min(which, changes.length - 1));
     steps.showing(words.at(showing + 1, changes.length), {
@@ -152,7 +152,7 @@ function stepperOver(
 
     const change = changes[showing];
     if (change === undefined) return;
-    markCurrent?.(change, true);
+    review?.markCurrent(change, true);
     box.scrollTop = scrollShowing(
       { top: change.offsetTop - box.offsetTop, height: change.offsetHeight },
       { height: box.clientHeight, scrollable: box.scrollHeight - box.clientHeight },
@@ -162,8 +162,11 @@ function stepperOver(
   // After the view is in the document, or every measurement here is zero.
   queueMicrotask(() => {
     // A text short enough to read without scrolling has nothing to steer
-    // through: he can see all of it, and a stepper over it is chrome.
-    if (changes.length === 0 || box.scrollHeight <= box.clientHeight) return;
+    // through: he can see all of it, and a stepper over it is chrome. Unless he
+    // is reviewing, where going through the changes one by one is the work, and
+    // how much fits in the window has nothing to do with it.
+    const worthShowing = review !== undefined ? changes.length > 1 : box.scrollHeight > box.clientHeight;
+    if (changes.length === 0 || !worthShowing) return;
     steps.root.hidden = false;
     goTo(0);
   });
@@ -193,7 +196,16 @@ export function createDiffView(pieces: readonly DiffPiece[], options: DiffViewOp
 /** The most characters a change can have and still be hard to see. */
 const EASY_TO_MISS = 2;
 
-const isSpacing = (text: string): boolean => !/\S/.test(text);
+/** What stands in for spacing, where spacing is all that changed. */
+export interface SpacingSymbols {
+  space: string;
+  lineBreak: string;
+}
+
+/** The space bar, and the mark on his Enter key. */
+const SPACING_SYMBOLS: SpacingSymbols = { space: '␣', lineBreak: '↵' };
+
+const markClass = (kind: DiffPart['kind']): string => (kind === 'removed' ? 'diff-gone' : 'diff-new');
 
 /**
  * Spaces and breaks made visible, where they are all that changed: a struck-out
@@ -205,40 +217,68 @@ const isSpacing = (text: string): boolean => !/\S/.test(text);
  * this paragraph and the next. Removed ones are only marked, or the text would
  * break in a place neither version does.
  */
-function visibleSpacing(text: string, keepBreak: boolean): string {
-  return text
-    .replace(/\n+/g, (breaks) => (keepBreak && breaks.length === 1 ? '¶\n' : '¶'))
-    .replace(/[^\S\n]/g, '·');
-}
-
-function markedPart({ kind, text, opensChange }: DiffPart): HTMLElement {
+function spacingPart(kind: DiffPart['kind'], text: string, symbols: SpacingSymbols): (HTMLElement | string)[] {
   const part = document.createElement('span');
-  part.className = kind === 'removed' ? 'diff-gone' : 'diff-new';
-  part.textContent = isSpacing(text) ? visibleSpacing(text, kind === 'added') : text;
+  part.className = `${markClass(kind)} diff-small diff-spacing`;
+  part.textContent = text.replace(/\n+/g, symbols.lineBreak).replace(/[^\S\n]/g, symbols.space);
 
-  if (text.trim().length <= EASY_TO_MISS) part.classList.add('diff-small');
-  // What the stepper counts, and only once for a change across paragraphs.
-  if (opensChange) part.classList.add('diff-change');
-  return part;
+  const breaksHere = kind === 'added' && /^[^\n]*\n[^\n]*$/.test(text);
+  return breaksHere ? [part, '\n'] : [part];
 }
 
 /**
- * Shows which change the stepper is on, among the others like it.
+ * The words of a part marked, and the spaces around them left plain.
  *
- * What was added follows what was removed, so a replacement is lit as one thing.
- * An added part that opens a change of its own is a different change.
+ * A space is part of what changed, and the pieces keep it. But a block that runs
+ * on past the end of its word reads as a slip of the marker rather than as
+ * information.
  */
+function wordsPart(kind: DiffPart['kind'], text: string): (HTMLElement | string)[] {
+  const words = text.trim();
+  const start = text.indexOf(words);
+
+  const part = document.createElement('span');
+  part.className = markClass(kind);
+  if (words.length <= EASY_TO_MISS) part.classList.add('diff-small');
+  part.textContent = words;
+
+  return [text.slice(0, start), part, text.slice(start + words.length)];
+}
+
+const markedPart = ({ kind, text }: DiffPart, symbols: SpacingSymbols): (HTMLElement | string)[] =>
+  /\S/.test(text) ? wordsPart(kind, text) : spacingPart(kind, text, symbols);
+
+/** Shows which change the stepper is on, among the others like it. */
 function markCurrentChange(change: HTMLElement, isCurrent: boolean): void {
   change.classList.toggle('diff-current', isCurrent);
-  const next = change.nextElementSibling;
-  if (next?.matches('.diff-new:not(.diff-change)')) next.classList.toggle('diff-current', isCurrent);
   change.closest('.diff-paragraph')?.classList.toggle('diff-paragraph-current', isCurrent);
 }
 
-function paragraphBlock({ parts, changed }: DiffParagraph): HTMLElement {
+/**
+ * One paragraph, with what was removed and what replaced it held in one element.
+ *
+ * That element is what the stepper counts and what it outlines, so a replacement
+ * is lit as one thing. The part of a change carried over from the paragraph above
+ * stands alone, and is not counted again.
+ */
+function paragraphBlock({ parts, changed }: DiffParagraph, symbols: SpacingSymbols): HTMLElement {
   const block = document.createElement('div');
   block.className = changed ? 'diff-paragraph diff-paragraph-changed' : 'diff-paragraph';
-  block.append(...parts.map((part) => (part.kind === 'same' ? part.text : markedPart(part))));
+
+  let open: HTMLElement | null = null;
+  for (const part of parts) {
+    if (part.kind === 'same') {
+      block.append(part.text);
+      open = null;
+      continue;
+    }
+    if (part.opensChange) {
+      open = document.createElement('span');
+      open.className = 'diff-change';
+      block.append(open);
+    }
+    (open ?? block).append(...markedPart(part, symbols));
+  }
   return block;
 }
 
@@ -249,13 +289,17 @@ function paragraphBlock({ parts, changed }: DiffParagraph): HTMLElement {
  * Put it in the document in the same task it is made in, as with
  * {@link createDiffView}.
  */
-export function createTextDiffView(pieces: readonly TextPiece[], stepper: DiffViewOptions['stepper']): HTMLElement {
+export function createTextDiffView(
+  pieces: readonly TextPiece[],
+  stepper: DiffViewOptions['stepper'],
+  symbols: SpacingSymbols = SPACING_SYMBOLS,
+): HTMLElement {
   const text = document.createElement('div');
   text.className = 'review-text';
-  text.append(...paragraphsOf(pieces).map(paragraphBlock));
+  text.append(...paragraphsOf(pieces).map((paragraph) => paragraphBlock(paragraph, symbols)));
 
   const framed = document.createElement('div');
-  framed.className = 'review-framed';
-  framed.append(text, stepperOver(text, '.diff-change', stepper, markCurrentChange));
+  framed.className = 'review-framed diff-framed';
+  framed.append(text, stepperOver(text, '.diff-change', stepper, { markCurrent: markCurrentChange }));
   return framed;
 }

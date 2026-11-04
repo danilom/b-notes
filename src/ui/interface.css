@@ -2586,6 +2586,17 @@ dialog::backdrop {
   margin-bottom: 0;
 }
 
+/* Its stepper sits on the line above the box rather than over it. It shows on
+   short texts as well, where it would otherwise cover the first lines. */
+.diff-framed {
+  margin-top: 0.8rem;
+}
+
+.diff-framed .review-steps {
+  top: -2.6rem;
+  right: 0;
+}
+
 /* One paragraph of the whole-text diff. */
 .diff-paragraph {
   margin: 0 0 1em;
@@ -2636,19 +2647,44 @@ dialog::backdrop {
   font-weight: 700;
 }
 
-/* The change the stepper is on. An outline in the text's own ink, because it has
-   to stand out from the other marks, and those already use the colours. */
+/* A space or a break, drawn as a symbol. In the interface's face, and centred in
+   a box of its own, because his writing font puts these wherever it likes. Not
+   struck through: a line across a symbol this small makes a new shape of it. */
+.diff-spacing {
+  display: inline-block;
+  min-width: 1.1em;
+  font-family: var(--ui-font);
+  text-align: center;
+  text-decoration: none;
+}
+
+/* The change the stepper is on. One outline around all of it, in the accent. */
 .diff-current {
-  outline: 4px solid var(--ink);
+  border-radius: 4px;
+  outline: 4px solid var(--chosen);
   outline-offset: 2px;
 }
 
-/* Framed rather than tinted, which a warm screen would take away. */
+/*
+  Framed rather than tinted, which a warm screen would take away. A border and
+  not an outline, so that the bar is one side of the frame and meets the other
+  two. Everything the frame adds is taken back out of the margins, so the lines
+  of his text do not move when the stepper arrives at them.
+*/
 .diff-paragraph-current {
   --bar: 14px;
-  border-left-color: var(--ink);
-  outline: 2px solid var(--ink);
-  outline-offset: 4px;
+  --frame: 2px;
+  --frame-room: 0.3em;
+  margin-top: calc(-1 * (var(--frame) + var(--frame-room)));
+  margin-right: calc(-1 * (var(--frame) + var(--frame-room)));
+  margin-bottom: calc(1em - var(--frame) - var(--frame-room));
+  padding: var(--frame-room) var(--frame-room) var(--frame-room) var(--run-inset);
+  border: var(--frame) solid var(--chosen);
+  border-left: var(--bar) solid var(--chosen);
+}
+
+.diff-paragraph-current:last-child {
+  margin-bottom: calc(-1 * (var(--frame) + var(--frame-room)));
 }
 
 /* What the stepper is placed against: the box, not the column, which has
