@@ -13,7 +13,8 @@ const current = element('current', HTMLTextAreaElement);
 const proposed = element('proposed', HTMLTextAreaElement);
 const sample = element('sample', HTMLSelectElement);
 const merging = element('merging', HTMLInputElement);
-const showTidying = element('show-tidying', HTMLInputElement);
+const tidying = element('tidying', HTMLSelectElement);
+const lineBreaks = element('line-breaks', HTMLInputElement);
 const spaceSymbol = element('space-symbol', HTMLSelectElement);
 const breakSymbol = element('break-symbol', HTMLSelectElement);
 const dark = element('dark', HTMLInputElement);
@@ -31,26 +32,30 @@ function tidyingNote(pieces: readonly TextPiece[]): string {
   const tidied = pieces.filter((piece) => piece.kind === 'tidy').length;
   const spacing = pieces.filter((piece) => piece.kind === 'tidy' && !/\S/.test(piece.removed)).length;
   return (
-    `Sitne popravke se ne prikazuju: ${tidied} ` +
-    `(samo razmaci i prelomi: ${spacing}, slova s kukicama: ${tidied - spacing}).`
+    `Sitne popravke: ${tidied} (razmaci i prelomi, ne vide se: ${spacing}; ` +
+    `slova s kukicama: ${tidied - spacing}).`
   );
 }
 
 function render(): void {
   const words = strings('sr');
-  const pieces = separateTidying(diffTexts(current.value, proposed.value));
+  const compared = diffTexts(current.value, proposed.value);
+  const pieces = separateTidying(compared, { lineBreaks: lineBreaks.checked });
   const hasTidying = pieces.some((piece) => piece.kind === 'tidy');
-  const shown = showTidying.checked ? diffTexts(current.value, proposed.value) : pieces;
+  const shown = tidying.value === 'full' ? compared : pieces;
 
   const column = document.createElement('div');
   column.className = 'review-body';
   column.append(aside('Precrtano je trenutni tekst, zeleno je predlog.'));
-  if (hasTidying && !showTidying.checked) column.append(aside(tidyingNote(pieces)));
+  if (hasTidying && tidying.value !== 'full') column.append(aside(tidyingNote(pieces)));
   column.append(
     createTextDiffView(
       merging.checked ? mergeCloseChanges(shown) : shown,
       { previous: words.changePrevious, next: words.changeNext, at: words.changeAt },
-      { space: spaceSymbol.value === '' ? null : spaceSymbol.value, lineBreak: breakSymbol.value },
+      {
+        symbols: { space: spaceSymbol.value === '' ? null : spaceSymbol.value, lineBreak: breakSymbol.value },
+        showTidied: tidying.value === 'coloured',
+      },
     ),
   );
   view.replaceChildren(column);
@@ -84,7 +89,8 @@ sample.addEventListener('change', () => showSample(Number(sample.value)));
 current.addEventListener('input', renderKeepingPlace);
 proposed.addEventListener('input', renderKeepingPlace);
 merging.addEventListener('change', renderKeepingPlace);
-showTidying.addEventListener('change', renderKeepingPlace);
+tidying.addEventListener('change', renderKeepingPlace);
+lineBreaks.addEventListener('change', renderKeepingPlace);
 spaceSymbol.addEventListener('change', renderKeepingPlace);
 breakSymbol.addEventListener('change', renderKeepingPlace);
 

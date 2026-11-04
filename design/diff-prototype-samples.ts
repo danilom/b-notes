@@ -171,5 +171,20 @@ export const DIFF_SAMPLES: readonly DiffSample[] = [
   },
   { name: 'Dugačak tekst, pomera se', ...longPair() },
   { name: 'Dugačak neuredan tekst: razmaci, prelomi, slova bez kukica', ...untidyPair() },
+  {
+    // `sto` and `kuca` come out two ways, so those are to be flagged. `pas` turned
+    // into `paš` comes out one way, so it cannot be: that is the limit of the check.
+    name: 'Dvosmislene kukice',
+    current: [
+      'Sto si dosao tako kasno? Na stolu je bilo sto casa i niko ih nije brojao.',
+      'Kuca je stajala na kraju sela. Neko kuca na vrata, a niko ne otvara.',
+      'Nas pas je lajao cijelu noc, pa se niko u selu nije naspavao.',
+    ].join('\n\n'),
+    proposed: [
+      'Što si došao tako kasno? Na stolu je bilo sto čaša i niko ih nije brojao.',
+      'Kuća je stajala na kraju sela. Neko kuca na vrata, a niko ne otvara.',
+      'Naš paš je lajao cijelu noć, pa se niko u selu nije naspavao.',
+    ].join('\n\n'),
+  },
   { name: 'Prazno', current: '', proposed: '' },
 ];
