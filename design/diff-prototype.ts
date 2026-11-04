@@ -1,3 +1,4 @@
+import { strings } from '../src/language/wording.ts';
 import { diffParagraphs } from '../src/notes/paragraph-diff.ts';
 import { type DiffViewOptions, createDiffView } from '../src/ui/diff-view.ts';
 import { DIFF_SAMPLES } from './diff-prototype-samples.ts';
@@ -16,19 +17,20 @@ const dark = element('dark', HTMLInputElement);
 const view = element('view', HTMLElement);
 
 /**
- * Proposed goes first because the first text is the one whose paragraphs read
- * as added, and what a proofreader proposes is what would be added. Its words
- * are the new ones for the same reason, which is the opposite of how Ranije
- * verzije calls the view.
+ * The proposal goes first because the first text is the one whose paragraphs
+ * read as added, and what a proofreader proposes is what would be added. Its
+ * words are the new ones for the same reason, which is the opposite of how
+ * Ranije verzije calls the view.
  */
 function optionsNow(): DiffViewOptions {
+  const words = strings('sr');
   return {
     tags: {
-      added: { tag: '(+) New', why: '(in Proposed, not in Current)' },
-      missing: { tag: '(−) Removed', why: '(in Current, not in Proposed)' },
-      changed: { tag: '(±) Changed', why: '(in both; struck through is Current, green is Proposed)' },
+      added: { tag: '(+) Novo', why: '(u predlogu, nema ga u trenutnom tekstu)' },
+      missing: { tag: '(−) Uklonjeno', why: '(u trenutnom tekstu, nema ga u predlogu)' },
+      changed: { tag: '(±) Izmenjeno', why: '(u oba teksta; precrtano je trenutno, zeleno je predlog)' },
     },
-    stepper: { previous: 'Previous', next: 'Next', at: (at, total) => `Change ${at} of ${total}` },
+    stepper: { previous: words.changePrevious, next: words.changeNext, at: words.changeAt },
     newWords: 'added',
     shortenMissing: shorten.checked,
   };
@@ -43,7 +45,7 @@ function render(): void {
   if (unrelated) {
     const aside = document.createElement('p');
     aside.className = 'review-note-aside';
-    aside.textContent = 'Reported as unrelated: not one paragraph matches, so nothing is marked.';
+    aside.textContent = 'Prikazano kao nepovezano: nijedan pasus se ne poklapa, pa ništa nije označeno.';
     column.append(aside);
   }
   column.append(createDiffView(pieces, optionsNow()));

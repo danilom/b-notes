@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="en">
+<html lang="sr">
   <head>
     <meta charset="utf-8" />
-    <title>Diff prototype</title>
+    <title>Prototip razlika</title>
     <link rel="icon" href="/icon.svg" />
     <!--
       The diff view with two boxes to feed it, for finding out what it gets wrong
@@ -79,26 +79,26 @@
   <body>
     <div class="prototype-controls">
       <label>
-        Sample
+        Primer
         <select id="sample"></select>
       </label>
-      <button type="button" id="swap">Swap the two boxes</button>
-      <label title="What Ranije verzije does with the side he can read elsewhere">
+      <button type="button" id="swap">Zameni polja</button>
+      <label title="Ovako Ranije verzije prikazuju pasuse koje može da pročita na drugom mestu">
         <input type="checkbox" id="shorten" />
-        Shorten removed paragraphs
+        Skrati uklonjene pasuse
       </label>
       <label>
         <input type="checkbox" id="dark" />
-        Dark
+        Tamno
       </label>
     </div>
     <div class="prototype-boxes">
       <label>
-        Current
+        Trenutno
         <textarea id="current" spellcheck="false"></textarea>
       </label>
       <label>
-        Proposed
+        Predlog
         <textarea id="proposed" spellcheck="false"></textarea>
       </label>
     </div>

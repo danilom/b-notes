@@ -33,7 +33,7 @@ function longPair(): Pick<DiffSample, 'current' | 'proposed'> {
  */
 export const DIFF_SAMPLES: readonly DiffSample[] = [
   {
-    name: 'One sentence reworded',
+    name: 'Jedna rečenica preformulisana',
     current: [ROADS, WINTER, LETTER].join('\n\n'),
     proposed: [
       ROADS,
@@ -42,7 +42,7 @@ export const DIFF_SAMPLES: readonly DiffSample[] = [
     ].join('\n\n'),
   },
   {
-    name: 'Commas and typos',
+    name: 'Zarezi i slovne greške',
     current: [
       ROADS,
       'Majka je cuvala svako pismo u kutiji ispod kreveta i nijedno nije bacila cak ni ona koja su donosila lose vijesti.',
@@ -51,7 +51,7 @@ export const DIFF_SAMPLES: readonly DiffSample[] = [
     proposed: [ROADS, LETTER, HOUSE].join('\n\n'),
   },
   {
-    name: 'Two neighbouring paragraphs edited',
+    name: 'Izmenjena dva susedna pasusa',
     current: [ROADS, WINTER, LETTER, HOUSE].join('\n\n'),
     proposed: [
       ROADS,
@@ -61,7 +61,7 @@ export const DIFF_SAMPLES: readonly DiffSample[] = [
     ].join('\n\n'),
   },
   {
-    name: 'Every paragraph edited',
+    name: 'Izmenjen svaki pasus',
     current: [WINTER, LETTER].join('\n\n'),
     proposed: [
       'Te zime snijeg je pao rano i ostao do kraja aprila, pa su djeca išla u školu preko zaleđene rijeke, ne pitajući nikoga.',
@@ -69,45 +69,45 @@ export const DIFF_SAMPLES: readonly DiffSample[] = [
     ].join('\n\n'),
   },
   {
-    name: 'One unbroken block, one word changed',
+    name: 'Jedan neprekinut blok, izmenjena jedna reč',
     current: `${ROADS} ${WINTER} ${LETTER}`,
     proposed: `${ROADS} ${WINTER.replace('marta', 'aprila')} ${LETTER}`,
   },
   {
-    name: 'Spaces only',
+    name: 'Samo razmaci',
     current: [ROADS, WINTER.replace('snijeg je', 'snijeg  je'), LETTER].join('\n\n'),
     proposed: [ROADS, WINTER, LETTER].join('\n\n'),
   },
   {
-    name: 'Short paragraph changed',
+    name: 'Izmenjen kratak pasus',
     current: [ROADS, 'Niko nije došao.', LETTER].join('\n\n'),
     proposed: [ROADS, 'Niko nije stigao.', LETTER].join('\n\n'),
   },
   {
-    name: 'Paragraph moved',
+    name: 'Premešten pasus',
     current: [ROADS, WINTER, LETTER, HOUSE].join('\n\n'),
     proposed: [ROADS, LETTER, HOUSE, WINTER].join('\n\n'),
   },
   {
-    name: 'Paragraph split in two',
+    name: 'Pasus podeljen na dva',
     current: [HOUSE, `${ROADS} ${WINTER}`, LETTER].join('\n\n'),
     proposed: [HOUSE, ROADS, WINTER, LETTER].join('\n\n'),
   },
   {
-    name: 'Line breaks inside a paragraph',
+    name: 'Prelomi redova unutar pasusa',
     current: [ROADS, 'Prvo treba promijeniti naslov i prvu rečenicu\nzatim skratiti treći dio cijelog teksta\npa onda poslati uredniku', LETTER].join('\n\n'),
     proposed: [ROADS, 'Prvo treba promijeniti naslov i prvu rečenicu\nzatim skratiti cijeli treći dio teksta\nzatim sve pročitati\npa onda poslati uredniku', LETTER].join('\n\n'),
   },
   {
-    name: 'A paragraph added and one removed',
+    name: 'Jedan pasus dodat, drugi uklonjen',
     current: [ROADS, WINTER, HOUSE].join('\n\n'),
     proposed: [ROADS, LETTER, WINTER].join('\n\n'),
   },
   {
-    name: 'A long paragraph removed',
+    name: 'Uklonjen dugačak pasus',
     current: [ROADS, `${WINTER} ${LETTER} ${HOUSE}`, LETTER].join('\n\n'),
     proposed: [ROADS, LETTER].join('\n\n'),
   },
-  { name: 'Long text, so it scrolls', ...longPair() },
-  { name: 'Empty', current: '', proposed: '' },
+  { name: 'Dugačak tekst, pomera se', ...longPair() },
+  { name: 'Prazno', current: '', proposed: '' },
 ];
