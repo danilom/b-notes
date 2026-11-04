@@ -108,4 +108,7 @@ dark.addEventListener('change', () => {
   document.documentElement.dataset['mode'] = dark.checked ? 'dark' : 'light';
 });
 
-showSample(0);
+// Opens on the long untidy one, which is the case the page is mostly for judging.
+const opening = Math.max(0, DIFF_SAMPLES.findIndex(({ name }) => name.startsWith('Dugačak neuredan')));
+sample.value = String(opening);
+showSample(opening);
