@@ -31,6 +31,7 @@ const CONTENT_TYPES = new Map([
 const TOOL_PAGES = new Map([
   ['his-screens', 'tools/his-screens.html'],
   ['diff-prototype', 'design/diff-prototype.html'],
+  ['lektor-prototype', 'design/lektor-prototype.html'],
 ]);
 
 /*

@@ -2051,6 +2051,12 @@ dialog::backdrop {
   width: min(67rem, 100%);
 }
 
+/* All the window but the dialog's own margin: he works in this one, rather than
+   glancing at it. */
+.panel.lektor-panel {
+  width: 100%;
+}
+
 .panel.review-panel header {
   align-items: flex-start;
 }
@@ -2595,6 +2601,20 @@ dialog::backdrop {
 
 .review-text p:last-child {
   margin-bottom: 0;
+}
+
+.lektor-body {
+  max-width: none;
+}
+
+/* The line above the box stays clear of the stepper, at the end of that same line. */
+.lektor-body .review-note-aside {
+  padding-right: 19rem;
+}
+
+/* The box fills the dialog and the lines stay a readable length, in its middle. */
+.lektor-body .review-text {
+  padding-inline: max(1.5rem, calc((100% - var(--measure)) / 2));
 }
 
 /* Its stepper sits on the line above the box rather than over it. It shows on

@@ -86,6 +86,13 @@ const targets = [
     platform: 'browser',
     format: 'iife',
   },
+  {
+    ...shared,
+    entryPoints: ['design/lektor-prototype.ts'],
+    outfile: 'dist-browser/lektor-prototype.js',
+    platform: 'browser',
+    format: 'iife',
+  },
 ];
 
 await mkdir('dist', { recursive: true });

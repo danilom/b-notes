@@ -26,6 +26,7 @@ export type IconName =
   | 'previous'
   | 'next'
   | 'undo'
+  | 'lektor'
   | 'settings'
   | 'move-out'
   | 'hide-list'
@@ -85,6 +86,8 @@ const PATHS = {
   // page, and that is the direction he will actually travel.
   previous: ['m18 15-6-6-6 6'],
   next: ['m6 9 6 6 6-6'],
+  // Someone going over the spelling. Lucide's spell-check.
+  lektor: ['m6 16 6-12 6 12', 'M8 12h8', 'm16 20 2 2 4-4'],
   // Going back on a decision: the arrow of the versions mark, without its clock.
   // Lucide's rotate-ccw.
   undo: ['M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8', 'M3 3v5h5'],
