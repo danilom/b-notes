@@ -2650,14 +2650,11 @@ dialog::backdrop {
   font-weight: 700;
 }
 
-/* A space or a break, drawn as a symbol. In the interface's face, and centred in
-   a box of its own, because his writing font puts these wherever it likes. Not
-   struck through: a line across a symbol this small makes a new shape of it. */
+/* A space or a break, drawn as a symbol. In the interface's face, because his
+   writing font puts these wherever it likes. Not struck through: a line across a
+   symbol this small makes a new shape of it. */
 .diff-spacing {
-  display: inline-block;
-  min-width: 1.1em;
   font-family: var(--ui-font);
-  text-align: center;
   text-decoration: none;
 }
 
@@ -2672,29 +2669,37 @@ dialog::backdrop {
   border-top: 0;
 }
 
-/* The change the stepper is on: a dashed line in the accent under each mark, with
-   a thin line of the page between them, because a dark accent under a dark mark
-   would otherwise read as one thicker mark. Painted in the mark's own padding,
-   since a shadow cannot be dashed; padding on inline text moves no lines. */
-.diff-current .diff-new,
-.diff-current .diff-gone {
+/* The change the stepper is on: one dashed line in the accent under all of it,
+   with a thin line of the page above, because a dark accent under a dark mark
+   would otherwise read as one thicker mark. Painted in the padding of what holds
+   the change; padding on inline text moves no lines. */
+.diff-current {
   --underline: 4px;
   --parting: 2px;
-  --underline-room: calc(var(--underline) + var(--parting));
-  padding-bottom: calc(0.05em + var(--underline-room));
+  /* Below the marks inside, which themselves reach a little below the text. */
+  --marks-reach: 0.05em;
+  padding-bottom: calc(var(--marks-reach) + var(--parting) + var(--underline));
   background-image:
     repeating-linear-gradient(90deg, var(--chosen) 0 8px, transparent 8px 12px),
     linear-gradient(var(--page), var(--page));
-  background-position: bottom;
+  background-position:
+    left bottom,
+    left bottom var(--underline);
   background-repeat: no-repeat;
   background-size:
     100% var(--underline),
-    100% var(--underline-room);
+    100% var(--parting);
+  box-decoration-break: clone;
 }
 
-/* These are blocks in the line, so their padding would push the lines apart. */
-.diff-current .diff-spacing {
-  margin-bottom: calc(-1 * var(--underline-room));
+/* The small marks are set larger, so they reach further below the text. */
+.diff-current:has(.diff-small) {
+  --marks-reach: 0.12em;
+}
+
+/* And spacing is in the interface's face, whose letters sit a little higher. */
+.diff-current:has(.diff-spacing) {
+  --marks-reach: 0.09em;
 }
 
 /*
