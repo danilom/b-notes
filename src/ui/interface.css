@@ -115,6 +115,7 @@
   --diff-new-ink: hsl(0 0% 100%);
   --diff-gone-fill: hsl(4 75% 36%);
   --diff-gone-ink: hsl(0 0% 100%);
+  --diff-current-fill: rgb(0 0 0 / 0.035);
   --l-thumb: 82%;
   --l-thumb-hover: 68%;
   --l-track-hover: 93%;
@@ -257,6 +258,7 @@
   --diff-new-ink: hsl(0 0% 5%);
   --diff-gone-fill: hsl(4 75% 72%);
   --diff-gone-ink: hsl(0 0% 5%);
+  --diff-current-fill: rgb(255 255 255 / 0.03);
   --l-thumb: 34%;
   --l-thumb-hover: 48%;
   --l-track-hover: 26%;
@@ -2612,10 +2614,10 @@ dialog::backdrop {
   margin as the unmarked ones around it.
 */
 .diff-paragraph-changed {
-  --bar: 10px;
+  --bar: 8px;
   margin-left: calc(-1 * (var(--run-inset) + var(--bar)));
   padding-left: var(--run-inset);
-  border-left: var(--bar) solid var(--quiet);
+  border-left: var(--bar) solid var(--hint);
 }
 
 .diff-new,
@@ -2719,7 +2721,7 @@ dialog::backdrop {
   padding: var(--frame-room) var(--frame-room) var(--frame-room) var(--run-inset);
   border: var(--frame) solid var(--ink);
   border-left: var(--bar) solid var(--ink);
-  background: var(--wash-firm);
+  background: var(--diff-current-fill);
 }
 
 /* In the stepper: a small picture of what it is pointing at. */
