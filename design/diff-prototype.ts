@@ -1,5 +1,5 @@
 import { strings } from '../src/language/wording.ts';
-import { diffTexts } from '../src/notes/text-diff.ts';
+import { diffTexts, mergeCloseChanges } from '../src/notes/text-diff.ts';
 import { createTextDiffView } from '../src/ui/diff-view.ts';
 import { DIFF_SAMPLES } from './diff-prototype-samples.ts';
 
@@ -12,11 +12,13 @@ function element<T extends HTMLElement>(id: string, kind: new () => T): T {
 const current = element('current', HTMLTextAreaElement);
 const proposed = element('proposed', HTMLTextAreaElement);
 const sample = element('sample', HTMLSelectElement);
+const merging = element('merging', HTMLInputElement);
 const dark = element('dark', HTMLInputElement);
 const view = element('view', HTMLElement);
 
 function render(): void {
   const words = strings('sr');
+  const pieces = diffTexts(current.value, proposed.value);
 
   const legend = document.createElement('p');
   legend.className = 'review-note-aside';
@@ -26,7 +28,7 @@ function render(): void {
   column.className = 'review-body';
   column.append(
     legend,
-    createTextDiffView(diffTexts(current.value, proposed.value), {
+    createTextDiffView(merging.checked ? mergeCloseChanges(pieces) : pieces, {
       previous: words.changePrevious,
       next: words.changeNext,
       at: words.changeAt,
@@ -62,6 +64,7 @@ sample.addEventListener('change', () => showSample(Number(sample.value)));
 
 current.addEventListener('input', renderKeepingPlace);
 proposed.addEventListener('input', renderKeepingPlace);
+merging.addEventListener('change', renderKeepingPlace);
 
 element('swap', HTMLButtonElement).addEventListener('click', () => {
   [current.value, proposed.value] = [proposed.value, current.value];
