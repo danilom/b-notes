@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { type TextPiece, diffTexts, mergeCloseChanges, paragraphsOf } from '../src/notes/text-diff.ts';
+import { type TextPiece, diffTexts, mergeCloseChanges, paragraphsOf, separateTidying } from '../src/notes/text-diff.ts';
 
 const changesIn = (pieces: readonly TextPiece[]): [string, string][] =>
   pieces.flatMap((piece) => (piece.kind === 'change' ? [[piece.removed, piece.added] as [string, string]] : []));
@@ -224,9 +224,107 @@ describe('laying the comparison out as paragraphs', () => {
   });
 });
 
+describe('setting apart the changes nobody needs to read', () => {
+  /** What is left for him to read, once the tidying is set aside. */
+  const left = (before: string, after: string): [string, string][] =>
+    changesIn(separateTidying(diffTexts(before, after)));
+  const isHidden = (before: string, after: string): boolean => left(before, after).length === 0;
+
+  it('sets apart a plain letter gaining its diacritic', () => {
+    assert.ok(isHidden('Cuvala je kucu i zenu, sumu i dedu.', 'Čuvala je kuću i ženu, šumu i dedu.'));
+    assert.ok(isHidden('Dorde je tu.', 'Đorđe je tu.'));
+  });
+
+  it('keeps a letter losing its diacritic in front of him', () => {
+    assert.deepEqual(left('Čuvala je kuću.', 'Cuvala je kuću.'), [['Čuvala', 'Cuvala']]);
+  });
+
+  it('keeps one diacritic becoming another in front of him', () => {
+    assert.deepEqual(left('Kuča je tu.', 'Kuća je tu.'), [['Kuča', 'Kuća']]);
+  });
+
+  it('keeps a different letter in front of him, even in a word that gains a diacritic', () => {
+    assert.deepEqual(left('Zena je tu.', 'Žane je tu.'), [['Zena', 'Žane']]);
+  });
+
+  it('sets apart one run of spacing becoming another', () => {
+    assert.ok(isHidden('Pao  je   snijeg.', 'Pao je snijeg.'));
+    assert.ok(isHidden('Pao\nje snijeg.', 'Pao je snijeg.'));
+    assert.ok(isHidden('Prvi.  \n\n\nDrugi.', 'Prvi.\n\nDrugi.'));
+  });
+
+  it('keeps a paragraph split or joined in front of him', () => {
+    assert.deepEqual(left('Prvi. Drugi.', 'Prvi.\n\nDrugi.'), [[' ', '\n\n']]);
+    assert.deepEqual(left('Prvi.\n\nDrugi.', 'Prvi. Drugi.'), [['\n\n', ' ']]);
+  });
+
+  it('keeps a space between words appearing or going in front of him', () => {
+    assert.deepEqual(left('Rekao,da je.', 'Rekao, da je.'), [['', ' ']]);
+    assert.ok(!isHidden('Na primer tu.', 'Naprimer tu.'));
+  });
+
+  it('keeps the leading spaces that rank his titles in front of him', () => {
+    assert.deepEqual(left('   Pismo Marku', 'Pismo Marku'), [['   ', '']]);
+    assert.deepEqual(left('Pismo Marku', '   Pismo Marku'), [['', '   ']]);
+  });
+
+  it('keeps punctuation in front of him', () => {
+    assert.deepEqual(left('Ispod kreveta i dalje.', 'Ispod kreveta, i dalje.'), [['', ',']]);
+  });
+
+  it('keeps the wording in front of him, among any amount of tidying', () => {
+    assert.deepEqual(left('Cuvala  je  staru kucu.', 'Čuvala je novu kuću.'), [['staru', 'novu']]);
+  });
+
+  it('still joins back into exactly either text', () => {
+    const [before, after] = ['Cuvala  je  staru\nkucu.', 'Čuvala je novu kuću.'];
+    const pieces = mergeCloseChanges(separateTidying(diffTexts(before, after)));
+
+    assert.equal(side(pieces, 'removed'), before);
+    assert.equal(side(pieces, 'added'), after);
+  });
+
+  it('draws what is set apart as it would be, with no mark and no bar', () => {
+    const paragraphs = paragraphsOf(separateTidying(diffTexts('Cuvala  je.\n\nSumu.', 'Čuvala je.\n\nŠumu.')));
+
+    assert.deepEqual(
+      paragraphs.map(({ changed, parts }) => [changed, parts.map((part) => part.text).join('')]),
+      [
+        [false, 'Čuvala je.'],
+        [false, 'Šumu.'],
+      ],
+    );
+  });
+});
+
 describe('joining changes that sit close together', () => {
   const same = (text: string): TextPiece => ({ kind: 'same', text });
   const change = (removed: string, added: string): TextPiece => ({ kind: 'change', removed, added });
+  const tidy = (removed: string, added: string): TextPiece => ({ kind: 'tidy', removed, added });
+
+  it('joins across tidying that lies between, as part of the stretch', () => {
+    const pieces = [change('stara kuća', 'nova zgrada'), same(' '), tidy('i', 'ž'), same(' '), change('pala tu', 'stoji tu')];
+
+    assert.deepEqual(mergeCloseChanges(pieces), [change('stara kuća i pala tu', 'nova zgrada ž stoji tu')]);
+  });
+
+  it('measures the whole stretch, tidying and all, against the changes beside it', () => {
+    const pieces = [change('aa', 'bb'), same('x'), tidy('s', 'š'), same('x'), change('cc', 'dd')];
+
+    assert.deepEqual(mergeCloseChanges(pieces), pieces);
+  });
+
+  it('never joins across tidying that holds a line break', () => {
+    const pieces = [change('stara', 'nova'), tidy('\n', ' '), change('kuća', 'zgrada')];
+
+    assert.deepEqual(mergeCloseChanges(pieces), pieces);
+  });
+
+  it('leaves tidying alone where no change stands on either side of it', () => {
+    const pieces = [tidy('s', 'š'), same(' '), tidy('c', 'č')];
+
+    assert.deepEqual(mergeCloseChanges(pieces), pieces);
+  });
 
   it('reads a rewritten clause as the old one and then the new one', () => {
     const pieces = diffTexts('Tada je stara kuća pala u noći.', 'Tada je nova zgrada stajala u noći.');

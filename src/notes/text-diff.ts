@@ -9,10 +9,13 @@ import { alignSequences } from './sequence-alignment.ts';
  * but for how it stores its line endings and letters, which `same` takes from the
  * first. So taking one change and not another is only a matter of which side of
  * it to join, and what he has keeps its own line endings whichever he takes.
+ *
+ * `tidy` is a change like any other in what it holds, and only ever made by
+ * {@link separateTidying}, for a change nobody needs to read.
  */
 export type TextPiece =
   | { kind: 'same'; text: string }
-  | { kind: 'change'; removed: string; added: string };
+  | { kind: 'change' | 'tidy'; removed: string; added: string };
 
 /**
  * A word, a run of spaces and breaks, or one mark of punctuation.
@@ -35,6 +38,22 @@ const tokensOf = (text: string): string[] => text.match(TOKEN) ?? [];
  */
 const comparedAs = (token: string): string => token.replace(/\r\n?/g, '\n').normalize('NFC');
 
+const BLANK_LINES = /\r?\n[ \t]*\r?\n(?:[ \t]*\r?\n)*/;
+
+/** The letters under their diacritics: `š` to `s`. `đ` has none to take off, being its own letter. */
+const withoutDiacritics = (text: string): string =>
+  text.replaceAll('đ', 'd').replaceAll('Đ', 'D').normalize('NFD').replace(/\p{M}/gu, '');
+
+/**
+ * What a token is lined up by, which is looser than whether it changed.
+ *
+ * `kucu` and `kuću` are the same word in the same place, and so are a space and
+ * two. Lined up as different things they push everything around them out of step,
+ * and `staru kucu` against `novu kuću` comes back as `kucu` becoming `novu kuću`.
+ * Whether they count as changed is decided afterwards.
+ */
+const linedUpBy = (token: string): string => (/\S/.test(token) ? withoutDiacritics(token) : ' ');
+
 /**
  * @param before The text as it stands.
  * @param after The text it would become.
@@ -44,28 +63,72 @@ export function diffTexts(before: string, after: string): TextPiece[] {
   const pieces: TextPiece[] = [];
   let [beforeAt, afterAt] = [0, 0];
 
-  for (const { kind } of alignSequences(beforeTokens.map(comparedAs), afterTokens.map(comparedAs))) {
+  /** A variant of one token stands as a change alone, so tidying never rides on a change of wording. */
+  let lastWasVariant = false;
+
+  const openChange = (): Extract<TextPiece, { kind: 'change' | 'tidy' }> => {
     const open = pieces.at(-1);
-    if (kind === 'same') {
-      const text = beforeTokens[beforeAt] ?? '';
-      beforeAt += 1;
-      afterAt += 1;
-      if (open?.kind === 'same') open.text += text;
-      else pieces.push({ kind: 'same', text });
-      continue;
-    }
-    const change = open?.kind === 'change' ? open : { kind: 'change' as const, removed: '', added: '' };
-    if (change !== open) pieces.push(change);
-    if (kind === 'onlyFrom') {
-      change.removed += beforeTokens[beforeAt] ?? '';
-      beforeAt += 1;
+    if (open?.kind === 'change' && !lastWasVariant) return open;
+    const change = { kind: 'change' as const, removed: '', added: '' };
+    pieces.push(change);
+    lastWasVariant = false;
+    return change;
+  };
+
+  for (const { kind } of alignSequences(beforeTokens.map(linedUpBy), afterTokens.map(linedUpBy))) {
+    const [was, now] = [beforeTokens[beforeAt] ?? '', afterTokens[afterAt] ?? ''];
+
+    if (kind === 'same' && comparedAs(was) === comparedAs(now)) {
+      const open = pieces.at(-1);
+      if (open?.kind === 'same') open.text += was;
+      else pieces.push({ kind: 'same', text: was });
+    } else if (kind === 'same') {
+      pieces.push({ kind: 'change', removed: was, added: now });
+      lastWasVariant = true;
+    } else if (kind === 'onlyFrom') {
+      openChange().removed += was;
     } else {
-      change.added += afterTokens[afterAt] ?? '';
-      afterAt += 1;
+      openChange().added += now;
     }
+    if (kind !== 'onlyTo') beforeAt += 1;
+    if (kind !== 'onlyFrom') afterAt += 1;
   }
   return pieces;
 }
+
+/**
+ * Whether a change only tidies: nobody needs to read it to know it does no harm.
+ *
+ * He drops his diacritics and his spacing wanders, so a proofreader's reply is
+ * mostly this, and every one marked hides the few changes of wording among them.
+ * But hiding the wrong thing is a change to his writing he never saw, so this
+ * says yes only to what is plainly safe, and everything else stays in front of
+ * him:
+ *
+ * - A plain letter gaining its diacritic. Not one losing it, nor `ć` becoming
+ *   `č`, which can be a correction, and can be a mistake.
+ * - One run of spacing becoming another. Not a space appearing or going between
+ *   words, which makes them different words; and not at the start of a line,
+ *   where his leading spaces are how he ranks his titles.
+ * - As long as the paragraphs stay as they are. One split or joined is his
+ *   structure, not his spacing.
+ */
+function isTidying({ removed, added }: Pick<Change, 'removed' | 'added'>): boolean {
+  if (BLANK_LINES.test(removed) !== BLANK_LINES.test(added)) return false;
+
+  const [was, now] = [removed, added].map((text) => text.normalize('NFC').replace(/\s+/g, ' '));
+  if (was === undefined || now === undefined || was.length !== now.length) return false;
+
+  for (let at = 0; at < was.length; at += 1) {
+    const [before, after] = [was.charAt(at), now.charAt(at)];
+    if (before !== after && withoutDiacritics(after) !== before) return false;
+  }
+  return true;
+}
+
+/** The same pieces, with the changes nobody needs to read set apart as `tidy`. */
+export const separateTidying = (pieces: readonly TextPiece[]): TextPiece[] =>
+  pieces.map((piece) => (piece.kind === 'change' && isTidying(piece) ? { ...piece, kind: 'tidy' } : piece));
 
 /** A run of text in one paragraph as drawn, and whose it is. */
 export interface DiffPart {
@@ -81,14 +144,13 @@ export interface DiffParagraph {
   changed: boolean;
 }
 
-const BLANK_LINES = /\r?\n[ \t]*\r?\n(?:[ \t]*\r?\n)*/;
-
 /**
  * The pieces laid out as paragraphs, for drawing: which ones get a mark in the
  * margin, and what is in each.
  *
  * For the screen only. Unlike the pieces, this does not keep his exact spacing:
- * a blank line becomes the gap between two paragraphs.
+ * a blank line becomes the gap between two paragraphs. What is `tidy` is drawn as
+ * it would be, with nothing to say it changed.
  *
  * A change that is nothing but spacing is not split, because it has no text to
  * show on either side of the break: it stays a part, for the view to make
@@ -123,6 +185,10 @@ export function paragraphsOf(pieces: readonly TextPiece[]): DiffParagraph[] {
       addSplit('same', piece.text, false);
       continue;
     }
+    if (piece.kind === 'tidy') {
+      addSplit('same', piece.added, false);
+      continue;
+    }
     const { removed, added } = piece;
     if (removed.length > 0) {
       if (/\S/.test(removed)) addSplit('removed', removed, true);
@@ -141,7 +207,7 @@ export function paragraphsOf(pieces: readonly TextPiece[]): DiffParagraph[] {
   return paragraphs.filter((paragraph) => paragraph.parts.length > 0);
 }
 
-type Change = Extract<TextPiece, { kind: 'change' }>;
+type Change = Extract<TextPiece, { kind: 'change' | 'tidy' }>;
 
 const sizeOf = ({ removed, added }: Change): number => Math.max(removed.length, added.length);
 
@@ -157,14 +223,25 @@ const sizeOf = ({ removed, added }: Change): number => Math.max(removed.length, 
  * of them. His lines and paragraphs are his, and a change that spanned one could
  * not be read as old sentence, then new sentence.
  */
-const holdsBreak = ({ removed, added }: Change): boolean => removed.includes('\n') || added.includes('\n');
+const holdsBreak = ({ removed, added }: Pick<Change, 'removed' | 'added'>): boolean =>
+  removed.includes('\n') || added.includes('\n');
 
-const isAbsorbed = (between: string, left: Change, right: Change): boolean =>
-  !between.includes('\n') &&
+const isAbsorbed = (between: Pick<Change, 'removed' | 'added'>, left: Change, right: Change): boolean =>
+  !holdsBreak(between) &&
   !holdsBreak(left) &&
   !holdsBreak(right) &&
-  between.length <= sizeOf(left) &&
-  between.length <= sizeOf(right);
+  Math.max(between.removed.length, between.added.length) <= sizeOf(left) &&
+  Math.max(between.removed.length, between.added.length) <= sizeOf(right);
+
+/** What stands between two changes, as each of the texts has it. */
+function stretchOf(pieces: readonly TextPiece[]): Pick<Change, 'removed' | 'added'> {
+  let [removed, added] = ['', ''];
+  for (const piece of pieces) {
+    removed += piece.kind === 'same' ? piece.text : piece.removed;
+    added += piece.kind === 'same' ? piece.text : piece.added;
+  }
+  return { removed, added };
+}
 
 /**
  * Joins changes that sit close together into one, so a rewritten sentence reads
@@ -173,7 +250,9 @@ const isAbsorbed = (between: string, left: Change, right: Change): boolean =>
  *
  * What it absorbs goes into both sides of the change, so the pieces still join
  * back into exactly either text. It does mean a joined change is one thing to
- * take or leave.
+ * take or leave. A `tidy` piece counts as part of the stretch between, and is
+ * absorbed with it if it comes to that: a rewritten sentence is still one thing
+ * for having a diacritic restored in the middle of it.
  */
 export function mergeCloseChanges(pieces: readonly TextPiece[]): TextPiece[] {
   const merged: TextPiece[] = [];
@@ -184,14 +263,21 @@ export function mergeCloseChanges(pieces: readonly TextPiece[]): TextPiece[] {
     // Each join makes a bigger change, which may now be able to absorb what is
     // on its other side, so this goes on looking back until nothing more gives.
     for (;;) {
-      const [left, between, right] = merged.slice(-3);
-      if (left?.kind !== 'change' || between?.kind !== 'same' || right?.kind !== 'change') break;
-      if (!isAbsorbed(between.text, left, right)) break;
+      const right = merged.at(-1);
+      if (right?.kind !== 'change') break;
 
-      merged.splice(-3, 3, {
+      let leftAt = merged.length - 2;
+      while (leftAt >= 0 && merged[leftAt]?.kind !== 'change') leftAt -= 1;
+      const left = merged[leftAt];
+      if (left?.kind !== 'change' || leftAt === merged.length - 2) break;
+
+      const between = stretchOf(merged.slice(leftAt + 1, -1));
+      if (!isAbsorbed(between, left, right)) break;
+
+      merged.splice(leftAt, merged.length - leftAt, {
         kind: 'change',
-        removed: left.removed + between.text + right.removed,
-        added: left.added + between.text + right.added,
+        removed: left.removed + between.removed + right.removed,
+        added: left.added + between.added + right.added,
       });
     }
   }
