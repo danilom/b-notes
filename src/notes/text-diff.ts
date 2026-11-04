@@ -47,6 +47,80 @@ export function diffTexts(before: string, after: string): TextPiece[] {
   return pieces;
 }
 
+/** A run of text in one paragraph as drawn, and whose it is. */
+export interface DiffPart {
+  kind: 'same' | 'removed' | 'added';
+  text: string;
+  /** The first part of a change, where a change is carried across paragraphs. */
+  opensChange: boolean;
+}
+
+export interface DiffParagraph {
+  parts: DiffPart[];
+  /** Whether anything in it differs, or the break that opens it does. */
+  changed: boolean;
+}
+
+const BLANK_LINES = /\n[ \t]*\n(?:[ \t]*\n)*/;
+
+/**
+ * The pieces laid out as paragraphs, for drawing: which ones get a mark in the
+ * margin, and what is in each.
+ *
+ * For the screen only. Unlike the pieces, this does not keep his exact spacing:
+ * a blank line becomes the gap between two paragraphs.
+ *
+ * A change that is nothing but spacing is not split, because it has no text to
+ * show on either side of the break: it stays a part, for the view to make
+ * visible. An added one does still break the paragraph, and the text after it
+ * counts as changed, since it now starts a paragraph it did not start before.
+ */
+export function paragraphsOf(pieces: readonly TextPiece[]): DiffParagraph[] {
+  const paragraphs: DiffParagraph[] = [{ parts: [], changed: false }];
+  const startParagraph = (changed: boolean): void => {
+    paragraphs.push({ parts: [], changed });
+  };
+
+  const addPart = (part: DiffPart): void => {
+    const open = paragraphs.at(-1);
+    if (open === undefined) return;
+    open.parts.push(part);
+    open.changed ||= part.kind !== 'same';
+  };
+
+  const addSplit = (kind: DiffPart['kind'], text: string, opensChange: boolean): void => {
+    let opening = opensChange;
+    text.split(BLANK_LINES).forEach((chunk, at) => {
+      if (at > 0) startParagraph(false);
+      if (chunk.length === 0) return;
+      addPart({ kind, text: chunk, opensChange: opening });
+      opening = false;
+    });
+  };
+
+  for (const piece of pieces) {
+    if (piece.kind === 'same') {
+      addSplit('same', piece.text, false);
+      continue;
+    }
+    const { removed, added } = piece;
+    if (removed.length > 0) {
+      if (/\S/.test(removed)) addSplit('removed', removed, true);
+      else addPart({ kind: 'removed', text: removed, opensChange: true });
+    }
+    if (added.length > 0) {
+      const opensChange = removed.length === 0;
+      if (/\S/.test(added)) {
+        addSplit('added', added, opensChange);
+      } else {
+        addPart({ kind: 'added', text: added, opensChange });
+        if (BLANK_LINES.test(added)) startParagraph(true);
+      }
+    }
+  }
+  return paragraphs.filter((paragraph) => paragraph.parts.length > 0);
+}
+
 type Change = Extract<TextPiece, { kind: 'change' }>;
 
 const sizeOf = ({ removed, added }: Change): number => Math.max(removed.length, added.length);

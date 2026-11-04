@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { type TextPiece, diffTexts, mergeCloseChanges } from '../src/notes/text-diff.ts';
+import { type TextPiece, diffTexts, mergeCloseChanges, paragraphsOf } from '../src/notes/text-diff.ts';
 
 const changesIn = (pieces: readonly TextPiece[]): [string, string][] =>
   pieces.flatMap((piece) => (piece.kind === 'change' ? [[piece.removed, piece.added] as [string, string]] : []));
@@ -98,6 +98,75 @@ describe('comparing two texts', () => {
         assert.equal(side(shown, 'added'), after);
       }
     }
+  });
+});
+
+describe('laying the comparison out as paragraphs', () => {
+  /** Each paragraph as whether it is marked, and its text with the changes bracketed. */
+  const drawn = (before: string, after: string): string[] =>
+    paragraphsOf(diffTexts(before, after)).map(
+      ({ changed, parts }) =>
+        (changed ? '| ' : '  ') +
+        parts
+          .map(({ kind, text }) => (kind === 'same' ? text : kind === 'removed' ? `[-${text}]` : `[+${text}]`))
+          .join(''),
+    );
+  const opening = (before: string, after: string): number =>
+    paragraphsOf(diffTexts(before, after))
+      .flatMap((paragraph) => paragraph.parts)
+      .filter((part) => part.opensChange).length;
+
+  it('marks only the paragraph a word changed in', () => {
+    assert.deepEqual(drawn('Prvi.\n\nDrugi stari.\n\nTreći.', 'Prvi.\n\nDrugi novi.\n\nTreći.'), [
+      '  Prvi.',
+      '| Drugi [-stari][+novi].',
+      '  Treći.',
+    ]);
+  });
+
+  it('marks nothing when nothing changed', () => {
+    assert.deepEqual(drawn('Prvi.\n\nDrugi.', 'Prvi.\n\nDrugi.'), ['  Prvi.', '  Drugi.']);
+  });
+
+  it('marks both halves of a paragraph split in two, and keeps the break as a part', () => {
+    assert.deepEqual(drawn('Prvi dio. Drugi dio.', 'Prvi dio.\n\nDrugi dio.'), [
+      '| Prvi dio.[- ][+\n\n]',
+      '| Drugi dio.',
+    ]);
+  });
+
+  it('keeps two joined paragraphs as one, with the break it lost as a part', () => {
+    assert.deepEqual(drawn('Prvi dio.\n\nDrugi dio.', 'Prvi dio. Drugi dio.'), [
+      '| Prvi dio.[-\n\n][+ ]Drugi dio.',
+    ]);
+  });
+
+  it('gives a paragraph that arrived its own mark, and leaves its neighbours alone', () => {
+    assert.deepEqual(drawn('Prvi.\n\nTreći.', 'Prvi.\n\nNovi.\n\nTreći.'), ['  Prvi.', '| [+Novi.]', '  Treći.']);
+  });
+
+  it('gives a paragraph that went its own mark, and leaves its neighbours alone', () => {
+    assert.deepEqual(drawn('Prvi.\n\nStari.\n\nTreći.', 'Prvi.\n\nTreći.'), ['  Prvi.', '| [-Stari.]', '  Treći.']);
+  });
+
+  it('keeps a line break inside a paragraph as his, rather than as a new paragraph', () => {
+    assert.deepEqual(drawn('Prvi red\nDrugi stari', 'Prvi red\nDrugi novi'), ['| Prvi red\nDrugi [-stari][+novi]']);
+  });
+
+  it('treats a blank line with spaces on it as a blank line', () => {
+    assert.deepEqual(drawn('Prvi.\n \t\nDrugi.', 'Prvi.\n \t\nDrugi.'), ['  Prvi.', '  Drugi.']);
+  });
+
+  it('counts each change once, however many paragraphs it runs across', () => {
+    const before = 'Naslov.\n\nStari prvi.\n\nStari drugi.\n\nKraj.';
+
+    assert.equal(opening(before, 'Naslov.\n\nKraj.'), 1);
+    assert.equal(opening('A stari b.', 'A novi b.'), 1);
+    assert.equal(opening('A stari b. C stari d. E f g h i j k l.', 'A novi b. C novi d. E f g h i j k l.'), 2);
+  });
+
+  it('draws nothing for nothing', () => {
+    assert.deepEqual(drawn('', ''), []);
   });
 });
 
