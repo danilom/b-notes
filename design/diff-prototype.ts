@@ -15,6 +15,7 @@ const sample = element('sample', HTMLSelectElement);
 const merging = element('merging', HTMLInputElement);
 const tidying = element('tidying', HTMLSelectElement);
 const lineBreaks = element('line-breaks', HTMLInputElement);
+const correctionSymbol = element('correction-symbol', HTMLSelectElement);
 const spaceSymbol = element('space-symbol', HTMLSelectElement);
 const breakSymbol = element('break-symbol', HTMLSelectElement);
 const dark = element('dark', HTMLInputElement);
@@ -32,8 +33,7 @@ function tidyingNote(pieces: readonly TextPiece[]): string {
   const tidied = pieces.filter((piece) => piece.kind === 'tidy').length;
   const spacing = pieces.filter((piece) => piece.kind === 'tidy' && !/\S/.test(piece.removed)).length;
   return (
-    `Sitne popravke: ${tidied} (razmaci i prelomi, ne vide se: ${spacing}; ` +
-    `slova s kukicama: ${tidied - spacing}).`
+    `Sitne popravke: ${tidied} (razmaci i prelomi: ${spacing}; slova s kukicama: ${tidied - spacing}).`
   );
 }
 
@@ -53,7 +53,11 @@ function render(): void {
       merging.checked ? mergeCloseChanges(shown) : shown,
       { previous: words.changePrevious, next: words.changeNext, at: words.changeAt },
       {
-        symbols: { space: spaceSymbol.value === '' ? null : spaceSymbol.value, lineBreak: breakSymbol.value },
+        symbols: {
+          space: spaceSymbol.value === '' ? null : spaceSymbol.value,
+          lineBreak: breakSymbol.value,
+          correction: correctionSymbol.value === '' ? null : correctionSymbol.value,
+        },
         showTidied: tidying.value === 'coloured',
       },
     ),
@@ -91,6 +95,7 @@ proposed.addEventListener('input', renderKeepingPlace);
 merging.addEventListener('change', renderKeepingPlace);
 tidying.addEventListener('change', renderKeepingPlace);
 lineBreaks.addEventListener('change', renderKeepingPlace);
+correctionSymbol.addEventListener('change', renderKeepingPlace);
 spaceSymbol.addEventListener('change', renderKeepingPlace);
 breakSymbol.addEventListener('change', renderKeepingPlace);
 
