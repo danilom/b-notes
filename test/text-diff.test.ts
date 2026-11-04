@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { type TextPiece, diffTexts } from '../src/notes/text-diff.ts';
+import { type TextPiece, diffTexts, mergeCloseChanges } from '../src/notes/text-diff.ts';
 
 const changesIn = (pieces: readonly TextPiece[]): [string, string][] =>
   pieces.flatMap((piece) => (piece.kind === 'change' ? [[piece.removed, piece.added] as [string, string]] : []));
@@ -77,7 +77,7 @@ describe('comparing two texts', () => {
     character here would still look right on screen, and take the character out
     of his text the moment a change was applied.
   */
-  it('can be joined back into exactly either text, whatever is in them', () => {
+  it('can be joined back into exactly either text, whatever is in them, merged or not', () => {
     let state = 20261104;
     const random = (): number => {
       state = (state + 0x6d2b79f5) | 0;
@@ -93,8 +93,84 @@ describe('comparing two texts', () => {
       const [before, after] = [text(), text()];
       const pieces = diffTexts(before, after);
 
-      assert.equal(side(pieces, 'removed'), before);
-      assert.equal(side(pieces, 'added'), after);
+      for (const shown of [pieces, mergeCloseChanges(pieces)]) {
+        assert.equal(side(shown, 'removed'), before);
+        assert.equal(side(shown, 'added'), after);
+      }
     }
+  });
+});
+
+describe('joining changes that sit close together', () => {
+  const same = (text: string): TextPiece => ({ kind: 'same', text });
+  const change = (removed: string, added: string): TextPiece => ({ kind: 'change', removed, added });
+
+  it('reads a rewritten clause as the old one and then the new one', () => {
+    const pieces = diffTexts('Tada je stara kuća pala u noći.', 'Tada je nova zgrada stajala u noći.');
+
+    assert.deepEqual(changesIn(mergeCloseChanges(pieces)), [['stara kuća pala', 'nova zgrada stajala']]);
+  });
+
+  it('leaves one word changed in a sentence as one word', () => {
+    const pieces = diffTexts(`${OPENING} Do kraja marta.`, `${OPENING} Do kraja aprila.`);
+
+    assert.deepEqual(changesIn(mergeCloseChanges(pieces)), [['marta', 'aprila']]);
+  });
+
+  it('leaves two corrections apart when there is more to read between them than they change', () => {
+    const pieces = diffTexts('Cuvala je svako pismo u kutiji ispod lose lampe.', 'Čuvala je svako pismo u kutiji ispod loše lampe.');
+
+    assert.deepEqual(changesIn(mergeCloseChanges(pieces)), [['Cuvala', 'Čuvala'], ['lose', 'loše']]);
+  });
+
+  it('never joins across a line break, even a short one', () => {
+    const pieces = [change('stara', 'nova'), same('\n'), change('kuća', 'zgrada')];
+
+    assert.deepEqual(mergeCloseChanges(pieces), pieces);
+  });
+
+  it('never joins across a line break that has words beside it', () => {
+    const pieces = [change('stara kuća', 'nova zgrada'), same('a\nb'), change('stara kuća', 'nova zgrada')];
+
+    assert.deepEqual(mergeCloseChanges(pieces), pieces);
+  });
+
+  it('asks that both sides be big enough, not one', () => {
+    const pieces = [change('dugačka riječ', 'druga riječ'), same('oko'), change('a', 'b')];
+
+    assert.deepEqual(mergeCloseChanges(pieces), pieces);
+    assert.deepEqual(mergeCloseChanges([...pieces].reverse()), [...pieces].reverse());
+  });
+
+  it('counts the longer side of a change, so a word removed outright has its full weight', () => {
+    const pieces = [change('riječ', ''), same('oko'), change('', 'riječ')];
+
+    assert.deepEqual(mergeCloseChanges(pieces), [change('riječoko', 'okoriječ')]);
+  });
+
+  it('goes back to absorb what a bigger change now can', () => {
+    // The first stretch is too long for the small change beside it, until that
+    // change has joined the large one on its other side.
+    const pieces = [change('aaa', 'bbb'), same('xxx'), change('c', 'd'), same('y'), change('eee', 'fff')];
+
+    assert.deepEqual(mergeCloseChanges(pieces), [change('aaaxxxcyeee', 'bbbxxxdyfff')]);
+  });
+
+  it('goes on to absorb what comes next with the change it has grown', () => {
+    const pieces = [change('aaa', 'bbb'), same('y'), change('c', 'd'), same('xxx'), change('eee', 'fff')];
+
+    assert.deepEqual(mergeCloseChanges(pieces), [change('aaaycxxxeee', 'bbbydxxxfff')]);
+  });
+
+  it('leaves a stretch longer than the changes beside it', () => {
+    const pieces = [change('aa', 'bb'), same('xxx'), change('cc', 'dd')];
+
+    assert.deepEqual(mergeCloseChanges(pieces), pieces);
+  });
+
+  it('joins across a stretch exactly as long as they are', () => {
+    const pieces = [change('aa', 'bb'), same('xx'), change('cc', 'dd')];
+
+    assert.deepEqual(mergeCloseChanges(pieces), [change('aaxxcc', 'bbxxdd')]);
   });
 });
