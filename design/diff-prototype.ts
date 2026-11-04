@@ -14,10 +14,6 @@ const proposed = element('proposed', HTMLTextAreaElement);
 const sample = element('sample', HTMLSelectElement);
 const merging = element('merging', HTMLInputElement);
 const tidying = element('tidying', HTMLSelectElement);
-const lineBreaks = element('line-breaks', HTMLInputElement);
-const correctionSymbol = element('correction-symbol', HTMLSelectElement);
-const spaceSymbol = element('space-symbol', HTMLSelectElement);
-const breakSymbol = element('break-symbol', HTMLSelectElement);
 const dark = element('dark', HTMLInputElement);
 const view = element('view', HTMLElement);
 
@@ -28,19 +24,14 @@ function aside(text: string): HTMLParagraphElement {
   return line;
 }
 
-/** What the view is leaving out, so that hiding it is never a secret. */
-function tidyingNote(pieces: readonly TextPiece[]): string {
-  const tidied = pieces.filter((piece) => piece.kind === 'tidy').length;
-  const spacing = pieces.filter((piece) => piece.kind === 'tidy' && !/\S/.test(piece.removed)).length;
-  return (
-    `Sitne popravke: ${tidied} (razmaci i prelomi: ${spacing}; slova s kukicama: ${tidied - spacing}).`
-  );
-}
+/** How many small corrections there are, so that they are never a secret. */
+const tidyingNote = (pieces: readonly TextPiece[]): string =>
+  `Sitne popravke: ${pieces.filter((piece) => piece.kind === 'tidy').length}.`;
 
 function render(): void {
   const words = strings('sr');
   const compared = diffTexts(current.value, proposed.value);
-  const pieces = separateTidying(compared, { lineBreaks: lineBreaks.checked });
+  const pieces = separateTidying(compared);
   const hasTidying = pieces.some((piece) => piece.kind === 'tidy');
   const shown = tidying.value === 'full' ? compared : pieces;
 
@@ -52,14 +43,7 @@ function render(): void {
     createTextDiffView(
       merging.checked ? mergeCloseChanges(shown) : shown,
       { previous: words.changePrevious, next: words.changeNext, at: words.changeAt },
-      {
-        symbols: {
-          space: spaceSymbol.value === '' ? null : spaceSymbol.value,
-          lineBreak: breakSymbol.value,
-          correction: correctionSymbol.value === '' ? null : correctionSymbol.value,
-        },
-        showTidied: tidying.value === 'coloured',
-      },
+      { showTidied: tidying.value === 'coloured' },
     ),
   );
   view.replaceChildren(column);
@@ -130,10 +114,6 @@ current.addEventListener('input', renderKeepingPlace);
 proposed.addEventListener('input', renderKeepingPlace);
 merging.addEventListener('change', renderKeepingPlace);
 tidying.addEventListener('change', renderKeepingPlace);
-lineBreaks.addEventListener('change', renderKeepingPlace);
-correctionSymbol.addEventListener('change', renderKeepingPlace);
-spaceSymbol.addEventListener('change', renderKeepingPlace);
-breakSymbol.addEventListener('change', renderKeepingPlace);
 
 element('swap', HTMLButtonElement).addEventListener('click', () => {
   [current.value, proposed.value] = [proposed.value, current.value];
