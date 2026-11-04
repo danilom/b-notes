@@ -115,10 +115,10 @@
   --diff-new-ink: hsl(0 0% 100%);
   --diff-gone-fill: hsl(4 75% 36%);
   --diff-gone-ink: hsl(0 0% 100%);
-  /* A letter put right. Neither of the diff's two colours, because nothing here
-     is for or against: magenta keeps its red on a warm screen, where a blue or a
-     green turns as dark as the text around it. */
-  --diff-tidied-ink: hsl(325 85% 38%);
+  /* A small correction: the red of a teacher's pen, which also keeps its colour
+     on a warm screen, where a blue or a green turns as dark as the text. It does
+     not read as a removal, which is a white word struck through on a red block. */
+  --diff-tidied-ink: hsl(4 85% 42%);
   --diff-current-fill: rgb(0 0 0 / 0.035);
   --diff-current-seen: rgb(0 0 0 / 0.088);
   --l-thumb: 82%;
@@ -263,7 +263,7 @@
   --diff-new-ink: hsl(0 0% 5%);
   --diff-gone-fill: hsl(4 75% 72%);
   --diff-gone-ink: hsl(0 0% 5%);
-  --diff-tidied-ink: hsl(325 90% 74%);
+  --diff-tidied-ink: hsl(4 90% 72%);
   --diff-current-fill: rgb(255 255 255 / 0.03);
   --diff-current-seen: rgb(255 255 255 / 0.098);
   --l-thumb: 34%;
@@ -2670,6 +2670,22 @@ dialog::backdrop {
   text-decoration: underline 2px;
   text-decoration-skip-ink: none;
   text-underline-offset: 2px;
+}
+
+/* Where spacing was corrected, which leaves nothing else to see. Below the line
+   and taking up no width, so that his text sits exactly as it would without it. */
+.diff-spacing-mark {
+  display: inline-block;
+  position: relative;
+  top: 0.42em;
+  width: 0;
+  color: var(--diff-tidied-ink);
+  font-family: var(--ui-font);
+  font-size: 0.85em;
+  font-weight: 700;
+  line-height: 0;
+  text-indent: -0.25em;
+  user-select: none;
 }
 
 /* A space or a break, drawn as a symbol. In the interface's face, because his

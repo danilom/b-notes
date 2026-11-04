@@ -208,10 +208,12 @@ export interface SpacingSymbols {
   /** Null draws a wide, flat-bottomed basin instead of typing a character. */
   space: string | null;
   lineBreak: string;
+  /** Left at the spot where spacing was tidied. Null leaves nothing there. */
+  correction: string | null;
 }
 
-/** Something like the space bar, and the mark on his Enter key. */
-const SPACING_SYMBOLS: SpacingSymbols = { space: null, lineBreak: '↵' };
+/** Something like the space bar, the mark on his Enter key, and a proofreader's caret. */
+const SPACING_SYMBOLS: SpacingSymbols = { space: null, lineBreak: '↵', correction: '‸' };
 
 function drawnSpace(): HTMLElement {
   const space = document.createElement('span');
@@ -288,6 +290,13 @@ function tidiedPart({ text, was = '' }: DiffPart): (HTMLElement | string)[] {
   });
 }
 
+function spacingMark(symbol: string): HTMLElement {
+  const mark = document.createElement('span');
+  mark.className = 'diff-spacing-mark';
+  mark.textContent = symbol;
+  return mark;
+}
+
 /** Shows which change the stepper is on, among the others like it. */
 function markCurrentChange(change: HTMLElement, isCurrent: boolean): void {
   change.classList.toggle('diff-current', isCurrent);
@@ -334,9 +343,11 @@ function paragraphBlock({ parts, changed }: DiffParagraph, symbols: SpacingSymbo
 
   let open: HTMLElement | null = null;
   for (const part of parts) {
-    if (part.kind === 'same' || part.kind === 'tidied') {
+    if (part.kind === 'same' || part.kind === 'tidied' || part.kind === 'spacing-tidied') {
       if (open !== null) movingSpacesOutOf(open);
-      block.append(...(part.kind === 'same' ? [part.text] : tidiedPart(part)));
+      if (part.kind === 'same') block.append(part.text);
+      else if (part.kind === 'tidied') block.append(...tidiedPart(part));
+      else if (symbols.correction !== null) block.append(spacingMark(symbols.correction));
       open = null;
       continue;
     }

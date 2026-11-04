@@ -393,11 +393,27 @@ describe('laying out what was tidied, when it is to be seen', () => {
     assert.deepEqual(tidied('Tu je sumu vidio.', 'Tu je šumu vidio.').map((paragraph) => paragraph.changed), [false]);
   });
 
-  it('shows spacing as nothing but spacing', () => {
+  it('leaves a part with no text where spacing was tidied, and the spacing as it would be', () => {
     const [paragraph] = tidied('Pao  je.', 'Pao je.');
 
-    assert.deepEqual(paragraph?.parts.map((part) => part.kind), ['same', 'same', 'same']);
+    assert.deepEqual(paragraph?.parts.map((part) => part.kind), ['same', 'spacing-tidied', 'same', 'same']);
     assert.equal(paragraph?.parts.map((part) => part.text).join(''), 'Pao je.');
+    assert.equal(paragraph?.changed, false);
+  });
+
+  it('marks tidied blank lines at the end of the paragraph, and still breaks there', () => {
+    const paragraphs = tidied('Prvi.\n\n\nDrugi.', 'Prvi.\n\nDrugi.');
+
+    assert.deepEqual(
+      paragraphs.map((paragraph) => paragraph.parts.map((part) => part.kind)),
+      [['same', 'spacing-tidied'], ['same']],
+    );
+  });
+
+  it('leaves nothing where spacing was tidied, unless asked to show it', () => {
+    const pieces = separateTidying(diffTexts('Pao  je.', 'Pao je.'), { lineBreaks: false });
+
+    assert.deepEqual(paragraphsOf(pieces)[0]?.parts.map((part) => part.kind), ['same', 'same', 'same']);
   });
 });
 

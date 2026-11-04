@@ -211,7 +211,8 @@ export function tidiedLettersOf({ removed, added }: Pick<Change, 'removed' | 'ad
 
 /** A run of text in one paragraph as drawn, and whose it is. */
 export interface DiffPart {
-  kind: 'same' | 'removed' | 'added' | 'tidied';
+  /** `spacing-tidied` holds no text: it says spacing was corrected at this spot. */
+  kind: 'same' | 'removed' | 'added' | 'tidied' | 'spacing-tidied';
   text: string;
   /** The first part of a change, where a change is carried across paragraphs. */
   opensChange: boolean;
@@ -232,7 +233,8 @@ export interface DiffParagraph {
  * For the screen only. Unlike the pieces, this does not keep his exact spacing:
  * a blank line becomes the gap between two paragraphs. What is `tidy` is drawn as
  * it would be, in no way marking the paragraph as changed. With `showTidied` a
- * tidied word comes as a part of its own; spacing has nothing left to show.
+ * tidied word comes as a part of its own, and tidied spacing leaves a part with
+ * no text where it was, having nothing else left to show.
  *
  * A change that is nothing but spacing is not split, because it has no text to
  * show on either side of the break: it stays a part, for the view to make
@@ -270,9 +272,10 @@ export function paragraphsOf(pieces: readonly TextPiece[], { showTidied = false 
     if (piece.kind === 'tidy') {
       if (showTidied && /\S/.test(piece.added)) {
         addPart({ kind: 'tidied', text: piece.added, was: piece.removed, opensChange: false });
-      } else {
-        addSplit('same', piece.added, false);
+        continue;
       }
+      if (showTidied) addPart({ kind: 'spacing-tidied', text: '', opensChange: false });
+      addSplit('same', piece.added, false);
       continue;
     }
     const { removed, added } = piece;
