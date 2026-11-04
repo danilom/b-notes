@@ -2612,16 +2612,16 @@ dialog::backdrop {
   margin as the unmarked ones around it.
 */
 .diff-paragraph-changed {
-  --bar: 7px;
+  --bar: 10px;
   margin-left: calc(-1 * (var(--run-inset) + var(--bar)));
   padding-left: var(--run-inset);
-  border-left: var(--bar) solid var(--changed-ink);
+  border-left: var(--bar) solid var(--diff-bar, var(--chosen));
 }
 
 .diff-new,
 .diff-gone {
   padding: 0.05em 3px;
-  border-radius: 3px;
+  border-radius: 1px;
   box-decoration-break: clone;
 }
 
@@ -2658,9 +2658,19 @@ dialog::backdrop {
   text-decoration: none;
 }
 
+/* A space, drawn rather than typed: no font's symbol for one is wide enough, and
+   how they sit side by side would depend on what each of his machines has. */
+.diff-space-drawn {
+  display: inline-block;
+  width: 0.75em;
+  height: 0.3em;
+  margin: 0 0.06em;
+  border: 0.12em solid currentColor;
+  border-top: 0;
+}
+
 /* The change the stepper is on. One outline around all of it, in the accent. */
 .diff-current {
-  border-radius: 4px;
   outline: 4px solid var(--chosen);
   outline-offset: 2px;
 }
@@ -2672,7 +2682,6 @@ dialog::backdrop {
   of his text do not move when the stepper arrives at them.
 */
 .diff-paragraph-current {
-  --bar: 14px;
   --frame: 2px;
   --frame-room: 0.3em;
   margin-top: calc(-1 * (var(--frame) + var(--frame-room)));

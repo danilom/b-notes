@@ -198,12 +198,19 @@ const EASY_TO_MISS = 2;
 
 /** What stands in for spacing, where spacing is all that changed. */
 export interface SpacingSymbols {
-  space: string;
+  /** Null draws a wide, flat-bottomed basin instead of typing a character. */
+  space: string | null;
   lineBreak: string;
 }
 
-/** The space bar, and the mark on his Enter key. */
-const SPACING_SYMBOLS: SpacingSymbols = { space: '␣', lineBreak: '↵' };
+/** Something like the space bar, and the mark on his Enter key. */
+const SPACING_SYMBOLS: SpacingSymbols = { space: null, lineBreak: '↵' };
+
+function drawnSpace(): HTMLElement {
+  const space = document.createElement('span');
+  space.className = 'diff-space-drawn';
+  return space;
+}
 
 const markClass = (kind: DiffPart['kind']): string => (kind === 'removed' ? 'diff-gone' : 'diff-new');
 
@@ -220,7 +227,11 @@ const markClass = (kind: DiffPart['kind']): string => (kind === 'removed' ? 'dif
 function spacingPart(kind: DiffPart['kind'], text: string, symbols: SpacingSymbols): (HTMLElement | string)[] {
   const part = document.createElement('span');
   part.className = `${markClass(kind)} diff-small diff-spacing`;
-  part.textContent = text.replace(/\n+/g, symbols.lineBreak).replace(/[^\S\n]/g, symbols.space);
+  part.append(
+    ...[...text.replace(/\n+/g, '\n')].map((character) =>
+      character === '\n' ? symbols.lineBreak : (symbols.space ?? drawnSpace()),
+    ),
+  );
 
   const breaksHere = kind === 'added' && /^[^\n]*\n[^\n]*$/.test(text);
   return breaksHere ? [part, '\n'] : [part];
