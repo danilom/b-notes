@@ -1,3 +1,5 @@
+import { icon } from './icons.ts';
+
 /** What the reviewer of a proposal can do to it, from the bar above each change. */
 export interface DiffEditing {
   /** The change to start on, by its place among the changes. */
@@ -122,6 +124,7 @@ export function createDiffChangeBar(
   let showTimer: ReturnType<typeof setTimeout> | undefined;
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
   let isEditing = false;
+  let isOutOfTheWay = false;
 
   const fragmentsAll = (): Element[] => [...box.querySelectorAll('.diff-change, .diff-change-carried')];
 
@@ -144,14 +147,31 @@ export function createDiffChangeBar(
     });
 
     if (editing.isResolved(at)) {
-      bar.replaceChildren(edit, barButton('Vrati predlog', 'diff-bar-new', () => editing.onReopen(at)));
+      bar.replaceChildren(edit, barButton('Vrati predlog', 'diff-bar-new', () => editing.onReopen(at)), closeButton());
       return;
     }
     bar.replaceChildren(
       barButton('Vrati staro', 'diff-bar-old', () => editing.onUndo(at)),
       barButton('Prihvati', 'diff-bar-new', () => editing.onAccept(at)),
       edit,
+      closeButton(),
     );
+  }
+
+  /**
+   * Out of the way, for reading the line it was covering. Until the pointer goes back
+   * over a change or another is stepped to; the change stays current meanwhile.
+   */
+  function closeButton(): HTMLButtonElement {
+    const close = barButton('', 'stepper-close', () => {
+      cancelTimers();
+      isOutOfTheWay = true;
+      hide();
+    });
+    close.title = 'Zatvori';
+    close.setAttribute('aria-label', 'Zatvori');
+    close.append(icon('close'));
+    return close;
   }
 
   function fillForLetter(letter: HTMLElement): void {
@@ -209,7 +229,7 @@ export function createDiffChangeBar(
   }
 
   const showCurrent = (): void => {
-    if (current === null || isEditing) hide();
+    if (current === null || isEditing || isOutOfTheWay) hide();
     else showOver(current);
   };
 
@@ -232,7 +252,10 @@ export function createDiffChangeBar(
       hideTimer = setTimeout(showCurrent, HIDE_AFTER_MS);
       return;
     }
-    showTimer = setTimeout(() => showOver(over), SHOW_AFTER_MS);
+    showTimer = setTimeout(() => {
+      isOutOfTheWay = false;
+      showOver(over);
+    }, SHOW_AFTER_MS);
   });
 
   box.addEventListener('pointerleave', () => {
@@ -253,6 +276,7 @@ export function createDiffChangeBar(
   return {
     setCurrent(change) {
       current = change;
+      isOutOfTheWay = false;
       cancelTimers();
       showCurrent();
     },

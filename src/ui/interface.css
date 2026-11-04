@@ -2699,6 +2699,10 @@ dialog::backdrop {
   min-width: 7.2em;
 }
 
+.diff-bar .stepper-close {
+  min-width: 0;
+}
+
 /* A little faint until the pointer is on them, which is what the plain buttons say
    by lighting up, and these are too strong in colour to do it that way. */
 .diff-bar .diff-bar-old {
