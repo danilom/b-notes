@@ -1,5 +1,5 @@
 import { type DiffPiece, type DiffRun, LINE_BREAK, type WordPiece, runsOf } from '../notes/paragraph-diff.ts';
-import type { TextPiece } from '../notes/text-diff.ts';
+import { type DiffParagraph, type DiffPart, type TextPiece, paragraphsOf } from '../notes/text-diff.ts';
 import { scrollShowing } from './change-in-view.ts';
 import { beginningAndEnd } from './deleted-and-archived/text-snippet.ts';
 import { createStepper } from './stepper.ts';
@@ -122,7 +122,12 @@ function blockFor(run: DiffRun, options: DiffViewOptions): HTMLElement {
   return block;
 }
 
-function stepperOver(box: HTMLElement, marked: string, words: DiffViewOptions['stepper']): HTMLElement {
+function stepperOver(
+  box: HTMLElement,
+  marked: string,
+  words: DiffViewOptions['stepper'],
+  markCurrent?: (change: HTMLElement, isCurrent: boolean) => void,
+): HTMLElement {
   const changes = [...box.querySelectorAll<HTMLElement>(marked)];
 
   let showing = 0;
@@ -136,6 +141,9 @@ function stepperOver(box: HTMLElement, marked: string, words: DiffViewOptions['s
   steps.root.hidden = true;
 
   function goTo(which: number): void {
+    const was = changes[showing];
+    if (was !== undefined) markCurrent?.(was, false);
+
     showing = Math.max(0, Math.min(which, changes.length - 1));
     steps.showing(words.at(showing + 1, changes.length), {
       canGoBack: showing > 0,
@@ -144,6 +152,7 @@ function stepperOver(box: HTMLElement, marked: string, words: DiffViewOptions['s
 
     const change = changes[showing];
     if (change === undefined) return;
+    markCurrent?.(change, true);
     box.scrollTop = scrollShowing(
       { top: change.offsetTop - box.offsetTop, height: change.offsetHeight },
       { height: box.clientHeight, scrollable: box.scrollHeight - box.clientHeight },
@@ -181,55 +190,72 @@ export function createDiffView(pieces: readonly DiffPiece[], options: DiffViewOp
   return framed;
 }
 
+/** The most characters a change can have and still be hard to see. */
+const EASY_TO_MISS = 2;
+
+const isSpacing = (text: string): boolean => !/\S/.test(text);
+
 /**
  * Spaces and breaks made visible, where they are all that changed: a struck-out
  * space cannot be seen, and a paragraph split in two would otherwise be reported
  * as a change with nothing on the screen to show for it.
  *
- * Added breaks are kept as well as marked, because they are where the text would
- * now break. Removed ones are only marked, or the text would break in a place
- * neither version does.
+ * A single added line break is kept as well as marked, because it is where the
+ * text would now break. A blank line is not: that is already the gap between
+ * this paragraph and the next. Removed ones are only marked, or the text would
+ * break in a place neither version does.
  */
-function visibleSpacing(text: string, keepBreaks: boolean): string {
-  if (/\S/.test(text)) return text;
-  return text.replace(/\n+/g, (breaks) => (keepBreaks ? `¶${breaks}` : '¶')).replace(/[^\S\n]/g, '·');
+function visibleSpacing(text: string, keepBreak: boolean): string {
+  return text
+    .replace(/\n+/g, (breaks) => (keepBreak && breaks.length === 1 ? '¶\n' : '¶'))
+    .replace(/[^\S\n]/g, '·');
 }
 
-function changeOf(removed: string, added: string): HTMLElement {
-  const change = document.createElement('span');
-  change.className = 'diff-change';
+function markedPart({ kind, text, opensChange }: DiffPart): HTMLElement {
+  const part = document.createElement('span');
+  part.className = kind === 'removed' ? 'diff-gone' : 'diff-new';
+  part.textContent = isSpacing(text) ? visibleSpacing(text, kind === 'added') : text;
 
-  if (removed.length > 0) {
-    const gone = document.createElement('span');
-    gone.className = 'word-gone';
-    gone.textContent = visibleSpacing(removed, false);
-    change.append(gone);
-  }
-  if (added.length > 0) {
-    const arrived = document.createElement('span');
-    arrived.className = 'word-new';
-    arrived.textContent = visibleSpacing(added, true);
-    change.append(arrived);
-  }
-  return change;
+  if (text.trim().length <= EASY_TO_MISS) part.classList.add('diff-small');
+  // What the stepper counts, and only once for a change across paragraphs.
+  if (opensChange) part.classList.add('diff-change');
+  return part;
 }
 
 /**
- * Two whole texts read as one, with each change marked where it falls.
+ * Shows which change the stepper is on, among the others like it.
  *
- * The box wraps and breaks text as he wrote it, so what they share goes in
- * untouched. Put it in the document in the same task it is made in, as with
+ * What was added follows what was removed, so a replacement is lit as one thing.
+ * An added part that opens a change of its own is a different change.
+ */
+function markCurrentChange(change: HTMLElement, isCurrent: boolean): void {
+  change.classList.toggle('diff-current', isCurrent);
+  const next = change.nextElementSibling;
+  if (next?.matches('.diff-new:not(.diff-change)')) next.classList.toggle('diff-current', isCurrent);
+  change.closest('.diff-paragraph')?.classList.toggle('diff-paragraph-current', isCurrent);
+}
+
+function paragraphBlock({ parts, changed }: DiffParagraph): HTMLElement {
+  const block = document.createElement('div');
+  block.className = changed ? 'diff-paragraph diff-paragraph-changed' : 'diff-paragraph';
+  block.append(...parts.map((part) => (part.kind === 'same' ? part.text : markedPart(part))));
+  return block;
+}
+
+/**
+ * Two whole texts read as one, with each change marked where it falls and a bar
+ * in the margin of each paragraph that has one.
+ *
+ * Put it in the document in the same task it is made in, as with
  * {@link createDiffView}.
  */
 export function createTextDiffView(pieces: readonly TextPiece[], stepper: DiffViewOptions['stepper']): HTMLElement {
   const text = document.createElement('div');
   text.className = 'review-text';
-  text.append(
-    ...pieces.map((piece) => (piece.kind === 'same' ? piece.text : changeOf(piece.removed, piece.added))),
-  );
+  text.append(...paragraphsOf(pieces).map(paragraphBlock));
 
   const framed = document.createElement('div');
   framed.className = 'review-framed';
-  framed.append(text, stepperOver(text, '.diff-change', stepper));
+  framed.append(text, stepperOver(text, '.diff-change', stepper, markCurrentChange));
   return framed;
 }

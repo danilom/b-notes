@@ -106,6 +106,15 @@
      dark. See the dark mode below, where it is the other way up. */
   --word-new-fill: var(--added);
   --word-new-ink: var(--ink);
+  /* The whole-text diff's marks: solid, because they may be all there is to
+     find, one comma in a long paragraph, and he is an old man on a warm screen.
+     A pale fill disappears there. Dark against the page does not, whatever the
+     hue arrives as, and this is a screen he visits rather than works on, so
+     nothing here is trying to be restful. */
+  --diff-new-fill: hsl(142 80% 18%);
+  --diff-new-ink: hsl(0 0% 100%);
+  --diff-gone-fill: hsl(4 75% 36%);
+  --diff-gone-ink: hsl(0 0% 100%);
   --l-thumb: 82%;
   --l-thumb-hover: 68%;
   --l-track-hover: 93%;
@@ -244,6 +253,10 @@
      bright here is the text, so the mark goes on the text. */
   --word-new-fill: transparent;
   --word-new-ink: var(--added-ink);
+  --diff-new-fill: hsl(142 60% 68%);
+  --diff-new-ink: hsl(0 0% 5%);
+  --diff-gone-fill: hsl(4 75% 72%);
+  --diff-gone-ink: hsl(0 0% 5%);
   --l-thumb: 34%;
   --l-thumb-hover: 48%;
   --l-track-hover: 26%;
@@ -2571,6 +2584,71 @@ dialog::backdrop {
 
 .review-text p:last-child {
   margin-bottom: 0;
+}
+
+/* One paragraph of the whole-text diff. */
+.diff-paragraph {
+  margin: 0 0 1em;
+}
+
+.diff-paragraph:last-child {
+  margin-bottom: 0;
+}
+
+/*
+  The bar in the margin, for finding where to look before reading anything.
+  Out by its own width and inset, so the paragraph's text stays on the same left
+  margin as the unmarked ones around it.
+*/
+.diff-paragraph-changed {
+  --bar: 7px;
+  margin-left: calc(-1 * (var(--run-inset) + var(--bar)));
+  padding-left: var(--run-inset);
+  border-left: var(--bar) solid var(--changed-ink);
+}
+
+.diff-new,
+.diff-gone {
+  padding: 0.05em 3px;
+  border-radius: 3px;
+  box-decoration-break: clone;
+}
+
+.diff-new {
+  background: var(--diff-new-fill);
+  color: var(--diff-new-ink);
+}
+
+.diff-gone {
+  background: var(--diff-gone-fill);
+  color: var(--diff-gone-ink);
+  text-decoration: line-through 2px var(--diff-gone-ink);
+}
+
+/*
+  A change too small to be seen as a word: a comma, a space, a paragraph break.
+  Bigger than the text around it, so it cannot be taken for a smudge.
+*/
+.diff-small {
+  margin: 0 2px;
+  padding: 0.05em 0.45em;
+  font-size: 1.2em;
+  font-weight: 700;
+}
+
+/* The change the stepper is on. An outline in the text's own ink, because it has
+   to stand out from the other marks, and those already use the colours. */
+.diff-current {
+  outline: 4px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Framed rather than tinted, which a warm screen would take away. */
+.diff-paragraph-current {
+  --bar: 14px;
+  border-left-color: var(--ink);
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
 }
 
 /* What the stepper is placed against: the box, not the column, which has
