@@ -153,11 +153,18 @@ const sizeOf = ({ removed, added }: Change): number => Math.max(removed.length, 
  * rewritten clauses matched by accident, while the same `je` between two
  * one-letter corrections is most of what is there to read.
  *
- * Never across a line break. His lines and paragraphs are his, and a change that
- * spanned one could not be read as old sentence, then new sentence.
+ * Never across a line break, whether it stands between the two or is part of one
+ * of them. His lines and paragraphs are his, and a change that spanned one could
+ * not be read as old sentence, then new sentence.
  */
+const holdsBreak = ({ removed, added }: Change): boolean => removed.includes('\n') || added.includes('\n');
+
 const isAbsorbed = (between: string, left: Change, right: Change): boolean =>
-  !between.includes('\n') && between.length <= sizeOf(left) && between.length <= sizeOf(right);
+  !between.includes('\n') &&
+  !holdsBreak(left) &&
+  !holdsBreak(right) &&
+  between.length <= sizeOf(left) &&
+  between.length <= sizeOf(right);
 
 /**
  * Joins changes that sit close together into one, so a rewritten sentence reads

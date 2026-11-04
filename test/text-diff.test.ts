@@ -258,6 +258,22 @@ describe('joining changes that sit close together', () => {
     assert.deepEqual(mergeCloseChanges(pieces), pieces);
   });
 
+  it('never joins a change that itself holds a line break to the one beside it', () => {
+    const before = [change('  \n\n\n', '\n\n'), same('16. '), change('Kuca', 'Kuća')];
+    const after = [change('Kuca', 'Kuća'), same('a'), change('\n', '\n\n')];
+
+    assert.deepEqual(mergeCloseChanges(before), before);
+    assert.deepEqual(mergeCloseChanges(after), after);
+  });
+
+  it('counts a line break on either side of a change', () => {
+    const goneOnly = [change('stara\n', 'nova'), same('x'), change('kuća', 'zgrada')];
+    const arrivedOnly = [change('stara', 'nova\n'), same('x'), change('kuća', 'zgrada')];
+
+    assert.deepEqual(mergeCloseChanges(goneOnly), goneOnly);
+    assert.deepEqual(mergeCloseChanges(arrivedOnly), arrivedOnly);
+  });
+
   it('asks that both sides be big enough, not one', () => {
     const pieces = [change('dugačka riječ', 'druga riječ'), same('oko'), change('a', 'b')];
 
