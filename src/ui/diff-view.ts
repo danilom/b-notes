@@ -287,9 +287,9 @@ function markCurrentChange(change: HTMLElement, isCurrent: boolean): void {
 function currentChangeKey(): SVGElement {
   const namespace = 'http://www.w3.org/2000/svg';
   const shapes: [string, Record<string, string>][] = [
-    ['rect', { x: '1', y: '4', width: '5', height: '16', fill: 'currentColor' }],
-    ['rect', { x: '4', y: '5', width: '19', height: '14', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }],
-    ['path', { d: 'M9 12.5h10', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.5', 'stroke-dasharray': '3 1.5' }],
+    ['rect', { class: 'diff-current-key-page', x: '4', y: '5', width: '19', height: '14', stroke: 'currentColor', 'stroke-width': '1.2' }],
+    ['rect', { x: '1', y: '4.4', width: '5', height: '15.2', fill: 'currentColor' }],
+    ['path', { d: 'M9 15.5h10.5', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-dasharray': '3 1.5' }],
   ];
 
   const svg = document.createElementNS(namespace, 'svg');

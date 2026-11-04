@@ -116,6 +116,7 @@
   --diff-gone-fill: hsl(4 75% 36%);
   --diff-gone-ink: hsl(0 0% 100%);
   --diff-current-fill: rgb(0 0 0 / 0.035);
+  --diff-current-seen: rgb(0 0 0 / 0.088);
   --l-thumb: 82%;
   --l-thumb-hover: 68%;
   --l-track-hover: 93%;
@@ -259,6 +260,7 @@
   --diff-gone-fill: hsl(4 75% 72%);
   --diff-gone-ink: hsl(0 0% 5%);
   --diff-current-fill: rgb(255 255 255 / 0.03);
+  --diff-current-seen: rgb(255 255 255 / 0.098);
   --l-thumb: 34%;
   --l-thumb-hover: 48%;
   --l-track-hover: 26%;
@@ -2730,7 +2732,13 @@ dialog::backdrop {
   width: 1.6em;
   height: 1.6em;
   margin-left: 0.2rem;
-  color: var(--ink);
+  color: var(--quiet);
+}
+
+/* The current paragraph's grey as it looks on the screen: its own shading over
+   the box's. The stepper has neither behind it, so it has to be stated whole. */
+.diff-current-key-page {
+  fill: var(--diff-current-seen);
 }
 
 .diff-paragraph-current:last-child {
