@@ -13,6 +13,8 @@ const current = element('current', HTMLTextAreaElement);
 const proposed = element('proposed', HTMLTextAreaElement);
 const sample = element('sample', HTMLSelectElement);
 const merging = element('merging', HTMLInputElement);
+const spaceSymbol = element('space-symbol', HTMLSelectElement);
+const breakSymbol = element('break-symbol', HTMLSelectElement);
 const dark = element('dark', HTMLInputElement);
 const view = element('view', HTMLElement);
 
@@ -28,11 +30,11 @@ function render(): void {
   column.className = 'review-body';
   column.append(
     legend,
-    createTextDiffView(merging.checked ? mergeCloseChanges(pieces) : pieces, {
-      previous: words.changePrevious,
-      next: words.changeNext,
-      at: words.changeAt,
-    }),
+    createTextDiffView(
+      merging.checked ? mergeCloseChanges(pieces) : pieces,
+      { previous: words.changePrevious, next: words.changeNext, at: words.changeAt },
+      { space: spaceSymbol.value, lineBreak: breakSymbol.value },
+    ),
   );
   view.replaceChildren(column);
 }
@@ -65,6 +67,8 @@ sample.addEventListener('change', () => showSample(Number(sample.value)));
 current.addEventListener('input', renderKeepingPlace);
 proposed.addEventListener('input', renderKeepingPlace);
 merging.addEventListener('change', renderKeepingPlace);
+spaceSymbol.addEventListener('change', renderKeepingPlace);
+breakSymbol.addEventListener('change', renderKeepingPlace);
 
 element('swap', HTMLButtonElement).addEventListener('click', () => {
   [current.value, proposed.value] = [proposed.value, current.value];
