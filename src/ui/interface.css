@@ -2717,6 +2717,7 @@ dialog::backdrop {
   padding: var(--frame-room) var(--frame-room) var(--frame-room) var(--run-inset);
   border: var(--frame) solid var(--chosen);
   border-left: var(--bar) solid var(--chosen);
+  background: var(--wash-firm);
 }
 
 .diff-paragraph-current:last-child {
