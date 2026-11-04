@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import path from 'node:path';
 
@@ -33,6 +33,37 @@ const TOOL_PAGES = new Map([
   ['diff-prototype', 'design/diff-prototype.html'],
 ]);
 
+/*
+  His real writing, for the diff prototype, as `<name>.current.txt` beside
+  `<name>.proposed.txt`. Read from testdata/, which git ignores: this repo is
+  public and these are his essays, so they must never be part of a build or a
+  commit. A checkout without them simply has none to offer.
+*/
+const DIFF_SAMPLES_FOLDER = path.resolve('testdata/diff-samples');
+const CURRENT_SUFFIX = '.current.txt';
+
+async function readDiffSamples() {
+  let names;
+  try {
+    names = await readdir(DIFF_SAMPLES_FOLDER);
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
+
+  const currents = names.filter((name) => name.endsWith(CURRENT_SUFFIX));
+  return Promise.all(
+    currents.map(async (file) => {
+      const name = file.slice(0, -CURRENT_SUFFIX.length);
+      return {
+        name,
+        current: await readFile(path.join(DIFF_SAMPLES_FOLDER, file), 'utf8'),
+        proposed: await readFile(path.join(DIFF_SAMPLES_FOLDER, `${name}.proposed.txt`), 'utf8'),
+      };
+    }),
+  );
+}
+
 const server = createServer((request, response) => {
   const requested = new URL(request.url ?? '/', 'http://localhost');
   const relative = requested.pathname === '/' ? 'index.html' : requested.pathname.slice(1);
@@ -42,6 +73,20 @@ const server = createServer((request, response) => {
   if (relative === 'reset') {
     response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
     response.end('<script>localStorage.clear(); sessionStorage.clear(); location.replace("/");</script>');
+    return;
+  }
+
+  if (relative === 'diff-samples.json') {
+    readDiffSamples().then(
+      (samples) => {
+        response.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+        response.end(JSON.stringify(samples));
+      },
+      (error) => {
+        console.error('Failed to read the diff samples', error);
+        response.writeHead(500).end('Server error');
+      },
+    );
     return;
   }
 

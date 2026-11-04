@@ -1,7 +1,7 @@
 import { strings } from '../src/language/wording.ts';
 import { type TextPiece, diffTexts, mergeCloseChanges, separateTidying } from '../src/notes/text-diff.ts';
 import { createTextDiffView } from '../src/ui/diff-view.ts';
-import { DIFF_SAMPLES } from './diff-prototype-samples.ts';
+import { DIFF_SAMPLES, type DiffSample } from './diff-prototype-samples.ts';
 
 function element<T extends HTMLElement>(id: string, kind: new () => T): T {
   const found = document.getElementById(id);
@@ -79,15 +79,51 @@ function renderKeepingPlace(): void {
   });
 }
 
+const samples: DiffSample[] = [...DIFF_SAMPLES];
+
 function showSample(at: number): void {
-  const chosen = DIFF_SAMPLES[at];
+  const chosen = samples[at];
   if (chosen === undefined) return;
   current.value = chosen.current;
   proposed.value = chosen.proposed;
   render();
 }
 
-sample.append(...DIFF_SAMPLES.map(({ name }, at) => new Option(name, String(at))));
+function listSamples(selectedAt: number): void {
+  sample.replaceChildren(...samples.map(({ name }, at) => new Option(name, String(at))));
+  sample.value = String(selectedAt);
+}
+
+const isDiffSample = (value: unknown): value is DiffSample =>
+  typeof value === 'object' &&
+  value !== null &&
+  'name' in value &&
+  typeof value.name === 'string' &&
+  'current' in value &&
+  typeof value.current === 'string' &&
+  'proposed' in value &&
+  typeof value.proposed === 'string';
+
+/**
+ * Puts his real texts at the top of the list, where the server has any: they are
+ * kept out of the repository, so a checkout may well have none. Whatever is on
+ * the page stays as it is, since he may already be looking at it.
+ */
+async function addRealSamples(): Promise<void> {
+  try {
+    const response = await fetch('/diff-samples.json');
+    if (!response.ok) throw new Error(`Server answered ${response.status}`);
+    const received: unknown = await response.json();
+    if (!Array.isArray(received)) throw new Error('The samples are not a list');
+
+    const real = received.filter(isDiffSample);
+    samples.unshift(...real);
+    listSamples(Number(sample.value) + real.length);
+  } catch (error) {
+    console.error('Could not load the real samples', error);
+  }
+}
+
 sample.addEventListener('change', () => showSample(Number(sample.value)));
 
 current.addEventListener('input', renderKeepingPlace);
@@ -109,6 +145,7 @@ dark.addEventListener('change', () => {
 });
 
 // Opens on the long untidy one, which is the case the page is mostly for judging.
-const opening = Math.max(0, DIFF_SAMPLES.findIndex(({ name }) => name.startsWith('Dugačak neuredan')));
-sample.value = String(opening);
+const opening = Math.max(0, samples.findIndex(({ name }) => name.startsWith('Dugačak neuredan')));
+listSamples(opening);
 showSample(opening);
+void addRealSamples();
