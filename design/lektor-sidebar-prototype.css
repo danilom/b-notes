@@ -59,7 +59,13 @@ body.lektor-open #lektor-side {
   gap: 0.25rem 0.4rem;
   box-sizing: border-box;
   min-height: 48px;
+  padding-block: 0.3rem;
   padding-left: 0.7rem;
+}
+
+/* Taller, so two small lines don't touch a button's edges, in air taken from the bar's own padding. */
+#status .status-action {
+  min-height: 2.1rem;
 }
 
 /* Ends the first row: a flex row has no other way to be told where to break. */
@@ -151,7 +157,8 @@ body.lektor-open #lektor-side {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.55rem 1rem 0;
+  /* Its icon level with the top of Novi tekst, across the window. */
+  padding: 0.5rem 1rem 0.6rem;
   color: var(--quiet);
 }
 
@@ -169,7 +176,7 @@ body.lektor-open #lektor-side {
   flex-direction: column;
   gap: 0.65rem;
   /* Nothing at the foot: a sticky footer stops short of a scroller's padding, and text shows under it. */
-  padding: 0.6rem 1rem 0;
+  padding: 0 1rem;
 }
 
 .lektor-side-body > * {
@@ -221,6 +228,12 @@ body.lektor-open #lektor-side {
   display: flex;
   justify-content: flex-end;
   gap: 0.4rem;
+}
+
+/* The main screen's buttons rather than a dialog's, as tall as those in the strip below. */
+.lektor-side-buttons .status-action {
+  min-height: 2.1rem;
+  padding-inline: 0.8rem;
 }
 
 .lektor-link {

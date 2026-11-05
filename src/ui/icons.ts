@@ -86,13 +86,13 @@ const PATHS = {
   // page, and that is the direction he will actually travel.
   previous: ['m18 15-6-6-6 6'],
   next: ['m6 9 6 6 6-6'],
-  // AI in a speech bubble: Lucide's message-square with the two letters drawn
+  // AI in a speech bubble: Lucide's message-circle with the two letters drawn
   // in by hand on the same grid, because no icon in the set says this.
   lektor: [
-    'M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z',
-    'm6 15 3-8 3 8',
-    'M7.2 12.4h3.6',
-    'M16.5 7v8',
+    'M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719',
+    'm7 15.5 2.6-7 2.6 7',
+    'M8 13h3.2',
+    'M16 8.5v7',
   ],
   // Going back on a decision: the arrow of the versions mark, without its clock.
   // Lucide's rotate-ccw.

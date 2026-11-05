@@ -93,7 +93,7 @@ export function openLektorDialog(
   note.textContent = hasAnything
     ? 'Predlozi su već u tekstu ispod. Ako ti nešto ne odgovara, pređi mišem preko toga i promeni.'
     : 'Tekst je pregledan.';
-  stacked.append(titleOf({ mark: 'lektor', label: 'Lektor', name: title }), note);
+  stacked.append(titleOf({ mark: 'lektor', label: 'AI Lektor', name: title }), note);
 
   const dismiss = document.createElement('button');
   dismiss.type = 'button';

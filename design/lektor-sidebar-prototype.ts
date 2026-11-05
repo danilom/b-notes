@@ -202,7 +202,7 @@ const FAILURES: Readonly<Record<FakeServiceError['failure'], string>> = {
  */
 function footer(lines: HTMLElement[], main?: HTMLButtonElement): HTMLElement {
   const buttons = el('div', 'lektor-side-buttons');
-  buttons.append(...(main === undefined ? [] : [main]), button('Zatvori', goAway));
+  buttons.append(...(main === undefined ? [] : [main]), button('Zatvori', goAway, 'status-action'));
   const made = el('div', 'lektor-side-foot');
   made.append(...lines, buttons);
   return made;
@@ -220,7 +220,7 @@ function startScreen(): HTMLElement[] {
     key,
     footer(
       [el('p', 'lektor-warning', 'Tekst se šalje Guglu na obradu. Neko iz Gugla može da pročita delove teksta. Ne šalji ono što ne bi pokazao drugima.')],
-      button('Pošalji', () => void read(fakeFeedback), 'keep'),
+      button('Pošalji', () => void read(fakeFeedback), 'status-action'),
     ),
   ];
 }
@@ -248,7 +248,7 @@ function keyScreen(): HTMLElement[] {
     ...refused,
     el('label', 'lektor-label', 'Ključ'),
     box,
-    footer([], button('Sačuvaj', save, 'keep')),
+    footer([], button('Sačuvaj', save, 'status-action')),
   ];
 }
 
@@ -261,7 +261,7 @@ function readingScreen(): HTMLElement[] {
         stopWorking();
         stateNow().screen = 'start';
         render();
-      }),
+      }, 'status-action'),
     ),
   ];
 }
@@ -270,7 +270,7 @@ function failedScreen(): HTMLElement[] {
   const failure = stateNow().failure ?? 'overloaded';
   return [
     el('p', 'lektor-line', `${FAILURES[failure]} Tekst nije diran.`),
-    footer([], button('Pokušaj ponovo', () => void read(fakeFeedback), 'keep')),
+    footer([], button('Pokušaj ponovo', () => void read(fakeFeedback), 'status-action')),
   ];
 }
 
@@ -345,7 +345,7 @@ function responseScreen(): HTMLElement[] {
     ...presetChoice(state),
     footer(
       [el('p', 'lektor-line', 'Prvo ćeš videti predloge. Tekst se ne menja dok ih ne uneseš.')],
-      button('Ispravi', () => void correct(), 'keep'),
+      button('Ispravi', () => void correct(), 'status-action'),
     ),
   ];
 }
@@ -372,7 +372,7 @@ function render(): void {
   const body = el('div', 'lektor-side-body');
   body.append(...SCREENS[state.screen]());
   const title = el('div', 'lektor-side-title');
-  title.append(icon('lektor'), document.createTextNode('Lektor'));
+  title.append(icon('lektor'), document.createTextNode(state.screen === 'key' ? 'AI Lektor: podešavanje' : 'AI Lektor'));
   side.replaceChildren(title, body);
 }
 
@@ -397,7 +397,7 @@ function plainPanel(sentence: string, buttons: HTMLButtonElement[]): HTMLElement
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
   const top = document.createElement('header');
-  top.append(titleOf({ mark: 'lektor', label: 'Lektor', name: textInDialog() }));
+  top.append(titleOf({ mark: 'lektor', label: 'AI Lektor', name: textInDialog() }));
   const middle = el('div', 'review-panes');
   const words = el('div', 'review-text review-text-empty', sentence);
   middle.append(words);
