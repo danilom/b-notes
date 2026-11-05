@@ -71,6 +71,7 @@ interface TextState {
 const MUCH_CHANGED = 0.2;
 const REVEAL_MS = 10_000;
 const FOLLOWING_SLACK_PX = 40;
+const NEW_TEXT = '';
 const LONG_WAIT_S = 30;
 const VERY_LONG_WAIT_S = 60;
 const LONG_WAIT_NOTE = 'Još malo. AI Lektoru danas treba duže nego obično.';
@@ -744,6 +745,15 @@ function review(text: string, proposed: string): void {
   });
 }
 
+/** A new text has no id until he writes in it, so the list can't say it's a different text. */
+function followToNewText(): void {
+  lastListClick = Date.now();
+  settleWhatWasUnderway(stateNow());
+  states.delete(NEW_TEXT);
+  openKey = NEW_TEXT;
+  render();
+}
+
 function follow(): void {
   const key = currentKey();
   if (key === '' || key === openKey) return;
@@ -793,6 +803,8 @@ editor.addEventListener('input', () => {
     if (revealTimer === null) render();
   }, 500);
 });
+
+required('new-note', HTMLButtonElement).addEventListener('click', followToNewText);
 
 list.addEventListener('click', () => {
   lastListClick = Date.now();
