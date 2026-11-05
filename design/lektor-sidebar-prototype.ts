@@ -116,6 +116,7 @@ let lastListClick = 0;
 let keyDraft = '';
 let keyNote: KeyNote = null;
 let isKeyJustSaved = false;
+let isAboutAiOpen = false;
 let working: AbortController | null = null;
 let revealTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -472,18 +473,29 @@ function presetChoice(state: TextState): HTMLElement[] {
 const ABOUT_AI =
   'AI je program koji je učio iz ogromne količine tekstova i piše ono što zvuči verovatno. Ne razume tekst kao čovek i nema sopstveno iskustvo. Zato ponekad sa sigurnošću kaže nešto netačno: navod, činjenicu, ime. Ovaj komentar shvati kao mišljenje jednog čitaoca, a ne kao presudu.';
 
+/** Closed until he asks: an explanation repeated every time is one nobody reads. */
+function aboutAi(): HTMLElement[] {
+  const toggle = el('button', 'lektor-fallible');
+  toggle.type = 'button';
+  toggle.setAttribute('aria-expanded', String(isAboutAiOpen));
+  toggle.append(icon('info'), el('span', '', 'AI može da pogreši'));
+  toggle.addEventListener('click', () => {
+    isAboutAiOpen = !isAboutAiOpen;
+    render();
+  });
+  return isAboutAiOpen ? [toggle, el('p', 'lektor-about-ai', ABOUT_AI)] : [toggle];
+}
+
 /** Ours rather than the AI's, like everything around its words: how old this is, the way to a newer one, and what to make of it. */
 function commentNotes(state: TextState): HTMLElement {
-  const fallible = el('span', 'lektor-fallible', 'AI može da pogreši');
-  fallible.title = ABOUT_AI;
-  fallible.tabIndex = 0;
+  const again = el('button', 'lektor-again');
+  again.type = 'button';
+  again.append(icon('back'), el('span', '', 'Pošalji ponovo…'));
+  again.addEventListener('click', () => goTo('start'));
+  const age = el('div', 'lektor-comment-age');
+  age.append(el('span', '', `Napisano ${describeWhen(state.readAt, 'sr')}`), again);
   const notes = el('div', 'lektor-comment-notes');
-  notes.append(
-    el('p', '', `Komentar napisan ${describeWhen(state.readAt, 'sr')}`),
-    ...[staleNote(state)].flatMap((note) => (note === null ? [] : [note])),
-    button('Pošalji tekst ponovo', () => goTo('start'), 'lektor-link'),
-    fallible,
-  );
+  notes.append(age, ...[staleNote(state)].flatMap((note) => (note === null ? [] : [note])), ...aboutAi());
   return notes;
 }
 

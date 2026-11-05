@@ -29,6 +29,8 @@ export type IconName =
   | 'lektor'
   | 'privacy'
   | 'problem'
+  | 'info'
+  | 'back'
   | 'settings'
   | 'move-out'
   | 'hide-list'
@@ -99,6 +101,11 @@ const PATHS = {
     'M8 13h3.2',
     'M16 8.5v7',
   ],
+  // There is more to read here. Lucide's info, its circle written out as a path
+  // because this only draws paths.
+  info: ['M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0z', 'M12 16v-4', 'M12 8h.01'],
+  // Back to where he came from. Lucide's arrow-left.
+  back: ['m12 19-7-7 7-7', 'M19 12H5'],
   // Something didn't work, readable before the words are. Lucide's triangle-alert,
   // its mark made longer and set lower, to be drawn large in white on a filled triangle.
   problem: [
