@@ -428,7 +428,8 @@ body.lektor-open #lektor-side {
   padding: 0;
   border: none;
   background: none;
-  color: var(--quiet);
+  /* Fainter than its neighbours: unlike them it says the same thing every time. */
+  color: var(--faint);
   font-size: inherit;
 }
 
