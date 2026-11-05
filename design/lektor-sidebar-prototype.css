@@ -228,6 +228,23 @@ body.lektor-open #lektor-side {
   line-height: 1.4;
 }
 
+.lektor-waiting {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.lektor-waiting p {
+  margin: 0;
+}
+
+.lektor-wait-note {
+  color: var(--quiet);
+  font-size: 0.85em;
+  font-style: normal;
+  line-height: 1.35;
+}
+
 /* Something is happening, in every place he waits on the AI: words alone look stuck after ten seconds. */
 .lektor-reading {
   display: flex;

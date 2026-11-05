@@ -133,9 +133,9 @@ async function serveLektorAi(request, response) {
     console.log('Lektor AI', asked.action, asked.model ?? '', reply.status, `${Date.now() - started} ms`);
     answer(reply.status, await reply.text());
   } catch (error) {
-    // Couldn't reach Google at all: what the page reads as being offline.
     console.error('Lektor AI could not reach Gemini:', error.name);
-    answer(502, JSON.stringify({ error: { message: error.name } }));
+    // Reached but out of time is the service's trouble; only no answer at all reads as being offline.
+    answer(error.name === 'TimeoutError' ? 504 : 502, JSON.stringify({ error: { message: error.name } }));
   }
 }
 

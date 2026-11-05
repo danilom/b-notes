@@ -71,6 +71,11 @@ interface TextState {
 const MUCH_CHANGED = 0.2;
 const REVEAL_MS = 10_000;
 const FOLLOWING_SLACK_PX = 40;
+const LONG_WAIT_S = 30;
+const VERY_LONG_WAIT_S = 60;
+const LONG_WAIT_NOTE = 'Još malo. AI Lektoru danas treba duže nego obično.';
+// The service gives up at three minutes, so two are left by the time he reads this.
+const VERY_LONG_WAIT_NOTE = 'Treba mu mnogo duže nego obično. Možeš da sačekaš: ako ne završi za dva minuta, sam će odustati.';
 const TAKE_OVER_GRACE_MS = 1_500;
 /** Under this there is nothing for a reader to respond to: a title or a stray line, though not a short poem. */
 const FEWEST_WORDS = 10;
@@ -114,6 +119,8 @@ let keyDraft = '';
 let keyNote: KeyNote = null;
 let isKeyJustSaved = false;
 let isAboutAiOpen = false;
+let readingSince = 0;
+let waitNoteTimer: ReturnType<typeof setInterval> | null = null;
 let working: AbortController | null = null;
 let revealTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -175,6 +182,31 @@ function stopWorking(): void {
   working = null;
 }
 
+function stopWaitNote(): void {
+  if (waitNoteTimer !== null) clearInterval(waitNoteTimer);
+  waitNoteTimer = null;
+}
+
+/**
+ * What he is told while waiting, in words that change with time: it isn't stuck, it
+ * isn't his doing, and he needn't decide anything. By what has passed rather than a
+ * forecast, because the wait hardly depends on the text and varies threefold regardless.
+ */
+function waitingLine(doing: string, firstNote: string, since: number): HTMLElement {
+  stopWaitNote();
+  const note = el('p', 'lektor-wait-note', firstNote);
+  const update = (): void => {
+    const seconds = (Date.now() - since) / 1000;
+    if (seconds >= VERY_LONG_WAIT_S) note.textContent = VERY_LONG_WAIT_NOTE;
+    else if (seconds >= LONG_WAIT_S) note.textContent = LONG_WAIT_NOTE;
+  };
+  update();
+  waitNoteTimer = setInterval(update, 1000);
+  const line = el('div', 'lektor-waiting');
+  line.append(el('p', 'lektor-reading', doing), note);
+  return line;
+}
+
 function stopRevealing(): void {
   if (revealTimer !== null) clearInterval(revealTimer);
   revealTimer = null;
@@ -194,6 +226,7 @@ async function read(ask: (text: string, signal: AbortSignal) => Promise<string>)
   const controller = new AbortController();
   working = controller;
   isKeyJustSaved = false;
+  readingSince = Date.now();
   state.screen = 'reading';
   render();
   try {
@@ -395,7 +428,7 @@ function keyScreen(): HTMLElement[] {
 
 function readingScreen(): HTMLElement[] {
   return [
-    el('p', 'lektor-reading', 'AI Lektor čita tekst…'),
+    waitingLine('AI Lektor čita tekst…', 'Obično traje pola minuta.', readingSince),
     footer(
       [],
       button('Prekini', () => {
@@ -581,6 +614,7 @@ const SCREENS: Readonly<Record<Screen, () => HTMLElement[]>> = {
 
 function render(): void {
   stopRevealing();
+  stopWaitNote();
   const state = stateNow();
   document.body.classList.toggle('lektor-open', state.isOpen);
   opener.setAttribute('aria-pressed', String(state.isOpen));
@@ -652,13 +686,15 @@ async function correct(): Promise<void> {
   const text = editor.value;
   const controller = new AbortController();
   const leave = (): void => controller.abort();
-  const waiting = showAsModal(dialog, plainPanel(el('p', 'lektor-reading', 'AI Lektor ispravlja tekst…'), [button('Prekini', leave)]), leave);
+  const waiting = showAsModal(dialog, plainPanel(waitingLine('AI Lektor ispravlja tekst…', '', Date.now()), [button('Prekini', leave)]), leave);
   try {
     const instruction = PRESETS.find((preset) => preset.id === state.preset)?.prompt ?? '';
     const proposed = await ai().corrections({ text, preset: state.preset, instruction, note: state.note }, controller.signal);
+    stopWaitNote();
     waiting.close();
     review(text, proposed);
   } catch (error) {
+    stopWaitNote();
     waiting.close();
     const failure = failedWith(error);
     if (failure === null) return;

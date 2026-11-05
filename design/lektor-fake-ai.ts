@@ -10,7 +10,8 @@ const READING_MS = 2_500;
 const CORRECTING_MS = 3_000;
 const CONNECTING_MS = 700;
 const CHECKING_KEY_MS = 1_500;
-const SLOW_FACTOR = 8;
+// Long enough to see the messages he gets after 30 and 60 seconds of waiting.
+const SLOW_FACTOR = 30;
 
 function behaviourNow(): FakeBehaviour {
   const chosen = window.localStorage.getItem(BEHAVIOUR_KEY);
