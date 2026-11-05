@@ -37,9 +37,9 @@ body.lektor-open #lektor-side {
 }
 
 /*
-  The whole strip in one row, for a line more of his text on the Asus. Later in
-  the cascade than the app's own two-row grid, at the same weight. The words give
-  way first; at larger letter sizes the buttons wrap rather than leave the window.
+  The whole strip in one row, for more of his text on the Asus. Later in the
+  cascade than the app's own two-row grid, at the same weight. At larger letter
+  sizes the buttons wrap rather than leave the window.
 */
 #status {
   display: flex;
@@ -57,22 +57,38 @@ body.lektor-open #lektor-side {
   order: 0;
   flex: 1 1 7rem;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#status #move-to-resoph,
-#status #appearance-button {
-  order: 1;
+  /* Two lines where it needs them, rather than losing its end. */
+  overflow: visible;
+  white-space: normal;
+  line-height: 1.15;
 }
 
 #status #copy-all,
 #status #see-versions,
 #status #delete-note,
 #status #lektor-open {
-  order: 2;
+  order: 1;
   margin: 0;
+}
+
+/* The two that aren't about this text's words stay last, and stay quiet. */
+#status #move-to-resoph,
+#status #appearance-button {
+  order: 2;
+}
+
+#status #move-to-resoph {
+  margin-left: 0.8rem;
+  padding-block: 0;
+  font-size: 0.78em;
+  line-height: 1.05;
+  white-space: normal;
+  text-align: left;
+}
+
+/* Rarely pressed, so it can afford small words on two lines, and the row keeps its height. */
+#move-to-resoph-label {
+  width: 4.2em;
 }
 
 

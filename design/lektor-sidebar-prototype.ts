@@ -79,13 +79,12 @@ const opener = document.createElement('button');
 opener.id = 'lektor-open';
 opener.type = 'button';
 opener.className = 'status-action';
-opener.append(icon('lektor'), document.createTextNode('AI Lektor'));
-// At the strip's right-hand end, directly under the sidebar it opens.
+opener.append(icon('lektor'), document.createTextNode('Lektor'));
+// Last of the buttons about this text; Premesti u Resoph and Izgled stay at the far right.
 required('delete-note', HTMLButtonElement).after(opener);
 
-// Shorter words, to try the strip in one row: at 1280 wide the full ones leave 39px for the status line.
-required('copy-all-label', HTMLSpanElement).textContent = 'Kopiraj';
-required('move-to-resoph-label', HTMLSpanElement).textContent = 'U Resoph';
+// Shorter, to try the strip in one row: at 1280 wide the full words leave no room for the status line.
+required('copy-all-label', HTMLSpanElement).textContent = 'Kopiraj sve';
 
 const dialog = document.createElement('dialog');
 dialog.id = 'lektor-dialog';
@@ -397,7 +396,7 @@ function plainPanel(sentence: string, buttons: HTMLButtonElement[]): HTMLElement
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
   const top = document.createElement('header');
-  top.append(titleOf({ mark: 'lektor', label: 'AI Lektor', name: textInDialog() }));
+  top.append(titleOf({ mark: 'lektor', label: 'Lektor', name: textInDialog() }));
   const middle = el('div', 'review-panes');
   const words = el('div', 'review-text review-text-empty', sentence);
   middle.append(words);
