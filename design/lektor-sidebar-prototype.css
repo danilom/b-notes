@@ -473,10 +473,10 @@ body.lektor-open #lektor-side {
 
 /* The small square a magazine article ends with: drawn, so it looks the same in any font. */
 .lektor-response-end {
-  display: inline-block;
+  display: block;
   width: 0.42em;
   height: 0.42em;
-  margin-left: 0.4em;
+  margin-top: 0.7em;
   background: var(--quiet);
   opacity: 0.6;
 }
