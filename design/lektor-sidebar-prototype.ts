@@ -73,6 +73,7 @@ interface TextState {
 /** Past this share of its words changed, the response is more about the old text than this one. */
 const MUCH_CHANGED = 0.2;
 const REVEAL_MS = 10_000;
+const FOLLOWING_SLACK_PX = 40;
 const TAKE_OVER_GRACE_MS = 1_500;
 const KEY_STORE = 'lektor-fake-key';
 /** Under this there is nothing for a reader to respond to: a title or a stray line, though not a short poem. */
@@ -416,15 +417,21 @@ function revealed(state: TextState): HTMLElement {
   }
   const parts = state.feedback.split(/(\s+)/);
   let shown = 0;
+  // Everything on the screen is already there, so no redraw: it would jump the scroll position.
   const finish = (): void => {
     stopRevealing();
     state.isRevealed = true;
-    render();
+    box.textContent = state.feedback;
   };
   box.addEventListener('click', finish);
   revealTimer = setInterval(() => {
+    const scroller = box.closest('.lektor-side-body');
+    // Only if he was at the bottom: having scrolled up to read, he stays there.
+    const isFollowing = scroller !== null && scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < FOLLOWING_SLACK_PX;
     shown += 2;
     box.textContent = parts.slice(0, shown).join('');
+    // Holds the button under it still on the screen once the comment has reached it.
+    if (isFollowing) scroller.scrollTop = scroller.scrollHeight;
     if (shown >= parts.length) finish();
   }, (REVEAL_MS / parts.length) * 2);
   return box;
@@ -457,7 +464,7 @@ function presetChoice(state: TextState): HTMLElement[] {
     return label;
   });
   const chosen = PRESETS.find((preset) => preset.id === state.preset);
-  const promptLabel = el('p', 'lektor-label', 'Uputstvo za AI Lektora');
+  const promptLabel = el('p', 'lektor-prompt-label', 'Uputstvo za AI Lektora:');
   const prompt = el('p', 'lektor-prompt', chosen?.prompt ?? '');
   const noteLabel = el('label', 'lektor-label', 'Tvoja dodatna uputstva (nije obavezno)');
   const note = el('textarea', 'lektor-note');

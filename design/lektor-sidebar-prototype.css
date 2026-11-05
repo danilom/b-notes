@@ -461,9 +461,12 @@ body.lektor-open #lektor-side {
   line-height: 1.4;
 }
 
-/* A section of its own, below the comment and whatever else may come to follow it. */
+/*
+  A section of its own, below the comment and whatever else may come to follow it.
+  Held at the panel's foot until the comment reaches it, so it stays still to click.
+*/
 .lektor-response ~ .lektor-side-foot {
-  margin-top: 0.5rem;
+  margin-top: auto;
   padding-top: 0.75rem;
   border-top: 1px solid var(--line);
 }
@@ -486,6 +489,11 @@ body.lektor-open #lektor-side {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+/* Not a section of its own, but what follows from the choice above: plain words, right against their box. */
+.lektor-side-body > .lektor-prompt-label {
+  margin-bottom: -0.35rem;
 }
 
 /* Read-only, and looking it beside the white box he can type in: the panel's grey made a shade deeper, smaller type, an ordinary arrow. */
