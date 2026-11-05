@@ -65,6 +65,8 @@ interface TextState {
   isOpen: boolean;
   screen: Screen;
   failure: LektorServiceError['failure'] | null;
+  /** Said when it happened, and kept: another text's failure must not change what this one's says. */
+  capNote: string | null;
   feedback: string;
   /** Whether the response has finished appearing, so it isn't played again on coming back. */
   isRevealed: boolean;
@@ -148,6 +150,7 @@ function stateNow(): TextState {
     isOpen: false,
     screen: 'start',
     failure: null,
+    capNote: null,
     feedback: '',
     isRevealed: false,
     readText: '',
@@ -257,6 +260,7 @@ async function read(ask: (text: string, signal: AbortSignal) => Promise<string>)
     const failure = failedWith(error);
     if (failure === null) return;
     state.failure = failure;
+    state.capNote = dailyCapNote(failure);
     state.screen = failure === 'bad-key' ? 'key' : 'failed';
     if (failure === 'bad-key') keyNote = 'refused';
   }
@@ -472,13 +476,16 @@ function readingScreen(): HTMLElement[] {
 }
 
 function failedScreen(): HTMLElement[] {
-  const failure = stateNow().failure ?? 'overloaded';
+  const { failure, capNote } = stateNow();
   const top = el('div', 'lektor-back-row');
   top.append(backButton('Nazad', 'start'));
-  const shown = [top, problem(failureSentence(failure))];
   // Once the day's tries are gone, trying again can only fail again.
-  if (dailyCapNote(failure) !== null) return shown;
-  return [...shown, footer([], button('Pokušaj ponovo', () => void read(askForFeedback), 'status-action'))];
+  if (capNote !== null) return [top, problem(capNote)];
+  return [
+    top,
+    problem(FAILURES[failure ?? 'overloaded']),
+    footer([], button('Pokušaj ponovo', () => void read(askForFeedback), 'status-action')),
+  ];
 }
 
 /** The response word by word; a click anywhere on it shows the rest. */
