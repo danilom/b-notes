@@ -275,11 +275,21 @@ body.lektor-open #lektor-side {
   font-style: normal;
 }
 
+/*
+  Solid red with a white mark, in either mode: orange means take care, this means it
+  didn't work. The same red whatever the theme, since white must stay legible on it.
+*/
 .lektor-problem svg {
   flex: none;
-  width: 1.45em;
-  height: 1.45em;
-  color: var(--warning);
+  width: 1.5em;
+  height: 1.5em;
+  stroke: white;
+  stroke-width: 2.6;
+}
+
+.lektor-problem svg path:first-child {
+  fill: hsl(2 78% 44%);
+  stroke: hsl(2 78% 44%);
 }
 
 .lektor-key-saved {
