@@ -308,7 +308,7 @@ function privacyWarning(): HTMLElement {
   warning.setAttribute('role', 'note');
   warning.append(
     heading,
-    el('p', 'lektor-line', 'Ceo tekst se šalje Guglu, gde neko može da ga pročita.'),
+    el('p', 'lektor-line', 'Ceo tekst se šalje Guglu. Nije javan, ali može da ga vidi neko od njihovih ljudi.'),
     el('p', 'lektor-line', 'Ne šalji ništa što ne bi pokazao drugima: lične misli, tuđe tajne, lozinke i slično.'),
   );
   return warning;
