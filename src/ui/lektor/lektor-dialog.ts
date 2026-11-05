@@ -52,11 +52,7 @@ export function openLektorDialog(
 
     const about = document.createElement('p');
     about.className = 'review-note-aside';
-    for (const line of ['Precrtano je tvoj stari tekst, zeleno je predlog.', `Veće promene: ${large}, sitne popravke: ${small}.`]) {
-      const one = document.createElement('span');
-      one.textContent = line;
-      about.append(one);
-    }
+    about.textContent = `Precrtano je tvoj stari tekst, zeleno je predlog. Veće promene: ${large}, sitne popravke: ${small}.`;
 
     column.append(
       about,

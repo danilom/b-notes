@@ -2607,28 +2607,9 @@ dialog::backdrop {
 }
 
 /* The line above the box stays clear of the stepper, at the end of that same line. */
-.lektor-body .review-note-aside {
-  padding-right: 21rem;
-}
-
-.lektor-body .review-note-aside span {
-  display: block;
-}
-
 /* The box fills the dialog and the lines stay a readable length, in its middle. */
 .lektor-body .review-text {
   padding-inline: max(1.5rem, calc((100% - var(--measure)) / 2));
-}
-
-/* Its stepper sits on the line above the box rather than over it. It shows on
-   short texts as well, where it would otherwise cover the first lines. */
-.diff-framed {
-  margin-top: 0.8rem;
-}
-
-.diff-framed .review-steps {
-  top: -2.6rem;
-  right: 0;
 }
 
 /* One paragraph of the whole-text diff. */
