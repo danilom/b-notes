@@ -86,9 +86,16 @@ body.lektor-open #lektor-side {
   padding-block: 0.25rem;
 }
 
+/* Grey on the panel's own colour: everything else down here is quiet, and this isn't the app's business. */
 #deleted-see {
   min-height: 2.1rem;
   padding-inline: 0.5rem;
+  background: var(--panel);
+  color: var(--quiet);
+}
+
+#deleted-block:hover #deleted-see:not(:disabled) {
+  color: var(--ink);
 }
 
 #status-text {
