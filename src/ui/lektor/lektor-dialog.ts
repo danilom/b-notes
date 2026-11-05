@@ -52,8 +52,7 @@ export function openLektorDialog(
 
   /**
    * He has been through all of them, and the next thing to do is the main button.
-   * It stays lit if he then goes back to look at something again. Not for a single
-   * change, where he would be congratulated before doing anything.
+   * Not for a single change, where he would be congratulated before doing anything.
    */
   function noticeIfAtTheEnd(changeAt: number): void {
     if (large <= 1 || changeAt !== large - 1 || applyButton === null) return;

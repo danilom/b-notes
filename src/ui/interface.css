@@ -2051,14 +2051,11 @@ dialog::backdrop {
   width: min(67rem, 100%);
 }
 
-/* He has been through every change: the main button lights up, with one small hop. */
-.panel.lektor-panel button.lektor-apply-ready,
-.panel.lektor-panel button.lektor-apply-ready:hover {
-  border-color: var(--chosen);
-  background: var(--chosen);
-  color: var(--on-chosen);
-}
-
+/*
+  He has been through every change: the main button gives one small hop. Only that. A
+  change of colour would say it has only now become available, and it has been there
+  to press all along: he need not go through anything first.
+*/
 @media (prefers-reduced-motion: no-preference) {
   .panel.lektor-panel button.lektor-apply-ready {
     animation: lektor-apply-hop 0.7s ease-out 1;
