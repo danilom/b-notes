@@ -572,6 +572,13 @@ body.lektor-open #lektor-side {
   gap: 0.4rem;
 }
 
+/* Under its name rather than beside it: the column is narrow, and this is the one figure he should be able to find. */
+.lektor-credit {
+  display: block;
+  color: var(--quiet);
+  font-size: 0.85em;
+}
+
 /* Not a section of its own, but what follows from the choice above: plain words, right against their box. */
 .lektor-side-body > .lektor-prompt-label {
   margin-bottom: -0.35rem;

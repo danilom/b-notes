@@ -6,13 +6,26 @@ import { showAsModal } from '../src/ui/dialogs/modal.ts';
 import { icon } from '../src/ui/icons.ts';
 import { openLektorDialog } from '../src/ui/lektor/lektor-dialog.ts';
 import { flashToast } from '../src/ui/toast.ts';
-import { BEHAVIOUR_KEY, fakeAi } from './lektor-fake-ai.ts';
-import { realAi } from './lektor-real-ai.ts';
-import { dailyCapSentence } from './lektor-daily-cap.ts';
+import { claudeAi } from './lektor-claude-ai.ts';
+import { creditLine, creditTyped } from './lektor-credit.ts';
+import { BEHAVIOUR_KEY, fakeAi, fakeThoroughAi } from './lektor-fake-ai.ts';
+import { geminiAi } from './lektor-gemini-ai.ts';
 import { type LektorService, LektorServiceError, type PresetId } from './lektor-service.ts';
 
-/** Chosen in the his-screens harness, at each request. */
-const ai = (): LektorService => (window.localStorage.getItem(BEHAVIOUR_KEY) === 'real' ? realAi : fakeAi);
+/** Which Lektor he has chosen, in words about what it means for him rather than whose it is. */
+type Level = 'free' | 'thorough';
+const LEVEL_STORE = 'lektor-level';
+
+const levelNow = (): Level => (window.localStorage.getItem(LEVEL_STORE) === 'thorough' ? 'thorough' : 'free');
+
+/** Real or fake is chosen in the his-screens harness, at each request. */
+function serviceFor(level: Level): LektorService {
+  const isReal = window.localStorage.getItem(BEHAVIOUR_KEY) === 'real';
+  if (level === 'thorough') return isReal ? claudeAi : fakeThoroughAi;
+  return isReal ? geminiAi : fakeAi;
+}
+
+const ai = (): LektorService => serviceFor(levelNow());
 
 /*
   The Lektor beside the real app, loaded into it by the his-screens harness. Not
@@ -66,7 +79,7 @@ interface TextState {
   screen: Screen;
   failure: LektorServiceError['failure'] | null;
   /** Said when it happened, and kept: another text's failure must not change what this one's says. */
-  capNote: string | null;
+  finalSentence: string;
   serviceSaid: string;
   feedback: string;
   /** Whether the response has finished appearing, so it isn't played again on coming back. */
@@ -83,11 +96,14 @@ const MUCH_CHANGED = 0.2;
 const REVEAL_MS = 10_000;
 const FOLLOWING_SLACK_PX = 40;
 const NEW_TEXT = '';
-const LONG_WAIT_S = 30;
-const VERY_LONG_WAIT_S = 60;
 const LONG_WAIT_NOTE = 'Još malo. AI Lektoru danas treba duže nego obično.';
-// The service gives up at three minutes, so two are left by the time he reads this.
+// Either service gives up two minutes after this is read, at three minutes and at ten.
 const VERY_LONG_WAIT_NOTE = 'Treba mu mnogo duže nego obično. Možeš da sačekaš: ako ne završi za dva minuta, sam će odustati.';
+/** The thorough one writes for minutes on end when all is well, so it is told apart from one in trouble much later. */
+const WAITS: Readonly<Record<Level, { reading: string; correcting: string; longS: number; veryLongS: number }>> = {
+  free: { reading: 'Obično traje pola minuta.', correcting: 'Obično traje do pola minuta.', longS: 30, veryLongS: 60 },
+  thorough: { reading: 'Obično traje oko minut.', correcting: 'Može da potraje i nekoliko minuta.', longS: 300, veryLongS: 480 },
+};
 const TAKE_OVER_GRACE_MS = 1_500;
 /** Under this there is nothing for a reader to respond to: a title or a stray line, though not a short poem. */
 const FEWEST_WORDS = 10;
@@ -133,10 +149,10 @@ let isKeyJustSaved = false;
 let isAboutAiOpen = false;
 let lastFailureDetail = '';
 let lastServiceSaid = '';
+let lastFinalSentence = '';
 /** What the service said about the key: the key box belongs to no one text. */
 let keyServiceSaid = '';
-/** A wait in the refusal counts from here, however much later the screen is drawn again. */
-let lastFailureAt = new Date();
+let creditDraft = '';
 let readingSince = 0;
 let waitNoteTimer: ReturnType<typeof setInterval> | null = null;
 let working: AbortController | null = null;
@@ -154,7 +170,7 @@ function stateNow(): TextState {
     isOpen: false,
     screen: 'start',
     failure: null,
-    capNote: null,
+    finalSentence: '',
     serviceSaid: '',
     feedback: '',
     isRevealed: false,
@@ -215,10 +231,11 @@ function stopWaitNote(): void {
 function waitingLine(doing: string, firstNote: string, since: number): HTMLElement {
   stopWaitNote();
   const note = el('p', 'lektor-wait-note', firstNote);
+  const { longS, veryLongS } = WAITS[levelNow()];
   const update = (): void => {
     const seconds = (Date.now() - since) / 1000;
-    if (seconds >= VERY_LONG_WAIT_S) note.textContent = VERY_LONG_WAIT_NOTE;
-    else if (seconds >= LONG_WAIT_S) note.textContent = LONG_WAIT_NOTE;
+    if (seconds >= veryLongS) note.textContent = VERY_LONG_WAIT_NOTE;
+    else if (seconds >= longS) note.textContent = LONG_WAIT_NOTE;
   };
   update();
   waitNoteTimer = setInterval(update, 1000);
@@ -236,13 +253,15 @@ function failedWith(error: unknown): LektorServiceError['failure'] | null {
   if (error instanceof DOMException && error.name === 'AbortError') return null;
   if (error instanceof LektorServiceError) {
     lastFailureDetail = error.detail;
-    lastServiceSaid = error.serviceSaid;
-    lastFailureAt = new Date();
+    // Named now: he may choose the other Lektor before coming back to read this.
+    lastServiceSaid = error.serviceSaid === '' ? '' : `${ai().whoseWords}: ${error.serviceSaid}`;
+    lastFinalSentence = error.finalSentence;
     return error.failure;
   }
   console.error('The Lektor prototype failed', error);
   lastFailureDetail = String(error);
   lastServiceSaid = '';
+  lastFinalSentence = '';
   return 'overloaded';
 }
 
@@ -267,7 +286,7 @@ async function read(ask: (text: string, signal: AbortSignal) => Promise<string>)
     const failure = failedWith(error);
     if (failure === null) return;
     state.failure = failure;
-    state.capNote = dailyCapNote(failure);
+    state.finalSentence = lastFinalSentence;
     state.serviceSaid = lastServiceSaid;
     state.screen = failure === 'bad-key' ? 'key' : 'failed';
     if (failure === 'bad-key') {
@@ -314,6 +333,12 @@ function keyNoteOf(failure: LektorServiceError['failure'] | null): KeyNote {
   return failure === 'offline' ? 'offline' : 'unavailable';
 }
 
+function rememberCreditDraft(): void {
+  const amount = creditTyped(creditDraft);
+  if (amount !== null) ai().rememberCredit(amount);
+  creditDraft = '';
+}
+
 /** The key only counts once the service has taken it, and what was pasted stays in the box until then. */
 async function checkKey(): Promise<void> {
   const state = stateNow();
@@ -325,6 +350,7 @@ async function checkKey(): Promise<void> {
   try {
     await ai().keyCheck(keyDraft, controller.signal);
     ai().rememberKey(keyDraft);
+    rememberCreditDraft();
     keyDraft = '';
     keyNote = null;
     isKeyJustSaved = true;
@@ -347,15 +373,9 @@ const FAILURES: Readonly<Record<LektorServiceError['failure'], string>> = {
   'cut-off': 'AI Lektor nije završio. Probaj ponovo.',
   offline: 'Internet ne radi, a AI Lektoru je potreban.',
   'too-long': 'Tekst je predugačak za AI Lektora.',
+  declined: 'AI Lektor neće da radi sa ovim tekstom.',
+  'no-credit': 'Plaćeni iznos je potrošen.',
 };
-
-function dailyCapNote(failure: LektorServiceError['failure']): string | null {
-  return failure === 'limit' ? dailyCapSentence(lastFailureDetail, lastFailureAt) : null;
-}
-
-function failureSentence(failure: LektorServiceError['failure']): string {
-  return dailyCapNote(failure) ?? FAILURES[failure];
-}
 
 const askForFeedback = (text: string, signal: AbortSignal): Promise<string> => ai().feedback(text, signal);
 
@@ -382,7 +402,7 @@ function problem(sentence: string, serviceSaid = ''): HTMLElement {
   if (serviceSaid === '') {
     box.title = lastFailureDetail;
   } else {
-    const said = el('p', 'lektor-service-said', `Poruka Gugla: ${serviceSaid.slice(0, LONGEST_SERVICE_WORDS)}`);
+    const said = el('p', 'lektor-service-said', serviceSaid.slice(0, LONGEST_SERVICE_WORDS));
     said.lang = 'en';
     words.append(said);
   }
@@ -410,7 +430,7 @@ function privacyWarning(): HTMLElement {
   warning.setAttribute('role', 'note');
   warning.append(
     heading,
-    el('p', 'lektor-line', `Ceo tekst (${strings('sr').wordCount(wordsInText())}) se šalje Guglu. Ne objavljuje se javno, ali je moguće da ga neko vidi.`),
+    el('p', 'lektor-line', `Ceo tekst (${strings('sr').wordCount(wordsInText())}) se šalje ${ai().recipient}. Ne objavljuje se javno, ali je moguće da ga neko vidi.`),
     el('p', 'lektor-line', 'Ne šalji ništa što ne bi pokazao drugima: lične misli, tajne, lozinke i slično.'),
   );
   return warning;
@@ -427,13 +447,39 @@ function existingCommentRow(): HTMLElement {
   return row;
 }
 
+function levelOption(level: Level, name: string): HTMLElement {
+  const label = el('label', 'lektor-preset');
+  const radio = el('input', '');
+  radio.type = 'radio';
+  radio.name = 'lektor-level';
+  radio.checked = levelNow() === level;
+  radio.addEventListener('change', () => {
+    window.localStorage.setItem(LEVEL_STORE, level);
+    render();
+  });
+  const words = el('span', '', name);
+  const credit = serviceFor(level).creditLeft();
+  if (credit !== null) words.append(el('span', 'lektor-credit', creditLine(credit)));
+  label.append(radio, words);
+  return label;
+}
+
+/** On both steps, since a comment and a correction are separate requests and may be worth different things to him. */
+function levelChoice(): HTMLElement[] {
+  return [
+    el('p', 'lektor-heading', 'Koji AI Lektor?'),
+    levelOption('free', 'Besplatan i solidan'),
+    levelOption('thorough', 'Plaćen i temeljniji'),
+  ];
+}
+
 function startScreen(): HTMLElement[] {
   const key = button('Promeni API ključ', () => {
     stateNow().screen = 'key';
     render();
   }, 'lektor-link');
   const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', 'API ključ radi i sačuvan je.')] : [];
-  const send = button('Pošalji ceo tekst Guglu', () => void read(askForFeedback), 'status-action');
+  const send = button(`Pošalji ceo tekst ${ai().recipient}`, () => void read(askForFeedback), 'status-action');
   send.disabled = wordsInText() < FEWEST_WORDS;
   if (send.disabled) send.title = TOO_SHORT;
   // Having come here to send again, he may think better of it: the comment he has is still there.
@@ -442,6 +488,7 @@ function startScreen(): HTMLElement[] {
     ...existing,
     ...saved,
     el('p', 'lektor-line', 'AI Lektor čita tvoj tekst, kaže šta misli i, ako želiš, predlaže ispravke.'),
+    ...levelChoice(),
     el('p', 'lektor-model', `Model: ${ai().commentModel}`),
     key,
     footer([privacyWarning()], send),
@@ -452,6 +499,21 @@ function keyNoteElement(): HTMLElement[] {
   if (keyNote === null) return [];
   if (keyNote === 'checking') return [el('p', 'lektor-reading', 'Proveravam API ključ…')];
   return [problem(KEY_NOTES[keyNote], keyServiceSaid)];
+}
+
+/** Nothing can ask Anthropic what is left, so the count starts from what someone says was paid in. */
+function creditBox(isChecking: boolean): HTMLElement[] {
+  if (levelNow() !== 'thorough') return [];
+  const box = el('input', 'lektor-key');
+  box.type = 'text';
+  box.inputMode = 'decimal';
+  box.autocomplete = 'off';
+  box.value = creditDraft;
+  box.disabled = isChecking;
+  box.addEventListener('input', () => {
+    creditDraft = box.value;
+  });
+  return [el('label', 'lektor-label', 'Uplaćeno, u dolarima (nije obavezno)'), box];
 }
 
 function keyScreen(): HTMLElement[] {
@@ -467,9 +529,15 @@ function keyScreen(): HTMLElement[] {
   });
   const save = (): void => {
     const pasted = box.value.replace(/\s/g, '');
-    if (pasted === '') return;
-    keyDraft = pasted;
-    void checkKey();
+    if (pasted !== '') {
+      keyDraft = pasted;
+      void checkKey();
+      return;
+    }
+    // After a top-up there is a new amount but no new key.
+    if (creditTyped(creditDraft) === null) return;
+    rememberCreditDraft();
+    goTo('start');
   };
   box.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') save();
@@ -480,6 +548,7 @@ function keyScreen(): HTMLElement[] {
     el('p', 'lektor-line', 'Za rad AI Lektora potreban je API ključ. Ako ti ga je neko poslao, zalepi ga ovde.'),
     el('label', 'lektor-label', 'API ključ'),
     box,
+    ...creditBox(isChecking),
     ...keyNoteElement(),
     footer([], saveButton),
   ];
@@ -487,7 +556,7 @@ function keyScreen(): HTMLElement[] {
 
 function readingScreen(): HTMLElement[] {
   return [
-    waitingLine('AI Lektor čita tekst…', 'Obično traje pola minuta.', readingSince),
+    waitingLine('AI Lektor čita tekst…', WAITS[levelNow()].reading, readingSince),
     footer(
       [],
       button('Prekini', () => {
@@ -500,11 +569,11 @@ function readingScreen(): HTMLElement[] {
 }
 
 function failedScreen(): HTMLElement[] {
-  const { failure, capNote, serviceSaid } = stateNow();
+  const { failure, finalSentence, serviceSaid } = stateNow();
   const top = el('div', 'lektor-back-row');
   top.append(backButton('Nazad', 'start'));
-  // Once the day's tries are gone, trying again can only fail again.
-  if (capNote !== null) return [top, problem(capNote, serviceSaid)];
+  // Once the day's tries or the money are gone, trying again can only fail again.
+  if (finalSentence !== '') return [top, problem(finalSentence, serviceSaid)];
   return [
     top,
     problem(FAILURES[failure ?? 'overloaded'], serviceSaid),
@@ -568,6 +637,7 @@ function presetChoice(state: TextState): HTMLElement[] {
     radio.addEventListener('change', () => {
       state.preset = preset.id;
       prompt.textContent = preset.prompt;
+      model.textContent = `Model: ${ai().correctionModel(preset.id)}`;
     });
     label.append(radio, document.createTextNode(preset.name));
     return label;
@@ -575,6 +645,7 @@ function presetChoice(state: TextState): HTMLElement[] {
   const chosen = PRESETS.find((preset) => preset.id === state.preset);
   const promptLabel = el('p', 'lektor-prompt-label', 'Uputstvo za AI Lektora:');
   const prompt = el('p', 'lektor-prompt', chosen?.prompt ?? '');
+  const model = el('p', 'lektor-model', `Model: ${ai().correctionModel(state.preset)}`);
   const noteLabel = el('label', 'lektor-label', 'Tvoja dodatna uputstva (nije obavezno)');
   const note = el('textarea', 'lektor-note');
   note.rows = 2;
@@ -583,7 +654,7 @@ function presetChoice(state: TextState): HTMLElement[] {
   note.addEventListener('input', () => {
     state.note = note.value;
   });
-  return [heading, ...options, promptLabel, prompt, noteLabel, note];
+  return [heading, ...options, promptLabel, prompt, noteLabel, note, ...levelChoice(), model];
 }
 
 /** He has never used AI, and this is the one place to say what it is, without saying it at him every time. */
@@ -647,7 +718,8 @@ function correctionsScreen(): HTMLElement[] {
     top,
     ...presetChoice(stateNow()),
     footer(
-      [el('p', 'lektor-line', 'Prvo ćeš videti predloge. Tekst se ne menja dok ih ne uneseš.')],
+      // Said again here: having chosen the other Lektor on this step, his text is going somewhere the first warning didn't name.
+      [el('p', 'lektor-line', `Ceo tekst se šalje ${ai().recipient}. Prvo ćeš videti predloge. Tekst se ne menja dok ih ne uneseš.`)],
       button('Pošalji zahtev za ispravke', () => void correct(), 'status-action'),
     ),
   ];
@@ -751,7 +823,7 @@ async function correct(): Promise<void> {
   const text = editor.value;
   const controller = new AbortController();
   const leave = (): void => controller.abort();
-  const waiting = showAsModal(dialog, plainPanel(waitingLine('AI Lektor ispravlja tekst…', 'Obično traje do pola minuta.', Date.now()), [button('Prekini', leave)]), leave);
+  const waiting = showAsModal(dialog, plainPanel(waitingLine('AI Lektor ispravlja tekst…', WAITS[levelNow()].correcting, Date.now()), [button('Prekini', leave)]), leave);
   try {
     const instruction = PRESETS.find((preset) => preset.id === state.preset)?.prompt ?? '';
     const proposed = await ai().corrections({ text, preset: state.preset, instruction, note: state.note }, controller.signal);
@@ -769,8 +841,8 @@ async function correct(): Promise<void> {
     };
     const failed = showAsModal(
       dialog,
-      plainPanel(problem(failureSentence(failure), lastServiceSaid), [
-        ...(dailyCapNote(failure) === null ? [button('Pokušaj ponovo', retry, 'keep')] : []),
+      plainPanel(problem(lastFinalSentence === '' ? FAILURES[failure] : lastFinalSentence, lastServiceSaid), [
+        ...(lastFinalSentence === '' ? [button('Pokušaj ponovo', retry, 'keep')] : []),
         button('Zatvori', () => failed.close()),
       ]),
       () => failed.close(),

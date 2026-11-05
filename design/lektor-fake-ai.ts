@@ -1,8 +1,9 @@
 import { fetchRealSamples } from './diff-prototype-samples.ts';
-import { type LektorService, LektorServiceError, type PresetId } from './lektor-service.ts';
+import { creditAfter } from './lektor-credit.ts';
+import { type LektorService, LektorServiceError, NO_CREDIT_SENTENCE, type PresetId } from './lektor-service.ts';
 
 /** How the pretend service behaves, chosen in the his-screens harness. */
-type FakeBehaviour = 'ok' | 'slow' | 'offline' | 'overloaded' | 'limit' | 'bad-key' | 'cut-off';
+type FakeBehaviour = 'ok' | 'slow' | 'offline' | 'overloaded' | 'limit' | 'bad-key' | 'cut-off' | 'declined' | 'no-credit';
 
 export const BEHAVIOUR_KEY = 'lektor-fake-behaviour';
 
@@ -15,7 +16,7 @@ const SLOW_FACTOR = 30;
 
 function behaviourNow(): FakeBehaviour {
   const chosen = window.localStorage.getItem(BEHAVIOUR_KEY);
-  const known: readonly FakeBehaviour[] = ['ok', 'slow', 'offline', 'overloaded', 'limit', 'bad-key', 'cut-off'];
+  const known: readonly FakeBehaviour[] = ['ok', 'slow', 'offline', 'overloaded', 'limit', 'bad-key', 'cut-off', 'declined', 'no-credit'];
   return known.find((behaviour) => behaviour === chosen) ?? 'ok';
 }
 
@@ -34,13 +35,17 @@ const SERVICE_SAID: Partial<Record<string, string>> = {
   overloaded: 'gemini-3.6-flash is currently experiencing high demand, spikes in demand are usually temporary. Please try again later.',
   limit: 'Rate limit exceeded for model gemini-3.6-flash (limit: 10 requests per minute on Free Tier). Please retry in 30s.',
   'bad-key': 'API key not valid. Please pass a valid API key.',
+  // Not captured from the real thing, unlike the three above: no paid key has been tried yet.
+  'no-credit': 'Your credit balance is too low to access the Anthropic API.',
+  declined: 'This request was declined.',
 };
 
 /** Waits as the real service would, and answers as the harness says to. */
 async function pretendToWork(ms: number, signal: AbortSignal): Promise<void> {
   await wait(ms, signal);
   const behaviour = behaviourNow();
-  if (behaviour !== 'ok' && behaviour !== 'slow') throw new LektorServiceError(behaviour, '', SERVICE_SAID[behaviour] ?? '');
+  if (behaviour === 'ok' || behaviour === 'slow') return;
+  throw new LektorServiceError(behaviour, '', SERVICE_SAID[behaviour] ?? '', behaviour === 'no-credit' ? NO_CREDIT_SENTENCE : '');
 }
 
 /**
@@ -132,6 +137,11 @@ async function fakeCorrections(text: string, preset: PresetId, signal: AbortSign
 
 export const fakeAi: LektorService = {
   commentModel: 'probni, bez pravog AI',
+  correctionModel: () => 'probni, bez pravog AI',
+  recipient: 'Guglu',
+  whoseWords: 'Poruka Gugla',
+  creditLeft: () => null,
+  rememberCredit: () => undefined,
   hasKey: () => window.sessionStorage.getItem('lektor-fake-key') !== null,
   rememberKey: (key) => window.sessionStorage.setItem('lektor-fake-key', key),
   connectionCheck: fakeConnectionCheck,
@@ -139,4 +149,35 @@ export const fakeAi: LektorService = {
   feedback: fakeFeedback,
   secondLook: (text, _earlier, signal) => fakeSecondLook(text, signal),
   corrections: ({ text, preset }, signal) => fakeCorrections(text, preset, signal),
+};
+
+/** Held only here and spent at about the real rate, so the balance can be watched going down without paying for it. */
+let fakeCredit: number | null = 10;
+const COMMENT_COST = 0.08;
+const CORRECTION_COST = 0.25;
+
+function spendFake(cost: number): void {
+  if (fakeCredit !== null) fakeCredit = creditAfter(fakeCredit, cost);
+}
+
+export const fakeThoroughAi: LektorService = {
+  ...fakeAi,
+  commentModel: 'probni temeljni, bez pravog AI',
+  correctionModel: () => 'probni temeljni, bez pravog AI',
+  recipient: 'firmi Anthropic',
+  whoseWords: 'Poruka firme Anthropic',
+  creditLeft: () => fakeCredit,
+  rememberCredit: (amount) => {
+    fakeCredit = amount;
+  },
+  feedback: async (text, signal) => {
+    const comment = await fakeFeedback(text, signal);
+    spendFake(COMMENT_COST);
+    return comment;
+  },
+  corrections: async ({ text, preset }, signal) => {
+    const proposal = await fakeCorrections(text, preset, signal);
+    spendFake(CORRECTION_COST);
+    return proposal;
+  },
 };
