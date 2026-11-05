@@ -8,8 +8,12 @@ import { type CorrectionRequest, type LektorFailure, type LektorService, LektorS
 
 const KEY_STORE = 'lektor-real-key';
 
-/** Best first. A model that is overloaded is passed over for the next, quietly: he can do nothing about it. */
-const FEEDBACK_MODELS = ['gemini-3.6-flash', 'gemini-3.1-flash-lite'];
+/**
+ * Only the good one: a weaker model's comment would be taken for what the Lektor is like,
+ * so when this one can't answer he is told, rather than quietly given something worse.
+ */
+const THINKING_MODELS = ['gemini-3.6-flash'];
+/** Plain corrections are as good on the quick model, and an overloaded one is passed over for the better. */
 const CORRECTION_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.6-flash'];
 
 /** A corrected text this much shorter has lost something, rather than been corrected. */
@@ -28,7 +32,9 @@ const SECOND_LOOK_INSTRUCTION = `Ti si pažljiv čitalac koji je već jednom či
 Vrati samo te pasuse, običnim tekstom, bez naslova i oznaka.`;
 
 /** What he doesn't need to read: rules about the shape of the answer, added to what he does. */
-const CORRECTION_RULES = `Zadrži naslov, prelome redova i prazne redove tačno kako jesu, osim ako je baš tu greška.
+const CORRECTION_RULES = `Zadrži naslov, prelome redova, prazne redove, razmake na početku reda i zvezdice između odeljaka tačno kako jesu. Ne dodaj naslove.
+Govor ljudi pod navodnicima ne doteruj: autor namerno piše kako ti ljudi govore. Ispravi tu samo slova kojima nedostaju kukice.
+Napomene koje je autor ostavio sam sebi ostavi kako jesu. Ako ne razumeš zašto nešto stoji u tekstu, ostavi ga.
 Vrati ceo tekst, samo ispravljen, bez ikakvog komentara i bez oznaka oko njega.`;
 
 function keyNow(): string {
@@ -128,7 +134,7 @@ function cleanedProposal(reply: string, original: string): string {
 async function corrections(request: CorrectionRequest, signal: AbortSignal): Promise<string> {
   const note = request.note.trim() === '' ? '' : `\n\nAutor još kaže: ${request.note.trim()}`;
   // Suggesting takes more thought than correcting: the quicker model hardly offers any.
-  const models = request.preset === 'wording' ? FEEDBACK_MODELS : CORRECTION_MODELS;
+  const models = request.preset === 'wording' || request.preset === 'rewrite' ? THINKING_MODELS : CORRECTION_MODELS;
   const reply = await ask(models, `${request.instruction}${note}\n\n${CORRECTION_RULES}`, request.text, signal);
   const proposal = cleanedProposal(reply, request.text);
   if (proposal.length < request.text.length * SHORTEST_SHARE_KEPT) {
@@ -138,7 +144,7 @@ async function corrections(request: CorrectionRequest, signal: AbortSignal): Pro
 }
 
 export const realAi: LektorService = {
-  commentModel: FEEDBACK_MODELS[0] ?? '',
+  commentModel: THINKING_MODELS[0] ?? '',
   // The dev server has its own, from testdata/, for when none has been pasted.
   hasKey: () => true,
   rememberKey: (key) => window.sessionStorage.setItem(KEY_STORE, key),
@@ -150,10 +156,10 @@ export const realAi: LektorService = {
     const { status, reply } = await callServer({ action: 'check', key }, signal);
     if (status !== 200) throw refusal(status, reply);
   },
-  feedback: async (text, signal) => (await ask(FEEDBACK_MODELS, FEEDBACK_INSTRUCTION, text, signal)).trim(),
+  feedback: async (text, signal) => (await ask(THINKING_MODELS, FEEDBACK_INSTRUCTION, text, signal)).trim(),
   secondLook: async (text, earlier, signal) => {
     const input = `Tekst kakav je bio:\n${earlier.text}\n\nTvoj raniji utisak:\n${earlier.comment}\n\nTekst sada:\n${text}`;
-    return (await ask(FEEDBACK_MODELS, SECOND_LOOK_INSTRUCTION, input, signal)).trim();
+    return (await ask(THINKING_MODELS, SECOND_LOOK_INSTRUCTION, input, signal)).trim();
   },
   corrections,
 };
