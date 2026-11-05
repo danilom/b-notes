@@ -196,13 +196,13 @@ const FAILURES: Readonly<Record<FakeServiceError['failure'], string>> = {
 };
 
 /**
- * What every screen ends with: what to do here, then the way out, in the order the
- * dialogs have them. Right after the content, and held in view when the content runs
- * long, so a sentence about a button stays against that button on a tall screen too.
+ * What a screen ends with: what to do here. Right after the content, and held in
+ * view when the content runs long, so a sentence about a button stays against that
+ * button on a tall screen too.
  */
-function footer(lines: HTMLElement[], main?: HTMLButtonElement): HTMLElement {
+function footer(lines: HTMLElement[], main: HTMLButtonElement): HTMLElement {
   const buttons = el('div', 'lektor-side-buttons');
-  buttons.append(...(main === undefined ? [] : [main]), button('Zatvori', goAway, 'status-action'));
+  buttons.append(main);
   const made = el('div', 'lektor-side-foot');
   made.append(...lines, buttons);
   return made;
@@ -345,7 +345,7 @@ function presetChoice(state: TextState): HTMLElement[] {
 function responseScreen(): HTMLElement[] {
   const state = stateNow();
   const response = revealed(state);
-  if (!state.isRevealed) return [response, footer([])];
+  if (!state.isRevealed) return [response];
   return [
     response,
     ...[staleNote(state)].flatMap((note) => (note === null ? [] : [note])),
@@ -388,7 +388,7 @@ function render(): void {
   const body = el('div', 'lektor-side-body');
   body.append(...SCREENS[state.screen]());
   const title = el('div', 'lektor-side-title');
-  title.append(icon('lektor'), document.createTextNode(TITLES[state.screen]));
+  title.append(icon('lektor'), document.createTextNode(TITLES[state.screen]), button('Zatvori', goAway, 'lektor-side-close'));
   side.replaceChildren(title, body);
 }
 
