@@ -410,9 +410,13 @@ body.lektor-open #lektor-side {
   font-size: inherit;
 }
 
-.lektor-again:hover,
-.lektor-fallible:hover {
+.lektor-again:hover {
   color: var(--ink);
+}
+
+.lektor-fallible:hover,
+.lektor-fallible[aria-expanded='true'] {
+  opacity: 1;
 }
 
 .lektor-again svg {
@@ -428,8 +432,10 @@ body.lektor-open #lektor-side {
   padding: 0;
   border: none;
   background: none;
-  /* Fainter than its neighbours: unlike them it says the same thing every time. */
-  color: var(--faint);
+  /* Fainter than its neighbours: unlike them it says the same thing every time. By
+     opacity, since the app's --faint is hardly lighter than --quiet here. */
+  color: var(--quiet);
+  opacity: 0.72;
   font-size: inherit;
 }
 
