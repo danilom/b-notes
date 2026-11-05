@@ -326,6 +326,17 @@ function privacyWarning(): HTMLElement {
   return warning;
 }
 
+/** Forward rather than back: he may have got here by reopening, and the comment is simply there to go to. */
+function existingCommentRow(): HTMLElement {
+  const toComment = el('button', 'lektor-again');
+  toComment.type = 'button';
+  toComment.append(el('span', '', 'Postojeći komentar'), icon('move-out'));
+  toComment.addEventListener('click', () => goTo('response'));
+  const row = el('div', 'lektor-back-row');
+  row.append(toComment);
+  return row;
+}
+
 function startScreen(): HTMLElement[] {
   const key = button('Promeni API ključ', () => {
     stateNow().screen = 'key';
@@ -336,15 +347,12 @@ function startScreen(): HTMLElement[] {
   send.disabled = wordsInText() < FEWEST_WORDS;
   if (send.disabled) send.title = TOO_SHORT;
   // Having come here to send again, he may think better of it: the comment he has is still there.
-  const back = stateNow().feedback === '' ? [] : [button('Nazad na komentar', () => {
-    stateNow().screen = 'response';
-    render();
-  }, 'lektor-link')];
+  const existing = stateNow().feedback === '' ? [] : [existingCommentRow()];
   return [
+    ...existing,
     ...saved,
     el('p', 'lektor-line', 'AI Lektor čita tvoj tekst, kaže šta misli i, ako želiš, predlaže ispravke.'),
     key,
-    ...back,
     footer([privacyWarning()], send),
   ];
 }
