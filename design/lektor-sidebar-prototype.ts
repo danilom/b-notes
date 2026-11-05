@@ -329,6 +329,15 @@ const FAILURES: Readonly<Record<LektorServiceError['failure'], string>> = {
   'too-long': 'Tekst je predugačak za AI Lektora.',
 };
 
+/**
+ * The number comes from Google's refusal, because the cap is theirs to change and differs
+ * by model. Other limits, such as too many in a minute, are over sooner than "tomorrow".
+ */
+function failureSentence(failure: LektorServiceError['failure']): string {
+  const dailyCap = failure === 'limit' ? /limit: (\d+) requests per day/.exec(lastFailureDetail)?.[1] : undefined;
+  return dailyCap === undefined ? FAILURES[failure] : `AI Lektor je potrošio današnjih ${dailyCap} pokušaja. Probaj ponovo sutra.`;
+}
+
 const askForFeedback = (text: string, signal: AbortSignal): Promise<string> => ai().feedback(text, signal);
 
 const KEY_NOTES: Readonly<Record<Exclude<KeyNote, 'checking' | null>, string>> = {
@@ -465,7 +474,7 @@ function failedScreen(): HTMLElement[] {
   top.append(backButton('Nazad', 'start'));
   return [
     top,
-    problem(FAILURES[failure]),
+    problem(failureSentence(failure)),
     footer([], button('Pokušaj ponovo', () => void read(askForFeedback), 'status-action')),
   ];
 }
@@ -727,7 +736,7 @@ async function correct(): Promise<void> {
     };
     const failed = showAsModal(
       dialog,
-      plainPanel(problem(FAILURES[failure]), [
+      plainPanel(problem(failureSentence(failure)), [
         button('Pokušaj ponovo', retry, 'keep'),
         button('Zatvori', () => failed.close()),
       ]),

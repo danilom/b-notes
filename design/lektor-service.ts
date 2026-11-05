@@ -36,7 +36,7 @@ export interface EarlierReading {
 }
 
 export interface LektorService {
-  /** The model that will write the comment. An overloaded one may be passed over for the next. */
+  /** The model that will write the comment. */
   commentModel: string;
   /** Whether the service has a key, or needs one from him. */
   hasKey: () => boolean;
