@@ -243,30 +243,36 @@ body.lektor-open #lektor-side {
 */
 .lektor-warning,
 .lektor-problem {
-  --warning: hsl(26 90% 40%);
-  padding: 0.55rem 0.65rem;
-  border: 1.5px solid var(--warning);
-  border-radius: 4px;
-  background: var(--page);
-  color: var(--ink);
-  line-height: 1.4;
+  --warning: hsl(30 100% 45%);
 }
 
 :root[data-mode='dark'] .lektor-warning,
 :root[data-mode='dark'] .lektor-problem {
-  --warning: hsl(32 90% 62%);
+  --warning: hsl(32 100% 60%);
 }
 
+.lektor-warning {
+  padding: 0.55rem 0.65rem;
+  border: 1.5px solid var(--warning);
+  border-radius: 4px;
+  background: var(--page);
+  line-height: 1.4;
+}
+
+/* Only the icon sets an error apart. A box is for what must be read before pressing something. */
 .lektor-problem {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
+  color: var(--ink);
+  line-height: 1.4;
 }
 
 .lektor-problem p {
   margin: 0;
   font-family: var(--ui-font);
   font-size: var(--ui-size);
+  font-style: normal;
 }
 
 .lektor-problem svg {
