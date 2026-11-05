@@ -228,10 +228,44 @@ body.lektor-open #lektor-side {
   line-height: 1.4;
 }
 
+/* Something is happening, in every place he waits on the AI: words alone look stuck after ten seconds. */
 .lektor-reading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   color: var(--quiet);
   font-family: var(--writing-font);
   font-style: italic;
+}
+
+.lektor-reading::before {
+  content: '';
+  flex: none;
+  width: 0.95em;
+  height: 0.95em;
+  border: 2px solid var(--line);
+  border-top-color: var(--quiet);
+  border-radius: 50%;
+  animation: lektor-turning 1s linear infinite;
+}
+
+@keyframes lektor-turning {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Where Windows is set to spare him animation, a slow pulse rather than nothing. */
+@media (prefers-reduced-motion: reduce) {
+  .lektor-reading::before {
+    animation: lektor-pulsing 2s ease-in-out infinite;
+  }
+
+  @keyframes lektor-pulsing {
+    50% {
+      opacity: 0.35;
+    }
+  }
 }
 
 /*

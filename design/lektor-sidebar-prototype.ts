@@ -652,7 +652,7 @@ async function correct(): Promise<void> {
   const text = editor.value;
   const controller = new AbortController();
   const leave = (): void => controller.abort();
-  const waiting = showAsModal(dialog, plainPanel('AI Lektor ispravlja tekst…',[button('Prekini', leave)]), leave);
+  const waiting = showAsModal(dialog, plainPanel(el('p', 'lektor-reading', 'AI Lektor ispravlja tekst…'), [button('Prekini', leave)]), leave);
   try {
     const instruction = PRESETS.find((preset) => preset.id === state.preset)?.prompt ?? '';
     const proposed = await ai().corrections({ text, preset: state.preset, instruction, note: state.note }, controller.signal);
