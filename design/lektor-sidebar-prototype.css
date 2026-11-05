@@ -36,11 +36,45 @@ body.lektor-open #lektor-side {
   color: var(--ink);
 }
 
-/* The strip is a grid on his screens, with its first cell free. */
-#status #lektor-open {
-  grid-area: 1 / 1;
-  justify-self: end;
+/*
+  The whole strip in one row, for a line more of his text on the Asus. Later in
+  the cascade than the app's own two-row grid, at the same weight. The words give
+  way first; at larger letter sizes the buttons wrap rather than leave the window.
+*/
+#status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.4rem;
 }
+
+#status-actions,
+#status-quiet {
+  display: contents;
+}
+
+#status-text {
+  order: 0;
+  flex: 1 1 7rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#status #move-to-resoph,
+#status #appearance-button {
+  order: 1;
+}
+
+#status #copy-all,
+#status #see-versions,
+#status #delete-note,
+#status #lektor-open {
+  order: 2;
+  margin: 0;
+}
+
 
 #lektor-open[aria-pressed='true'] {
   border-color: var(--quiet);

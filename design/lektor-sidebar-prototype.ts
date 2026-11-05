@@ -80,7 +80,12 @@ opener.id = 'lektor-open';
 opener.type = 'button';
 opener.className = 'status-action';
 opener.append(icon('lektor'), document.createTextNode('AI Lektor'));
-required('copy-all', HTMLButtonElement).before(opener);
+// At the strip's right-hand end, directly under the sidebar it opens.
+required('delete-note', HTMLButtonElement).after(opener);
+
+// Shorter words, to try the strip in one row: at 1280 wide the full ones leave 39px for the status line.
+required('copy-all-label', HTMLSpanElement).textContent = 'Kopiraj';
+required('move-to-resoph-label', HTMLSpanElement).textContent = 'U Resoph';
 
 const dialog = document.createElement('dialog');
 dialog.id = 'lektor-dialog';
