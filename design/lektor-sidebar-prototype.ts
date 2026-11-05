@@ -371,7 +371,9 @@ function render(): void {
   if (state.screen === 'start' && !hasKey()) state.screen = 'key';
   const body = el('div', 'lektor-side-body');
   body.append(...SCREENS[state.screen]());
-  side.replaceChildren(body);
+  const title = el('div', 'lektor-side-title');
+  title.append(icon('lektor'), document.createTextNode('Lektor'));
+  side.replaceChildren(title, body);
 }
 
 /** He wants it gone: whatever it was doing stops, and nothing brings it back but him. */

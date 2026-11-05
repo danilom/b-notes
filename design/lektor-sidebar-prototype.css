@@ -145,6 +145,22 @@ body.lektor-open #lektor-side {
   background: var(--wash-firm);
 }
 
+/* For context, not for attention: quieter than a dialog's title, and it stays put while the rest scrolls. */
+.lektor-side-title {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem 0;
+  color: var(--quiet);
+}
+
+.lektor-side-title svg {
+  flex: none;
+  width: 1.05em;
+  height: 1.05em;
+}
+
 .lektor-side-body {
   flex: 1;
   min-height: 0;
@@ -152,7 +168,8 @@ body.lektor-open #lektor-side {
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
-  padding: 1rem;
+  /* Nothing at the foot: a sticky footer stops short of a scroller's padding, and text shows under it. */
+  padding: 0.6rem 1rem 0;
 }
 
 .lektor-side-body > * {
@@ -181,8 +198,9 @@ body.lektor-open #lektor-side {
 
 .lektor-side-foot {
   position: sticky;
-  bottom: -1rem;
-  margin: 0 -1rem -1rem;
+  bottom: 0;
+  z-index: 1;
+  margin: 0 -1rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
