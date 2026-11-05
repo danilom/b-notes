@@ -1,7 +1,7 @@
 import { fetchRealSamples } from './diff-prototype-samples.ts';
 
 /** How the pretend service behaves, chosen in the his-screens harness. */
-export type FakeBehaviour = 'ok' | 'slow' | 'overloaded' | 'limit' | 'bad-key' | 'cut-off';
+export type FakeBehaviour = 'ok' | 'slow' | 'offline' | 'overloaded' | 'limit' | 'bad-key' | 'cut-off';
 
 export type FakeFailure = Exclude<FakeBehaviour, 'ok' | 'slow'>;
 
@@ -11,6 +11,8 @@ export const BEHAVIOUR_KEY = 'lektor-fake-behaviour';
 
 const READING_MS = 2_500;
 const CORRECTING_MS = 3_000;
+const CONNECTING_MS = 700;
+const CHECKING_KEY_MS = 1_500;
 const SLOW_FACTOR = 8;
 
 export class FakeServiceError extends Error {
@@ -24,21 +26,39 @@ export class FakeServiceError extends Error {
 
 function behaviourNow(): FakeBehaviour {
   const chosen = window.localStorage.getItem(BEHAVIOUR_KEY);
-  const known: readonly FakeBehaviour[] = ['ok', 'slow', 'overloaded', 'limit', 'bad-key', 'cut-off'];
+  const known: readonly FakeBehaviour[] = ['ok', 'slow', 'offline', 'overloaded', 'limit', 'bad-key', 'cut-off'];
   return known.find((behaviour) => behaviour === chosen) ?? 'ok';
 }
 
-/** Waits as the real service would, and answers as the harness says to. */
-async function pretendToWork(ms: number, signal: AbortSignal): Promise<void> {
-  const behaviour = behaviourNow();
+async function wait(ms: number, signal: AbortSignal): Promise<void> {
   await new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(resolve, behaviour === 'slow' ? ms * SLOW_FACTOR : ms);
+    const timer = setTimeout(resolve, behaviourNow() === 'slow' ? ms * SLOW_FACTOR : ms);
     signal.addEventListener('abort', () => {
       clearTimeout(timer);
       reject(new DOMException('Stopped', 'AbortError'));
     });
   });
+}
+
+/** Waits as the real service would, and answers as the harness says to. */
+async function pretendToWork(ms: number, signal: AbortSignal): Promise<void> {
+  await wait(ms, signal);
+  const behaviour = behaviourNow();
   if (behaviour !== 'ok' && behaviour !== 'slow') throw new FakeServiceError(behaviour);
+}
+
+/**
+ * Whether the internet can be reached at all. Only being offline counts as failing
+ * here: a service having a bad moment is for the request that meets it to report.
+ */
+export async function fakeConnectionCheck(signal: AbortSignal): Promise<void> {
+  await wait(CONNECTING_MS, signal);
+  if (behaviourNow() === 'offline') throw new FakeServiceError('offline');
+}
+
+/** Asks the service whether it takes this key. */
+export async function fakeKeyCheck(signal: AbortSignal): Promise<void> {
+  await pretendToWork(CHECKING_KEY_MS, signal);
 }
 
 const sentencesOf = (text: string): string[] =>

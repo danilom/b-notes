@@ -3,7 +3,16 @@ import { titleOf } from '../src/ui/dialogs/dialog-heading.ts';
 import { showAsModal } from '../src/ui/dialogs/modal.ts';
 import { icon } from '../src/ui/icons.ts';
 import { openLektorDialog } from '../src/ui/lektor/lektor-dialog.ts';
-import { FakeServiceError, type PresetId, fakeCorrections, fakeFeedback, fakeSecondLook } from './lektor-fake-ai.ts';
+import {
+  BEHAVIOUR_KEY,
+  FakeServiceError,
+  type PresetId,
+  fakeConnectionCheck,
+  fakeCorrections,
+  fakeFeedback,
+  fakeKeyCheck,
+  fakeSecondLook,
+} from './lektor-fake-ai.ts';
 
 /*
   The Lektor beside the real app, loaded into it by the his-screens harness. Not
@@ -12,7 +21,10 @@ import { FakeServiceError, type PresetId, fakeCorrections, fakeFeedback, fakeSec
   harness does, because we are still finding out what this should be.
 */
 
-type Screen = 'start' | 'key' | 'reading' | 'failed' | 'response';
+type Screen = 'connecting' | 'offline' | 'start' | 'key' | 'reading' | 'failed' | 'response';
+
+/** What has become of the key in the box. */
+type KeyNote = 'checking' | 'refused' | 'offline' | 'unavailable' | null;
 
 interface Preset {
   id: PresetId;
@@ -94,6 +106,10 @@ const states = new Map<string, TextState>();
 let openKey = currentKey();
 let lastTyped = 0;
 let lastListClick = 0;
+// The key belongs to the machine rather than to any one text.
+let keyDraft = '';
+let keyNote: KeyNote = null;
+let isKeyJustSaved = false;
 let working: AbortController | null = null;
 let revealTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -170,6 +186,7 @@ async function read(ask: (text: string, signal: AbortSignal) => Promise<string>)
   stopWorking();
   const controller = new AbortController();
   working = controller;
+  isKeyJustSaved = false;
   state.screen = 'reading';
   render();
   try {
@@ -183,6 +200,67 @@ async function read(ask: (text: string, signal: AbortSignal) => Promise<string>)
     if (failure === null) return;
     state.failure = failure;
     state.screen = failure === 'bad-key' ? 'key' : 'failed';
+    if (failure === 'bad-key') keyNote = 'refused';
+  }
+  if (working === controller) working = null;
+  render();
+}
+
+/** Before anything else on opening: there is no point in his choosing anything he can't send. */
+async function checkConnection(): Promise<void> {
+  const state = stateNow();
+  stopWorking();
+  const controller = new AbortController();
+  working = controller;
+  state.screen = 'connecting';
+  render();
+  try {
+    await fakeConnectionCheck(controller.signal);
+    state.screen = 'start';
+  } catch (error) {
+    if (failedWith(error) === null) return;
+    state.screen = 'offline';
+  }
+  if (working === controller) working = null;
+  render();
+}
+
+function offlineScreen(): HTMLElement[] {
+  return [
+    el('p', 'lektor-line', 'Nema veze sa internetom, a AI Lektoru je potrebna da bi pročitao tekst. Tvoj tekst je na sigurnom i sve ostalo radi kao i inače.'),
+    footer([], button('Pokušaj ponovo', () => void checkConnection(), 'status-action')),
+  ];
+}
+
+function connectingScreen(): HTMLElement[] {
+  return [el('p', 'lektor-reading', 'Proveravam vezu sa internetom…')];
+}
+
+function keyNoteOf(failure: FakeServiceError['failure'] | null): KeyNote {
+  if (failure === 'bad-key') return 'refused';
+  return failure === 'offline' ? 'offline' : 'unavailable';
+}
+
+/** The key only counts once the service has taken it, and what was pasted stays in the box until then. */
+async function checkKey(): Promise<void> {
+  const state = stateNow();
+  stopWorking();
+  const controller = new AbortController();
+  working = controller;
+  keyNote = 'checking';
+  render();
+  try {
+    await fakeKeyCheck(controller.signal);
+    window.sessionStorage.setItem(KEY_STORE, keyDraft);
+    keyDraft = '';
+    keyNote = null;
+    isKeyJustSaved = true;
+    state.failure = null;
+    state.screen = 'start';
+  } catch (error) {
+    const failure = failedWith(error);
+    if (failure === null) return;
+    keyNote = keyNoteOf(failure);
   }
   if (working === controller) working = null;
   render();
@@ -193,6 +271,13 @@ const FAILURES: Readonly<Record<FakeServiceError['failure'], string>> = {
   limit: 'AI Lektor je za sada iskoristio svoje pokušaje. Probaj kasnije.',
   'bad-key': 'Ovaj API ključ ne radi.',
   'cut-off': 'AI Lektor nije uspeo da završi.',
+  offline: 'Nema veze sa internetom.',
+};
+
+const KEY_NOTES: Readonly<Record<Exclude<KeyNote, 'checking' | null>, string>> = {
+  refused: 'Ovaj API ključ ne radi. Proveri da li je zalepljen ceo.',
+  offline: 'Nema veze sa internetom, pa API ključ ne može da se proveri.',
+  unavailable: 'API ključ trenutno ne može da se proveri. Probaj malo kasnije.',
 };
 
 /**
@@ -225,37 +310,49 @@ function startScreen(): HTMLElement[] {
     stateNow().screen = 'key';
     render();
   }, 'lektor-link');
+  const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', 'API ključ radi i sačuvan je.')] : [];
   return [
+    ...saved,
     el('p', 'lektor-line', 'AI Lektor je program koji čita tvoj tekst. Prvo ti kaže šta misli, a zatim, ako želiš, ispravlja greške. Bez tvoje potvrde ništa se ne menja.'),
     key,
     footer([privacyWarning()], button('Pošalji', () => void read(fakeFeedback), 'status-action')),
   ];
 }
 
+function keyNoteElement(): HTMLElement[] {
+  if (keyNote === null) return [];
+  if (keyNote === 'checking') return [el('p', 'lektor-reading', 'Proveravam API ključ…')];
+  return [el('p', 'lektor-refused', KEY_NOTES[keyNote])];
+}
+
 function keyScreen(): HTMLElement[] {
-  const state = stateNow();
+  const isChecking = keyNote === 'checking';
   const box = el('input', 'lektor-key');
   box.type = 'text';
   box.autocomplete = 'off';
   box.spellcheck = false;
+  box.value = keyDraft;
+  box.disabled = isChecking;
+  box.addEventListener('input', () => {
+    keyDraft = box.value;
+  });
   const save = (): void => {
     const pasted = box.value.replace(/\s/g, '');
     if (pasted === '') return;
-    window.sessionStorage.setItem(KEY_STORE, pasted);
-    state.failure = null;
-    state.screen = 'start';
-    render();
+    keyDraft = pasted;
+    void checkKey();
   };
   box.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') save();
   });
-  const refused = state.failure === 'bad-key' ? [el('p', 'lektor-refused', FAILURES['bad-key'])] : [];
+  const saveButton = button('Sačuvaj', save, 'status-action');
+  saveButton.disabled = isChecking;
   return [
     el('p', 'lektor-line', 'Za rad AI Lektora potreban je API ključ. Ako ti ga je neko poslao, zalepi ga ovde.'),
-    ...refused,
     el('label', 'lektor-label', 'API ključ'),
     box,
-    footer([], button('Sačuvaj', save, 'status-action')),
+    ...keyNoteElement(),
+    footer([], saveButton),
   ];
 }
 
@@ -359,6 +456,8 @@ function responseScreen(): HTMLElement[] {
 
 /* Nothing added on failure: the fault is the service's, not his, and the message below says what happened. */
 const TITLES: Readonly<Record<Screen, string>> = {
+  connecting: 'AI Lektor',
+  offline: 'AI Lektor',
   start: 'AI Lektor',
   key: 'AI Lektor: podešavanje',
   reading: 'AI Lektor: čita tekst',
@@ -367,6 +466,8 @@ const TITLES: Readonly<Record<Screen, string>> = {
 };
 
 const SCREENS: Readonly<Record<Screen, () => HTMLElement[]>> = {
+  connecting: connectingScreen,
+  offline: offlineScreen,
   start: startScreen,
   key: keyScreen,
   reading: readingScreen,
@@ -397,12 +498,23 @@ function render(): void {
 /** He wants it gone: whatever it was doing stops, and nothing brings it back but him. */
 function goAway(): void {
   const state = stateNow();
-  if (state.screen === 'reading') {
+  settleWhatWasUnderway(state);
+  isKeyJustSaved = false;
+  state.isOpen = false;
+  render();
+}
+
+/** Whatever was underway stops, and what is left to come back to is a screen that doesn't depend on it. */
+function settleWhatWasUnderway(state: TextState): void {
+  if (state.screen === 'reading' || state.screen === 'connecting') {
     stopWorking();
     state.screen = state.feedback === '' ? 'start' : 'response';
   }
-  state.isOpen = false;
-  render();
+  if (state.screen === 'key') {
+    stopWorking();
+    if (keyNote === 'checking') keyNote = null;
+    if (hasKey()) state.screen = 'start';
+  }
 }
 
 function textInDialog(): string {
@@ -482,11 +594,7 @@ function follow(): void {
     openKey = key;
     return;
   }
-  const leaving = stateNow();
-  if (leaving.screen === 'reading') {
-    stopWorking();
-    leaving.screen = leaving.feedback === '' ? 'start' : 'response';
-  }
+  settleWhatWasUnderway(stateNow());
   openKey = key;
   render();
 }
@@ -498,7 +606,19 @@ opener.addEventListener('click', () => {
     return;
   }
   state.isOpen = true;
-  render();
+  // A response he already has needs no internet to read.
+  if (state.feedback === '') void checkConnection();
+  else render();
+});
+
+/* Back online while he is looking at the message, whether for real or in the harness's fake AI. */
+function retryIfOffline(): void {
+  if (stateNow().isOpen && stateNow().screen === 'offline') void checkConnection();
+}
+
+window.addEventListener('online', retryIfOffline);
+window.addEventListener('storage', (event) => {
+  if (event.key === BEHAVIOUR_KEY) retryIfOffline();
 });
 
 let waitingToRedraw: ReturnType<typeof setTimeout> | null = null;

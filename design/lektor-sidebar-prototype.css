@@ -256,6 +256,11 @@ body.lektor-open #lektor-side {
   --warning: hsl(32 90% 62%);
 }
 
+.lektor-key-saved {
+  color: var(--quiet);
+  font-style: italic;
+}
+
 .lektor-warning-heading {
   display: flex;
   align-items: center;
