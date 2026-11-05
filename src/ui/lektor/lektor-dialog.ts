@@ -47,6 +47,31 @@ export function openLektorDialog(
   preview.className = 'review-preview';
 
   const review = createDiffReview(pieces, redraw);
+  let applyButton: HTMLButtonElement | null = null;
+
+  /**
+   * He has been through all of them, and the next thing to do is the main button.
+   * It stays lit if he then goes back to look at something again. Not for a single
+   * change, where he would be congratulated before doing anything.
+   */
+  function noticeIfAtTheEnd(changeAt: number): void {
+    if (large > 1 && changeAt === large - 1) applyButton?.classList.add('lektor-apply-ready');
+  }
+
+  function stepperLabel(at: number, total: number): string {
+    return total > 1 && at === total ? `✓ Pregledano ${at} od ${total}` : words.changeAt(at, total);
+  }
+
+  function editingWithTheEnd(): ReturnType<typeof review.editing> {
+    const editing = review.editing();
+    return {
+      ...editing,
+      onCurrent: (changeAt) => {
+        editing.onCurrent(changeAt);
+        noticeIfAtTheEnd(changeAt);
+      },
+    };
+  }
 
   function viewOfDiff(): HTMLElement {
     const column = document.createElement('div');
@@ -60,8 +85,8 @@ export function openLektorDialog(
       about,
       createTextDiffView(
         review.piecesNow(),
-        { previous: words.changePrevious, next: words.changeNext, at: words.changeAt },
-        { showTidied: true, editing: review.editing() },
+        { previous: words.changePrevious, next: words.changeNext, at: stepperLabel },
+        { showTidied: true, editing: editingWithTheEnd() },
       ),
     );
     return column;
@@ -155,6 +180,7 @@ export function openLektorDialog(
     apply.className = 'keep';
     apply.textContent = 'Unesi sve izmene u tekst';
     apply.addEventListener('click', () => handlers.onApply(review.textNow()));
+    applyButton = apply;
     footer.append(says, apply);
   }
 

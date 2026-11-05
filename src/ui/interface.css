@@ -2051,6 +2051,35 @@ dialog::backdrop {
   width: min(67rem, 100%);
 }
 
+/* He has been through every change: the main button lights up, with one small hop. */
+.panel.lektor-panel button.lektor-apply-ready,
+.panel.lektor-panel button.lektor-apply-ready:hover {
+  border-color: var(--chosen);
+  background: var(--chosen);
+  color: var(--on-chosen);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .panel.lektor-panel button.lektor-apply-ready {
+    animation: lektor-apply-hop 0.7s ease-out 1;
+  }
+}
+
+@keyframes lektor-apply-hop {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  35% {
+    transform: translateY(-6px);
+  }
+
+  65% {
+    transform: translateY(1px);
+  }
+}
+
 /* All the window's height, but only the width his lines and their margins take. */
 .panel.lektor-panel {
   width: min(54rem, 100%);
