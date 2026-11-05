@@ -195,6 +195,19 @@ const FAILURES: Readonly<Record<FakeServiceError['failure'], string>> = {
   'cut-off': 'Lektor nije uspeo da završi.',
 };
 
+/**
+ * What every screen ends with: what to do here, then the way out, in the order the
+ * dialogs have them. Right after the content, and held in view when the content runs
+ * long, so a sentence about a button stays against that button on a tall screen too.
+ */
+function footer(lines: HTMLElement[], main?: HTMLButtonElement): HTMLElement {
+  const buttons = el('div', 'lektor-side-buttons');
+  buttons.append(...(main === undefined ? [] : [main]), button('Zatvori', goAway));
+  const made = el('div', 'lektor-side-foot');
+  made.append(...lines, buttons);
+  return made;
+}
+
 function startScreen(): HTMLElement[] {
   const words = editor.value.trim().split(/\s+/).length;
   const key = button('Promeni ključ', () => {
@@ -204,9 +217,11 @@ function startScreen(): HTMLElement[] {
   return [
     el('p', 'lektor-line', 'Lektor je program koji čita tvoj tekst. Prvo ti kaže šta misli, a zatim, ako želiš, ispravlja greške. Bez tvoje potvrde ništa se ne menja.'),
     el('p', 'lektor-line', `Šalje se ceo tekst: ${titleFrom(editor.value)}, ${words} reči.`),
-    el('p', 'lektor-warning', 'Tekst se šalje Guglu na obradu. Neko iz Gugla može da pročita delove teksta. Ne šalji ono što ne bi pokazao drugima.'),
-    button('Pošalji', () => void read(fakeFeedback), 'keep lektor-main'),
     key,
+    footer(
+      [el('p', 'lektor-warning', 'Tekst se šalje Guglu na obradu. Neko iz Gugla može da pročita delove teksta. Ne šalji ono što ne bi pokazao drugima.')],
+      button('Pošalji', () => void read(fakeFeedback), 'keep'),
+    ),
   ];
 }
 
@@ -233,18 +248,21 @@ function keyScreen(): HTMLElement[] {
     ...refused,
     el('label', 'lektor-label', 'Ključ'),
     box,
-    button('Sačuvaj', save, 'keep lektor-main'),
+    footer([], button('Sačuvaj', save, 'keep')),
   ];
 }
 
 function readingScreen(): HTMLElement[] {
   return [
     el('p', 'lektor-reading', 'Lektor čita tekst…'),
-    button('Prekini', () => {
-      stopWorking();
-      stateNow().screen = 'start';
-      render();
-    }),
+    footer(
+      [],
+      button('Prekini', () => {
+        stopWorking();
+        stateNow().screen = 'start';
+        render();
+      }),
+    ),
   ];
 }
 
@@ -252,7 +270,7 @@ function failedScreen(): HTMLElement[] {
   const failure = stateNow().failure ?? 'overloaded';
   return [
     el('p', 'lektor-line', `${FAILURES[failure]} Tekst nije diran.`),
-    button('Pokušaj ponovo', () => void read(fakeFeedback), 'keep lektor-main'),
+    footer([], button('Pokušaj ponovo', () => void read(fakeFeedback), 'keep')),
   ];
 }
 
@@ -320,23 +338,16 @@ function presetChoice(state: TextState): HTMLElement[] {
 function responseScreen(): HTMLElement[] {
   const state = stateNow();
   const response = revealed(state);
-  if (!state.isRevealed) return [response];
+  if (!state.isRevealed) return [response, footer([])];
   return [
     response,
     ...[staleNote(state)].flatMap((note) => (note === null ? [] : [note])),
     ...presetChoice(state),
-    correctionFooter(),
+    footer(
+      [el('p', 'lektor-line', 'Prvo ćeš videti predloge. Tekst se ne menja dok ih ne uneseš.')],
+      button('Ispravi', () => void correct(), 'keep'),
+    ),
   ];
-}
-
-/** Pinned to the sidebar's foot: on his screens the choices above it run well past the fold. */
-function correctionFooter(): HTMLElement {
-  const footer = el('div', 'lektor-side-foot');
-  footer.append(
-    el('p', 'lektor-line', 'Prvo ćeš videti predloge. Tekst se ne menja dok ih ne uneseš.'),
-    button('Ispravi', () => void correct(), 'keep lektor-main'),
-  );
-  return footer;
 }
 
 const SCREENS: Readonly<Record<Screen, () => HTMLElement[]>> = {
@@ -346,18 +357,6 @@ const SCREENS: Readonly<Record<Screen, () => HTMLElement[]>> = {
   failed: failedScreen,
   response: responseScreen,
 };
-
-function header(): HTMLElement {
-  const row = el('div', 'lektor-side-top');
-  const close = el('button', 'lektor-side-close');
-  close.type = 'button';
-  close.title = 'Zatvori';
-  close.setAttribute('aria-label', 'Zatvori');
-  close.append(icon('close'));
-  close.addEventListener('click', goAway);
-  row.append(close);
-  return row;
-}
 
 function render(): void {
   stopRevealing();
@@ -372,7 +371,7 @@ function render(): void {
   if (state.screen === 'start' && !hasKey()) state.screen = 'key';
   const body = el('div', 'lektor-side-body');
   body.append(...SCREENS[state.screen]());
-  side.replaceChildren(header(), body);
+  side.replaceChildren(body);
 }
 
 /** He wants it gone: whatever it was doing stops, and nothing brings it back but him. */
