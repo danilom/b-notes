@@ -424,6 +424,13 @@ body.lektor-open #lektor-side {
   resize: vertical;
 }
 
+/* Italic so it reads as an example and not as something already written; not fainter, or he can't read it. */
+.lektor-note::placeholder {
+  color: var(--quiet);
+  font-style: italic;
+  opacity: 1;
+}
+
 /* His writing's own font, at a size the narrow column can carry: this is something to read, not chrome. */
 .lektor-response {
   white-space: pre-wrap;

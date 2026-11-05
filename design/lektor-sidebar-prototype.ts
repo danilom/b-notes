@@ -529,6 +529,7 @@ function presetChoice(state: TextState): HTMLElement[] {
   const noteLabel = el('label', 'lektor-label', 'Tvoja dodatna uputstva (nije obavezno)');
   const note = el('textarea', 'lektor-note');
   note.rows = 2;
+  note.placeholder = 'Primer: uprosti predugačke rečenice';
   note.value = state.note;
   note.addEventListener('input', () => {
     state.note = note.value;
