@@ -478,7 +478,7 @@ function aboutAi(): HTMLElement[] {
   const toggle = el('button', 'lektor-fallible');
   toggle.type = 'button';
   toggle.setAttribute('aria-expanded', String(isAboutAiOpen));
-  toggle.append(icon('info'), el('span', '', 'AI može da pogreši'));
+  toggle.append(el('span', '', 'AI može da pogreši'));
   toggle.addEventListener('click', () => {
     isAboutAiOpen = !isAboutAiOpen;
     render();
