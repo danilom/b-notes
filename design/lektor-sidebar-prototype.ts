@@ -38,19 +38,19 @@ interface Preset {
 const PRESETS: readonly Preset[] = [
   {
     id: 'letters',
-    name: 'Slova, zarezi i razmaci',
+    name: 'Slova, zareze i razmake',
     prompt:
       'Ispravi slova kojima nedostaju kukice, slovne greške, zareze, razmake i prelome redova. Reči ne menjaj. Autor piše namerno baš ovako, čak i kad rečenica deluje neobično. Zadrži narečje kojim je tekst pisan.',
   },
   {
     id: 'grammar',
-    name: 'Uz to gramatika',
+    name: 'Uz to gramatiku',
     prompt:
       'Ispravi slova, zareze i razmake, kao i gramatiku. Gde rečenica očigledno zapinje, malo je popravi. Ne preformuliši ono što je u redu. Zadrži autorov glas i narečje kojim je tekst pisan.',
   },
   {
     id: 'wording',
-    name: 'Uz to predlozi da teče lakše',
+    name: 'Uz to stilske predloge',
     prompt:
       'Ispravi greške i gramatiku, a gde tekst ne teče lako, predloži kako bi mogao lakše da teče. Ne menjaj ono što već dobro zvuči. Zadrži autorov glas i narečje kojim je tekst pisan.',
   },
@@ -411,8 +411,13 @@ function failedScreen(): HTMLElement[] {
 /** The response word by word; a click anywhere on it shows the rest. */
 function revealed(state: TextState): HTMLElement {
   const box = el('div', 'lektor-response');
-  if (state.isRevealed) {
+  // Without it there is a moment of wondering whether the AI has more to say.
+  const showAll = (): void => {
     box.textContent = state.feedback;
+    box.append(el('span', 'lektor-response-end'));
+  };
+  if (state.isRevealed) {
+    showAll();
     return box;
   }
   const parts = state.feedback.split(/(\s+)/);
@@ -421,7 +426,7 @@ function revealed(state: TextState): HTMLElement {
   const finish = (): void => {
     stopRevealing();
     state.isRevealed = true;
-    box.textContent = state.feedback;
+    showAll();
   };
   box.addEventListener('click', finish);
   revealTimer = setInterval(() => {
