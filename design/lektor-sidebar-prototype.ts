@@ -1,5 +1,6 @@
-import { strings } from '../src/language/wording.ts';
+import { describeWhen, strings } from '../src/language/wording.ts';
 import { titleFrom } from '../src/notes/note-title.ts';
+import { countWords } from '../src/notes/word-count.ts';
 import { titleOf } from '../src/ui/dialogs/dialog-heading.ts';
 import { showAsModal } from '../src/ui/dialogs/modal.ts';
 import { icon } from '../src/ui/icons.ts';
@@ -64,6 +65,7 @@ interface TextState {
   isRevealed: boolean;
   /** The text as the Lektor last read it. */
   readText: string;
+  readAt: number;
   preset: PresetId;
   note: string;
 }
@@ -132,6 +134,7 @@ function stateNow(): TextState {
     feedback: '',
     isRevealed: false,
     readText: '',
+    readAt: 0,
     preset: 'letters',
     note: '',
   };
@@ -139,9 +142,7 @@ function stateNow(): TextState {
   return fresh;
 }
 
-function wordsInText(): number {
-  return editor.value.split(/\s+/).filter((word) => word !== '').length;
-}
+const wordsInText = (): number => countWords(editor.value);
 
 function hasKey(): boolean {
   return window.sessionStorage.getItem(KEY_STORE) !== null;
@@ -201,6 +202,7 @@ async function read(ask: (text: string, signal: AbortSignal) => Promise<string>)
     const answer = await ask(text, controller.signal);
     state.feedback = answer;
     state.readText = text;
+    state.readAt = Date.now();
     state.isRevealed = false;
     state.screen = 'response';
   } catch (error) {
@@ -297,9 +299,9 @@ function problem(sentence: string): HTMLElement {
 }
 
 /**
- * What a screen ends with: what to do here. Right after the content, and held in
- * view when the content runs long, so a sentence about a button stays against that
- * button on a tall screen too.
+ * What a screen ends with: what to do here. Right after the content rather than at
+ * the sidebar's foot, so a sentence about a button stays against that button on a
+ * tall screen too. Where the content runs long, he scrolls down to it.
  */
 function footer(lines: HTMLElement[], main: HTMLButtonElement): HTMLElement {
   const buttons = el('div', 'lektor-side-buttons');
@@ -331,10 +333,16 @@ function startScreen(): HTMLElement[] {
   const send = button('Pošalji ceo tekst Guglu', () => void read(fakeFeedback), 'status-action');
   send.disabled = wordsInText() < FEWEST_WORDS;
   if (send.disabled) send.title = TOO_SHORT;
+  // Having come here to send again, he may think better of it: the comment he has is still there.
+  const back = stateNow().feedback === '' ? [] : [button('Nazad na komentar', () => {
+    stateNow().screen = 'response';
+    render();
+  }, 'lektor-link')];
   return [
     ...saved,
     el('p', 'lektor-line', 'AI Lektor čita tvoj tekst, kaže šta misli i, ako želiš, predlaže ispravke.'),
     key,
+    ...back,
     footer([privacyWarning()], send),
   ];
 }
@@ -459,13 +467,28 @@ function presetChoice(state: TextState): HTMLElement[] {
   return [heading, ...options, prompt, noteLabel, note];
 }
 
+/** Says what this is before he reads it, and how old it is. Ours rather than the AI's, like everything around its words. */
+function commentHeading(state: TextState): HTMLElement {
+  const heading = el('div', 'lektor-comment-heading');
+  heading.append(el('span', 'lektor-heading', 'AI komentar'), el('span', 'lektor-comment-when', describeWhen(state.readAt, 'sr')));
+  return heading;
+}
+
 function responseScreen(): HTMLElement[] {
   const state = stateNow();
+  const heading = commentHeading(state);
   const response = revealed(state);
-  if (!state.isRevealed) return [response];
+  if (!state.isRevealed) return [heading, response];
+  const again = button('Pošalji tekst ponovo', () => {
+    state.screen = 'start';
+    render();
+  }, 'lektor-link');
   return [
+    heading,
     response,
+    el('p', 'lektor-comment-fallible', 'AI može da pogreši.'),
     ...[staleNote(state)].flatMap((note) => (note === null ? [] : [note])),
+    again,
     ...presetChoice(state),
     footer(
       [el('p', 'lektor-line', 'Prvo ćeš videti predloge. Tekst se ne menja dok ih ne uneseš.')],

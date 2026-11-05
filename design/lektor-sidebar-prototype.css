@@ -215,8 +215,7 @@ body.lektor-open #lektor-side {
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
-  /* Nothing at the foot: a sticky footer stops short of a scroller's padding, and text shows under it. */
-  padding: 0 1rem;
+  padding: 0 1rem 1rem;
 }
 
 .lektor-side-body > * {
@@ -314,20 +313,10 @@ body.lektor-open #lektor-side {
 }
 
 .lektor-side-foot {
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
-  margin: 0 -1rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  padding: 0.6rem 1rem 0.8rem;
-  background: var(--panel);
-}
-
-/* The one screen long enough to run under the footer, which would otherwise slice a line of it. */
-.lektor-response ~ .lektor-side-foot {
-  border-top: 1px solid var(--line);
+  margin-top: 0.2rem;
 }
 
 .lektor-side-foot p {
@@ -390,6 +379,19 @@ body.lektor-open #lektor-side {
   font-family: var(--writing-font);
   font-size: calc(var(--text-size) * 0.82);
   line-height: 1.5;
+}
+
+.lektor-comment-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.lektor-comment-when,
+.lektor-comment-fallible {
+  color: var(--quiet);
+  font-size: 0.85em;
 }
 
 .lektor-stale {

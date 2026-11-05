@@ -79,10 +79,8 @@ export async function fakeFeedback(text: string, signal: AbortSignal): Promise<s
   const kept = sentences.at(Math.floor(sentences.length / 3)) ?? text.trim();
   const unsure = sentences.at(Math.floor((sentences.length * 2) / 3)) ?? kept;
   return [
-    'Pročitao sam tvoj tekst. Ja sam program, pa i ja ponekad pogriješim.',
     `Najduže mi je ostala rečenica: „${quoted(kept)}” Tu se tekst smiri i kaže ono zbog čega je i pisan.`,
     `Zastao sam kod mjesta „${quoted(unsure)}” Nisam siguran da li je tu kraj jedne misli ili početak druge, pa bih to rado pročitao još jednom.`,
-    'Ako želiš, mogu da ti ispravim i greške. Izaberi koliko.',
   ].join('\n\n');
 }
 
