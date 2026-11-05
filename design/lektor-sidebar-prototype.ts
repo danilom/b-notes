@@ -468,9 +468,23 @@ function presetChoice(state: TextState): HTMLElement[] {
   return [heading, ...options, promptLabel, prompt, noteLabel, note];
 }
 
-/** Says what this is before he reads it, quietly. Ours rather than the AI's, like everything around its words. */
-function commentHeading(state: TextState): HTMLElement {
-  return el('p', 'lektor-comment-heading', `AI komentar · ${describeWhen(state.readAt, 'sr')} · AI može da pogreši`);
+/** He has never used AI, and this is the one place to say what it is, without saying it at him every time. */
+const ABOUT_AI =
+  'AI je program koji je učio iz ogromne količine tekstova i piše ono što zvuči verovatno. Ne razume tekst kao čovek i nema sopstveno iskustvo. Zato ponekad sa sigurnošću kaže nešto netačno: navod, činjenicu, ime. Ovaj komentar shvati kao mišljenje jednog čitaoca, a ne kao presudu.';
+
+/** Ours rather than the AI's, like everything around its words: how old this is, the way to a newer one, and what to make of it. */
+function commentNotes(state: TextState): HTMLElement {
+  const fallible = el('span', 'lektor-fallible', 'AI može da pogreši');
+  fallible.title = ABOUT_AI;
+  fallible.tabIndex = 0;
+  const notes = el('div', 'lektor-comment-notes');
+  notes.append(
+    el('p', '', `Komentar napisan ${describeWhen(state.readAt, 'sr')}`),
+    ...[staleNote(state)].flatMap((note) => (note === null ? [] : [note])),
+    button('Pošalji tekst ponovo', () => goTo('start'), 'lektor-link'),
+    fallible,
+  );
+  return notes;
 }
 
 function goTo(screen: Screen): void {
@@ -481,16 +495,10 @@ function goTo(screen: Screen): void {
 /** One thing at a time: the comment is all there is to read here, and what comes next is his to choose. */
 function responseScreen(): HTMLElement[] {
   const state = stateNow();
-  const heading = commentHeading(state);
+  const notes = commentNotes(state);
   const response = revealed(state);
-  if (!state.isRevealed) return [heading, response];
-  return [
-    heading,
-    response,
-    ...[staleNote(state)].flatMap((note) => (note === null ? [] : [note])),
-    footer([], button('Pređi na ispravke', () => goTo('corrections'), 'status-action')),
-    button('Pošalji tekst ponovo', () => goTo('start'), 'lektor-link'),
-  ];
+  if (!state.isRevealed) return [notes, response];
+  return [notes, response, footer([], button('Pređi na ispravke', () => goTo('corrections'), 'status-action'))];
 }
 
 function correctionsScreen(): HTMLElement[] {
@@ -505,15 +513,15 @@ function correctionsScreen(): HTMLElement[] {
 }
 
 /* Nothing added on failure: the fault is the service's, not his, and the message below says what happened. */
-const TITLES: Readonly<Record<Screen, string>> = {
-  connecting: 'AI Lektor',
-  offline: 'AI Lektor',
-  start: 'AI Lektor',
-  key: 'AI Lektor: podešavanje',
-  reading: 'AI Lektor: čita tekst',
-  failed: 'AI Lektor',
-  response: 'AI Lektor',
-  corrections: 'AI Lektor: ispravke',
+const TITLE_STATES: Readonly<Record<Screen, string>> = {
+  connecting: '',
+  offline: '',
+  start: '',
+  key: 'podešavanje',
+  reading: 'čita tekst',
+  failed: '',
+  response: 'utisak o tekstu',
+  corrections: 'ispravke',
 };
 
 const SCREENS: Readonly<Record<Screen, () => HTMLElement[]>> = {
@@ -546,7 +554,10 @@ function render(): void {
   const title = el('div', 'lektor-side-title');
   const close = button('Zatvori', goAway, 'lektor-side-close');
   close.append(icon('fold-down'));
-  title.append(icon('lektor'), document.createTextNode(TITLES[state.screen]), close);
+  const titleState = TITLE_STATES[state.screen];
+  const name = el('span', '', titleState === '' ? 'AI Lektor' : 'AI Lektor: ');
+  name.append(el('strong', '', titleState));
+  title.append(icon('lektor'), name, close);
   side.replaceChildren(title, body);
 }
 

@@ -81,6 +81,7 @@ export async function fakeFeedback(text: string, signal: AbortSignal): Promise<s
   return [
     `Najduže mi je ostala rečenica: „${quoted(kept)}” Tu se tekst smiri i kaže ono zbog čega je i pisan.`,
     `Zastao sam kod mjesta „${quoted(unsure)}” Nisam siguran da li je tu kraj jedne misli ili početak druge, pa bih to rado pročitao još jednom.`,
+    'U cjelini, tekst najbolje radi kad ne žuri da objasni, nego pusti slici da kaže svoje. Tamo gdje objašnjava, malo gubi na snazi.',
   ].join('\n\n');
 }
 
