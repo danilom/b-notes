@@ -334,6 +334,10 @@ body.lektor-open #lektor-side {
   margin: 0;
 }
 
+.lektor-side-foot .lektor-warning .lektor-line + .lektor-line {
+  margin-top: 0.4rem;
+}
+
 .lektor-side-buttons {
   display: flex;
   justify-content: flex-end;
