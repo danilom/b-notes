@@ -28,6 +28,7 @@ export type IconName =
   | 'undo'
   | 'lektor'
   | 'privacy'
+  | 'problem'
   | 'settings'
   | 'move-out'
   | 'hide-list'
@@ -97,6 +98,12 @@ const PATHS = {
     'm7 15.5 2.6-7 2.6 7',
     'M8 13h3.2',
     'M16 8.5v7',
+  ],
+  // Something didn't work, readable before the words are. Lucide's triangle-alert.
+  problem: [
+    'm21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3',
+    'M12 9v4',
+    'M12 17h.01',
   ],
   // An open eye: someone may read this. Lucide's eye, its pupil written out as a
   // path because this only draws paths.

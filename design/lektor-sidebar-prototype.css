@@ -242,18 +242,38 @@ body.lektor-open #lektor-side {
   button, because it is the one thing here he must not skim past.
 */
 .lektor-warning,
-.lektor-refused {
+.lektor-problem {
   --warning: hsl(26 90% 40%);
   padding: 0.55rem 0.65rem;
   border: 1.5px solid var(--warning);
   border-radius: 4px;
   background: var(--page);
+  color: var(--ink);
   line-height: 1.4;
 }
 
 :root[data-mode='dark'] .lektor-warning,
-:root[data-mode='dark'] .lektor-refused {
+:root[data-mode='dark'] .lektor-problem {
   --warning: hsl(32 90% 62%);
+}
+
+.lektor-problem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.lektor-problem p {
+  margin: 0;
+  font-family: var(--ui-font);
+  font-size: var(--ui-size);
+}
+
+.lektor-problem svg {
+  flex: none;
+  width: 1.45em;
+  height: 1.45em;
+  color: var(--warning);
 }
 
 .lektor-key-saved {

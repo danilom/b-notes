@@ -227,7 +227,7 @@ async function checkConnection(): Promise<void> {
 
 function offlineScreen(): HTMLElement[] {
   return [
-    el('p', 'lektor-line', 'Nema veze sa internetom, a AI Lektoru je potrebna da bi pročitao tekst. Tvoj tekst je na sigurnom i sve ostalo radi kao i inače.'),
+    problem(FAILURES.offline),
     footer([], button('Pokušaj ponovo', () => void checkConnection(), 'status-action')),
   ];
 }
@@ -267,18 +267,26 @@ async function checkKey(): Promise<void> {
 }
 
 const FAILURES: Readonly<Record<FakeServiceError['failure'], string>> = {
-  overloaded: 'AI Lektor trenutno nije dostupan. Probaj malo kasnije.',
-  limit: 'AI Lektor je za sada iskoristio svoje pokušaje. Probaj kasnije.',
-  'bad-key': 'Ovaj API ključ ne radi.',
-  'cut-off': 'AI Lektor nije uspeo da završi.',
-  offline: 'Nema veze sa internetom.',
+  overloaded: 'AI Lektor sada ne radi. Probaj kasnije.',
+  limit: 'AI Lektor je potrošio pokušaje. Probaj kasnije.',
+  'bad-key': 'API ključ ne radi.',
+  'cut-off': 'AI Lektor nije završio. Probaj ponovo.',
+  offline: 'Internet ne radi, a AI Lektoru je potreban.',
 };
 
 const KEY_NOTES: Readonly<Record<Exclude<KeyNote, 'checking' | null>, string>> = {
-  refused: 'Ovaj API ključ ne radi. Proveri da li je zalepljen ceo.',
-  offline: 'Nema veze sa internetom, pa API ključ ne može da se proveri.',
-  unavailable: 'API ključ trenutno ne može da se proveri. Probaj malo kasnije.',
+  refused: 'API ključ ne radi. Da li je zalepljen ceo?',
+  offline: 'Internet ne radi, pa ključ ne može da se proveri.',
+  unavailable: 'Ključ sada ne može da se proveri. Probaj kasnije.',
 };
+
+/** Something didn't work: recognisable by its icon and edge before a word of it is read. */
+function problem(sentence: string): HTMLElement {
+  const box = el('div', 'lektor-problem');
+  box.setAttribute('role', 'alert');
+  box.append(icon('problem'), el('p', 'lektor-line', sentence));
+  return box;
+}
 
 /**
  * What a screen ends with: what to do here. Right after the content, and held in
@@ -322,7 +330,7 @@ function startScreen(): HTMLElement[] {
 function keyNoteElement(): HTMLElement[] {
   if (keyNote === null) return [];
   if (keyNote === 'checking') return [el('p', 'lektor-reading', 'Proveravam API ključ…')];
-  return [el('p', 'lektor-refused', KEY_NOTES[keyNote])];
+  return [problem(KEY_NOTES[keyNote])];
 }
 
 function keyScreen(): HTMLElement[] {
@@ -373,7 +381,7 @@ function readingScreen(): HTMLElement[] {
 function failedScreen(): HTMLElement[] {
   const failure = stateNow().failure ?? 'overloaded';
   return [
-    el('p', 'lektor-line', `${FAILURES[failure]} Tekst nije diran.`),
+    problem(FAILURES[failure]),
     footer([], button('Pokušaj ponovo', () => void read(fakeFeedback), 'status-action')),
   ];
 }
@@ -522,14 +530,15 @@ function textInDialog(): string {
 }
 
 /** A dialog panel with only a sentence and a way out, for while there is nothing to review yet. */
-function plainPanel(sentence: string, buttons: HTMLButtonElement[]): HTMLElement {
+function plainPanel(content: string | HTMLElement, buttons: HTMLButtonElement[]): HTMLElement {
   const panel = el('div', 'panel review-panel lektor-panel');
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
   const top = document.createElement('header');
   top.append(titleOf({ mark: 'lektor', label: 'AI Lektor', name: textInDialog() }));
   const middle = el('div', 'review-panes');
-  const words = el('div', 'review-text review-text-empty', sentence);
+  const words = el('div', 'review-text review-text-empty');
+  words.append(content);
   middle.append(words);
   const bottom = document.createElement('footer');
   bottom.append(...buttons);
@@ -558,7 +567,7 @@ async function correct(): Promise<void> {
     };
     const failed = showAsModal(
       dialog,
-      plainPanel(`${FAILURES[failure]} Tekst nije diran.`, [
+      plainPanel(problem(FAILURES[failure]), [
         button('Pokušaj ponovo', retry, 'keep'),
         button('Zatvori', () => failed.close()),
       ]),
