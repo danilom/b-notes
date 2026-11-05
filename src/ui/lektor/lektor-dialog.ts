@@ -38,6 +38,7 @@ export function openLektorDialog(
   const words = strings(language);
   const pieces = mergeCloseChanges(separateTidying(diffTexts(current, proposed)));
   const hasAnything = pieces.some((piece) => piece.kind !== 'same');
+  const large = pieces.filter((piece) => piece.kind === 'change').length;
   const small = pieces.filter((piece) => piece.kind === 'tidy').length;
 
   const preview = document.createElement('div');
@@ -51,7 +52,11 @@ export function openLektorDialog(
 
     const about = document.createElement('p');
     about.className = 'review-note-aside';
-    about.textContent = `Precrtano je tvoj tekst, zeleno je predlog. Sitne popravke: ${small}.`;
+    for (const line of ['Precrtano je tvoj stari tekst, zeleno je predlog.', `Veće promene: ${large}, sitne popravke: ${small}.`]) {
+      const one = document.createElement('span');
+      one.textContent = line;
+      about.append(one);
+    }
 
     column.append(
       about,
@@ -91,9 +96,9 @@ export function openLektorDialog(
   const note = document.createElement('p');
   note.className = 'review-note';
   note.textContent = hasAnything
-    ? 'Predlozi su već u tekstu ispod. Ako ti nešto ne odgovara, pređi mišem preko toga i promeni.'
+    ? 'Pregledaj predloge ispravki u tekstu ispod. Ako ti nešto ne odgovara, pređi mišem preko toga i promeni.'
     : 'Tekst je pregledan.';
-  stacked.append(titleOf({ mark: 'lektor', label: 'AI Lektor', name: title }), note);
+  stacked.append(titleOf({ mark: 'lektor', label: 'AI Lektor ispravke', name: title }), note);
 
   const dismiss = document.createElement('button');
   dismiss.type = 'button';

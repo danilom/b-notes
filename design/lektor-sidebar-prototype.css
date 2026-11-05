@@ -461,12 +461,6 @@ body.lektor-open #lektor-side {
   line-height: 1.4;
 }
 
-/* Set apart by the accent and not by weight: Tahoma has only regular and a heavy bold, with nothing between. */
-.lektor-side-title strong {
-  color: var(--chosen-ink);
-  font-weight: 400;
-}
-
 /* A section of its own, below the comment and whatever else may come to follow it. */
 .lektor-response ~ .lektor-side-foot {
   margin-top: 0.5rem;
@@ -494,11 +488,21 @@ body.lektor-open #lektor-side {
   gap: 0.4rem;
 }
 
+/* Read-only, and looking it beside the white box he can type in: the panel's grey made a shade deeper, smaller type, an ordinary arrow. */
 .lektor-prompt {
   padding: 0.45rem 0.6rem;
   border: 1px solid var(--line);
-  background: var(--page);
+  border-radius: 4px;
+  background: var(--wash);
   color: var(--quiet);
   font-size: 0.92em;
   line-height: 1.4;
+  cursor: default;
+}
+
+.lektor-back-row {
+  display: flex;
+  justify-content: flex-end;
+  color: var(--quiet);
+  font-size: 0.85em;
 }

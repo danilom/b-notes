@@ -457,9 +457,9 @@ function presetChoice(state: TextState): HTMLElement[] {
     return label;
   });
   const chosen = PRESETS.find((preset) => preset.id === state.preset);
-  const promptLabel = el('p', 'lektor-label', 'Uputstvo koje dobija AI Lektor');
+  const promptLabel = el('p', 'lektor-label', 'Uputstvo za AI Lektora');
   const prompt = el('p', 'lektor-prompt', chosen?.prompt ?? '');
-  const noteLabel = el('label', 'lektor-label', 'Još nešto da kažeš AI Lektoru? (nije obavezno)');
+  const noteLabel = el('label', 'lektor-label', 'Tvoja dodatna uputstva (nije obavezno)');
   const note = el('textarea', 'lektor-note');
   note.rows = 2;
   note.value = state.note;
@@ -488,12 +488,8 @@ function aboutAi(): HTMLElement[] {
 
 /** Ours rather than the AI's, like everything around its words: how old this is, the way to a newer one, and what to make of it. */
 function commentNotes(state: TextState): HTMLElement {
-  const again = el('button', 'lektor-again');
-  again.type = 'button';
-  again.append(icon('back'), el('span', '', 'Pošalji ponovo'));
-  again.addEventListener('click', () => goTo('start'));
   const age = el('div', 'lektor-comment-age');
-  age.append(el('span', '', `Napisano ${describeWhen(state.readAt, 'sr')}`), again);
+  age.append(el('span', '', `Napisano ${describeWhen(state.readAt, 'sr')}`), backButton('Pošalji ponovo', 'start'));
   const notes = el('div', 'lektor-comment-notes');
   notes.append(age, ...[staleNote(state)].flatMap((note) => (note === null ? [] : [note])), ...aboutAi());
   return notes;
@@ -510,32 +506,47 @@ function responseScreen(): HTMLElement[] {
   const state = stateNow();
   const notes = commentNotes(state);
   const response = revealed(state);
-  if (!state.isRevealed) return [notes, response];
-  return [notes, response, footer([], button('Pređi na ispravke', () => goTo('corrections'), 'status-action'))];
+  // There from the start: he needn't sit through the comment appearing to move on.
+  const onward = button('Pređi na ispravke', () => {
+    state.isRevealed = true;
+    goTo('corrections');
+  }, 'status-action');
+  return [notes, response, footer([], onward)];
+}
+
+/** The small grey button that goes back a step, in the one place on the screen it is ever found. */
+function backButton(label: string, screen: Screen): HTMLButtonElement {
+  const back = el('button', 'lektor-again');
+  back.type = 'button';
+  back.append(icon('back'), el('span', '', label));
+  back.addEventListener('click', () => goTo(screen));
+  return back;
 }
 
 function correctionsScreen(): HTMLElement[] {
+  const top = el('div', 'lektor-back-row');
+  top.append(backButton('Nazad na utisak', 'response'));
   return [
+    top,
     ...presetChoice(stateNow()),
     footer(
       [el('p', 'lektor-line', 'Prvo ćeš videti predloge. Tekst se ne menja dok ih ne uneseš.')],
-      button('Predloži ispravke', () => void correct(), 'status-action'),
+      button('Pošalji zahtev za ispravke', () => void correct(), 'status-action'),
     ),
-    button('Nazad na komentar', () => goTo('response'), 'lektor-link'),
   ];
 }
 
 /* Nothing added on failure: the fault is the service's, not his, and the message below says what happened. */
-const TITLES: Readonly<Record<Screen, readonly [lead: string, state: string]>> = {
-  connecting: ['AI Lektor', ''],
-  offline: ['AI Lektor', ''],
-  start: ['AI Lektor', ''],
-  key: ['AI Lektor: ', 'podešavanje'],
-  reading: ['AI ', 'čita tekst'],
-  failed: ['AI Lektor', ''],
+const TITLES: Readonly<Record<Screen, string>> = {
+  connecting: 'AI Lektor',
+  offline: 'AI Lektor',
+  start: 'AI Lektor',
+  key: 'AI Lektor: podešavanje',
+  reading: 'AI čita tekst',
+  failed: 'AI Lektor',
   // Whose impression and whose corrections, as much as what they are.
-  response: ['AI ', 'utisak o tekstu'],
-  corrections: ['AI ', 'ispravke'],
+  response: 'AI utisak o tekstu',
+  corrections: 'AI ispravke',
 };
 
 const SCREENS: Readonly<Record<Screen, () => HTMLElement[]>> = {
@@ -568,10 +579,7 @@ function render(): void {
   const title = el('div', 'lektor-side-title');
   const close = button('Zatvori', goAway, 'lektor-side-close');
   close.append(icon('fold-down'));
-  const [lead, titleState] = TITLES[state.screen];
-  const name = el('span', '', lead);
-  name.append(el('strong', '', titleState));
-  title.append(icon('lektor'), name, close);
+  title.append(icon('lektor'), el('span', '', TITLES[state.screen]), close);
   side.replaceChildren(title, body);
 }
 
@@ -608,7 +616,7 @@ function plainPanel(content: string | HTMLElement, buttons: HTMLButtonElement[])
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
   const top = document.createElement('header');
-  top.append(titleOf({ mark: 'lektor', label: 'AI Lektor', name: textInDialog() }));
+  top.append(titleOf({ mark: 'lektor', label: 'AI Lektor ispravke', name: textInDialog() }));
   const middle = el('div', 'review-panes');
   const words = el('div', 'review-text review-text-empty');
   words.append(content);

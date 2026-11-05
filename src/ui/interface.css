@@ -2051,10 +2051,9 @@ dialog::backdrop {
   width: min(67rem, 100%);
 }
 
-/* All the window but the dialog's own margin: he works in this one, rather than
-   glancing at it. */
+/* All the window's height, but only the width his lines and their margins take. */
 .panel.lektor-panel {
-  width: 100%;
+  width: min(54rem, 100%);
 }
 
 .panel.review-panel header {
@@ -2609,7 +2608,11 @@ dialog::backdrop {
 
 /* The line above the box stays clear of the stepper, at the end of that same line. */
 .lektor-body .review-note-aside {
-  padding-right: 19rem;
+  padding-right: 21rem;
+}
+
+.lektor-body .review-note-aside span {
+  display: block;
 }
 
 /* The box fills the dialog and the lines stay a readable length, in its middle. */
