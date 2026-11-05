@@ -526,15 +526,16 @@ function correctionsScreen(): HTMLElement[] {
 }
 
 /* Nothing added on failure: the fault is the service's, not his, and the message below says what happened. */
-const TITLE_STATES: Readonly<Record<Screen, string>> = {
-  connecting: '',
-  offline: '',
-  start: '',
-  key: 'podešavanje',
-  reading: 'čita tekst',
-  failed: '',
-  response: 'utisak o tekstu',
-  corrections: 'ispravke',
+const TITLES: Readonly<Record<Screen, readonly [lead: string, state: string]>> = {
+  connecting: ['AI Lektor', ''],
+  offline: ['AI Lektor', ''],
+  start: ['AI Lektor', ''],
+  key: ['AI Lektor: ', 'podešavanje'],
+  reading: ['AI ', 'čita tekst'],
+  failed: ['AI Lektor', ''],
+  // Whose impression and whose corrections, as much as what they are.
+  response: ['AI ', 'utisak o tekstu'],
+  corrections: ['AI ', 'ispravke'],
 };
 
 const SCREENS: Readonly<Record<Screen, () => HTMLElement[]>> = {
@@ -567,8 +568,8 @@ function render(): void {
   const title = el('div', 'lektor-side-title');
   const close = button('Zatvori', goAway, 'lektor-side-close');
   close.append(icon('fold-down'));
-  const titleState = TITLE_STATES[state.screen];
-  const name = el('span', '', titleState === '' ? 'AI Lektor' : 'AI Lektor: ');
+  const [lead, titleState] = TITLES[state.screen];
+  const name = el('span', '', lead);
   name.append(el('strong', '', titleState));
   title.append(icon('lektor'), name, close);
   side.replaceChildren(title, body);
