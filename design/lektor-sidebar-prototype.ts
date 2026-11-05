@@ -322,7 +322,7 @@ function startScreen(): HTMLElement[] {
   const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', 'API ključ radi i sačuvan je.')] : [];
   return [
     ...saved,
-    el('p', 'lektor-line', 'AI Lektor je program koji čita tvoj tekst. Prvo ti kaže šta misli, a zatim, ako želiš, ispravlja greške. Bez tvoje potvrde ništa se ne menja.'),
+    el('p', 'lektor-line', 'AI Lektor čita tvoj tekst, kaže šta misli i, ako želiš, predlaže ispravke.'),
     key,
     footer([privacyWarning()], button('Pošalji', () => void read(fakeFeedback), 'status-action')),
   ];
