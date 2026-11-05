@@ -381,15 +381,8 @@ body.lektor-open #lektor-side {
   line-height: 1.5;
 }
 
+/* Small and grey: it says what the words below are, and they are what he came for. */
 .lektor-comment-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.lektor-comment-when,
-.lektor-comment-fallible {
   color: var(--quiet);
   font-size: 0.85em;
 }

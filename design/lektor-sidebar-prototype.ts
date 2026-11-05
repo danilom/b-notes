@@ -23,7 +23,7 @@ import {
   harness does, because we are still finding out what this should be.
 */
 
-type Screen = 'connecting' | 'offline' | 'start' | 'key' | 'reading' | 'failed' | 'response';
+type Screen = 'connecting' | 'offline' | 'start' | 'key' | 'reading' | 'failed' | 'response' | 'corrections';
 
 /** What has become of the key in the box. */
 type KeyNote = 'checking' | 'refused' | 'offline' | 'unavailable' | null;
@@ -38,21 +38,21 @@ interface Preset {
 const PRESETS: readonly Preset[] = [
   {
     id: 'letters',
-    name: 'Samo slova i razmake',
+    name: 'Slova, zarezi i razmaci',
     prompt:
-      'Ispravi slova kojima nedostaju kukice i slovne greške, i sredi razmake. Reči ne menjaj. Autor piše namerno baš ovako, čak i kad rečenica deluje neobično. Zadrži narečje kojim je tekst pisan.',
+      'Ispravi slova kojima nedostaju kukice, slovne greške, zareze, razmake i prelome redova. Reči ne menjaj. Autor piše namerno baš ovako, čak i kad rečenica deluje neobično. Zadrži narečje kojim je tekst pisan.',
   },
   {
     id: 'grammar',
-    name: 'I gramatiku i zareze',
+    name: 'Uz to gramatika',
     prompt:
-      'Ispravi slova, slovne greške, razmake, gramatiku i zareze. Ne biraj bolje reči i ne preformuliši. Autor piše namerno baš ovako, čak i kad rečenica deluje neobično. Zadrži narečje kojim je tekst pisan.',
+      'Ispravi slova, zareze i razmake, kao i gramatiku. Gde rečenica očigledno zapinje, malo je popravi. Ne preformuliši ono što je u redu. Zadrži autorov glas i narečje kojim je tekst pisan.',
   },
   {
     id: 'wording',
-    name: 'I predloži bolje rečenice',
+    name: 'Uz to predlozi da teče lakše',
     prompt:
-      'Ispravi greške, a gde je rečenica nejasna ili predugačka, predloži jasniju. Ne menjaj ono što već dobro zvuči. Zadrži autorov glas i narečje kojim je tekst pisan.',
+      'Ispravi greške i gramatiku, a gde tekst ne teče lako, predloži kako bi mogao lakše da teče. Ne menjaj ono što već dobro zvuči. Zadrži autorov glas i narečje kojim je tekst pisan.',
   },
 ];
 
@@ -441,7 +441,7 @@ function staleNote(state: TextState): HTMLElement | null {
 }
 
 function presetChoice(state: TextState): HTMLElement[] {
-  const heading = el('p', 'lektor-heading', 'Koliko da ispravi?');
+  const heading = el('p', 'lektor-heading', 'Šta da ispravim?');
   const options = PRESETS.map((preset) => {
     const label = el('label', 'lektor-preset');
     const radio = el('input', '');
@@ -456,6 +456,7 @@ function presetChoice(state: TextState): HTMLElement[] {
     return label;
   });
   const chosen = PRESETS.find((preset) => preset.id === state.preset);
+  const promptLabel = el('p', 'lektor-label', 'Uputstvo koje dobija AI Lektor');
   const prompt = el('p', 'lektor-prompt', chosen?.prompt ?? '');
   const noteLabel = el('label', 'lektor-label', 'Još nešto da kažeš AI Lektoru? (nije obavezno)');
   const note = el('textarea', 'lektor-note');
@@ -464,36 +465,42 @@ function presetChoice(state: TextState): HTMLElement[] {
   note.addEventListener('input', () => {
     state.note = note.value;
   });
-  return [heading, ...options, prompt, noteLabel, note];
+  return [heading, ...options, promptLabel, prompt, noteLabel, note];
 }
 
-/** Says what this is before he reads it, and how old it is. Ours rather than the AI's, like everything around its words. */
+/** Says what this is before he reads it, quietly. Ours rather than the AI's, like everything around its words. */
 function commentHeading(state: TextState): HTMLElement {
-  const heading = el('div', 'lektor-comment-heading');
-  heading.append(el('span', 'lektor-heading', 'AI komentar'), el('span', 'lektor-comment-when', describeWhen(state.readAt, 'sr')));
-  return heading;
+  return el('p', 'lektor-comment-heading', `AI komentar · ${describeWhen(state.readAt, 'sr')} · AI može da pogreši`);
 }
 
+function goTo(screen: Screen): void {
+  stateNow().screen = screen;
+  render();
+}
+
+/** One thing at a time: the comment is all there is to read here, and what comes next is his to choose. */
 function responseScreen(): HTMLElement[] {
   const state = stateNow();
   const heading = commentHeading(state);
   const response = revealed(state);
   if (!state.isRevealed) return [heading, response];
-  const again = button('Pošalji tekst ponovo', () => {
-    state.screen = 'start';
-    render();
-  }, 'lektor-link');
   return [
     heading,
     response,
-    el('p', 'lektor-comment-fallible', 'AI može da pogreši.'),
     ...[staleNote(state)].flatMap((note) => (note === null ? [] : [note])),
-    again,
-    ...presetChoice(state),
+    footer([], button('Pređi na ispravke', () => goTo('corrections'), 'status-action')),
+    button('Pošalji tekst ponovo', () => goTo('start'), 'lektor-link'),
+  ];
+}
+
+function correctionsScreen(): HTMLElement[] {
+  return [
+    ...presetChoice(stateNow()),
     footer(
       [el('p', 'lektor-line', 'Prvo ćeš videti predloge. Tekst se ne menja dok ih ne uneseš.')],
-      button('Ispravi', () => void correct(), 'status-action'),
+      button('Predloži ispravke', () => void correct(), 'status-action'),
     ),
+    button('Nazad na komentar', () => goTo('response'), 'lektor-link'),
   ];
 }
 
@@ -505,7 +512,8 @@ const TITLES: Readonly<Record<Screen, string>> = {
   key: 'AI Lektor: podešavanje',
   reading: 'AI Lektor: čita tekst',
   failed: 'AI Lektor',
-  response: 'AI Lektor: utisak',
+  response: 'AI Lektor',
+  corrections: 'AI Lektor: ispravke',
 };
 
 const SCREENS: Readonly<Record<Screen, () => HTMLElement[]>> = {
@@ -516,6 +524,7 @@ const SCREENS: Readonly<Record<Screen, () => HTMLElement[]>> = {
   reading: readingScreen,
   failed: failedScreen,
   response: responseScreen,
+  corrections: correctionsScreen,
 };
 
 function render(): void {
