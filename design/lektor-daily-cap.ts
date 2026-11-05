@@ -13,11 +13,11 @@ const clockTime = (at: Date): string => `${String(at.getHours()).padStart(2, '0'
 
 function comeBackLine(detail: string, now: Date): string {
   const wait = waitIn(detail);
-  if (wait === null) return 'Probaj ponovo sutra.';
+  if (wait === null) return 'Probaj ponovo kasnije.';
   // The wait is counted to the second from when Google answered, and lands a moment either side of the reset.
   const back = new Date(Math.round((now.getTime() + wait) / FIVE_MINUTES_MS) * FIVE_MINUTES_MS);
-  const day = back.toDateString() === now.toDateString() ? '' : 'sutra ';
-  return `Probaj ponovo ${day}posle ${clockTime(back)}.`;
+  // No "tomorrow": said at one in the morning, or read after midnight, it would name the wrong day.
+  return `Probaj ponovo posle ${clockTime(back)}.`;
 }
 
 /** `gemini-3.6-flash` as Google writes it for people: Gemini 3.6 Flash. */

@@ -333,9 +333,12 @@ const FAILURES: Readonly<Record<LektorServiceError['failure'], string>> = {
   'too-long': 'Tekst je predugačak za AI Lektora.',
 };
 
+function dailyCapNote(failure: LektorServiceError['failure']): string | null {
+  return failure === 'limit' ? dailyCapSentence(lastFailureDetail, lastFailureAt) : null;
+}
+
 function failureSentence(failure: LektorServiceError['failure']): string {
-  const dailyCap = failure === 'limit' ? dailyCapSentence(lastFailureDetail, lastFailureAt) : null;
-  return dailyCap ?? FAILURES[failure];
+  return dailyCapNote(failure) ?? FAILURES[failure];
 }
 
 const askForFeedback = (text: string, signal: AbortSignal): Promise<string> => ai().feedback(text, signal);
@@ -472,11 +475,10 @@ function failedScreen(): HTMLElement[] {
   const failure = stateNow().failure ?? 'overloaded';
   const top = el('div', 'lektor-back-row');
   top.append(backButton('Nazad', 'start'));
-  return [
-    top,
-    problem(failureSentence(failure)),
-    footer([], button('Pokušaj ponovo', () => void read(askForFeedback), 'status-action')),
-  ];
+  const shown = [top, problem(failureSentence(failure))];
+  // Once the day's tries are gone, trying again can only fail again.
+  if (dailyCapNote(failure) !== null) return shown;
+  return [...shown, footer([], button('Pokušaj ponovo', () => void read(askForFeedback), 'status-action'))];
 }
 
 /** The response word by word; a click anywhere on it shows the rest. */
@@ -737,7 +739,7 @@ async function correct(): Promise<void> {
     const failed = showAsModal(
       dialog,
       plainPanel(problem(failureSentence(failure)), [
-        button('Pokušaj ponovo', retry, 'keep'),
+        ...(dailyCapNote(failure) === null ? [button('Pokušaj ponovo', retry, 'keep')] : []),
         button('Zatvori', () => failed.close()),
       ]),
       () => failed.close(),

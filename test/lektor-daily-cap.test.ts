@@ -14,9 +14,9 @@ describe('dailyCapSentence', () => {
     assert.equal(dailyCapSentence(refusal('41m25s'), morning), `${CAPPED} Probaj ponovo posle 09:00.`);
   });
 
-  it('says tomorrow when the wait runs past midnight here', () => {
+  it('gives only the clock time when the wait runs past midnight here', () => {
     const lateEvening = new Date(2026, 10, 5, 23, 18, 35);
-    assert.equal(dailyCapSentence(refusal('15h41m25s'), lateEvening), `${CAPPED} Probaj ponovo sutra posle 15:00.`);
+    assert.equal(dailyCapSentence(refusal('15h41m25s'), lateEvening), `${CAPPED} Probaj ponovo posle 15:00.`);
   });
 
   it('settles on the round time when the wait lands just past it', () => {
@@ -29,9 +29,9 @@ describe('dailyCapSentence', () => {
     assert.equal(dailyCapSentence(refusal('2h'), now), `${CAPPED} Probaj ponovo posle 03:00.`);
   });
 
-  it('falls back to tomorrow when the refusal gives no wait', () => {
+  it('says later when the refusal gives no wait', () => {
     const detail = '429: Rate limit exceeded for model gemini-3.6-flash (limit: 20 requests per day on Free Tier).';
-    assert.equal(dailyCapSentence(detail, new Date(2026, 10, 5, 12, 0, 0)), `${CAPPED} Probaj ponovo sutra.`);
+    assert.equal(dailyCapSentence(detail, new Date(2026, 10, 5, 12, 0, 0)), `${CAPPED} Probaj ponovo kasnije.`);
   });
 
   it('leaves out the model when the refusal names none', () => {
