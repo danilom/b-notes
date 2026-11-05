@@ -218,9 +218,26 @@ export function createDiffChangeBar(
     // shortest way to go whichever letter it wants. A change is read from its start.
     const isLetter = over.classList.contains('diff-tidied-letter');
     const wanted = isLetter ? (line.left + line.right) / 2 - bar.offsetWidth / 2 : line.left;
-    const left = Math.min(wanted - frame.left, frame.width - bar.offsetWidth);
-    bar.style.left = `${Math.max(0, left)}px`;
-    bar.style.top = `${line.top - frame.top - bar.offsetHeight - GAP_ABOVE_PX}px`;
+    const left = Math.max(0, Math.min(wanted - frame.left, frame.width - bar.offsetWidth));
+    const top = line.top - frame.top - bar.offsetHeight - GAP_ABOVE_PX;
+    const clear = clearOfStepper(left, top, line.bottom - frame.top + GAP_ABOVE_PX);
+    bar.style.left = `${clear.left}px`;
+    bar.style.top = `${clear.top}px`;
+  }
+
+  /**
+   * Keeps the bar off the box's own stepper, which is on top of the text in the corner:
+   * to its left if there is room, or else under the line it is for.
+   */
+  function clearOfStepper(left: number, top: number, topBelow: number): { left: number; top: number } {
+    const steps = framed.querySelector('.review-steps');
+    if (!(steps instanceof HTMLElement) || steps.hidden) return { left, top };
+    const [frame, taken] = [framed.getBoundingClientRect(), steps.getBoundingClientRect()];
+    const [takenLeft, takenTop, takenBottom] = [taken.left - frame.left, taken.top - frame.top, taken.bottom - frame.top];
+    const meets = left + bar.offsetWidth > takenLeft - GAP_ABOVE_PX && top + bar.offsetHeight > takenTop - GAP_ABOVE_PX && top < takenBottom + GAP_ABOVE_PX;
+    if (!meets) return { left, top };
+    const moved = takenLeft - bar.offsetWidth - GAP_ABOVE_PX;
+    return moved >= 0 ? { left: moved, top } : { left, top: topBelow };
   }
 
   function showOver(over: Element): void {
