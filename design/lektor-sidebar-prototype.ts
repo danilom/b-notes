@@ -57,7 +57,7 @@ const PRESETS: readonly Preset[] = [
     id: 'rewrite',
     name: 'Uz to smele prepravke',
     prompt:
-      'Napiši ovaj tekst iznova, kao da si ga ti pisao: slobodno menjaj rečenice, njihov red, ritam i slike, spajaj ih i deli, a svaki pasus uobliči kako misliš da najbolje zvuči. Sačuvaj autorove glavne misli, činjenice, imena i navode, i narečje kojim je tekst pisan. Ne izmišljaj događaje. Neka tekst bude približno iste dužine.',
+      'Napiši ovaj tekst iznova, smelo, kao pisac koji ga prepričava svojim perom. Skoro nijedna rečenica ne treba da ostane ista: menjaj im red, ritam, slike i izbor reči, spajaj ih i deli, i slobodno idi dalje nego što je neophodno, jer će autor sam odabrati šta mu se sviđa. Sačuvaj autorove glavne misli, činjenice i imena, i narečje kojim je tekst pisan. Ne izmišljaj događaje. Neka tekst bude približno iste dužine.',
   },
 ];
 

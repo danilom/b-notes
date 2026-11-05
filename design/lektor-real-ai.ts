@@ -37,6 +37,12 @@ Govor ljudi pod navodnicima ne doteruj: autor namerno piše kako ti ljudi govore
 Napomene koje je autor ostavio sam sebi ostavi kako jesu. Ako ne razumeš zašto nešto stoji u tekstu, ostavi ga.
 Vrati ceo tekst, samo ispravljen, bez ikakvog komentara i bez oznaka oko njega.`;
 
+/** "Only corrected" and "leave what you don't understand" held even a full rewrite down to a light edit. */
+const REWRITE_RULES = `Zadrži naslove, zvezdice između odeljaka i razmake na početku reda tačno kako jesu, i redosled pasusa. Ne dodaj naslove.
+Ono što je pod navodnicima prepiši kako jeste: autor namerno piše kako ti ljudi govore. Ispravi tu samo slova kojima nedostaju kukice.
+Napomene koje je autor ostavio sam sebi ostavi kako jesu.
+Vrati ceo tekst, bez ikakvog komentara i bez oznaka oko njega.`;
+
 function keyNow(): string {
   // None saved means the dev server uses its own, from testdata/.
   return window.sessionStorage.getItem(KEY_STORE) ?? '';
@@ -139,7 +145,8 @@ async function corrections(request: CorrectionRequest, signal: AbortSignal): Pro
   const note = request.note.trim() === '' ? '' : `\n\nAutor još kaže: ${request.note.trim()}`;
   // Suggesting takes more thought than correcting: the quicker model hardly offers any.
   const models = request.preset === 'wording' || request.preset === 'rewrite' ? THINKING_MODELS : CORRECTION_MODELS;
-  const reply = await ask(models, `${request.instruction}${note}\n\n${CORRECTION_RULES}`, request.text, signal);
+  const rules = request.preset === 'rewrite' ? REWRITE_RULES : CORRECTION_RULES;
+  const reply = await ask(models, `${request.instruction}${note}\n\n${rules}`, request.text, signal);
   const proposal = cleanedProposal(reply, request.text);
   if (proposal.length < request.text.length * SHORTEST_SHARE_KEPT) {
     throw new LektorServiceError('cut-off', `${proposal.length} characters back for ${request.text.length}`);
