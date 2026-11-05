@@ -2080,6 +2080,40 @@ dialog::backdrop {
   }
 }
 
+/* Up, and then down under its own weight. It takes no clicks: he may be on his way to the button. */
+.lektor-confetti {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.lektor-confetti span {
+  position: fixed;
+  width: 0.55rem;
+  height: 0.32rem;
+  border-radius: 1px;
+  opacity: 0;
+  animation: lektor-confetti-flying 1.2s cubic-bezier(0.2, 0.7, 0.4, 1) forwards;
+}
+
+@keyframes lektor-confetti-flying {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0);
+  }
+
+  55% {
+    opacity: 1;
+    transform: translate(calc(var(--sideways) * 0.75), calc(var(--up) * -1)) rotate(calc(var(--turn) * 0.6));
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(var(--sideways), calc(var(--up) * -0.45)) rotate(var(--turn));
+  }
+}
+
 /* All the window's height, but only the width his lines and their margins take. */
 .panel.lektor-panel {
   width: min(54rem, 100%);

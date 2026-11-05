@@ -4,6 +4,7 @@ import { openConfirmDialog } from '../dialogs/confirm-dialog.ts';
 import { titleOf } from '../dialogs/dialog-heading.ts';
 import { showAsModal } from '../dialogs/modal.ts';
 import { icon } from '../icons.ts';
+import { burstFrom } from './lektor-confetti.ts';
 import { createDiffReview } from '../diff-review.ts';
 import { createTextDiffView } from '../diff-view.ts';
 
@@ -55,7 +56,10 @@ export function openLektorDialog(
    * change, where he would be congratulated before doing anything.
    */
   function noticeIfAtTheEnd(changeAt: number): void {
-    if (large > 1 && changeAt === large - 1) applyButton?.classList.add('lektor-apply-ready');
+    if (large <= 1 || changeAt !== large - 1 || applyButton === null) return;
+    // Once to a review: going back and forward again is checking, not finishing.
+    if (!applyButton.classList.contains('lektor-apply-ready')) burstFrom(applyButton, container);
+    applyButton.classList.add('lektor-apply-ready');
   }
 
   function stepperLabel(at: number, total: number): string {
