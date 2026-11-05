@@ -81,6 +81,16 @@ body.lektor-open #lektor-side {
   display: contents;
 }
 
+/* Vidi at the strip's button height, in air taken from its row, so the list loses nothing. */
+#deleted-block {
+  padding-block: 0.25rem;
+}
+
+#deleted-see {
+  min-height: 2.1rem;
+  padding-inline: 0.5rem;
+}
+
 #status-text {
   order: 2;
   flex: 1 1 7rem;
