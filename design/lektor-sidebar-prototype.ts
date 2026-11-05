@@ -43,13 +43,20 @@ const PRESETS: readonly Preset[] = [
     id: 'grammar',
     name: 'Uz to gramatiku',
     prompt:
-      'Ispravi slova, zareze i razmake, kao i gramatiku. Gde rečenica očigledno zapinje, malo je popravi. Ne preformuliši ono što je u redu. Zadrži autorov glas i narečje kojim je tekst pisan.',
+      'Ispravi slova, zareze i razmake, kao i gramatiku. Gde se rečenica teško razume ili zapinje, preuredi je tako da bude jasna, koristeći što više autorovih reči. Ono što je u redu ne diraj. Zadrži autorov glas i narečje kojim je tekst pisan.',
   },
   {
     id: 'wording',
     name: 'Uz to stilske predloge',
     prompt:
-      'Ispravi greške i gramatiku, a gde tekst ne teče lako, predloži kako bi mogao lakše da teče. Ne menjaj ono što već dobro zvuči. Zadrži autorov glas i narečje kojim je tekst pisan.',
+      'Ispravi greške i gramatiku, pa uredi tekst kao dobar urednik: podeli predugačke rečenice, izbaci ponavljanja i suvišne reči, i nađi bolju reč tamo gde je ova mutna ili nezgrapna. Nemoj se ustručavati: promene treba da se vide u svakom pasusu. Ne dodaj ništa što autor nije rekao. Zadrži njegov glas i narečje kojim je tekst pisan.',
+  },
+  // Deliberately too much: next to this one, the one above looks about right.
+  {
+    id: 'rewrite',
+    name: 'Uz to smele prepravke',
+    prompt:
+      'Napiši ovaj tekst iznova, kao da si ga ti pisao: slobodno menjaj rečenice, njihov red, ritam i slike, spajaj ih i deli, a svaki pasus uobliči kako misliš da najbolje zvuči. Sačuvaj autorove glavne misli, činjenice, imena i navode, i narečje kojim je tekst pisan. Ne izmišljaj događaje. Neka tekst bude približno iste dužine.',
   },
 ];
 

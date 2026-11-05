@@ -4,7 +4,7 @@
   the real one goes to Gemini.
 */
 
-export type PresetId = 'letters' | 'grammar' | 'wording';
+export type PresetId = 'letters' | 'grammar' | 'wording' | 'rewrite';
 
 export type LektorFailure = 'offline' | 'overloaded' | 'limit' | 'bad-key' | 'cut-off' | 'too-long';
 
