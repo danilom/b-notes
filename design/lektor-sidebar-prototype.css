@@ -386,7 +386,8 @@ body.lektor-open #lektor-side {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  margin-bottom: 0.35rem;
+  /* Into the gap the column keeps between its items: the last of these belongs with the comment. */
+  margin-bottom: -0.3rem;
   color: var(--quiet);
   font-size: 0.85em;
 }

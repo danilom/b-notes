@@ -490,7 +490,7 @@ function aboutAi(): HTMLElement[] {
 function commentNotes(state: TextState): HTMLElement {
   const again = el('button', 'lektor-again');
   again.type = 'button';
-  again.append(icon('back'), el('span', '', 'Pošalji ponovo…'));
+  again.append(icon('back'), el('span', '', 'Pošalji ponovo'));
   again.addEventListener('click', () => goTo('start'));
   const age = el('div', 'lektor-comment-age');
   age.append(el('span', '', `Napisano ${describeWhen(state.readAt, 'sr')}`), again);
