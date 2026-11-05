@@ -429,6 +429,9 @@ body.lektor-open #lektor-side {
 .lektor-fallible {
   align-self: flex-start;
   margin-top: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   padding: 0;
   border: none;
   background: none;
@@ -441,6 +444,12 @@ body.lektor-open #lektor-side {
 
 .lektor-fallible span {
   border-bottom: 1px dotted currentColor;
+}
+
+.lektor-fallible svg {
+  flex: none;
+  width: 0.9em;
+  height: 0.9em;
 }
 
 .lektor-about-ai {
