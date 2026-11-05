@@ -277,30 +277,20 @@ body.lektor-open #lektor-side {
 
 /*
   Solid red with a white mark: orange means take care, this means it didn't work.
-  Scaled to the text beside it and a deep red, because at full size in a bright one
-  it shouts. Lifted a little on a dark page, where a deep red would sink.
+  A medium red, with no outline to bulk up the shape, and a large mark to break up
+  the red: drawn smaller or darker, or with a thin mark, it reads as a blot.
 */
-.lektor-problem {
-  --problem: hsl(2 66% 37%);
-}
-
-:root[data-mode='dark'] .lektor-problem {
-  --problem: hsl(2 66% 50%);
-}
-
 .lektor-problem svg {
   flex: none;
-  width: 1.2em;
-  height: 1.2em;
-  margin-top: 0.08em;
+  width: 1.5em;
+  height: 1.5em;
   stroke: white;
-  stroke-width: 2.4;
+  stroke-width: 2.7;
 }
 
 .lektor-problem svg path:first-child {
-  fill: var(--problem);
-  stroke: var(--problem);
-  stroke-width: 1.5;
+  fill: hsl(358 60% 50%);
+  stroke: none;
 }
 
 .lektor-key-saved {
