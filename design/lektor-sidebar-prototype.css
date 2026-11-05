@@ -37,9 +37,10 @@ body.lektor-open #lektor-side {
 }
 
 /*
-  The whole strip in one row, for more of his text on the Asus. Later in the
-  cascade than the app's own two-row grid, at the same weight. At larger letter
-  sizes the buttons wrap rather than leave the window.
+  The strip, later in the cascade than the app's own layouts and at the same
+  weight. Two rows where it is short of room, as at 125 %: the buttons about this
+  text above, and the status line and the two quiet buttons below. One row where
+  everything fits, as on his screens at their default size.
 */
 #status {
   display: flex;
@@ -49,6 +50,15 @@ body.lektor-open #lektor-side {
   gap: 0.25rem 0.4rem;
   box-sizing: border-box;
   min-height: 48px;
+  padding-left: 0.7rem;
+}
+
+/* Ends the first row: a flex row has no other way to be told where to break. */
+#status::before {
+  content: '';
+  order: 1;
+  flex-basis: 100%;
+  height: 0;
 }
 
 #status-actions,
@@ -57,18 +67,15 @@ body.lektor-open #lektor-side {
 }
 
 #status-text {
-  order: 0;
+  order: 2;
   flex: 1 1 7rem;
   min-width: 0;
-  /* Two lines where it needs them, rather than losing its end. */
-  overflow: visible;
-  white-space: normal;
   /* Mostly fluff, so it gives up size before anything else gives up room. */
   font-size: 0.82em;
   line-height: 1.15;
 }
 
-/* One height along the row, whichever button sets it. */
+/* One height along a row, whichever button sets it. */
 #status .status-action {
   align-self: stretch;
 }
@@ -77,28 +84,50 @@ body.lektor-open #lektor-side {
 #status #see-versions,
 #status #delete-note,
 #status #lektor-open {
-  order: 1;
+  order: 0;
   margin: 0;
+}
+
+#status #copy-all {
+  margin-left: auto;
 }
 
 /* The two that aren't about this text's words stay last, and stay quiet. */
 #status #move-to-resoph,
 #status #appearance-button {
-  order: 2;
+  order: 3;
 }
 
-#status #move-to-resoph {
-  margin-left: 0.2rem;
-  padding-block: 0;
-  font-size: 0.78em;
-  line-height: 1.05;
-  white-space: normal;
-  text-align: left;
-}
+/* What the contents need at the default size: the buttons, and the status line on two lines. */
+@container (min-width: 48.5rem) {
+  #status::before {
+    display: none;
+  }
 
-/* Rarely pressed, so it can afford small words on two lines, and the row keeps its height. */
-#move-to-resoph-label {
-  width: 4.2em;
+  #status-text {
+    order: -1;
+    /* Two lines where it needs them, rather than losing its end. */
+    overflow: visible;
+    white-space: normal;
+  }
+
+  #status #copy-all {
+    margin-left: 0;
+  }
+
+  #status #move-to-resoph {
+    margin-left: 0.2rem;
+    padding-block: 0;
+    font-size: 0.78em;
+    line-height: 1.05;
+    white-space: normal;
+    text-align: left;
+  }
+
+  /* Rarely pressed, so it can afford small words on two lines, and the row keeps its height. */
+  #move-to-resoph-label {
+    width: 4.2em;
+  }
 }
 
 
