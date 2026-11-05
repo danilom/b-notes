@@ -29,11 +29,18 @@ async function wait(ms: number, signal: AbortSignal): Promise<void> {
   });
 }
 
+/** Google's real words for these, so the harness shows the screens as they will be. */
+const SERVICE_SAID: Partial<Record<string, string>> = {
+  overloaded: 'gemini-3.6-flash is currently experiencing high demand, spikes in demand are usually temporary. Please try again later.',
+  limit: 'Rate limit exceeded for model gemini-3.6-flash (limit: 10 requests per minute on Free Tier). Please retry in 30s.',
+  'bad-key': 'API key not valid. Please pass a valid API key.',
+};
+
 /** Waits as the real service would, and answers as the harness says to. */
 async function pretendToWork(ms: number, signal: AbortSignal): Promise<void> {
   await wait(ms, signal);
   const behaviour = behaviourNow();
-  if (behaviour !== 'ok' && behaviour !== 'slow') throw new LektorServiceError(behaviour);
+  if (behaviour !== 'ok' && behaviour !== 'slow') throw new LektorServiceError(behaviour, '', SERVICE_SAID[behaviour] ?? '');
 }
 
 /**

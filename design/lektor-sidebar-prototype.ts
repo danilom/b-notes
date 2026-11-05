@@ -67,6 +67,7 @@ interface TextState {
   failure: LektorServiceError['failure'] | null;
   /** Said when it happened, and kept: another text's failure must not change what this one's says. */
   capNote: string | null;
+  serviceSaid: string;
   feedback: string;
   /** Whether the response has finished appearing, so it isn't played again on coming back. */
   isRevealed: boolean;
@@ -131,6 +132,9 @@ let keyNote: KeyNote = null;
 let isKeyJustSaved = false;
 let isAboutAiOpen = false;
 let lastFailureDetail = '';
+let lastServiceSaid = '';
+/** What the service said about the key: the key box belongs to no one text. */
+let keyServiceSaid = '';
 /** A wait in the refusal counts from here, however much later the screen is drawn again. */
 let lastFailureAt = new Date();
 let readingSince = 0;
@@ -151,6 +155,7 @@ function stateNow(): TextState {
     screen: 'start',
     failure: null,
     capNote: null,
+    serviceSaid: '',
     feedback: '',
     isRevealed: false,
     readText: '',
@@ -231,11 +236,13 @@ function failedWith(error: unknown): LektorServiceError['failure'] | null {
   if (error instanceof DOMException && error.name === 'AbortError') return null;
   if (error instanceof LektorServiceError) {
     lastFailureDetail = error.detail;
+    lastServiceSaid = error.serviceSaid;
     lastFailureAt = new Date();
     return error.failure;
   }
   console.error('The Lektor prototype failed', error);
   lastFailureDetail = String(error);
+  lastServiceSaid = '';
   return 'overloaded';
 }
 
@@ -261,8 +268,12 @@ async function read(ask: (text: string, signal: AbortSignal) => Promise<string>)
     if (failure === null) return;
     state.failure = failure;
     state.capNote = dailyCapNote(failure);
+    state.serviceSaid = lastServiceSaid;
     state.screen = failure === 'bad-key' ? 'key' : 'failed';
-    if (failure === 'bad-key') keyNote = 'refused';
+    if (failure === 'bad-key') {
+      keyNote = 'refused';
+      keyServiceSaid = lastServiceSaid;
+    }
   }
   if (working === controller) working = null;
   render();
@@ -323,6 +334,7 @@ async function checkKey(): Promise<void> {
     const failure = failedWith(error);
     if (failure === null) return;
     keyNote = keyNoteOf(failure);
+    keyServiceSaid = lastServiceSaid;
   }
   if (working === controller) working = null;
   render();
@@ -353,16 +365,28 @@ const KEY_NOTES: Readonly<Record<Exclude<KeyNote, 'checking' | null>, string>> =
   unavailable: 'Ključ sada ne može da se proveri. Probaj kasnije.',
 };
 
+/** Past this it is no longer something to read out over the telephone. */
+const LONGEST_SERVICE_WORDS = 300;
+
 /**
- * Something didn't work: recognisable by its icon before a word of it is read. What the
- * service actually said is under the pointer, for whoever is looking into it; he need
- * never meet it, and the app's own log is where it belongs in the end.
+ * Something didn't work: recognisable by its icon before a word of it is read. A remote
+ * service's own words go beneath, small and grey, with no need for him to follow them: he can
+ * read them to whoever helps him, who has no other way of knowing what a stranger's server said.
+ * Our own details stay under the pointer: those are ours to fix, and belong in the log.
  */
-function problem(sentence: string): HTMLElement {
+function problem(sentence: string, serviceSaid = ''): HTMLElement {
   const box = el('div', 'lektor-problem');
   box.setAttribute('role', 'alert');
-  box.title = lastFailureDetail;
-  box.append(icon('problem'), el('p', 'lektor-line', sentence));
+  const words = el('div', 'lektor-problem-words');
+  words.append(el('p', 'lektor-line', sentence));
+  if (serviceSaid === '') {
+    box.title = lastFailureDetail;
+  } else {
+    const said = el('p', 'lektor-service-said', `Poruka Gugla: ${serviceSaid.slice(0, LONGEST_SERVICE_WORDS)}`);
+    said.lang = 'en';
+    words.append(said);
+  }
+  box.append(icon('problem'), words);
   return box;
 }
 
@@ -427,7 +451,7 @@ function startScreen(): HTMLElement[] {
 function keyNoteElement(): HTMLElement[] {
   if (keyNote === null) return [];
   if (keyNote === 'checking') return [el('p', 'lektor-reading', 'Proveravam API ključ…')];
-  return [problem(KEY_NOTES[keyNote])];
+  return [problem(KEY_NOTES[keyNote], keyServiceSaid)];
 }
 
 function keyScreen(): HTMLElement[] {
@@ -476,14 +500,14 @@ function readingScreen(): HTMLElement[] {
 }
 
 function failedScreen(): HTMLElement[] {
-  const { failure, capNote } = stateNow();
+  const { failure, capNote, serviceSaid } = stateNow();
   const top = el('div', 'lektor-back-row');
   top.append(backButton('Nazad', 'start'));
   // Once the day's tries are gone, trying again can only fail again.
-  if (capNote !== null) return [top, problem(capNote)];
+  if (capNote !== null) return [top, problem(capNote, serviceSaid)];
   return [
     top,
-    problem(FAILURES[failure ?? 'overloaded']),
+    problem(FAILURES[failure ?? 'overloaded'], serviceSaid),
     footer([], button('Pokušaj ponovo', () => void read(askForFeedback), 'status-action')),
   ];
 }
@@ -745,7 +769,7 @@ async function correct(): Promise<void> {
     };
     const failed = showAsModal(
       dialog,
-      plainPanel(problem(failureSentence(failure)), [
+      plainPanel(problem(failureSentence(failure), lastServiceSaid), [
         ...(dailyCapNote(failure) === null ? [button('Pokušaj ponovo', retry, 'keep')] : []),
         button('Zatvori', () => failed.close()),
       ]),

@@ -12,11 +12,14 @@ export class LektorServiceError extends Error {
   readonly failure: LektorFailure;
   /** What the service actually said, for whoever is looking into it. Not for him to have to read. */
   readonly detail: string;
+  /** The remote service's own words, if it gave any: shown to him, small, to pass on to whoever helps him. */
+  readonly serviceSaid: string;
 
-  constructor(failure: LektorFailure, detail = '') {
+  constructor(failure: LektorFailure, detail = '', serviceSaid = '') {
     super(`The service answered: ${failure}`);
     this.failure = failure;
     this.detail = detail;
+    this.serviceSaid = serviceSaid;
   }
 }
 

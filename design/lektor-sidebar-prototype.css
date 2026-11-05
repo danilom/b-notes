@@ -325,6 +325,19 @@ body.lektor-open #lektor-side {
   font-style: normal;
 }
 
+.lektor-problem-words {
+  min-width: 0;
+}
+
+/* Extra, for passing on: set apart from what he is told, and it can break anywhere because it may hold a web address. */
+.lektor-problem .lektor-service-said {
+  margin-top: 0.45rem;
+  color: var(--quiet);
+  font-size: calc(var(--ui-size) * 0.82);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
 /*
   Solid red with a white mark: orange means take care, this means it didn't work.
   A medium red, with no outline to bulk up the shape, and a large mark to break up

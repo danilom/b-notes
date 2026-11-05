@@ -79,10 +79,12 @@ function refusal(status: number, reply: unknown): LektorServiceError {
   const detail = `${status}: ${message}`;
   console.error('The Lektor service refused', { status, message });
   if (status === 502) return new LektorServiceError('offline', detail);
-  if (status === 429) return new LektorServiceError('limit', detail);
-  if (status === 401 || status === 403 || /api.?key/i.test(message)) return new LektorServiceError('bad-key', detail);
-  if (status === 400 && /token|too long|too large|size/i.test(message)) return new LektorServiceError('too-long', detail);
-  return new LektorServiceError('overloaded', detail);
+  // Out of time: the dev server's words, not Google's.
+  if (status === 504) return new LektorServiceError('overloaded', detail);
+  if (status === 429) return new LektorServiceError('limit', detail, message);
+  if (status === 401 || status === 403 || /api.?key/i.test(message)) return new LektorServiceError('bad-key', detail, message);
+  if (status === 400 && /token|too long|too large|size/i.test(message)) return new LektorServiceError('too-long', detail, message);
+  return new LektorServiceError('overloaded', detail, message);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -104,10 +106,12 @@ function wordsOf(reply: unknown): string | null {
 
 async function ask(models: readonly string[], system: string, input: string, signal: AbortSignal): Promise<string> {
   let lastTried = '';
+  let lastSaid = '';
   for (const model of models) {
     const { status, reply } = await callServer({ action: 'send', key: keyNow(), model, system, input }, signal);
     if (status === 503 || status === 500) {
-      lastTried = `${status}: ${messageOf(reply)}`;
+      lastSaid = messageOf(reply);
+      lastTried = `${status}: ${lastSaid}`;
       console.warn('A Lektor model passed over', { model, status });
       continue;
     }
@@ -119,7 +123,7 @@ async function ask(models: readonly string[], system: string, input: string, sig
     }
     return words;
   }
-  throw new LektorServiceError('overloaded', lastTried);
+  throw new LektorServiceError('overloaded', lastTried, lastSaid);
 }
 
 /** Whatever it wrapped the text in, and an ending that matches his. */
