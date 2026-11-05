@@ -5,6 +5,7 @@ import { titleOf } from '../src/ui/dialogs/dialog-heading.ts';
 import { showAsModal } from '../src/ui/dialogs/modal.ts';
 import { icon } from '../src/ui/icons.ts';
 import { openLektorDialog } from '../src/ui/lektor/lektor-dialog.ts';
+import { flashToast } from '../src/ui/toast.ts';
 import {
   BEHAVIOUR_KEY,
   FakeServiceError,
@@ -565,7 +566,7 @@ const TITLES: Readonly<Record<Screen, string>> = {
   reading: 'AI čita tekst',
   failed: 'AI Lektor',
   // Whose impression and whose corrections, as much as what they are.
-  response: 'AI utisak o tekstu',
+  response: 'AI utisak',
   corrections: 'AI ispravke',
 };
 
@@ -636,7 +637,7 @@ function plainPanel(content: string | HTMLElement, buttons: HTMLButtonElement[])
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
   const top = document.createElement('header');
-  top.append(titleOf({ mark: 'lektor', label: 'AI Lektor ispravke', name: textInDialog() }));
+  top.append(titleOf({ mark: 'lektor', label: 'AI ispravke', name: textInDialog() }));
   const middle = el('div', 'review-panes');
   const words = el('div', 'review-text review-text-empty');
   words.append(content);
@@ -679,14 +680,16 @@ async function correct(): Promise<void> {
 
 function review(text: string, proposed: string): void {
   const state = stateNow();
-  const close = openLektorDialog(dialog, { title: titleFrom(text), current: text, proposed }, 'sr', {
+  const close = openLektorDialog(dialog, required('confirm', HTMLDialogElement), { title: titleFrom(text), current: text, proposed }, 'sr', {
     onApply: (result) => {
       close();
       editor.value = result;
-      // How the app learns of any edit, so it is saved like one.
+      // How the app learns of any edit, so it is saved like one. The real thing keeps a version first, as Ranije verzije's bringBack does.
       editor.dispatchEvent(new Event('input', { bubbles: true }));
       state.readText = result;
-      render();
+      // Back to the comment: this step is done, and the toast says what became of it.
+      goTo('response');
+      flashToast(required('toast', HTMLDivElement), 'Izmene su unete u tekst.', 'Stari tekst je u Ranijim verzijama.');
     },
     onClose: () => close(),
   });

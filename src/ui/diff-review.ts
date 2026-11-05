@@ -10,6 +10,8 @@ export interface DiffReview {
   textNow: () => string;
   /** How the view reports what he does, for the drawing about to be made. */
   editing: () => DiffEditing;
+  /** Whether he has done anything here that closing would lose. */
+  hasDecisions: () => boolean;
 }
 
 /**
@@ -43,6 +45,7 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
   return {
     piecesNow,
     textNow: () => textAfter(piecesNow()),
+    hasDecisions: () => changes.size > 0 || letters.size > 0,
     editing: () => ({
       ...(currentChange === undefined ? {} : { startAt: currentChange }),
       startsClosed: isBarClosed,

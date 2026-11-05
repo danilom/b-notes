@@ -1,5 +1,6 @@
 import { type Language, strings } from '../../language/wording.ts';
 import { diffTexts, mergeCloseChanges, separateTidying } from '../../notes/text-diff.ts';
+import { openConfirmDialog } from '../dialogs/confirm-dialog.ts';
 import { titleOf } from '../dialogs/dialog-heading.ts';
 import { showAsModal } from '../dialogs/modal.ts';
 import { icon } from '../icons.ts';
@@ -31,6 +32,7 @@ export interface LektorHandlers {
  */
 export function openLektorDialog(
   container: HTMLDialogElement,
+  confirmContainer: HTMLDialogElement,
   { title, current, proposed }: LektorProposal,
   language: Language,
   handlers: LektorHandlers,
@@ -82,6 +84,33 @@ export function openLektorDialog(
     return box;
   }
 
+  /**
+   * Asks only if he has decided something. Asking every time would teach him to
+   * answer without reading, and a proposal he hasn't touched is seconds to get back.
+   */
+  function leave(): void {
+    if (!review.hasDecisions()) {
+      handlers.onClose();
+      return;
+    }
+    const closeQuestion = openConfirmDialog(
+      confirmContainer,
+      {
+        title: { mark: 'lektor', label: 'Zatvori bez unošenja', name: title },
+        body: 'Ono što si odlučio o ovim predlozima neće biti sačuvano. Tekst ostaje kakav je bio.',
+        confirm: 'Zatvori bez unošenja',
+        cancel: 'Nazad na ispravke',
+        danger: true,
+        onConfirm: () => {
+          closeQuestion();
+          handlers.onClose();
+        },
+        onCancel: () => closeQuestion(),
+      },
+      language,
+    );
+  }
+
   const panel = document.createElement('div');
   panel.className = 'panel review-panel lektor-panel';
   panel.setAttribute('role', 'dialog');
@@ -94,7 +123,7 @@ export function openLektorDialog(
   note.textContent = hasAnything
     ? 'Pregledaj predloge ispravki u tekstu ispod. Ako ti nešto ne odgovara, pređi mišem preko toga i promeni.'
     : 'Tekst je pregledan.';
-  stacked.append(titleOf({ mark: 'lektor', label: 'AI Lektor ispravke', name: title }), note);
+  stacked.append(titleOf({ mark: 'lektor', label: 'AI ispravke', name: title }), note);
 
   const dismiss = document.createElement('button');
   dismiss.type = 'button';
@@ -102,7 +131,7 @@ export function openLektorDialog(
   dismiss.title = words.close;
   dismiss.setAttribute('aria-label', words.close);
   dismiss.append(icon('close'));
-  dismiss.addEventListener('click', handlers.onClose);
+  dismiss.addEventListener('click', leave);
 
   const header = document.createElement('header');
   header.append(stacked, dismiss);
@@ -115,7 +144,7 @@ export function openLektorDialog(
   if (hasAnything) {
     const says = document.createElement('p');
     says.className = 'footer-note';
-    for (const line of [words.versionRestoreNote, words.versionRestoreKept]) {
+    for (const line of ['Izmene ulaze u tvoj tekst.', words.versionRestoreKept]) {
       const one = document.createElement('span');
       one.textContent = line;
       says.append(one);
@@ -124,7 +153,7 @@ export function openLektorDialog(
     const apply = document.createElement('button');
     apply.type = 'button';
     apply.className = 'keep';
-    apply.textContent = 'Unesi izmene u tekst';
+    apply.textContent = 'Unesi sve izmene u tekst';
     apply.addEventListener('click', () => handlers.onApply(review.textNow()));
     footer.append(says, apply);
   }
@@ -132,12 +161,12 @@ export function openLektorDialog(
   const done = document.createElement('button');
   done.type = 'button';
   done.textContent = words.close;
-  done.addEventListener('click', handlers.onClose);
+  done.addEventListener('click', leave);
   footer.append(done);
 
   panel.append(header, body, footer);
 
-  const modal = showAsModal(container, panel, handlers.onClose);
+  const modal = showAsModal(container, panel, leave);
   if (hasAnything) redraw();
   else preview.replaceChildren(nothingToSay());
 

@@ -28,6 +28,7 @@ function openDialog(): void {
 
   const close = openLektorDialog(
     dialog,
+    element('lektor-confirm', HTMLDialogElement),
     { title: titleFrom(text.value), current: text.value, proposed: chosen.proposed },
     'sr',
     {
