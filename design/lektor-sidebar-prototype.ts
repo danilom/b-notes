@@ -351,9 +351,9 @@ function header(): HTMLElement {
   const row = el('div', 'lektor-side-top');
   const close = el('button', 'lektor-side-close');
   close.type = 'button';
-  close.title = 'Sakrij Lektora';
-  close.setAttribute('aria-label', 'Sakrij Lektora');
-  close.append(icon('hide-list'));
+  close.title = 'Zatvori';
+  close.setAttribute('aria-label', 'Zatvori');
+  close.append(icon('close'));
   close.addEventListener('click', goAway);
   row.append(close);
   return row;

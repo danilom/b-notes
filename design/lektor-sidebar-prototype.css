@@ -151,7 +151,7 @@ body.lektor-open #lektor-side {
   padding: 0.25rem 0.3rem;
 }
 
-/* The left list's chevron, turned to fold towards this edge. */
+/* An X rather than the list's chevron: this doesn't fold to a tab, it goes, and the button below brings it back. */
 .lektor-side-close {
   display: flex;
   align-items: center;
@@ -159,10 +159,6 @@ body.lektor-open #lektor-side {
   border-color: transparent;
   background: none;
   color: var(--faint);
-}
-
-.lektor-side-close svg {
-  transform: scaleX(-1);
 }
 
 .lektor-side-close:hover {
