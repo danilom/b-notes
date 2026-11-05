@@ -189,10 +189,10 @@ async function read(ask: (text: string, signal: AbortSignal) => Promise<string>)
 }
 
 const FAILURES: Readonly<Record<FakeServiceError['failure'], string>> = {
-  overloaded: 'Lektor trenutno nije dostupan. Probaj malo kasnije.',
-  limit: 'Lektor je za sada iskoristio svoje pokušaje. Probaj kasnije.',
-  'bad-key': 'Ovaj ključ ne radi.',
-  'cut-off': 'Lektor nije uspeo da završi.',
+  overloaded: 'AI Lektor trenutno nije dostupan. Probaj malo kasnije.',
+  limit: 'AI Lektor je za sada iskoristio svoje pokušaje. Probaj kasnije.',
+  'bad-key': 'Ovaj API ključ ne radi.',
+  'cut-off': 'AI Lektor nije uspeo da završi.',
 };
 
 /**
@@ -208,20 +208,27 @@ function footer(lines: HTMLElement[], main?: HTMLButtonElement): HTMLElement {
   return made;
 }
 
+function privacyWarning(): HTMLElement {
+  const heading = el('p', 'lektor-warning-heading');
+  heading.append(icon('privacy'), document.createTextNode('Upozorenje o privatnosti'));
+  const warning = el('div', 'lektor-warning');
+  warning.setAttribute('role', 'note');
+  warning.append(
+    heading,
+    el('p', 'lektor-line', 'Ceo tekst se šalje Guglu na obradu, a neko iz Gugla može da pročita njegove delove. Zato ne šalji tekstove u kojima su lozinke, brojevi računa i slični osetljivi podaci.'),
+  );
+  return warning;
+}
+
 function startScreen(): HTMLElement[] {
-  const words = editor.value.trim().split(/\s+/).length;
-  const key = button('Promeni ključ', () => {
+  const key = button('Promeni API ključ', () => {
     stateNow().screen = 'key';
     render();
   }, 'lektor-link');
   return [
-    el('p', 'lektor-line', 'Lektor je program koji čita tvoj tekst. Prvo ti kaže šta misli, a zatim, ako želiš, ispravlja greške. Bez tvoje potvrde ništa se ne menja.'),
-    el('p', 'lektor-line', `Šalje se ceo tekst: ${titleFrom(editor.value)}, ${words} reči.`),
+    el('p', 'lektor-line', 'AI Lektor je program koji čita tvoj tekst. Prvo ti kaže šta misli, a zatim, ako želiš, ispravlja greške. Bez tvoje potvrde ništa se ne menja.'),
     key,
-    footer(
-      [el('p', 'lektor-warning', 'Tekst se šalje Guglu na obradu. Neko iz Gugla može da pročita delove teksta. Ne šalji ono što ne bi pokazao drugima.')],
-      button('Pošalji', () => void read(fakeFeedback), 'status-action'),
-    ),
+    footer([privacyWarning()], button('Pošalji', () => void read(fakeFeedback), 'status-action')),
   ];
 }
 
@@ -242,11 +249,11 @@ function keyScreen(): HTMLElement[] {
   box.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') save();
   });
-  const refused = state.failure === 'bad-key' ? [el('p', 'lektor-warning', FAILURES['bad-key'])] : [];
+  const refused = state.failure === 'bad-key' ? [el('p', 'lektor-refused', FAILURES['bad-key'])] : [];
   return [
-    el('p', 'lektor-line', 'Za rad Lektora potreban je ključ. Ako ti ga je neko poslao, zalepi ga ovde.'),
+    el('p', 'lektor-line', 'Za rad AI Lektora potreban je API ključ. Ako ti ga je neko poslao, zalepi ga ovde.'),
     ...refused,
-    el('label', 'lektor-label', 'Ključ'),
+    el('label', 'lektor-label', 'API ključ'),
     box,
     footer([], button('Sačuvaj', save, 'status-action')),
   ];
@@ -254,7 +261,7 @@ function keyScreen(): HTMLElement[] {
 
 function readingScreen(): HTMLElement[] {
   return [
-    el('p', 'lektor-reading', 'Lektor čita tekst…'),
+    el('p', 'lektor-reading', 'AI Lektor čita tekst…'),
     footer(
       [],
       button('Prekini', () => {
@@ -302,7 +309,7 @@ function staleNote(state: TextState): HTMLElement | null {
   const isMuchChanged = shareChanged(state.readText, editor.value) > MUCH_CHANGED;
   const note = el('div', isMuchChanged ? 'lektor-stale lektor-stale-much' : 'lektor-stale');
   note.append(
-    el('span', '', isMuchChanged ? 'Tekst se dosta promenio otkad ga je Lektor čitao.' : 'Lektor je čitao raniju verziju.'),
+    el('span', '', isMuchChanged ? 'Tekst se dosta promenio otkad ga je AI Lektor čitao.' : 'AI Lektor je čitao raniju verziju.'),
     button('Neka pogleda šta sam promenio', () => void read(fakeSecondLook), 'lektor-link'),
   );
   return note;
@@ -325,7 +332,7 @@ function presetChoice(state: TextState): HTMLElement[] {
   });
   const chosen = PRESETS.find((preset) => preset.id === state.preset);
   const prompt = el('p', 'lektor-prompt', chosen?.prompt ?? '');
-  const noteLabel = el('label', 'lektor-label', 'Još nešto da kažeš Lektoru? (nije obavezno)');
+  const noteLabel = el('label', 'lektor-label', 'Još nešto da kažeš AI Lektoru? (nije obavezno)');
   const note = el('textarea', 'lektor-note');
   note.rows = 2;
   note.value = state.note;
@@ -422,7 +429,7 @@ async function correct(): Promise<void> {
   const text = editor.value;
   const controller = new AbortController();
   const leave = (): void => controller.abort();
-  const waiting = showAsModal(dialog, plainPanel('Lektor ispravlja tekst…', [button('Prekini', leave)]), leave);
+  const waiting = showAsModal(dialog, plainPanel('AI Lektor ispravlja tekst…',[button('Prekini', leave)]), leave);
   try {
     const proposed = await fakeCorrections(text, state.preset, controller.signal);
     waiting.close();

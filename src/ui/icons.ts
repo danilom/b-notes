@@ -27,6 +27,7 @@ export type IconName =
   | 'next'
   | 'undo'
   | 'lektor'
+  | 'privacy'
   | 'settings'
   | 'move-out'
   | 'hide-list'
@@ -93,6 +94,12 @@ const PATHS = {
     'm7 15.5 2.6-7 2.6 7',
     'M8 13h3.2',
     'M16 8.5v7',
+  ],
+  // An open eye: someone may read this. Lucide's eye, its pupil written out as a
+  // path because this only draws paths.
+  privacy: [
+    'M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0',
+    'M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
   ],
   // Going back on a decision: the arrow of the versions mark, without its clock.
   // Lucide's rotate-ccw.

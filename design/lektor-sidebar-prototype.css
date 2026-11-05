@@ -212,12 +212,40 @@ body.lektor-open #lektor-side {
   font-style: italic;
 }
 
-/* Directly above the button, and full strength: it is the one line he must not skim past. */
-.lektor-warning {
-  padding: 0.5rem 0.6rem;
-  border-left: 4px solid var(--ink);
-  background: var(--wash);
+/*
+  A box of the interface's own rather than a quoted passage: an edge all round on
+  the page's white, set off from the grey panel, with its colour in the edge and
+  the eye. Not in a tint, which his warm screen would wash out. Directly above the
+  button, because it is the one thing here he must not skim past.
+*/
+.lektor-warning,
+.lektor-refused {
+  --warning: hsl(26 90% 40%);
+  padding: 0.55rem 0.65rem;
+  border: 1.5px solid var(--warning);
+  border-radius: 4px;
+  background: var(--page);
   line-height: 1.4;
+}
+
+:root[data-mode='dark'] .lektor-warning,
+:root[data-mode='dark'] .lektor-refused {
+  --warning: hsl(32 90% 62%);
+}
+
+.lektor-warning-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.3rem;
+  font-weight: 600;
+}
+
+.lektor-warning-heading svg {
+  flex: none;
+  width: 1.45em;
+  height: 1.45em;
+  color: var(--warning);
 }
 
 .lektor-side-foot {
