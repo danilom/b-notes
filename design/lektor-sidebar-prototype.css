@@ -1,5 +1,14 @@
 /* The Lektor beside the real app, for the prototype only. See lektor-sidebar-prototype.ts. */
 
+/* The list of texts a little narrower, for the text and the strip beside it. */
+#side {
+  width: 19.8rem;
+}
+
+body.list-hidden #side {
+  margin-left: -19.8rem;
+}
+
 /*
   Beside his text and above the strip, so the button that brought it stays in
   sight and it reads as belonging to the text rather than to the app.
