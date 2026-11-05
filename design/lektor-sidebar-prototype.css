@@ -45,7 +45,10 @@ body.lektor-open #lektor-side {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  align-content: center;
   gap: 0.25rem 0.4rem;
+  box-sizing: border-box;
+  min-height: 48px;
 }
 
 #status-actions,
@@ -60,7 +63,14 @@ body.lektor-open #lektor-side {
   /* Two lines where it needs them, rather than losing its end. */
   overflow: visible;
   white-space: normal;
+  /* Mostly fluff, so it gives up size before anything else gives up room. */
+  font-size: 0.82em;
   line-height: 1.15;
+}
+
+/* One height along the row, whichever button sets it. */
+#status .status-action {
+  align-self: stretch;
 }
 
 #status #copy-all,
@@ -78,7 +88,7 @@ body.lektor-open #lektor-side {
 }
 
 #status #move-to-resoph {
-  margin-left: 0.8rem;
+  margin-left: 0.2rem;
   padding-block: 0;
   font-size: 0.78em;
   line-height: 1.05;
