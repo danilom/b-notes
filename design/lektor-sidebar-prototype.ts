@@ -350,6 +350,15 @@ function responseScreen(): HTMLElement[] {
   ];
 }
 
+/* Nothing added on failure: the fault is the service's, not his, and the message below says what happened. */
+const TITLES: Readonly<Record<Screen, string>> = {
+  start: 'AI Lektor',
+  key: 'AI Lektor: podešavanje',
+  reading: 'AI Lektor: čita tekst',
+  failed: 'AI Lektor',
+  response: 'AI Lektor: utisak',
+};
+
 const SCREENS: Readonly<Record<Screen, () => HTMLElement[]>> = {
   start: startScreen,
   key: keyScreen,
@@ -372,7 +381,7 @@ function render(): void {
   const body = el('div', 'lektor-side-body');
   body.append(...SCREENS[state.screen]());
   const title = el('div', 'lektor-side-title');
-  title.append(icon('lektor'), document.createTextNode(state.screen === 'key' ? 'AI Lektor: podešavanje' : 'AI Lektor'));
+  title.append(icon('lektor'), document.createTextNode(TITLES[state.screen]));
   side.replaceChildren(title, body);
 }
 
