@@ -330,7 +330,7 @@ function privacyWarning(): HTMLElement {
 function existingCommentRow(): HTMLElement {
   const toComment = el('button', 'lektor-again');
   toComment.type = 'button';
-  toComment.append(el('span', '', 'Postojeći komentar'), icon('move-out'));
+  toComment.append(el('span', '', 'Postojeći AI utisak'), icon('move-out'));
   toComment.addEventListener('click', () => goTo('response'));
   const row = el('div', 'lektor-back-row');
   row.append(toComment);
