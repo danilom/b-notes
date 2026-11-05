@@ -276,20 +276,31 @@ body.lektor-open #lektor-side {
 }
 
 /*
-  Solid red with a white mark, in either mode: orange means take care, this means it
-  didn't work. The same red whatever the theme, since white must stay legible on it.
+  Solid red with a white mark: orange means take care, this means it didn't work.
+  Scaled to the text beside it and a deep red, because at full size in a bright one
+  it shouts. Lifted a little on a dark page, where a deep red would sink.
 */
+.lektor-problem {
+  --problem: hsl(2 66% 37%);
+}
+
+:root[data-mode='dark'] .lektor-problem {
+  --problem: hsl(2 66% 50%);
+}
+
 .lektor-problem svg {
   flex: none;
-  width: 1.5em;
-  height: 1.5em;
+  width: 1.2em;
+  height: 1.2em;
+  margin-top: 0.08em;
   stroke: white;
-  stroke-width: 2.6;
+  stroke-width: 2.4;
 }
 
 .lektor-problem svg path:first-child {
-  fill: hsl(2 78% 44%);
-  stroke: hsl(2 78% 44%);
+  fill: var(--problem);
+  stroke: var(--problem);
+  stroke-width: 1.5;
 }
 
 .lektor-key-saved {
