@@ -1,0 +1,198 @@
+/* The Lektor beside the real app, for the prototype only. See lektor-sidebar-prototype.ts. */
+
+/*
+  Beside his text and above the strip, so the button that brought it stays in
+  sight and it reads as belonging to the text rather than to the app.
+*/
+body.lektor-open #main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 19rem;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+body.lektor-open #writing {
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 0;
+}
+
+body.lektor-open #status {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+#lektor-side {
+  display: none;
+}
+
+body.lektor-open #lektor-side {
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+}
+
+/* The strip is a grid on his screens, with its first cell free. */
+#status #lektor-open {
+  grid-area: 1 / 1;
+  justify-self: end;
+}
+
+#lektor-open[aria-pressed='true'] {
+  border-color: var(--quiet);
+  background: var(--wash-firm);
+}
+
+.lektor-side-top {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.25rem 0.3rem;
+}
+
+/* The left list's chevron, turned to fold towards this edge. */
+.lektor-side-close {
+  display: flex;
+  align-items: center;
+  padding: 0.2rem 0.4rem;
+  border-color: transparent;
+  background: none;
+  color: var(--faint);
+}
+
+.lektor-side-close svg {
+  transform: scaleX(-1);
+}
+
+.lektor-side-close:hover {
+  color: var(--ink);
+}
+
+.lektor-side-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0 1rem 1rem;
+}
+
+.lektor-side-body > * {
+  flex: none;
+  margin: 0;
+}
+
+.lektor-line,
+.lektor-reading {
+  line-height: 1.4;
+}
+
+.lektor-reading {
+  color: var(--quiet);
+  font-family: var(--writing-font);
+  font-style: italic;
+}
+
+/* Directly above the button, and full strength: it is the one line he must not skim past. */
+.lektor-warning {
+  padding: 0.5rem 0.6rem;
+  border-left: 4px solid var(--ink);
+  background: var(--wash);
+  line-height: 1.4;
+}
+
+.lektor-side-foot {
+  position: sticky;
+  bottom: -1rem;
+  margin: auto -1rem -1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem 1rem 0.8rem;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.lektor-side-foot .lektor-line {
+  margin: 0;
+}
+
+.lektor-main {
+  align-self: flex-start;
+  padding: 0.4rem 1.1rem;
+}
+
+.lektor-link {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--quiet);
+  text-align: left;
+  text-decoration: underline;
+}
+
+.lektor-link:hover {
+  color: var(--ink);
+}
+
+.lektor-label,
+.lektor-heading {
+  font-weight: 600;
+}
+
+.lektor-key,
+.lektor-note {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--line);
+  background: var(--page);
+  color: var(--ink);
+  font: inherit;
+}
+
+.lektor-note {
+  resize: vertical;
+}
+
+/* His writing's own font, at a size the narrow column can carry: this is something to read, not chrome. */
+.lektor-response {
+  white-space: pre-wrap;
+  font-family: var(--writing-font);
+  font-size: calc(var(--text-size) * 0.82);
+  line-height: 1.5;
+}
+
+.lektor-stale {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: var(--quiet);
+}
+
+.lektor-stale-much {
+  padding: 0.5rem 0.6rem;
+  border-left: 4px solid var(--ink);
+  background: var(--wash);
+  color: var(--ink);
+}
+
+.lektor-preset {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.lektor-prompt {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--line);
+  background: var(--page);
+  color: var(--quiet);
+  font-size: 0.92em;
+  line-height: 1.4;
+}

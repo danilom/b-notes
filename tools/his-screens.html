@@ -139,6 +139,18 @@
       <button id="reload" type="button" title="Load the app in the frame again">Reload</button>
       <span>Strip:</span>
       <span id="strips"></span>
+      <button id="lektor-toggle" type="button" title="Load the Lektor prototype into the app in the frame">Lektor</button>
+      <label id="lektor-behaviour-label">
+        Fake AI:
+        <select id="lektor-behaviour">
+          <option value="ok">works</option>
+          <option value="slow">slow</option>
+          <option value="overloaded">overloaded</option>
+          <option value="limit">limit reached</option>
+          <option value="bad-key">key refused</option>
+          <option value="cut-off">reply cut off</option>
+        </select>
+      </label>
       <span id="about"></span>
     </header>
     <div id="stage">
@@ -369,7 +381,10 @@
         let tries = 0;
         const ready = () => {
           const labelled = doc?.getElementById('copy-all-label')?.textContent;
-          if (doc && labelled) return applyStrip(doc);
+          if (doc && labelled) {
+            applyLektor(doc);
+            return applyStrip(doc);
+          }
           if ((tries += 1) < 60) setTimeout(ready, 100);
         };
         ready();
@@ -377,11 +392,52 @@
 
       function chooseStrip(id) {
         strip = id;
-        const query = id === 'now' ? '' : `?strip=${id}`;
-        history.replaceState(null, '', `${location.pathname}${query}#${shown.id}`);
+        rememberChoices();
         for (const button of strips.children) button.setAttribute('aria-pressed', String(button.dataset.id === id));
         frame.contentWindow?.location.reload();
       }
+
+      function rememberChoices() {
+        const query = new URLSearchParams();
+        if (strip !== 'now') query.set('strip', strip);
+        if (lektor) query.set('lektor', '1');
+        const search = query.size > 0 ? `?${query}` : '';
+        history.replaceState(null, '', `${location.pathname}${search}#${shown.id}`);
+      }
+
+      /*
+        The Lektor prototype, loaded into the running app the same way as the
+        strips above: nothing in the app knows about it. See
+        design/lektor-sidebar-prototype.ts. The fake AI reads how to behave
+        from the storage it shares with the frame, at each request.
+      */
+      let lektor = new URLSearchParams(location.search).has('lektor');
+      const lektorToggle = document.getElementById('lektor-toggle');
+      const lektorBehaviour = document.getElementById('lektor-behaviour');
+      const BEHAVIOUR_KEY = 'lektor-fake-behaviour';
+
+      function applyLektor(doc) {
+        if (!lektor) return;
+        const script = doc.createElement('script');
+        // Fresh each time: the server sends no cache headers, and this changes by the minute.
+        script.src = `/lektor-sidebar-prototype.js?${Date.now()}`;
+        doc.body.append(script);
+      }
+
+      function showLektorChoice() {
+        lektorToggle.setAttribute('aria-pressed', String(lektor));
+        document.getElementById('lektor-behaviour-label').hidden = !lektor;
+      }
+
+      lektorToggle.addEventListener('click', () => {
+        lektor = !lektor;
+        rememberChoices();
+        showLektorChoice();
+        frame.contentWindow?.location.reload();
+      });
+      lektorBehaviour.value = localStorage.getItem(BEHAVIOUR_KEY) ?? 'ok';
+      lektorBehaviour.addEventListener('change', () => localStorage.setItem(BEHAVIOUR_KEY, lektorBehaviour.value));
+      showLektorChoice();
 
       for (const each of STRIPS) {
         const button = document.createElement('button');
