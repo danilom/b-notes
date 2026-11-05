@@ -8,6 +8,7 @@ import { openLektorDialog } from '../src/ui/lektor/lektor-dialog.ts';
 import { flashToast } from '../src/ui/toast.ts';
 import { BEHAVIOUR_KEY, fakeAi } from './lektor-fake-ai.ts';
 import { realAi } from './lektor-real-ai.ts';
+import { dailyCapSentence } from './lektor-daily-cap.ts';
 import { type LektorService, LektorServiceError, type PresetId } from './lektor-service.ts';
 
 /** Chosen in the his-screens harness, at each request. */
@@ -128,6 +129,8 @@ let keyNote: KeyNote = null;
 let isKeyJustSaved = false;
 let isAboutAiOpen = false;
 let lastFailureDetail = '';
+/** A wait in the refusal counts from here, however much later the screen is drawn again. */
+let lastFailureAt = new Date();
 let readingSince = 0;
 let waitNoteTimer: ReturnType<typeof setInterval> | null = null;
 let working: AbortController | null = null;
@@ -225,6 +228,7 @@ function failedWith(error: unknown): LektorServiceError['failure'] | null {
   if (error instanceof DOMException && error.name === 'AbortError') return null;
   if (error instanceof LektorServiceError) {
     lastFailureDetail = error.detail;
+    lastFailureAt = new Date();
     return error.failure;
   }
   console.error('The Lektor prototype failed', error);
@@ -329,13 +333,9 @@ const FAILURES: Readonly<Record<LektorServiceError['failure'], string>> = {
   'too-long': 'Tekst je predugačak za AI Lektora.',
 };
 
-/**
- * The number comes from Google's refusal, because the cap is theirs to change and differs
- * by model. Other limits, such as too many in a minute, are over sooner than "tomorrow".
- */
 function failureSentence(failure: LektorServiceError['failure']): string {
-  const dailyCap = failure === 'limit' ? /limit: (\d+) requests per day/.exec(lastFailureDetail)?.[1] : undefined;
-  return dailyCap === undefined ? FAILURES[failure] : `AI Lektor je potrošio današnjih ${dailyCap} pokušaja. Probaj ponovo sutra.`;
+  const dailyCap = failure === 'limit' ? dailyCapSentence(lastFailureDetail, lastFailureAt) : null;
+  return dailyCap ?? FAILURES[failure];
 }
 
 const askForFeedback = (text: string, signal: AbortSignal): Promise<string> => ai().feedback(text, signal);
