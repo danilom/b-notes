@@ -1,3 +1,4 @@
+import { strings } from '../src/language/wording.ts';
 import { titleFrom } from '../src/notes/note-title.ts';
 import { titleOf } from '../src/ui/dialogs/dialog-heading.ts';
 import { showAsModal } from '../src/ui/dialogs/modal.ts';
@@ -72,6 +73,9 @@ const MUCH_CHANGED = 0.2;
 const REVEAL_MS = 10_000;
 const TAKE_OVER_GRACE_MS = 1_500;
 const KEY_STORE = 'lektor-fake-key';
+/** Under this there is nothing for a reader to respond to: a title or a stray line, though not a short poem. */
+const FEWEST_WORDS = 10;
+const TOO_SHORT = 'Tekst je prekratak za AI Lektora.';
 
 function required<T extends HTMLElement>(id: string, kind: new () => T): T {
   const found = document.getElementById(id);
@@ -133,6 +137,10 @@ function stateNow(): TextState {
   };
   states.set(openKey, fresh);
   return fresh;
+}
+
+function wordsInText(): number {
+  return editor.value.split(/\s+/).filter((word) => word !== '').length;
 }
 
 function hasKey(): boolean {
@@ -308,7 +316,7 @@ function privacyWarning(): HTMLElement {
   warning.setAttribute('role', 'note');
   warning.append(
     heading,
-    el('p', 'lektor-line', 'Ceo tekst se šalje Guglu. Ne objavljuje se javno, ali je moguće da ga neko vidi.'),
+    el('p', 'lektor-line', `Ceo tekst (${strings('sr').wordCount(wordsInText())}) se šalje Guglu. Ne objavljuje se javno, ali je moguće da ga neko vidi.`),
     el('p', 'lektor-line', 'Ne šalji ništa što ne bi pokazao drugima: lične misli, tajne, lozinke i slično.'),
   );
   return warning;
@@ -320,11 +328,14 @@ function startScreen(): HTMLElement[] {
     render();
   }, 'lektor-link');
   const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', 'API ključ radi i sačuvan je.')] : [];
+  const send = button('Pošalji ceo tekst Guglu', () => void read(fakeFeedback), 'status-action');
+  send.disabled = wordsInText() < FEWEST_WORDS;
+  if (send.disabled) send.title = TOO_SHORT;
   return [
     ...saved,
     el('p', 'lektor-line', 'AI Lektor čita tvoj tekst, kaže šta misli i, ako želiš, predlaže ispravke.'),
     key,
-    footer([privacyWarning()], button('Pošalji', () => void read(fakeFeedback), 'status-action')),
+    footer([privacyWarning()], send),
   ];
 }
 
@@ -489,7 +500,10 @@ function render(): void {
   const state = stateNow();
   document.body.classList.toggle('lektor-open', state.isOpen);
   opener.setAttribute('aria-pressed', String(state.isOpen));
-  opener.disabled = editor.value.trim() === '';
+  // Never while open: he may have emptied the text with the Lektor still beside it, and this is a way to close it.
+  const isTooShort = wordsInText() < FEWEST_WORDS;
+  opener.disabled = isTooShort && !state.isOpen;
+  opener.title = opener.disabled ? TOO_SHORT : '';
   if (!state.isOpen) {
     side.replaceChildren();
     return;
