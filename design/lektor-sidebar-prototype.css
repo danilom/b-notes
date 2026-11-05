@@ -423,9 +423,10 @@ body.lektor-open #lektor-side {
   height: 1.1em;
 }
 
-/* Set apart from the row above by its side and its icon, and clearly something to press. */
+/* Set apart from the row above by a gap and its icon, and clearly something to press. */
 .lektor-fallible {
-  align-self: flex-end;
+  align-self: flex-start;
+  margin-top: 0.35rem;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
@@ -449,10 +450,17 @@ body.lektor-open #lektor-side {
   line-height: 1.4;
 }
 
-/* Set apart by colour, and not by weight: Tahoma has only regular and a heavy bold, with nothing between. */
+/* Set apart by the accent and not by weight: Tahoma has only regular and a heavy bold, with nothing between. */
 .lektor-side-title strong {
-  color: var(--ink);
+  color: var(--chosen-ink);
   font-weight: 400;
+}
+
+/* A section of its own, below the comment and whatever else may come to follow it. */
+.lektor-response ~ .lektor-side-foot {
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
 }
 
 .lektor-stale {

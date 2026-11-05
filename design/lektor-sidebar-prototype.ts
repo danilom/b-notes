@@ -471,7 +471,7 @@ function presetChoice(state: TextState): HTMLElement[] {
 
 /** He has never used AI, and this is the one place to say what it is, without saying it at him every time. */
 const ABOUT_AI =
-  'AI je program koji je učio iz ogromne količine tekstova i piše ono što zvuči verovatno. Ne razume tekst kao čovek i nema sopstveno iskustvo. Zato ponekad sa sigurnošću kaže nešto netačno: navod, činjenicu, ime. Ovaj komentar shvati kao mišljenje jednog čitaoca, a ne kao presudu.';
+  'AI je program koji je učio iz ogromne količine tekstova i piše ono što zvuči verovatno. Ne razume tekst kao čovek i nema sopstveno iskustvo. Zato ponekad sa sigurnošću kaže nešto netačno: navod, činjenicu, ime. Ovaj komentar je utisak AI programa, a ne stručna kritika.';
 
 /** Closed until he asks: an explanation repeated every time is one nobody reads. */
 function aboutAi(): HTMLElement[] {
@@ -500,6 +500,7 @@ function commentNotes(state: TextState): HTMLElement {
 }
 
 function goTo(screen: Screen): void {
+  isAboutAiOpen = false;
   stateNow().screen = screen;
   render();
 }
@@ -584,6 +585,7 @@ function goAway(): void {
 
 /** Whatever was underway stops, and what is left to come back to is a screen that doesn't depend on it. */
 function settleWhatWasUnderway(state: TextState): void {
+  isAboutAiOpen = false;
   if (state.screen === 'reading' || state.screen === 'connecting') {
     stopWorking();
     state.screen = state.feedback === '' ? 'start' : 'response';
