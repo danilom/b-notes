@@ -6,7 +6,7 @@ import { type CorrectionRequest, type LektorFailure, type LektorService, LektorS
   Google; in the app that part belongs to the main process. Nothing here logs text.
 */
 
-export const KEY_STORE = 'lektor-fake-key';
+const KEY_STORE = 'lektor-real-key';
 
 /** Best first. A model that is overloaded is passed over for the next, quietly: he can do nothing about it. */
 const FEEDBACK_MODELS = ['gemini-3.6-flash', 'gemini-3.1-flash-lite'];
@@ -58,7 +58,9 @@ async function callServer(body: object, signal: AbortSignal): Promise<{ status: 
   }
 }
 
-function messageOf(reply: unknown): string {
+function messageOf(answer: unknown): string {
+  // Interactions wraps its refusals in a list; the models endpoint doesn't.
+  const reply: unknown = Array.isArray(answer) ? answer.at(0) : answer;
   if (typeof reply !== 'object' || reply === null || !('error' in reply)) return '';
   const error = reply.error;
   if (typeof error !== 'object' || error === null || !('message' in error)) return '';
@@ -66,14 +68,15 @@ function messageOf(reply: unknown): string {
 }
 
 /** What a refusal means to him. Only the kinds he should hear differently are told apart. */
-function failureFor(status: number, reply: unknown): LektorFailure {
+function refusal(status: number, reply: unknown): LektorServiceError {
   const message = messageOf(reply);
-  if (status === 502) return 'offline';
-  if (status === 429) return 'limit';
-  if (status === 401 || status === 403 || /api.?key/i.test(message)) return 'bad-key';
-  if (status === 400 && /token|too long|too large|size/i.test(message)) return 'too-long';
+  const detail = `${status}: ${message}`;
   console.error('The Lektor service refused', { status, message });
-  return 'overloaded';
+  if (status === 502) return new LektorServiceError('offline', detail);
+  if (status === 429) return new LektorServiceError('limit', detail);
+  if (status === 401 || status === 403 || /api.?key/i.test(message)) return new LektorServiceError('bad-key', detail);
+  if (status === 400 && /token|too long|too large|size/i.test(message)) return new LektorServiceError('too-long', detail);
+  return new LektorServiceError('overloaded', detail);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -94,16 +97,23 @@ function wordsOf(reply: unknown): string | null {
 }
 
 async function ask(models: readonly string[], system: string, input: string, signal: AbortSignal): Promise<string> {
+  let lastTried = '';
   for (const model of models) {
     const { status, reply } = await callServer({ action: 'send', key: keyNow(), model, system, input }, signal);
-    if (status === 503 || status === 500) continue;
-    if (status !== 200) throw new LektorServiceError(failureFor(status, reply));
+    if (status === 503 || status === 500) {
+      lastTried = `${status}: ${messageOf(reply)}`;
+      console.warn('A Lektor model passed over', { model, status });
+      continue;
+    }
+    if (status !== 200) throw refusal(status, reply);
     const words = wordsOf(reply);
     const finished = !isRecord(reply) || reply['status'] === undefined || reply['status'] === 'completed';
-    if (words === null || words.trim() === '' || !finished) throw new LektorServiceError('cut-off');
+    if (words === null || words.trim() === '' || !finished) {
+      throw new LektorServiceError('cut-off', `${model}: ${isRecord(reply) ? String(reply['status']) : 'no reply'}`);
+    }
     return words;
   }
-  throw new LektorServiceError('overloaded');
+  throw new LektorServiceError('overloaded', lastTried);
 }
 
 /** Whatever it wrapped the text in, and an ending that matches his. */
@@ -121,19 +131,24 @@ async function corrections(request: CorrectionRequest, signal: AbortSignal): Pro
   const models = request.preset === 'wording' ? FEEDBACK_MODELS : CORRECTION_MODELS;
   const reply = await ask(models, `${request.instruction}${note}\n\n${CORRECTION_RULES}`, request.text, signal);
   const proposal = cleanedProposal(reply, request.text);
-  if (proposal.length < request.text.length * SHORTEST_SHARE_KEPT) throw new LektorServiceError('cut-off');
+  if (proposal.length < request.text.length * SHORTEST_SHARE_KEPT) {
+    throw new LektorServiceError('cut-off', `${proposal.length} characters back for ${request.text.length}`);
+  }
   return proposal;
 }
 
 export const realAi: LektorService = {
-  needsKey: () => false,
+  commentModel: FEEDBACK_MODELS[0] ?? '',
+  // The dev server has its own, from testdata/, for when none has been pasted.
+  hasKey: () => true,
+  rememberKey: (key) => window.sessionStorage.setItem(KEY_STORE, key),
   connectionCheck: async (signal) => {
-    const { status } = await callServer({ action: 'ping' }, signal);
-    if (status !== 200) throw new LektorServiceError('offline');
+    const { status, reply } = await callServer({ action: 'ping' }, signal);
+    if (status !== 200) throw new LektorServiceError('offline', `${status}: ${messageOf(reply)}`);
   },
   keyCheck: async (key, signal) => {
     const { status, reply } = await callServer({ action: 'check', key }, signal);
-    if (status !== 200) throw new LektorServiceError(failureFor(status, reply));
+    if (status !== 200) throw refusal(status, reply);
   },
   feedback: async (text, signal) => (await ask(FEEDBACK_MODELS, FEEDBACK_INSTRUCTION, text, signal)).trim(),
   secondLook: async (text, earlier, signal) => {

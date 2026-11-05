@@ -10,10 +10,13 @@ export type LektorFailure = 'offline' | 'overloaded' | 'limit' | 'bad-key' | 'cu
 
 export class LektorServiceError extends Error {
   readonly failure: LektorFailure;
+  /** What the service actually said, for whoever is looking into it. Not for him to have to read. */
+  readonly detail: string;
 
-  constructor(failure: LektorFailure) {
+  constructor(failure: LektorFailure, detail = '') {
     super(`The service answered: ${failure}`);
     this.failure = failure;
+    this.detail = detail;
   }
 }
 
@@ -33,8 +36,12 @@ export interface EarlierReading {
 }
 
 export interface LektorService {
-  /** Whether a key is needed from him, or the service has one already. */
-  needsKey: () => boolean;
+  /** The model that will write the comment. An overloaded one may be passed over for the next. */
+  commentModel: string;
+  /** Whether the service has a key, or needs one from him. */
+  hasKey: () => boolean;
+  /** Each service its own, so that a key typed for one never reaches the other. */
+  rememberKey: (key: string) => void;
   /** Whether the internet can be reached at all. */
   connectionCheck: (signal: AbortSignal) => Promise<void>;
   keyCheck: (key: string, signal: AbortSignal) => Promise<void>;

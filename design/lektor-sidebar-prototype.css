@@ -575,3 +575,9 @@ body.lektor-open #lektor-side {
   color: var(--quiet);
   font-size: 0.85em;
 }
+
+/* Means nothing to him and needn't, but what his text is going to should be written down. */
+.lektor-model {
+  color: var(--quiet);
+  font-size: 0.85em;
+}

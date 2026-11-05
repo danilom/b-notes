@@ -124,7 +124,9 @@ async function fakeCorrections(text: string, preset: PresetId, signal: AbortSign
 }
 
 export const fakeAi: LektorService = {
-  needsKey: () => true,
+  commentModel: 'probni, bez pravog AI',
+  hasKey: () => window.sessionStorage.getItem('lektor-fake-key') !== null,
+  rememberKey: (key) => window.sessionStorage.setItem('lektor-fake-key', key),
   connectionCheck: fakeConnectionCheck,
   keyCheck: (_key, signal) => fakeKeyCheck(signal),
   feedback: fakeFeedback,

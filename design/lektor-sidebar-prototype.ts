@@ -7,7 +7,7 @@ import { icon } from '../src/ui/icons.ts';
 import { openLektorDialog } from '../src/ui/lektor/lektor-dialog.ts';
 import { flashToast } from '../src/ui/toast.ts';
 import { BEHAVIOUR_KEY, fakeAi } from './lektor-fake-ai.ts';
-import { KEY_STORE, realAi } from './lektor-real-ai.ts';
+import { realAi } from './lektor-real-ai.ts';
 import { type LektorService, LektorServiceError, type PresetId } from './lektor-service.ts';
 
 /** Chosen in the his-screens harness, at each request. */
@@ -119,6 +119,7 @@ let keyDraft = '';
 let keyNote: KeyNote = null;
 let isKeyJustSaved = false;
 let isAboutAiOpen = false;
+let lastFailureDetail = '';
 let readingSince = 0;
 let waitNoteTimer: ReturnType<typeof setInterval> | null = null;
 let working: AbortController | null = null;
@@ -150,7 +151,7 @@ function stateNow(): TextState {
 const wordsInText = (): number => countWords(editor.value);
 
 function hasKey(): boolean {
-  return !ai().needsKey() || window.sessionStorage.getItem(KEY_STORE) !== null;
+  return ai().hasKey();
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, text = ''): HTMLElementTagNameMap[K] {
@@ -214,8 +215,12 @@ function stopRevealing(): void {
 
 function failedWith(error: unknown): LektorServiceError['failure'] | null {
   if (error instanceof DOMException && error.name === 'AbortError') return null;
-  if (error instanceof LektorServiceError) return error.failure;
+  if (error instanceof LektorServiceError) {
+    lastFailureDetail = error.detail;
+    return error.failure;
+  }
   console.error('The Lektor prototype failed', error);
+  lastFailureDetail = String(error);
   return 'overloaded';
 }
 
@@ -292,7 +297,7 @@ async function checkKey(): Promise<void> {
   render();
   try {
     await ai().keyCheck(keyDraft, controller.signal);
-    window.sessionStorage.setItem(KEY_STORE, keyDraft);
+    ai().rememberKey(keyDraft);
     keyDraft = '';
     keyNote = null;
     isKeyJustSaved = true;
@@ -324,10 +329,15 @@ const KEY_NOTES: Readonly<Record<Exclude<KeyNote, 'checking' | null>, string>> =
   unavailable: 'Ključ sada ne može da se proveri. Probaj kasnije.',
 };
 
-/** Something didn't work: recognisable by its icon and edge before a word of it is read. */
+/**
+ * Something didn't work: recognisable by its icon before a word of it is read. What the
+ * service actually said is under the pointer, for whoever is looking into it; he need
+ * never meet it, and the app's own log is where it belongs in the end.
+ */
 function problem(sentence: string): HTMLElement {
   const box = el('div', 'lektor-problem');
   box.setAttribute('role', 'alert');
+  box.title = lastFailureDetail;
   box.append(icon('problem'), el('p', 'lektor-line', sentence));
   return box;
 }
@@ -384,6 +394,7 @@ function startScreen(): HTMLElement[] {
     ...existing,
     ...saved,
     el('p', 'lektor-line', 'AI Lektor čita tvoj tekst, kaže šta misli i, ako želiš, predlaže ispravke.'),
+    el('p', 'lektor-model', `Model: ${ai().commentModel}`),
     key,
     footer([privacyWarning()], send),
   ];
@@ -442,7 +453,10 @@ function readingScreen(): HTMLElement[] {
 
 function failedScreen(): HTMLElement[] {
   const failure = stateNow().failure ?? 'overloaded';
+  const top = el('div', 'lektor-back-row');
+  top.append(backButton('Nazad', 'start'));
   return [
+    top,
     problem(FAILURES[failure]),
     footer([], button('Pokušaj ponovo', () => void read(askForFeedback), 'status-action')),
   ];
@@ -592,7 +606,7 @@ function correctionsScreen(): HTMLElement[] {
 const TITLES: Readonly<Record<Screen, string>> = {
   connecting: 'AI Lektor',
   offline: 'AI Lektor',
-  start: 'AI Lektor',
+  start: 'AI Lektor: slanje teksta',
   key: 'AI Lektor: podešavanje',
   reading: 'AI čita tekst',
   failed: 'AI Lektor',
