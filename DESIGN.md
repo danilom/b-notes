@@ -31,7 +31,7 @@ The consequences that shape the code:
 - He should never see a file dialog or a filesystem path. The word "save" is fine in a sentence like "saved 2 minutes ago"; what's forbidden is requiring him to save.
 - His work must never be lost. Autosave is the only save.
 - No jargon in UI text. No modal that can be dismissed into a wrong state.
-- Errors are our problem, not his — recover silently where possible; never surface a stack trace, error code, or a question he can't answer.
+- Errors are our problem, not his — recover silently where possible; never surface a stack trace, error code, or a question he can't answer. The one exception is what a remote service said, word for word, under our own sentence: small, grey and plainly extra, so he can read it out to whoever is helping him. Our own errors stay out of sight.
 - Files live in a Dropbox folder so they're backed up and synced. He must never need to know that.
 - He uses several machines, including old ones, and tends to reach for the slowest. Assume a 4GB spinning-disk laptop: keep the renderer lean and don't pull in heavy UI or editor libraries.
 - Because several machines sync the same folder, Dropbox *will* eventually produce conflicted copies (`essay (Brano's conflicted copy 2026-09-18).md`). Detect them, never show him that filename, and resolve them without asking him to choose between two files he can't tell apart. Never hide one: until it is resolved, it is his writing. In practice an old name brought back by another machine's Resoph is far more common than a conflicted copy — see *His files are Resoph's* below.
