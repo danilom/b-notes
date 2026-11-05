@@ -31,6 +31,7 @@ export type IconName =
   | 'settings'
   | 'move-out'
   | 'hide-list'
+  | 'fold-down'
   | 'show-list';
 
 const PATHS = {
@@ -50,6 +51,8 @@ const PATHS = {
   // chevrons-left and chevrons-right.
   'hide-list': ['m11 17-5-5 5-5', 'm18 17-5-5 5-5'],
   'show-list': ['m6 17 5-5-5-5', 'm13 17 5-5-5-5'],
+  // Closing down, into the button under it: Lucide's chevrons-down.
+  'fold-down': ['m7 6 5 5 5-5', 'm7 13 5 5 5-5'],
   // Two sheets, one behind the other: Lucide's copy. The front one is drawn
   // as a <rect>, written out as a path because this only draws paths.
   copy: [

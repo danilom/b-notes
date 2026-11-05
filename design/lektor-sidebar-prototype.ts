@@ -388,7 +388,9 @@ function render(): void {
   const body = el('div', 'lektor-side-body');
   body.append(...SCREENS[state.screen]());
   const title = el('div', 'lektor-side-title');
-  title.append(icon('lektor'), document.createTextNode(TITLES[state.screen]), button('Zatvori', goAway, 'lektor-side-close'));
+  const close = button('Zatvori', goAway, 'lektor-side-close');
+  close.append(icon('fold-down'));
+  title.append(icon('lektor'), document.createTextNode(TITLES[state.screen]), close);
   side.replaceChildren(title, body);
 }
 
