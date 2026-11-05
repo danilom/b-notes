@@ -65,9 +65,88 @@ async function readDiffSamples() {
   );
 }
 
+/*
+  For trying the Lektor prototype on real Gemini. Here because the key must not be
+  in the page, as in the app it will live in the main process. The key comes from the
+  page if he pasted one, or else from testdata/, which git ignores. Logs no text.
+*/
+const GEMINI = 'https://generativelanguage.googleapis.com/v1beta';
+const GEMINI_KEY_FILE = path.resolve('testdata/gemini-key.txt');
+const GEMINI_API_REVISION = '2026-05-20';
+const LARGEST_REQUEST_BYTES = 4 * 1024 * 1024;
+
+async function geminiKey(given) {
+  if (typeof given === 'string' && given !== '') return given;
+  try {
+    return (await readFile(GEMINI_KEY_FILE, 'utf8')).trim();
+  } catch (error) {
+    if (error.code === 'ENOENT') return '';
+    throw error;
+  }
+}
+
+async function bodyOf(request) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > LARGEST_REQUEST_BYTES) throw new Error('Request too large');
+    chunks.push(chunk);
+  }
+  return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+}
+
+async function askGemini(asked) {
+  const headers = { 'x-goog-api-key': await geminiKey(asked.key), 'Api-Revision': GEMINI_API_REVISION };
+  if (asked.action === 'ping') {
+    // Any answer at all means the internet is there, whatever Google thinks of the request.
+    await fetch(`${GEMINI}/models?pageSize=1`, { signal: AbortSignal.timeout(8_000) });
+    return new Response('{}', { status: 200 });
+  }
+  if (asked.action === 'check') {
+    return fetch(`${GEMINI}/models?pageSize=1`, { headers, signal: AbortSignal.timeout(15_000) });
+  }
+  return fetch(`${GEMINI}/interactions`, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    // store: false, so Google keeps no conversation of its own.
+    body: JSON.stringify({ model: asked.model, system_instruction: asked.system, input: asked.input, store: false }),
+    signal: AbortSignal.timeout(180_000),
+  });
+}
+
+async function serveLektorAi(request, response) {
+  // Never to anyone else on the network: this spends the key.
+  const from = request.socket.remoteAddress ?? '';
+  if (!['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(from)) {
+    response.writeHead(403).end('Forbidden');
+    return;
+  }
+  const answer = (status, body) => {
+    response.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+    response.end(body);
+  };
+  try {
+    const asked = await bodyOf(request);
+    const started = Date.now();
+    const reply = await askGemini(asked);
+    console.log('Lektor AI', asked.action, asked.model ?? '', reply.status, `${Date.now() - started} ms`);
+    answer(reply.status, await reply.text());
+  } catch (error) {
+    // Couldn't reach Google at all: what the page reads as being offline.
+    console.error('Lektor AI could not reach Gemini:', error.name);
+    answer(502, JSON.stringify({ error: { message: error.name } }));
+  }
+}
+
 const server = createServer((request, response) => {
   const requested = new URL(request.url ?? '/', 'http://localhost');
   const relative = requested.pathname === '/' ? 'index.html' : requested.pathname.slice(1);
+
+  if (relative === 'lektor-ai' && request.method === 'POST') {
+    void serveLektorAi(request, response);
+    return;
+  }
 
   // Empties this origin's storage and starts again, so an empty browser fills
   // afresh from the corpus — after regenerating it, or to undo a session.

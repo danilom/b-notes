@@ -1,11 +1,8 @@
 import { fetchRealSamples } from './diff-prototype-samples.ts';
+import { type LektorService, LektorServiceError, type PresetId } from './lektor-service.ts';
 
 /** How the pretend service behaves, chosen in the his-screens harness. */
-export type FakeBehaviour = 'ok' | 'slow' | 'offline' | 'overloaded' | 'limit' | 'bad-key' | 'cut-off';
-
-export type FakeFailure = Exclude<FakeBehaviour, 'ok' | 'slow'>;
-
-export type PresetId = 'letters' | 'grammar' | 'wording';
+type FakeBehaviour = 'ok' | 'slow' | 'offline' | 'overloaded' | 'limit' | 'bad-key' | 'cut-off';
 
 export const BEHAVIOUR_KEY = 'lektor-fake-behaviour';
 
@@ -14,15 +11,6 @@ const CORRECTING_MS = 3_000;
 const CONNECTING_MS = 700;
 const CHECKING_KEY_MS = 1_500;
 const SLOW_FACTOR = 8;
-
-export class FakeServiceError extends Error {
-  readonly failure: FakeFailure;
-
-  constructor(failure: FakeFailure) {
-    super(`The pretend service answered: ${failure}`);
-    this.failure = failure;
-  }
-}
 
 function behaviourNow(): FakeBehaviour {
   const chosen = window.localStorage.getItem(BEHAVIOUR_KEY);
@@ -44,20 +32,20 @@ async function wait(ms: number, signal: AbortSignal): Promise<void> {
 async function pretendToWork(ms: number, signal: AbortSignal): Promise<void> {
   await wait(ms, signal);
   const behaviour = behaviourNow();
-  if (behaviour !== 'ok' && behaviour !== 'slow') throw new FakeServiceError(behaviour);
+  if (behaviour !== 'ok' && behaviour !== 'slow') throw new LektorServiceError(behaviour);
 }
 
 /**
  * Whether the internet can be reached at all. Only being offline counts as failing
  * here: a service having a bad moment is for the request that meets it to report.
  */
-export async function fakeConnectionCheck(signal: AbortSignal): Promise<void> {
+async function fakeConnectionCheck(signal: AbortSignal): Promise<void> {
   await wait(CONNECTING_MS, signal);
-  if (behaviourNow() === 'offline') throw new FakeServiceError('offline');
+  if (behaviourNow() === 'offline') throw new LektorServiceError('offline');
 }
 
 /** Asks the service whether it takes this key. */
-export async function fakeKeyCheck(signal: AbortSignal): Promise<void> {
+async function fakeKeyCheck(signal: AbortSignal): Promise<void> {
   await pretendToWork(CHECKING_KEY_MS, signal);
 }
 
@@ -73,7 +61,7 @@ const quoted = (sentence: string): string => {
 };
 
 /** A stand-in for a reader's response: canned, but it does quote the text in front of him. */
-export async function fakeFeedback(text: string, signal: AbortSignal): Promise<string> {
+async function fakeFeedback(text: string, signal: AbortSignal): Promise<string> {
   await pretendToWork(READING_MS, signal);
   const sentences = sentencesOf(text);
   const kept = sentences.at(Math.floor(sentences.length / 3)) ?? text.trim();
@@ -86,7 +74,7 @@ export async function fakeFeedback(text: string, signal: AbortSignal): Promise<s
 }
 
 /** A second look that carries on from the first, rather than starting over. */
-export async function fakeSecondLook(text: string, signal: AbortSignal): Promise<string> {
+async function fakeSecondLook(text: string, signal: AbortSignal): Promise<string> {
   await pretendToWork(READING_MS, signal);
   const sentence = sentencesOf(text).at(0) ?? text.trim();
   return [
@@ -128,8 +116,17 @@ function madeUpProposal(text: string, preset: PresetId): string {
 }
 
 /** The saved proposal where the text is one of the local samples; otherwise a made-up one. */
-export async function fakeCorrections(text: string, preset: PresetId, signal: AbortSignal): Promise<string> {
+async function fakeCorrections(text: string, preset: PresetId, signal: AbortSignal): Promise<string> {
   await pretendToWork(CORRECTING_MS, signal);
   const samples = await fetchRealSamples();
   return samples.find((sample) => sample.current === text)?.proposed ?? madeUpProposal(text, preset);
 }
+
+export const fakeAi: LektorService = {
+  needsKey: () => true,
+  connectionCheck: fakeConnectionCheck,
+  keyCheck: (_key, signal) => fakeKeyCheck(signal),
+  feedback: fakeFeedback,
+  secondLook: (text, _earlier, signal) => fakeSecondLook(text, signal),
+  corrections: ({ text, preset }, signal) => fakeCorrections(text, preset, signal),
+};

@@ -6,16 +6,12 @@ import { showAsModal } from '../src/ui/dialogs/modal.ts';
 import { icon } from '../src/ui/icons.ts';
 import { openLektorDialog } from '../src/ui/lektor/lektor-dialog.ts';
 import { flashToast } from '../src/ui/toast.ts';
-import {
-  BEHAVIOUR_KEY,
-  FakeServiceError,
-  type PresetId,
-  fakeConnectionCheck,
-  fakeCorrections,
-  fakeFeedback,
-  fakeKeyCheck,
-  fakeSecondLook,
-} from './lektor-fake-ai.ts';
+import { BEHAVIOUR_KEY, fakeAi } from './lektor-fake-ai.ts';
+import { KEY_STORE, realAi } from './lektor-real-ai.ts';
+import { type LektorService, LektorServiceError, type PresetId } from './lektor-service.ts';
+
+/** Chosen in the his-screens harness, at each request. */
+const ai = (): LektorService => (window.localStorage.getItem(BEHAVIOUR_KEY) === 'real' ? realAi : fakeAi);
 
 /*
   The Lektor beside the real app, loaded into it by the his-screens harness. Not
@@ -60,7 +56,7 @@ const PRESETS: readonly Preset[] = [
 interface TextState {
   isOpen: boolean;
   screen: Screen;
-  failure: FakeServiceError['failure'] | null;
+  failure: LektorServiceError['failure'] | null;
   feedback: string;
   /** Whether the response has finished appearing, so it isn't played again on coming back. */
   isRevealed: boolean;
@@ -76,7 +72,6 @@ const MUCH_CHANGED = 0.2;
 const REVEAL_MS = 10_000;
 const FOLLOWING_SLACK_PX = 40;
 const TAKE_OVER_GRACE_MS = 1_500;
-const KEY_STORE = 'lektor-fake-key';
 /** Under this there is nothing for a reader to respond to: a title or a stray line, though not a short poem. */
 const FEWEST_WORDS = 10;
 const TOO_SHORT = 'Tekst je prekratak za AI Lektora.';
@@ -148,7 +143,7 @@ function stateNow(): TextState {
 const wordsInText = (): number => countWords(editor.value);
 
 function hasKey(): boolean {
-  return window.sessionStorage.getItem(KEY_STORE) !== null;
+  return !ai().needsKey() || window.sessionStorage.getItem(KEY_STORE) !== null;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, text = ''): HTMLElementTagNameMap[K] {
@@ -185,9 +180,9 @@ function stopRevealing(): void {
   revealTimer = null;
 }
 
-function failedWith(error: unknown): FakeServiceError['failure'] | null {
+function failedWith(error: unknown): LektorServiceError['failure'] | null {
   if (error instanceof DOMException && error.name === 'AbortError') return null;
-  if (error instanceof FakeServiceError) return error.failure;
+  if (error instanceof LektorServiceError) return error.failure;
   console.error('The Lektor prototype failed', error);
   return 'overloaded';
 }
@@ -228,7 +223,7 @@ async function checkConnection(): Promise<void> {
   state.screen = 'connecting';
   render();
   try {
-    await fakeConnectionCheck(controller.signal);
+    await ai().connectionCheck(controller.signal);
     state.screen = 'start';
   } catch (error) {
     if (failedWith(error) === null) return;
@@ -249,7 +244,7 @@ function connectingScreen(): HTMLElement[] {
   return [el('p', 'lektor-reading', 'Proveravam vezu sa internetom…')];
 }
 
-function keyNoteOf(failure: FakeServiceError['failure'] | null): KeyNote {
+function keyNoteOf(failure: LektorServiceError['failure'] | null): KeyNote {
   if (failure === 'bad-key') return 'refused';
   return failure === 'offline' ? 'offline' : 'unavailable';
 }
@@ -263,7 +258,7 @@ async function checkKey(): Promise<void> {
   keyNote = 'checking';
   render();
   try {
-    await fakeKeyCheck(controller.signal);
+    await ai().keyCheck(keyDraft, controller.signal);
     window.sessionStorage.setItem(KEY_STORE, keyDraft);
     keyDraft = '';
     keyNote = null;
@@ -279,13 +274,16 @@ async function checkKey(): Promise<void> {
   render();
 }
 
-const FAILURES: Readonly<Record<FakeServiceError['failure'], string>> = {
+const FAILURES: Readonly<Record<LektorServiceError['failure'], string>> = {
   overloaded: 'AI Lektor sada ne radi. Probaj kasnije.',
   limit: 'AI Lektor je potrošio pokušaje. Probaj kasnije.',
   'bad-key': 'API ključ ne radi.',
   'cut-off': 'AI Lektor nije završio. Probaj ponovo.',
   offline: 'Internet ne radi, a AI Lektoru je potreban.',
+  'too-long': 'Tekst je predugačak za AI Lektora.',
 };
+
+const askForFeedback = (text: string, signal: AbortSignal): Promise<string> => ai().feedback(text, signal);
 
 const KEY_NOTES: Readonly<Record<Exclude<KeyNote, 'checking' | null>, string>> = {
   refused: 'API ključ ne radi. Da li je zalepljen ceo?',
@@ -344,7 +342,7 @@ function startScreen(): HTMLElement[] {
     render();
   }, 'lektor-link');
   const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', 'API ključ radi i sačuvan je.')] : [];
-  const send = button('Pošalji ceo tekst Guglu', () => void read(fakeFeedback), 'status-action');
+  const send = button('Pošalji ceo tekst Guglu', () => void read(askForFeedback), 'status-action');
   send.disabled = wordsInText() < FEWEST_WORDS;
   if (send.disabled) send.title = TOO_SHORT;
   // Having come here to send again, he may think better of it: the comment he has is still there.
@@ -413,7 +411,7 @@ function failedScreen(): HTMLElement[] {
   const failure = stateNow().failure ?? 'overloaded';
   return [
     problem(FAILURES[failure]),
-    footer([], button('Pokušaj ponovo', () => void read(fakeFeedback), 'status-action')),
+    footer([], button('Pokušaj ponovo', () => void read(askForFeedback), 'status-action')),
   ];
 }
 
@@ -457,7 +455,7 @@ function staleNote(state: TextState): HTMLElement | null {
   const note = el('div', isMuchChanged ? 'lektor-stale lektor-stale-much' : 'lektor-stale');
   note.append(
     el('span', '', isMuchChanged ? 'Tekst se dosta promenio otkad ga je AI Lektor čitao.' : 'AI Lektor je čitao raniju verziju.'),
-    button('Neka pogleda šta sam promenio', () => void read(fakeSecondLook), 'lektor-link'),
+    button('Neka pogleda šta sam promenio', () => void read((text, signal) => ai().secondLook(text, { text: state.readText, comment: state.feedback }, signal)), 'lektor-link'),
   );
   return note;
 }
@@ -656,7 +654,8 @@ async function correct(): Promise<void> {
   const leave = (): void => controller.abort();
   const waiting = showAsModal(dialog, plainPanel('AI Lektor ispravlja tekst…',[button('Prekini', leave)]), leave);
   try {
-    const proposed = await fakeCorrections(text, state.preset, controller.signal);
+    const instruction = PRESETS.find((preset) => preset.id === state.preset)?.prompt ?? '';
+    const proposed = await ai().corrections({ text, preset: state.preset, instruction, note: state.note }, controller.signal);
     waiting.close();
     review(text, proposed);
   } catch (error) {
