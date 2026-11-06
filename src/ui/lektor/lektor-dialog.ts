@@ -116,11 +116,11 @@ export function openLektorDialog(
   }
 
   /**
-   * Asks only if he has decided something. Asking every time would teach him to
-   * answer without reading, and a proposal he hasn't touched is seconds to get back.
+   * Asks whenever there is something to lose. These took minutes and may have cost real
+   * money, so closing them must never be one stray click, whether he has decided anything or not.
    */
   function leave(): void {
-    if (!review.hasDecisions()) {
+    if (!hasAnything) {
       handlers.onClose();
       return;
     }
@@ -128,7 +128,7 @@ export function openLektorDialog(
       confirmContainer,
       {
         title: { mark: 'lektor', label: said.leaveLabel, name: title },
-        body: said.leaveBody,
+        body: review.hasDecisions() ? said.leaveBodyDecided : said.leaveBody,
         confirm: said.leaveLabel,
         cancel: said.leaveCancel,
         danger: true,

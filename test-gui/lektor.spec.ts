@@ -114,6 +114,9 @@ test('will not open kept corrections once the text has changed', async ({ page }
   await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
   await expect(page.getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible({ timeout: 15_000 });
   await page.locator('#lektor-dialog button.close').click();
+  // Not one stray click away: these may have cost money.
+  await expect(page.locator('body')).toHaveClass(/lektor-open/);
+  await page.locator('#confirm').getByRole('button', { name: 'Zatvori bez unošenja' }).click();
   await expect(page.locator('body')).not.toHaveClass(/lektor-open/);
 
   await page.locator('#lektor-open').click();
