@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, it } from 'node:test';
 
 import { claudeAi } from '../design/lektor-claude-ai.ts';
 import { geminiAi } from '../design/lektor-gemini-ai.ts';
-import { correctionInstruction, proposalFrom, withHisFirstLine } from '../design/lektor-instructions.ts';
+import { correctionInstruction, proposalFrom, withHisFilingMarks } from '../design/lektor-instructions.ts';
 import { type LektorFailure, type LektorService, LektorServiceError } from '../design/lektor-service.ts';
 
 /*
@@ -206,25 +206,36 @@ describe('correctionInstruction', () => {
   });
 });
 
-describe('withHisFirstLine', () => {
-  it('undoes a corrected spelling in the title and leaves the rest of the correction', () => {
-    assert.equal(withHisFirstLine('Cuprija- Sumrak\n\nStari most.\n', 'Ćuprija – Sumrak\n\nStari, stari most.\n'), 'Cuprija- Sumrak\n\nStari, stari most.\n');
+describe('withHisFilingMarks', () => {
+  it('lets the title\'s words be corrected', () => {
+    assert.equal(withHisFilingMarks('Cuprija- Sumrak\n\nStari most.\n', 'Ćuprija – Sumrak\n\nStari, stari most.\n'), 'Ćuprija – Sumrak\n\nStari, stari most.\n');
   });
 
-  it('keeps the marks his filing relies on', () => {
-    assert.equal(withHisFirstLine('* * Pismo( konacno)\nTekst\n', 'Pismo (konačno)\nTekst.\n'), '* * Pismo( konacno)\nTekst.\n');
+  it('puts back the marks his filing relies on when the reply tidied them away', () => {
+    assert.equal(withHisFilingMarks('* * Pismo( konacno)\nTekst\n', 'Pismo (konačno)\nTekst.\n'), '* * Pismo (konačno)\nTekst.\n');
+    assert.equal(withHisFilingMarks('AA(E)Kafana\nTekst\n', 'Kafana\nTekst.\n'), 'AA(E)Kafana\nTekst.\n');
+    assert.equal(withHisFilingMarks('(UP) II   12 Grad\nTekst\n', 'Grad\nTekst.\n'), '(UP) II   12 Grad\nTekst.\n');
   });
 
-  it('keeps blank lines and spaces before his title', () => {
-    assert.equal(withHisFirstLine('\n    Naslov\nTekst\n', 'Naslov\nTekst.\n'), '\n    Naslov\nTekst.\n');
+  it('does not double the marks when the reply kept them', () => {
+    assert.equal(withHisFilingMarks('  * Pismo\nTekst\n', '  * Pismo!\nTekst.\n'), '  * Pismo!\nTekst.\n');
+    assert.equal(withHisFilingMarks('  * Pismo\nTekst\n', '* Pismo\nTekst.\n'), '  * Pismo\nTekst.\n');
+  });
+
+  it('keeps blank lines and ranking spaces before his title', () => {
+    assert.equal(withHisFilingMarks('\n    Naslov\nTekst\n', 'Naslov\nTekst.\n'), '\n    Naslov\nTekst.\n');
+  });
+
+  it('accepts a title reworded altogether, keeping only its filing', () => {
+    assert.equal(withHisFilingMarks('zz Stari most\n\nDjed je govorio.\n', 'Most nad vodom\n\nDjed reče.\n'), 'zz Most nad vodom\n\nDjed reče.\n');
   });
 
   it('puts his title back on top when the reply dropped it, losing nothing', () => {
-    assert.equal(withHisFirstLine('Stari most\n\nDjed je govorio.\n', 'Djed je rekao.\n'), 'Stari most\n\nDjed je rekao.\n');
+    assert.equal(withHisFilingMarks('Stari most\n\nDjed je govorio.\n', 'Djed je rekao.\n'), 'Stari most\n\nDjed je rekao.\n');
   });
 
   it('leaves a reply with no lines to the check for short replies', () => {
-    assert.equal(withHisFirstLine('Naslov\n', '  '), '  ');
+    assert.equal(withHisFilingMarks('Naslov\n', '  '), '  ');
   });
 });
 

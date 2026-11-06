@@ -2,7 +2,7 @@ import { describeWhen, strings } from '../src/language/wording.ts';
 import { titleFrom } from '../src/notes/note-title.ts';
 import { elapsedLine } from './lektor-elapsed-time.ts';
 import { readKeptResults, writeKeptResults } from './lektor-kept-results.ts';
-import { withHisFirstLine } from './lektor-instructions.ts';
+import { withHisFilingMarks } from './lektor-instructions.ts';
 import { countWords } from '../src/notes/word-count.ts';
 import { titleOf } from '../src/ui/dialogs/dialog-heading.ts';
 import { showAsModal } from '../src/ui/dialogs/modal.ts';
@@ -894,7 +894,7 @@ async function correct(): Promise<void> {
   try {
     const instruction = PRESETS.find((preset) => preset.id === state.preset)?.prompt ?? '';
     const asked = { text, preset: state.preset, instruction, note: state.note };
-    const proposed = withHisFirstLine(text, await ai().corrections(asked, controller.signal));
+    const proposed = withHisFilingMarks(text, await ai().corrections(asked, controller.signal));
     state.proposal = proposed;
     state.proposalFor = text;
     keepResults(textKey, state);

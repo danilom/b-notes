@@ -122,6 +122,23 @@ export function titlePartsOf(titleLine: string): TitleParts {
 }
 
 /**
+ * The front of a title that files it rather than names it, exactly as typed: his ranking
+ * spaces, his mark and place in a series, his star, and any other signs before the first word.
+ * All of it, even where the list would draw less, for putting back after someone else's
+ * correction. A title of nothing but marks is all front.
+ */
+export function filingFrontOf(titleLine: string): string {
+  const spaces = /^\s*/.exec(titleLine)?.[0] ?? '';
+  const mark = markAt(titleLine.slice(spaces.length), MARKS, (after) => CAPITALISED_WORD.test(after));
+  let rest = mark?.rest ?? titleLine.slice(spaces.length);
+  const place = mark?.numbered === true ? SERIES_POSITION.exec(rest) : null;
+  if (place !== null) rest = rest.slice(place[0].length);
+  rest = markAt(rest, STARS, () => true)?.rest ?? rest;
+  const signs = /^[\s\p{P}\p{S}]*/u.exec(rest)?.[0] ?? '';
+  return titleLine.slice(0, titleLine.length - rest.length + signs.length);
+}
+
+/**
  * The first of these marks the text starts with, and what follows it — or
  * null where none does, or where what follows says the letters are a word.
  *

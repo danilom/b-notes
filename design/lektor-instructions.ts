@@ -1,3 +1,4 @@
+import { filingFrontOf } from '../src/notes/title-marks.ts';
 import { type CorrectionRequest, type EarlierReading, LektorServiceError } from './lektor-service.ts';
 
 /*
@@ -67,18 +68,22 @@ function isSameLine(his: string, theirs: string): boolean {
 }
 
 /**
- * Puts his title line back exactly as he wrote it, whatever was asked for and whatever came back:
- * it holds his filing, in marks and spellings no corrector can know the point of. The app does this
- * itself because asking the model hasn't been shown to be enough. If the reply dropped the title
- * rather than changing it, his goes back on top, since replacing the first line would lose a real one.
+ * Puts back the part of his title that files the text, whatever came back: the spaces and marks
+ * mean nothing to a corrector, and the app does this itself because asking hasn't been shown to be
+ * enough. The words after them are the corrector's to change, in the review like any others.
+ * If the reply dropped the title and started with what comes after it, his whole line goes back
+ * on top, since treating the reply's first line as a title would lose a real line of the text.
  */
-export function withHisFirstLine(original: string, proposal: string): string {
+export function withHisFilingMarks(original: string, proposal: string): string {
   const his = FIRST_LINE.exec(original);
   const theirs = FIRST_LINE.exec(proposal);
   if (his === null || theirs === null) return proposal;
-  const hisHead = original.slice(0, his.index + his[0].length);
-  if (!isSameLine(his[0], theirs[0])) return `${hisHead}\n\n${proposal.trimStart()}`;
-  return hisHead + proposal.slice(theirs.index + theirs[0].length);
+  const hisEnd = his.index + his[0].length;
+  const hisNextLine = FIRST_LINE.exec(original.slice(hisEnd))?.[0];
+  const droppedTitle = !isSameLine(his[0], theirs[0]) && hisNextLine !== undefined && isSameLine(hisNextLine, theirs[0]);
+  if (droppedTitle) return `${original.slice(0, hisEnd)}\n\n${proposal.trimStart()}`;
+  const theirWords = theirs[0].slice(filingFrontOf(theirs[0]).length);
+  return original.slice(0, his.index) + filingFrontOf(his[0]) + theirWords + proposal.slice(theirs.index + theirs[0].length);
 }
 
 /** A reply that came back much shorter is not offered: already accepted in the review, it would delete his text. */

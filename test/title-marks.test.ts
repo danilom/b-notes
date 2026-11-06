@@ -1,10 +1,44 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { type TitleParts, titlePartsOf } from '../src/notes/title-marks.ts';
+import { filingFrontOf, type TitleParts, titlePartsOf } from '../src/notes/title-marks.ts';
 
 /** What a title with no marks reads as: itself, spaces collapsed. */
 const unmarked = (name: string): TitleParts => ({ mark: null, position: null, starred: false, name });
+
+describe('the front of a title that files it', () => {
+  const cases: [string, string][] = [
+    ['Grad', ''],
+    ['    Grad', '    '],
+    ['*Grad', '*'],
+    ['  * * Grad', '  * * '],
+    ['A* Grad', 'A* '],
+    ['AA Grad', 'AA '],
+    ['AAGrad', 'AA'],
+    ['AA(E)Grad', 'AA(E)'],
+    ['A (E) Grad', 'A (E) '],
+    ['zzz Grad', 'zzz '],
+    ['(UP) II   12 Grad', '(UP) II   12 '],
+    ['*(UP) 3 Grad', '*(UP) 3 '],
+    ['(UP) * Grad', '(UP) * '],
+    ['- Grad', '- '],
+  ];
+  for (const [title, front] of cases) {
+    it(`is ${JSON.stringify(front)} in ${JSON.stringify(title)}`, () => {
+      assert.equal(filingFrontOf(title), front);
+    });
+  }
+
+  it('leaves letters that only look like a mark as his word', () => {
+    assert.equal(filingFrontOf('AABB grupa'), '');
+    assert.equal(filingFrontOf('zz1'), '');
+    assert.equal(filingFrontOf('yes sir'), '');
+  });
+
+  it('is the whole title when there is nothing but marks', () => {
+    assert.equal(filingFrontOf('  * '), '  * ');
+  });
+});
 
 /*
   The shapes below are his, from his Resoph folder; the words are invented.
