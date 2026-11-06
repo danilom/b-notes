@@ -182,6 +182,7 @@ whether the sentence is about the screen, about a thing on it, or about an act
 | `src/ui/versions/` | everywhere | the copies kept of a text, and stepping through what changed |
 | `src/ui/settings/` | everywhere | how the app looks and where it reads from, and what remembers both |
 | `src/ui/dialogs/` | everywhere | the modal wrapper, the heading every dialog uses, and the general confirm |
+| `src/ui/lektor/` | everywhere | the AI Lektor: its sidebar, review dialog and services; the network itself is `src/platform/lektor-remote.ts` |
 | `src/hosts/electron/` | only the packaged app | lifecycle, the preload bridge, updates, the log file, the real filesystem |
 | `src/hosts/mockup/` | only the browser | a pretend filesystem, and the test corpus it's filled with |
 
@@ -192,6 +193,7 @@ whether the sentence is about the screen, about a thing on it, or about an act
 | his texts, as Resoph keeps them | his Resoph folder (Dropbox) | read and never written: Resoph puts back anything changed there |
 | his texts b-notes has written | b-notes' folder, beside Resoph's (Dropbox) | backed up and synced; he never sees the path |
 | `settings.json` | b-notes' folder | which letters and which colour are taste, and travel with him |
+| `lektor.json` | b-notes' folder | the Lektor's keys and which one he chose; one paste serves every machine. Holds keys, so it is never logged |
 | `Obrisano/` | b-notes' folder | texts he has deleted, with what he wrote in them |
 | `Verzije/` | b-notes' folder | what a text said before he emptied it or Resoph changed it; `Obrisano/Verzije/` once the text itself is put away |
 | `Arhiva/` | b-notes' folder | writing from old machines and exports, one folder per source, `.md` or `.txt` as it arrived; read as it is, titled from its name where only the name has the title (`archived-text.ts`), and written in b-notes' shape only when he brings a text back |
@@ -200,6 +202,8 @@ whether the sentence is about the screen, about a thing on it, or about an act
 | `folders.json` | `userData` | where his Resoph folder and b-notes' are, if someone chose; otherwise Resoph's own settings say, and b-notes' goes beside it |
 | `resoph-copies/` | `userData` | Resoph's database, copied before b-notes ends Resoph; the ten newest |
 | `logs/` | `userData` | ours, per machine, safe to delete |
+| `lektor-kept/` | `userData` | the last comment and untaken proposal per text, on this machine; safe to delete |
+| `lektor-test.json` | `userData` | whether this machine offers the test Lektor; never syncs to him |
 
 Emptying the text is how he deletes — he never found Resoph's delete command —
 and until now it was the one edit in the app that truly lost writing: the file
@@ -275,12 +279,12 @@ needs to agree with it, so there's no divergence to prevent.
 
 ## AI Lektor
 
-An optional AI proofreader, still a prototype in `design/`. This is what it has to be when it moves into the app. It is the one exception to "no network": the app contacts nothing until he opens the Lektor, and only ever the service he chose.
+An optional AI proofreader, in `src/ui/lektor/`. It is the one exception to "no network": the app contacts nothing until he opens the Lektor, and only ever the service he chose. All of that contact is `src/platform/lektor-remote.ts`, run by the main process in the app and by the dev server in the browser build.
 
 **It must not be able to disturb anything else.** With the Lektor unused, broken, offline or out of tries, every other part of the app behaves exactly as it does without it. No try-it-on-his-machine stage exists: Danilo uses it himself, and it reaches him as a real release when Danilo decides it is ready.
 
-- **Security.** The reasoning for the pinned Electron version below assumes no network and no untrusted content, so it must be looked at again when this moves in. Only the main process talks to the two services, at fixed addresses, and replies are shown as plain text, never as HTML.
-- **Services.** A free one (Google Gemini) and a paid one (Claude Opus, which Danilo pays for). He picks between them in plain words, and is never moved from one to the other, or to a weaker model, without choosing it. The AI calls and keys live in the main process. Danilo sends him the keys, which live in the synced settings so one paste serves every machine.
+- **Security.** The reasoning for the pinned Electron version assumes no network and no untrusted content, and that holds for the page: only the main process talks to the two services, at fixed addresses, and replies are shown as plain text, never as HTML.
+- **Services.** A free one (Google Gemini) and a paid one (Claude Opus, which Danilo pays for). He picks between them in plain words, and is never moved from one to the other, or to a weaker model, without choosing it. The AI calls and keys live in the main process. Danilo sends him the keys, which live in `lektor.json` in b-notes' folder, so one paste serves every machine. A file of its own, so that an unreadable one costs only the Lektor.
 - **Which texts.** Only active texts. A text still in Resoph is brought over into the app before the Lektor runs. Arhiva and deleted texts open in their own panes, where the Lektor isn't offered.
 - **Applying.** "Unesi sve izmene" keeps a version first, and stops if that fails, as Ranije verzije's `bringBack` does. The take-over toast must not replace "Izmene su unete".
 - **His title's filing** is put back by the app on every proposal: the leading spaces and marks, exactly as he typed them, since asking the model to leave them isn't enough. The words after them may be corrected like any others, and show in the review. Once edited the text is at the top of Nedavni, so a changed title can't lose it.
@@ -289,7 +293,7 @@ An optional AI proofreader, still a prototype in `design/`. This is what it has 
 - **No prices or balances on his screen.** Anthropic offers no balance to read. Danilo sees the money in the Console, with prepaid credit, auto top-up off and a spend limit.
 - **Privacy warning** before the first send, and the recipient is named again on the corrections step. The wording is a deliberate worst case for both services.
 - **Log** the screens and presets used, refusals, and token counts. Never his text, and never a key. Log a refusal the app doesn't recognise, because the cap and money-gone messages are recognised by Google's and Anthropic's wording.
-- **Fake model.** A third service, switched on from Advanced and stored in the local `screen.json` so it can't sync to him. It returns placeholders and dummy corrections, seeded from the text, and can act out each failure, so the whole flow can be used and tested without spending anything. Its results say plainly that they are test results.
+- **Fake model.** A third service, switched on from Advanced and stored in `lektor-test.json` in `userData`, so it can't sync to him; choosing it is never written to `lektor.json` either. It returns placeholders and dummy corrections, seeded from the text, and can act out each failure, so the whole flow can be used and tested without spending anything. Its results say plainly that they are test results.
 
 ## Distribution
 
@@ -414,6 +418,6 @@ what you're seeing doesn't match what the app should be doing.
 - `page.clock.install()` does **not** stop time. It must be followed by `pauseAt`, or every test that depends on a save still being pending is racing a real 800ms timer.
 - Playwright's Electron support (`_electron.launch()`) could drive the packaged window instead, and would close the gap above. Spectron is archived; don't use it.
 - Day-to-day UI iteration happens in a browser against the mock storage backend (`npm run ui`), not in a test suite.
+- The Lektor in the browser build asks through the dev server's `/lektor-ai`. Advanced settings → Test Lektor adds a choice with no AI and no network, and acts out any failure, so the whole flow can be used and tested without spending anything. No test may ever use a real service: `test-gui/lektor.spec.ts` runs on the test Lektor and counts requests, and the unit tests are handed a stand-in for the host.
 - His screens are smaller than the dev machine's once Windows has scaled them (1280 × 800 and 1280 × 720 CSS pixels, both at 150 %), so less fits. `/his-screens` on either server (`tools/his-screens.html`) frames the app at the size of his b-notes window on each laptop, switchable; on `npm run ui:his-corpus` it shows his texts. The Dell's are measured from his log ("Window open" and "Ready" lines); the Asus is taken to match until its log is read.
 - `/diff-prototype` on either server (`design/diff-prototype.html`) puts the diff view under two boxes, Trenutno and Predlog, with a sample pair for each kind of edit a proofreader makes. It is built into `dist-browser/` only.
-- `/his-screens?lektor=1` loads the Lektor prototype (`design/lektor-sidebar-prototype.ts`) into the running app in the frame, with a fake AI whose failures are chosen beside it. Nothing in `src/` knows about it, and it is built into `dist-browser/` only.
