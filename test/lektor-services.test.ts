@@ -253,4 +253,12 @@ describe('proposalFrom', () => {
   it('refuses a reply so short that accepting it would delete his text', () => {
     assert.throws(() => proposalFrom('Jedan.', original), (thrown: unknown) => thrown instanceof LektorServiceError && thrown.failure === 'cut-off');
   });
+
+  it('turns Cyrillic letters that slipped into a Latin text into the Latin ones they stand for', () => {
+    assert.equal(proposalFrom('Štеđen i nasloжen, Љepota zapršкан tekst.', 'Stedjen i naslozen, Ljepota zaprshkan tekst.'), 'Šteđen i nasložen, Ljepota zaprškan tekst.');
+  });
+
+  it('leaves the Cyrillic alone in a text that has Cyrillic of its own', () => {
+    assert.equal(proposalFrom('Цитат на ћирилици и ostatak teksta.', 'Citat: цитат на ћирилици и ostatak teksta.'), 'Цитат на ћирилици и ostatak teksta.');
+  });
 });

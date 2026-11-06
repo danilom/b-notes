@@ -86,9 +86,31 @@ export function withHisFilingMarks(original: string, proposal: string): string {
   return original.slice(0, his.index) + filingFrontOf(his[0]) + theirWords + proposal.slice(theirs.index + theirs[0].length);
 }
 
+const SERBIAN_CYRILLIC_TO_LATIN: Readonly<Record<string, string>> = {
+  а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', ђ: 'đ', е: 'e', ж: 'ž', з: 'z', и: 'i', ј: 'j', к: 'k', л: 'l', љ: 'lj', м: 'm',
+  н: 'n', њ: 'nj', о: 'o', п: 'p', р: 'r', с: 's', т: 't', ћ: 'ć', у: 'u', ф: 'f', х: 'h', ц: 'c', ч: 'č', џ: 'dž', ш: 'š',
+};
+
+function latinLetterOf(letter: string): string {
+  const lower = letter.toLowerCase();
+  const latin = SERBIAN_CYRILLIC_TO_LATIN[lower];
+  if (latin === undefined) return letter;
+  return letter === lower ? latin : latin.charAt(0).toUpperCase() + latin.slice(1);
+}
+
+/**
+ * Claude now and then writes a Cyrillic letter inside a Latin word, even when told not to. It looks
+ * the same on screen, so no review would catch it, and his search would never find that word again.
+ * A text that has Cyrillic of its own is left alone: there, the letters may be meant.
+ */
+function withoutStrayCyrillic(proposal: string, original: string): string {
+  if (/\p{Script=Cyrillic}/u.test(original)) return proposal;
+  return proposal.replace(/\p{Script=Cyrillic}/gu, latinLetterOf);
+}
+
 /** A reply that came back much shorter is not offered: already accepted in the review, it would delete his text. */
 export function proposalFrom(reply: string, original: string): string {
-  const proposal = cleanedProposal(reply, original);
+  const proposal = withoutStrayCyrillic(cleanedProposal(reply, original), original);
   if (proposal.length < original.length * SHORTEST_SHARE_KEPT) {
     throw new LektorServiceError('cut-off', `${proposal.length} characters back for ${original.length}`);
   }
