@@ -273,6 +273,24 @@ One deliberate exception: `log.ts` stays whole in `src/electron/`, pure retentio
 logic and all. The mock has no log file and wants none — nothing in the browser
 needs to agree with it, so there's no divergence to prevent.
 
+## AI Lektor
+
+An optional AI proofreader, still a prototype in `design/`. This is what it has to be when it moves into the app. It is the one exception to "no network": the app contacts nothing until he opens the Lektor, and only ever the service he chose.
+
+**It must not be able to disturb anything else.** With the Lektor unused, broken, offline or out of tries, every other part of the app behaves exactly as it does without it. No try-it-on-his-machine stage exists: Danilo uses it himself, and it reaches him as a real release when Danilo decides it is ready.
+
+- **Security.** The reasoning for the pinned Electron version below assumes no network and no untrusted content, so it must be looked at again when this moves in. Only the main process talks to the two services, at fixed addresses, and replies are shown as plain text, never as HTML.
+- **Services.** A free one (Google Gemini) and a paid one (Claude Opus, which Danilo pays for). He picks between them in plain words, and is never moved from one to the other, or to a weaker model, without choosing it. The AI calls and keys live in the main process. Danilo sends him the keys, which live in the synced settings so one paste serves every machine.
+- **Which texts.** Only active texts. A text still in Resoph is brought over into the app before the Lektor runs. Arhiva and deleted texts open in their own panes, where the Lektor isn't offered.
+- **Applying.** "Unesi sve izmene" keeps a version first, and stops if that fails, as Ranije verzije's `bringBack` does. The take-over toast must not replace "Izmene su unete".
+- **His first line** is put back by the app, exactly as he wrote it, on every proposal. It holds his filing, so asking the model to leave it isn't enough.
+- **Results are kept.** The last comment and the last untaken proposal survive closing the app, per text, on that computer. A comment on a text that has since changed says so and offers another look. A proposal for a text that has since changed can't be opened at all: the review compares it with the text as it is now, so it would offer to undo his own edits.
+- **Errors.** Our sentence, then the remote service's own words small and grey, with a small "Kopiraj poruku" for the whole of it, going through the same main-process clipboard as "Kopiraj sve". Where trying again can't help, as with the daily cap or money gone, there is no retry button.
+- **No prices or balances on his screen.** Anthropic offers no balance to read. Danilo sees the money in the Console, with prepaid credit, auto top-up off and a spend limit.
+- **Privacy warning** before the first send, and the recipient is named again on the corrections step. The wording is a deliberate worst case for both services.
+- **Log** the screens and presets used, refusals, and token counts. Never his text, and never a key. Log a refusal the app doesn't recognise, because the cap and money-gone messages are recognised by Google's and Anthropic's wording.
+- **Fake model.** A third service, switched on from Advanced and stored in the local `screen.json` so it can't sync to him. It returns placeholders and dummy corrections, seeded from the text, and can act out each failure, so the whole flow can be used and tested without spending anything. Its results say plainly that they are test results.
+
 ## Distribution
 
 - Public GitHub repo (`danilom/b-notes`), single `main` branch. No secrets in it, and nothing identifying: the Dropbox folder location comes from config or first-run detection, never a hardcoded path.
