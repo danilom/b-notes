@@ -36,7 +36,7 @@ describe('the Lektor settings', () => {
   });
 
   it('come back as they were saved', async () => {
-    const settings = { googleKey: 'g', anthropicKey: 'a', level: 'thorough' as const };
+    const settings = { googleKey: 'g', anthropicKey: 'a' };
     await writeLektorSettings(files, 'Tekstovi', settings, log);
     assert.deepEqual(await readLektorSettings(files, 'Tekstovi', log), settings);
   });
@@ -48,12 +48,12 @@ describe('the Lektor settings', () => {
   });
 
   it('fall back field by field, so one bad value costs only itself', () => {
-    assert.deepEqual(lektorSettingsFrom({ googleKey: 'g', anthropicKey: 5, level: 'skup' }), { googleKey: 'g', anthropicKey: '', level: 'free' });
+    assert.deepEqual(lektorSettingsFrom({ googleKey: 'g', anthropicKey: 5 }), { googleKey: 'g', anthropicKey: '' });
     assert.deepEqual(lektorSettingsFrom(null), NO_LEKTOR_SETTINGS);
   });
 
-  it('cannot select the test Lektor from the synced file', () => {
-    assert.equal(lektorSettingsFrom({ level: 'fake' }).level, 'free');
+  it('has no say over which Lektor he gets: the free one each time the app starts', () => {
+    assert.deepEqual(Object.keys(lektorSettingsFrom({ googleKey: 'g', level: 'thorough' })).sort(), ['anthropicKey', 'googleKey']);
   });
 
   it('never put a key in the log, even when the file is damaged', async () => {

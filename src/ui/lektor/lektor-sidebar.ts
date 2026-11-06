@@ -152,7 +152,7 @@ export function createLektor(parts: LektorParts): Lektor {
   // Read when he first opens the Lektor, so that a man who never does pays nothing for it.
   let settings: LektorSettings = NO_LEKTOR_SETTINGS;
   let isSettingsRead = false;
-  // The test Lektor is chosen for the run and never written down, so it can't reach the file that syncs to him.
+  // Remembered only while the app is open: the free one each time it starts, so the paid one is never spent on by habit.
   let level: Level = parts.fakeBehaviour === null ? 'free' : 'fake';
   const keyDrafts: Record<RealLevel, string> = { free: '', thorough: '' };
   const keyNotes: Record<RealLevel, KeyNote> = { free: null, thorough: null };
@@ -233,7 +233,6 @@ export function createLektor(parts: LektorParts): Lektor {
     if (isSettingsRead) return;
     isSettingsRead = true;
     settings = await readLektorSettings(parts.files, parts.notesFolder, log);
-    if (level !== 'fake') level = settings.level;
   }
 
   /** A failure is logged and costs only having to paste it on another day: it works for now, from memory. */
@@ -496,10 +495,6 @@ export function createLektor(parts: LektorParts): Lektor {
 
   function chooseLevel(chosen: Level): void {
     level = chosen;
-    if (chosen !== 'fake') {
-      settings = { ...settings, level: chosen };
-      saveSettings();
-    }
     log.info('Chose a Lektor', { level: chosen });
     render();
   }
@@ -515,7 +510,7 @@ export function createLektor(parts: LektorParts): Lektor {
     return label;
   }
 
-  /** On both steps, since a comment and a correction are separate requests and may be worth different things to him. */
+  /** On the first step only: he won't be changing his mind midway, and every other screen is simpler for it. */
   function levelChoice(): HTMLElement[] {
     const test = parts.fakeBehaviour === null ? [] : [levelOption('fake')];
     return [el('p', 'lektor-heading', words().whichLektor), levelOption('free'), levelOption('thorough'), ...test];
@@ -590,7 +585,7 @@ export function createLektor(parts: LektorParts): Lektor {
 
   function readingScreen(): HTMLElement[] {
     return [
-      waitingLine(words().reading, words().waits[level].reading, readingSince),
+      waitingLine(words().reading(words().companyName[ai().company]), words().waits[level].reading, readingSince),
       footer(
         [],
         button(words().stop, () => {
@@ -652,10 +647,12 @@ export function createLektor(parts: LektorParts): Lektor {
   function staleNote(state: TextState): HTMLElement | null {
     if (editor.value === state.readText) return null;
     const isMuchChanged = shareChanged(state.readText, editor.value) > MUCH_CHANGED;
-    const note = el('div', isMuchChanged ? 'lektor-stale lektor-stale-much' : 'lektor-stale');
+    const note = el('div', 'lektor-stale');
     const earlier = { text: state.readText, comment: state.feedback };
+    const said = el('span', 'lektor-stale-said');
+    said.append(icon('info'), el('span', '', isMuchChanged ? words().staleMuch : words().staleLittle));
     note.append(
-      el('span', '', isMuchChanged ? words().staleMuch : words().staleLittle),
+      said,
       button(words().secondLook, () => void read((service, text, signal) => service.secondLook(text, earlier, signal)), 'lektor-link'),
     );
     return note;
@@ -692,7 +689,6 @@ export function createLektor(parts: LektorParts): Lektor {
       prompt,
       el('label', 'lektor-label', words().noteLabel),
       note,
-      ...levelChoice(),
       model,
     ];
   }
@@ -749,12 +745,12 @@ export function createLektor(parts: LektorParts): Lektor {
   }
 
   /**
-   * The corrections he hasn't taken. Once the text has changed they can't be opened at all: the review
-   * compares them with the text as it is now, so it would offer his own later edits as things to undo.
+   * The corrections he hasn't taken, while they still fit the text. Once it has changed they simply
+   * aren't offered: the review compares them with the text as it is now, so it would offer his own
+   * later edits as things to undo, and a sentence about why would only be one more thing to puzzle over.
    */
   function keptProposalNote(state: TextState): HTMLElement[] {
-    if (state.proposal === '') return [];
-    if (editor.value !== state.proposalFor) return [el('p', 'lektor-stale', words().keptProposalStale)];
+    if (state.proposal === '' || editor.value !== state.proposalFor) return [];
     return [button(words().keptProposalOpen, () => review(editor.value, state.proposal), 'lektor-link')];
   }
 
@@ -892,7 +888,8 @@ export function createLektor(parts: LektorParts): Lektor {
     const service = ai();
     const controller = new AbortController();
     const leave = (): void => controller.abort();
-    const waitingPanel = plainPanel(waitingLine(words().correcting, words().waits[level].correcting, Date.now()), [button(words().stop, leave)]);
+    const doing = words().correcting(words().companyName[service.company]);
+    const waitingPanel = plainPanel(waitingLine(doing, words().waits[level].correcting, Date.now()), [button(words().stop, leave)]);
     const waiting = showAsModal(dialog, waitingPanel, leave);
     try {
       if (!(await parts.prepareToSend())) throw new LektorServiceError('not-brought-over', 'not on disk');
@@ -921,15 +918,24 @@ export function createLektor(parts: LektorParts): Lektor {
       render();
       return;
     }
-    state.readText = result;
-    // Taken, so nothing is left to come back to.
+    // Taken, so nothing is left to come back to. The comment was about the text before them, and says so when he next looks.
     state.proposal = '';
     state.proposalFor = '';
     keepResults(parts.textNameNow(), state);
     log.info('Corrections from the Lektor were put in the text');
-    // Back to the comment: this step is done, and the toast says what became of it.
-    goTo('response');
+    finishWithReview(state);
     flashToast(parts.toast, words().applied, words().appliedHow);
+  }
+
+  /**
+   * The job he came for is over either way, and his text is what is in front of him. A sidebar left
+   * asking him to send it again would look like one more thing he has to do. Opened again, it starts
+   * from the beginning, with the comment still there to go to.
+   */
+  function finishWithReview(state: TextState): void {
+    state.screen = 'start';
+    state.isOpen = false;
+    render();
   }
 
   function review(text: string, proposed: string): void {
@@ -942,8 +948,7 @@ export function createLektor(parts: LektorParts): Lektor {
       },
       onClose: () => {
         close();
-        // Back to a step that now has these corrections to offer.
-        render();
+        finishWithReview(state);
       },
     });
   }

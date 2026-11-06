@@ -76,6 +76,13 @@ test('keeps the old text as a version when corrections go in, and says these are
   await expect(page.locator('#editor')).not.toHaveValue(before);
   await expect(page.locator('#see-versions')).toContainText('(1)');
   expect(requestsToAi).toBe(0);
+
+  // The job is done, so the sidebar goes; opened again, the comment is there and says it is about an earlier text.
+  await expect(page.locator('body')).not.toHaveClass(/lektor-open/);
+  await page.locator('#lektor-open').click();
+  await page.getByRole('button', { name: 'Postojeći AI utisak' }).click();
+  await expect(page.locator('.lektor-response')).toContainText('PROBNI');
+  await expect(page.locator('.lektor-stale')).toBeVisible();
 });
 
 test('does not touch the text when the version cannot be kept', async ({ page }) => {
@@ -107,11 +114,15 @@ test('will not open kept corrections once the text has changed', async ({ page }
   await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
   await expect(page.getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible({ timeout: 15_000 });
   await page.locator('#lektor-dialog button.close').click();
+  await expect(page.locator('body')).not.toHaveClass(/lektor-open/);
+
+  await page.locator('#lektor-open').click();
+  await page.getByRole('button', { name: 'Postojeći AI utisak' }).click();
+  await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
   await expect(page.getByRole('button', { name: 'Pogledaj poslednje predloge' })).toBeVisible();
 
   await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} Jos jedna recenica.`);
 
-  await expect(page.getByText('pa više ne važe')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Pogledaj poslednje predloge' })).toHaveCount(0);
 });
 

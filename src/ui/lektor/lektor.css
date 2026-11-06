@@ -552,18 +552,31 @@ body.lektor-open #lektor-side {
   opacity: 0.6;
 }
 
+/* An info box above the comment: it is still his to read, and this says what it is about. */
 .lektor-stale {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  color: var(--quiet);
+  gap: 0.3rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--page);
+  color: var(--ink);
+  line-height: 1.35;
 }
 
-.lektor-stale-much {
-  padding: 0.5rem 0.6rem;
-  border-left: 4px solid var(--ink);
-  background: var(--wash);
-  color: var(--ink);
+.lektor-stale-said {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.lektor-stale-said svg {
+  flex: none;
+  width: 1.1em;
+  height: 1.1em;
+  margin-top: 0.1em;
+  color: var(--quiet);
 }
 
 .lektor-preset {

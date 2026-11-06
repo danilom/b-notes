@@ -2,7 +2,7 @@ import { FileMissing, type FileSystem } from '../../platform/file-system.ts';
 import { describeError, type Log } from '../../platform/logging.ts';
 
 /*
-  The Lektor's keys and which Lektor he chose. A file of its own, so that nothing about the
+  The Lektor's keys. A file of its own, so that nothing about the
   Lektor can disturb how the app looks: an unreadable one costs him the Lektor's settings and
   nothing else. In b-notes' folder, so one paste serves every machine he has.
 
@@ -14,21 +14,19 @@ export type RealLevel = 'free' | 'thorough';
 export interface LektorSettings {
   googleKey: string;
   anthropicKey: string;
-  level: RealLevel;
 }
 
 const FILE = 'lektor.json';
 
-export const NO_LEKTOR_SETTINGS: LektorSettings = { googleKey: '', anthropicKey: '', level: 'free' };
+export const NO_LEKTOR_SETTINGS: LektorSettings = { googleKey: '', anthropicKey: '' };
 
 /** Every field falls back on its own, and any other key in the file is left alone when writing. */
 export function lektorSettingsFrom(raw: unknown): LektorSettings {
   if (typeof raw !== 'object' || raw === null) return NO_LEKTOR_SETTINGS;
-  const { googleKey, anthropicKey, level } = raw as Record<string, unknown>;
+  const { googleKey, anthropicKey } = raw as Record<string, unknown>;
   return {
     googleKey: typeof googleKey === 'string' ? googleKey : '',
     anthropicKey: typeof anthropicKey === 'string' ? anthropicKey : '',
-    level: level === 'thorough' ? 'thorough' : 'free',
   };
 }
 
