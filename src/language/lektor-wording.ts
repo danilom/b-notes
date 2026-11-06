@@ -87,7 +87,7 @@ export const LEKTOR_WORDS = {
     presets: { letters: 'Slova i zarezi', grammar: 'Pravopis i gramatika', wording: 'Stilska dorada', rewrite: 'Dubinska prerada' },
     promptLabel: 'Uputstvo za AI Lektora:',
     noteLabel: 'Tvoja dodatna uputstva (nije obavezno)',
-    notePlaceholder: 'Primer: uprosti predugačke rečenice',
+    notePlaceholder: 'Example: simplify overly long sentences',
     aboutAi:
       'AI je program koji je učio iz ogromne količine tekstova i piše ono što zvuči verovatno. Ne razume tekst kao čovek i nema sopstveno iskustvo. Zato ponekad sa sigurnošću kaže nešto netačno: navod, činjenicu, ime. Ovaj komentar je utisak AI programa, a ne stručna kritika.',
     mayBeWrong: 'AI može da pogreši',

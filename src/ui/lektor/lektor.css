@@ -616,6 +616,13 @@ body.lektor-open #lektor-side {
   cursor: default;
 }
 
+/* On a small screen this gives way and scrolls by itself, so the choices above and the box below stay in view. */
+.lektor-side-body > .lektor-prompt {
+  flex: 0 1 auto;
+  min-height: 5.5em;
+  overflow-y: auto;
+}
+
 .lektor-back-row {
   display: flex;
   justify-content: flex-end;
