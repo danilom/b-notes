@@ -518,6 +518,7 @@ export function createLektor(parts: LektorParts): Lektor {
     radio.checked = level === option;
     radio.disabled = !hasKeyFor(option);
     label.classList.toggle('lektor-preset-unavailable', radio.disabled);
+    label.title = radio.disabled ? words().levelWithoutKey : '';
     radio.addEventListener('change', () => chooseLevel(option));
     label.append(radio, el('span', '', words().levels[option]));
     return label;

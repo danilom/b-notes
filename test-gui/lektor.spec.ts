@@ -75,6 +75,8 @@ test('with only the free key, greys out the paid Lektor and goes straight to the
 
   await expect(page.getByLabel(/\(Google\)/)).toBeChecked();
   await expect(page.getByLabel(/\(Anthropic\)/)).toBeDisabled();
+  await expect(page.locator('label', { hasText: '(Anthropic)' })).toHaveAttribute('title', 'Nije unet API ključ.');
+  await expect(page.locator('label', { hasText: '(Google)' })).not.toHaveAttribute('title', /./);
 });
 
 test('with only the paid key, starts on it, and saving the keys box with nothing new leads back', async ({ page }) => {
