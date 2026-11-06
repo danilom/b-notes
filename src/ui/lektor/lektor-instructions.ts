@@ -19,13 +19,14 @@ export const SECOND_LOOK_INSTRUCTION = `Ti si pažljiv čitalac koji je već jed
 Vrati samo te pasuse, običnim tekstom, bez naslova i oznaka.`;
 
 /** What he doesn't need to read: rules about the shape of the answer, added to what he does. */
-const CORRECTION_RULES = `Write in Serbian. Keep the title, line breaks, blank lines, the spaces at the start of lines and the asterisks between sections exactly as they are, unless that is where a mistake lies. Do not add headings.
+const CORRECTION_RULES = `Write in Serbian, in the alphabet the text uses. Keep the title, line breaks, blank lines, the spaces at the start of lines and the asterisks between sections exactly as they are, unless that is where a mistake lies. Do not add headings.
+Keep quotation marks and dashes in the form the author typed them.
 Do not polish people's speech in quotation marks: the author deliberately writes how those people speak. Only fix letters missing their diacritics there.
 Leave notes the author left for himself as they are. If you do not understand why something is in the text, leave it.
 Return the whole text, only corrected, with no comment and no markers around it.`;
 
 /** "Only corrected" and "leave what you don't understand" held even a full rewrite down to a light edit. */
-const REWRITE_RULES = `Write in Serbian. Keep headings, the asterisks between sections, the spaces at the start of lines, and the order of the paragraphs exactly as they are. Do not add headings.
+const REWRITE_RULES = `Write in Serbian, in the alphabet the text uses. Keep headings, the asterisks between sections, the spaces at the start of lines, and the order of the paragraphs exactly as they are. Do not add headings.
 Copy what is in quotation marks as it is: the author deliberately writes how those people speak. Only fix letters missing their diacritics there.
 Leave notes the author left for himself as they are.
 Return the whole text, with no comment and no markers around it.`;
