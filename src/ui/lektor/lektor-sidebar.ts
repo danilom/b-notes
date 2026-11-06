@@ -116,6 +116,9 @@ const FEWEST_WORDS = 10;
 const LONGEST_SERVICE_WORDS = 300;
 const REAL_LEVELS: readonly RealLevel[] = ['free', 'thorough'];
 
+/** The one button that takes him on to the next step. Never trying again after a failure: by then he may rather be leaving. */
+const MAIN_ACTION = 'status-action lektor-main-action';
+
 const KEY_FIELD: Readonly<Record<RealLevel, 'googleKey' | 'anthropicKey'>> = { free: 'googleKey', thorough: 'anthropicKey' };
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, text = ''): HTMLElementTagNameMap[K] {
@@ -533,7 +536,7 @@ export function createLektor(parts: LektorParts): Lektor {
   function startScreen(): HTMLElement[] {
     const key = button(words().keysLink, () => goTo('key'), 'lektor-link');
     const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', words().keyWorks)] : [];
-    const send = button(words().send(recipient()), () => void read(askForFeedback), 'status-action');
+    const send = button(words().send(recipient()), () => void read(askForFeedback), MAIN_ACTION);
     send.disabled = wordsInText() < FEWEST_WORDS;
     if (send.disabled) send.title = words().tooShort;
     // Having come here to send again, he may think better of it: the comment he has is still there.
@@ -587,7 +590,7 @@ export function createLektor(parts: LektorParts): Lektor {
 
   function keyScreen(): HTMLElement[] {
     const isChecking = REAL_LEVELS.some((which) => keyNotes[which] === 'checking');
-    const saveButton = button(words().save, saveKeys, 'status-action');
+    const saveButton = button(words().save, saveKeys, MAIN_ACTION);
     saveButton.disabled = isChecking;
     return [
       el('p', 'lektor-line', words().keyIntro),
@@ -745,7 +748,7 @@ export function createLektor(parts: LektorParts): Lektor {
     const onward = button(words().toCorrections, () => {
       state.isRevealed = true;
       goTo('corrections');
-    }, 'status-action');
+    }, MAIN_ACTION);
     return [notes, response, footer([], onward)];
   }
 
@@ -770,15 +773,15 @@ export function createLektor(parts: LektorParts): Lektor {
 
   function correctionsScreen(): HTMLElement[] {
     const top = el('div', 'lektor-back-row');
-    top.append(backButton(words().backToComment, 'response'));
+    // Beside the way back where it fits, so that it pushes the button off a small screen as little as it can.
+    top.append(...keptProposalNote(stateNow()), backButton(words().backToComment, 'response'));
     return [
       top,
-      ...keptProposalNote(stateNow()),
       ...presetChoice(stateNow()),
       footer(
         // Said again here: having chosen the other Lektor on this step, his text is going somewhere the first warning didn't name.
         [el('p', 'lektor-line', words().correctionsFoot(recipient()))],
-        button(words().sendForCorrections, () => void correct(), 'status-action'),
+        button(words().sendForCorrections, () => void correct(), MAIN_ACTION),
       ),
     ];
   }
