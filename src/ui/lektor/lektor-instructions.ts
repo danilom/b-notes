@@ -19,16 +19,16 @@ export const SECOND_LOOK_INSTRUCTION = `Ti si pažljiv čitalac koji je već jed
 Vrati samo te pasuse, običnim tekstom, bez naslova i oznaka.`;
 
 /** What he doesn't need to read: rules about the shape of the answer, added to what he does. */
-const CORRECTION_RULES = `Zadrži naslov, prelome redova, prazne redove, razmake na početku reda i zvezdice između odeljaka tačno kako jesu. Ne dodaj naslove.
-Govor ljudi pod navodnicima ne doteruj: autor namerno piše kako ti ljudi govore. Ispravi tu samo slova kojima nedostaju kukice.
-Napomene koje je autor ostavio sam sebi ostavi kako jesu. Ako ne razumeš zašto nešto stoji u tekstu, ostavi ga.
-Vrati ceo tekst, samo ispravljen, bez ikakvog komentara i bez oznaka oko njega.`;
+const CORRECTION_RULES = `Write in Serbian. Keep the title, line breaks, blank lines, the spaces at the start of lines and the asterisks between sections exactly as they are, unless that is where a mistake lies. Do not add headings.
+Do not polish people's speech in quotation marks: the author deliberately writes how those people speak. Only fix letters missing their diacritics there.
+Leave notes the author left for himself as they are. If you do not understand why something is in the text, leave it.
+Return the whole text, only corrected, with no comment and no markers around it.`;
 
 /** "Only corrected" and "leave what you don't understand" held even a full rewrite down to a light edit. */
-const REWRITE_RULES = `Zadrži naslove, zvezdice između odeljaka i razmake na početku reda tačno kako jesu, i redosled pasusa. Ne dodaj naslove.
-Ono što je pod navodnicima prepiši kako jeste: autor namerno piše kako ti ljudi govore. Ispravi tu samo slova kojima nedostaju kukice.
-Napomene koje je autor ostavio sam sebi ostavi kako jesu.
-Vrati ceo tekst, bez ikakvog komentara i bez oznaka oko njega.`;
+const REWRITE_RULES = `Write in Serbian. Keep headings, the asterisks between sections, the spaces at the start of lines, and the order of the paragraphs exactly as they are. Do not add headings.
+Copy what is in quotation marks as it is: the author deliberately writes how those people speak. Only fix letters missing their diacritics there.
+Leave notes the author left for himself as they are.
+Return the whole text, with no comment and no markers around it.`;
 
 /** A corrected text this much shorter has lost something, rather than been corrected. */
 const SHORTEST_SHARE_KEPT = 0.6;
@@ -38,7 +38,7 @@ export function secondLookInput(text: string, earlier: EarlierReading): string {
 }
 
 export function correctionInstruction(request: CorrectionRequest): string {
-  const note = request.note.trim() === '' ? '' : `\n\nAutor još kaže: ${request.note.trim()}`;
+  const note = request.note.trim() === '' ? '' : `\n\nThe author adds (in his own words): ${request.note.trim()}`;
   const rules = request.preset === 'rewrite' ? REWRITE_RULES : CORRECTION_RULES;
   return `${request.instruction}${note}\n\n${rules}`;
 }

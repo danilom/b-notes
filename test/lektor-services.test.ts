@@ -192,21 +192,21 @@ describe('correctionInstruction', () => {
 
   it('holds corrections to correcting', () => {
     const asked = correctionInstruction({ ...request, preset: 'grammar' });
-    assert.match(asked, /samo ispravljen/);
-    assert.match(asked, /Ako ne razumeš/);
+    assert.match(asked, /only corrected/);
+    assert.match(asked, /do not understand/);
   });
 
   it('frees a rewrite from correcting, while still protecting quoted speech and his notes', () => {
     const asked = correctionInstruction({ ...request, preset: 'rewrite' });
-    assert.doesNotMatch(asked, /samo ispravljen/);
-    assert.doesNotMatch(asked, /Ako ne razumeš/);
-    assert.match(asked, /pod navodnicima/);
-    assert.match(asked, /Napomene koje je autor/);
+    assert.doesNotMatch(asked, /only corrected/);
+    assert.doesNotMatch(asked, /do not understand/);
+    assert.match(asked, /quotation marks/);
+    assert.match(asked, /notes the author/);
   });
 
   it('adds what he wrote himself, and nothing when he wrote only spaces', () => {
-    assert.match(correctionInstruction({ ...request, preset: 'letters', note: ' Bez zareza. ' }), /Autor još kaže: Bez zareza\./);
-    assert.doesNotMatch(correctionInstruction({ ...request, preset: 'letters', note: '   ' }), /Autor još kaže/);
+    assert.match(correctionInstruction({ ...request, preset: 'letters', note: ' Bez zareza. ' }), /The author adds \(in his own words\): Bez zareza\./);
+    assert.doesNotMatch(correctionInstruction({ ...request, preset: 'letters', note: '   ' }), /The author adds/);
   });
 });
 

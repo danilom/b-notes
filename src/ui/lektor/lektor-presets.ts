@@ -1,19 +1,23 @@
 import type { PresetId } from './lektor-service.ts';
 
 /**
- * What each kind of correction tells the AI, which he also reads on the screen. In Serbian
- * whatever the app's language, because the AI is being asked about a Serbian text.
+ * What each kind of correction tells the AI, which he also reads on the screen, exactly as sent.
+ *
+ * In English, because it fades less: asked in Serbian to rework a whole essay, Gemini reworked the
+ * opening and copied out the rest in each run. In English it mostly carries through to the end,
+ * though not always: about one run in five still fades. Telling it not to pad made it timid
+ * throughout, so that line is gone, at the price of an occasional run that comes back longer.
  */
 export const PRESET_PROMPTS: Readonly<Record<PresetId, string>> = {
   letters:
-    'Ispravi slova kojima nedostaju kukice, slovne greške, zareze, razmake i prelome redova. Reči ne menjaj. Autor piše namerno baš ovako, čak i kad rečenica deluje neobično. Zadrži narečje kojim je tekst pisan.',
+    'Fix letters missing their diacritics, typos, commas, spaces and line breaks. Do not change the words. The author writes exactly like this on purpose, even where a sentence seems unusual. Keep the dialect the text is written in.',
   grammar:
-    'Ispravi slova, zareze i razmake, kao i gramatiku. Gde se rečenica teško razume ili zapinje, preuredi je tako da bude jasna, koristeći što više autorovih reči. Ono što je u redu ne diraj. Zadrži autorov glas i narečje kojim je tekst pisan.',
+    'Fix letters, commas and spaces, and the grammar. Where a sentence is hard to follow or stumbles, rearrange it so it is clear, using as many of the author\'s words as possible. Leave alone what is fine. Keep the author\'s voice and the dialect the text is written in.',
   wording:
-    'Ispravi greške i gramatiku, pa uredi tekst kao dobar urednik: podeli predugačke rečenice, izbaci ponavljanja i suvišne reči, i nađi bolju reč tamo gde je ova mutna ili nezgrapna. Nemoj se ustručavati: promene treba da se vide u svakom pasusu. Ne dodaj ništa što autor nije rekao. Zadrži njegov glas i narečje kojim je tekst pisan.',
+    'Fix mistakes and grammar, then edit the text as a good editor would: split overlong sentences, remove repetition and needless words, and find a better word where one is vague or clumsy. Do not hold back: the changes should show in every paragraph, through to the end of the text. Add nothing the author did not say. Keep his voice and the dialect the text is written in.',
   // Deliberately too much: next to this one, the one above looks about right.
   rewrite:
-    'Napiši ovaj tekst iznova, smelo, kao pisac koji ga prepričava svojim perom. Ne ustručavaj se da promeniš bilo koju rečenicu: njen red, ritam, slike i izbor reči, spajaj ih i deli, i slobodno idi dalje nego što je neophodno, jer će autor sam odabrati šta mu se sviđa. Radi jednako smelo kroz ceo tekst, do poslednjeg pasusa, a ne samo na početku. Sačuvaj autorove glavne misli, činjenice i imena, i narečje kojim je tekst pisan. Ne izmišljaj događaje. Dužina može da se promeni, ali ne mnogo.',
+    'Rewrite this text boldly, as a writer retelling it in their own hand. Do not hesitate to change any sentence: its order, rhythm, images and choice of words; join and split sentences, and feel free to go further than necessary, because the author will choose what they like. Work equally boldly through the entire text, up to the last paragraph, not only at the beginning. Keep the author\'s main ideas, facts and names, and the dialect the text is written in. Do not invent events. The length may change, but not by much.',
 };
 
 export const PRESET_ORDER: readonly PresetId[] = ['letters', 'grammar', 'wording', 'rewrite'];
