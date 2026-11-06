@@ -579,11 +579,11 @@ body.lektor-open #lektor-side {
   opacity: 1;
 }
 
-/* Under its name rather than beside it: the column is narrow. */
-.lektor-spent {
-  display: block;
-  color: var(--quiet);
-  font-size: 0.85em;
+/* Small, belonging to the grey line above it: for passing the message on, not for dealing with it. */
+.lektor-copy-message {
+  margin-top: 0.35rem;
+  padding: 0.1rem 0.45rem;
+  font-size: calc(var(--ui-size) * 0.82);
 }
 
 /* Not a section of its own, but what follows from the choice above: plain words, right against their box. */

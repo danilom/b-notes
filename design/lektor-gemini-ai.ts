@@ -82,7 +82,6 @@ export const geminiAi: LektorService = {
   correctionModel: (preset) => modelsFor(preset)[0] ?? '',
   recipient: 'Guglu',
   whoseWords: 'Poruka Gugla',
-  spent: () => null,
   isKeySaved: async (signal) => keyIsWithServer(await callServer({ action: 'has-key', key: keyNow() }, signal)),
   // The dev server has its own, from testdata/, for when none has been pasted.
   hasKey: () => true,

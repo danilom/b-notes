@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, it } from 'node:test';
 
 import { claudeAi } from '../design/lektor-claude-ai.ts';
 import { geminiAi } from '../design/lektor-gemini-ai.ts';
-import { correctionInstruction, proposalFrom } from '../design/lektor-instructions.ts';
+import { correctionInstruction, proposalFrom, withHisFirstLine } from '../design/lektor-instructions.ts';
 import { type LektorFailure, type LektorService, LektorServiceError } from '../design/lektor-service.ts';
 
 /*
@@ -129,25 +129,11 @@ describe('Claude replies', () => {
     assert.equal(sent[0]?.model, 'claude-opus-5-5');
   });
 
-  it('adds each reply\'s cost to what has been spent', async () => {
-    answerWith({ status: 200, body: finished('Utisak.') }, { status: 200, body: finished('Utisak.') });
-    await claudeAi.feedback('tekst', signal);
-    await claudeAi.feedback('tekst', signal);
-    assert.ok(Math.abs((claudeAi.spent() ?? 0) - 0.504) < 1e-9);
-  });
-
-  it('counts a reply that is refused, since Anthropic charges for it', async () => {
+  it('hands on the explanation when it declines', async () => {
     answerWith({ status: 200, body: { text: '', stopReason: 'refusal', explanation: 'Ne mogu.', usage: { inputTokens: 1_000, outputTokens: 0 } } });
     const failure = await failureOf(claudeAi);
     assert.equal(failure.failure, 'declined');
     assert.equal(failure.serviceSaid, 'Ne mogu.');
-    assert.ok(Math.abs((claudeAi.spent() ?? 0) - 0.004) < 1e-9);
-  });
-
-  it('has spent nothing before the first reply, even with a damaged store', () => {
-    assert.equal(claudeAi.spent(), 0);
-    window.localStorage.setItem('lektor-claude-spent', 'nije broj');
-    assert.equal(claudeAi.spent(), 0);
   });
 
   it('asks the server about its own key, not Google\'s', async () => {
@@ -217,6 +203,28 @@ describe('correctionInstruction', () => {
   it('adds what he wrote himself, and nothing when he wrote only spaces', () => {
     assert.match(correctionInstruction({ ...request, preset: 'letters', note: ' Bez zareza. ' }), /Autor još kaže: Bez zareza\./);
     assert.doesNotMatch(correctionInstruction({ ...request, preset: 'letters', note: '   ' }), /Autor još kaže/);
+  });
+});
+
+describe('withHisFirstLine', () => {
+  it('undoes a corrected spelling in the title and leaves the rest of the correction', () => {
+    assert.equal(withHisFirstLine('Cuprija- Sumrak\n\nStari most.\n', 'Ćuprija – Sumrak\n\nStari, stari most.\n'), 'Cuprija- Sumrak\n\nStari, stari most.\n');
+  });
+
+  it('keeps the marks his filing relies on', () => {
+    assert.equal(withHisFirstLine('* * Pismo( konacno)\nTekst\n', 'Pismo (konačno)\nTekst.\n'), '* * Pismo( konacno)\nTekst.\n');
+  });
+
+  it('keeps blank lines and spaces before his title', () => {
+    assert.equal(withHisFirstLine('\n    Naslov\nTekst\n', 'Naslov\nTekst.\n'), '\n    Naslov\nTekst.\n');
+  });
+
+  it('puts his title back on top when the reply dropped it, losing nothing', () => {
+    assert.equal(withHisFirstLine('Stari most\n\nDjed je govorio.\n', 'Djed je rekao.\n'), 'Stari most\n\nDjed je rekao.\n');
+  });
+
+  it('leaves a reply with no lines to the check for short replies', () => {
+    assert.equal(withHisFirstLine('Naslov\n', '  '), '  ');
   });
 });
 

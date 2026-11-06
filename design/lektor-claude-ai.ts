@@ -1,27 +1,14 @@
 import { correctionInstruction, FEEDBACK_INSTRUCTION, proposalFrom, SECOND_LOOK_INSTRUCTION, secondLookInput } from './lektor-instructions.ts';
 import { callServer, connectionCheck, isRecord, keyIsWithServer, messageOf } from './lektor-server-call.ts';
 import { type CorrectionRequest, type LektorService, LektorServiceError, NO_CREDIT_SENTENCE } from './lektor-service.ts';
-import { costOfReply } from './lektor-spending.ts';
 
 /* The thorough Lektor, on Claude Opus, which is paid for by the word. */
 
 const MODEL = 'claude-opus-5-5';
 const KEY_STORE = 'lektor-claude-key';
-const SPENT_STORE = 'lektor-claude-spent';
-
-function spentSoFar(): number {
-  const amount = Number(window.localStorage.getItem(SPENT_STORE));
-  return Number.isFinite(amount) ? amount : 0;
-}
-
-const count = (value: unknown): number => (typeof value === 'number' ? value : 0);
-
-/** A reply is paid for even if it is then refused or cut off. */
-function noteSpending(reply: unknown): void {
-  if (!isRecord(reply) || !isRecord(reply['usage'])) return;
-  const { inputTokens, outputTokens } = reply['usage'];
-  const cost = costOfReply({ inputTokens: count(inputTokens), outputTokens: count(outputTokens) });
-  window.localStorage.setItem(SPENT_STORE, String(spentSoFar() + cost));
+/** For checking any estimate against what replies really use. Token counts only, never text. */
+function logUsage(reply: unknown): void {
+  if (isRecord(reply) && isRecord(reply['usage'])) console.info('A Lektor reply on', MODEL, 'used', reply['usage']);
 }
 
 function refusal(status: number, reply: unknown): LektorServiceError {
@@ -49,7 +36,7 @@ async function ask(system: string, input: string, signal: AbortSignal): Promise<
   const key = window.sessionStorage.getItem(KEY_STORE) ?? '';
   const { status, reply } = await callServer({ provider: 'claude', action: 'send', key, model: MODEL, system, input }, signal);
   if (status !== 200) throw refusal(status, reply);
-  noteSpending(reply);
+  logUsage(reply);
   if (!isRecord(reply)) throw new LektorServiceError('cut-off', 'no reply');
   const { text, stopReason, explanation } = reply;
   if (stopReason === 'refusal') {
@@ -70,7 +57,6 @@ export const claudeAi: LektorService = {
   correctionModel: () => MODEL,
   recipient: 'firmi Anthropic',
   whoseWords: 'Poruka firme Anthropic',
-  spent: spentSoFar,
   isKeySaved: async (signal) => {
     const key = window.sessionStorage.getItem(KEY_STORE) ?? '';
     return keyIsWithServer(await callServer({ provider: 'claude', action: 'has-key', key }, signal));

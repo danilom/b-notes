@@ -139,7 +139,6 @@ export const fakeAi: LektorService = {
   correctionModel: () => 'probni, bez pravog AI',
   recipient: 'Guglu',
   whoseWords: 'Poruka Gugla',
-  spent: () => null,
   isKeySaved: () => Promise.resolve(window.sessionStorage.getItem('lektor-fake-key') !== null),
   hasKey: () => window.sessionStorage.getItem('lektor-fake-key') !== null,
   rememberKey: (key) => window.sessionStorage.setItem('lektor-fake-key', key),
@@ -150,26 +149,10 @@ export const fakeAi: LektorService = {
   corrections: ({ text, preset }, signal) => fakeCorrections(text, preset, signal),
 };
 
-/** Held only here and added to at about the real rate, so the figure can be watched without paying for it. */
-let fakeSpent = 0;
-const COMMENT_COST = 0.08;
-const CORRECTION_COST = 0.25;
-
 export const fakeThoroughAi: LektorService = {
   ...fakeAi,
   commentModel: 'probni temeljni, bez pravog AI',
   correctionModel: () => 'probni temeljni, bez pravog AI',
   recipient: 'firmi Anthropic',
   whoseWords: 'Poruka firme Anthropic',
-  spent: () => fakeSpent,
-  feedback: async (text, signal) => {
-    const comment = await fakeFeedback(text, signal);
-    fakeSpent += COMMENT_COST;
-    return comment;
-  },
-  corrections: async ({ text, preset }, signal) => {
-    const proposal = await fakeCorrections(text, preset, signal);
-    fakeSpent += CORRECTION_COST;
-    return proposal;
-  },
 };

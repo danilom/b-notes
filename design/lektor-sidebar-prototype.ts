@@ -1,5 +1,7 @@
 import { describeWhen, strings } from '../src/language/wording.ts';
 import { titleFrom } from '../src/notes/note-title.ts';
+import { readKeptResults, writeKeptResults } from './lektor-kept-results.ts';
+import { withHisFirstLine } from './lektor-instructions.ts';
 import { countWords } from '../src/notes/word-count.ts';
 import { titleOf } from '../src/ui/dialogs/dialog-heading.ts';
 import { showAsModal } from '../src/ui/dialogs/modal.ts';
@@ -10,7 +12,6 @@ import { claudeAi } from './lektor-claude-ai.ts';
 import { BEHAVIOUR_KEY, fakeAi, fakeThoroughAi } from './lektor-fake-ai.ts';
 import { geminiAi } from './lektor-gemini-ai.ts';
 import { type LektorService, LektorServiceError, type PresetId } from './lektor-service.ts';
-import { spentLine } from './lektor-spending.ts';
 
 /** Which Lektor he has chosen, in words about what it means for him rather than whose it is. */
 type Level = 'free' | 'thorough';
@@ -87,6 +88,10 @@ interface TextState {
   /** The text as the Lektor last read it. */
   readText: string;
   readAt: number;
+  /** The last corrections he neither took nor replaced. */
+  proposal: string;
+  /** The text they were made from: against any other, the review would offer to undo his edits. */
+  proposalFor: string;
   preset: PresetId;
   note: string;
 }
@@ -167,21 +172,30 @@ function currentKey(): string {
 function stateNow(): TextState {
   const existing = states.get(openKey);
   if (existing !== undefined) return existing;
+  const kept = readKeptResults(openKey);
   const fresh: TextState = {
     isOpen: false,
     screen: 'start',
     failure: null,
     finalSentence: '',
     serviceSaid: '',
-    feedback: '',
-    isRevealed: false,
-    readText: '',
-    readAt: 0,
+    feedback: kept?.feedback ?? '',
+    // Already read, on an earlier day: it isn't played to him again.
+    isRevealed: kept !== null,
+    readText: kept?.readText ?? '',
+    readAt: kept?.readAt ?? 0,
+    proposal: kept?.proposal ?? '',
+    proposalFor: kept?.proposalFor ?? '',
     preset: 'letters',
     note: '',
   };
   states.set(openKey, fresh);
   return fresh;
+}
+
+/** A text not yet written has no id to keep anything under, and nothing of value has been said about it. */
+function keepResults(textKey: string, { feedback, readText, readAt, proposal, proposalFor }: TextState): void {
+  if (textKey !== NEW_TEXT) writeKeptResults(textKey, { feedback, readText, readAt, proposal, proposalFor });
 }
 
 const wordsInText = (): number => countWords(editor.value);
@@ -268,6 +282,7 @@ function failedWith(error: unknown, service = ai()): LektorServiceError['failure
 
 async function read(ask: (text: string, signal: AbortSignal) => Promise<string>): Promise<void> {
   const state = stateNow();
+  const textKey = openKey;
   const text = editor.value;
   stopWorking();
   const controller = new AbortController();
@@ -283,6 +298,7 @@ async function read(ask: (text: string, signal: AbortSignal) => Promise<string>)
     state.readAt = Date.now();
     state.isRevealed = false;
     state.screen = 'response';
+    keepResults(textKey, state);
   } catch (error) {
     const failure = failedWith(error);
     if (failure === null) return;
@@ -413,6 +429,24 @@ const KEY_NOTES: Readonly<Record<Exclude<KeyNote, 'checking' | null>, string>> =
   unavailable: 'Ključ sada ne može da se proveri. Probaj kasnije.',
 };
 
+/** For sending on to whoever helps him. The whole of it, however much of it is shown. */
+function copyMessageButton(message: string): HTMLButtonElement {
+  const copy = button('Kopiraj poruku', () => {
+    void navigator.clipboard.writeText(message).then(
+      () => {
+        // A toast can't be seen over a dialog, which sits above everything else on the page; the button says so there.
+        if (copy.closest('dialog') === null) flashToast(required('toast', HTMLDivElement), 'Poruka je kopirana.', 'Možeš da je zalepiš u pismo.');
+        else copy.textContent = 'Poruka je kopirana';
+      },
+      (error: unknown) => {
+        console.error('The Lektor message could not be copied', error);
+        copy.textContent = 'Nije kopirano';
+      },
+    );
+  }, 'lektor-copy-message');
+  return copy;
+}
+
 /** Past this it is no longer something to read out over the telephone. */
 const LONGEST_SERVICE_WORDS = 300;
 
@@ -432,7 +466,7 @@ function problem(sentence: string, serviceSaid = ''): HTMLElement {
   } else {
     const said = el('p', 'lektor-service-said', serviceSaid.slice(0, LONGEST_SERVICE_WORDS));
     said.lang = 'en';
-    words.append(said);
+    words.append(said, copyMessageButton(`${sentence}\n${serviceSaid}`));
   }
   box.append(icon('problem'), words);
   return box;
@@ -485,11 +519,7 @@ function levelOption(level: Level, name: string): HTMLElement {
     window.localStorage.setItem(LEVEL_STORE, level);
     render();
   });
-  const words = el('span', '', name);
-  const spent = serviceFor(level).spent();
-  // Nothing to report before the first paid reply.
-  if (spent !== null && spent > 0) words.append(el('span', 'lektor-spent', spentLine(spent)));
-  label.append(radio, words);
+  label.append(radio, el('span', '', name));
   return label;
 }
 
@@ -726,11 +756,24 @@ function backButton(label: string, screen: Screen): HTMLButtonElement {
   return back;
 }
 
+/**
+ * The corrections he hasn't taken. Once the text has changed they can't be opened at all: the review
+ * compares them with the text as it is now, so it would offer his own later edits as things to undo.
+ */
+function keptProposalNote(state: TextState): HTMLElement[] {
+  if (state.proposal === '') return [];
+  if (editor.value !== state.proposalFor) {
+    return [el('p', 'lektor-stale', 'Tekst se promenio otkad su napravljeni poslednji predlozi, pa više ne važe. Pošalji zahtev ponovo.')];
+  }
+  return [button('Pogledaj poslednje predloge', () => review(editor.value, state.proposal), 'lektor-link')];
+}
+
 function correctionsScreen(): HTMLElement[] {
   const top = el('div', 'lektor-back-row');
   top.append(backButton('Nazad na utisak', 'response'));
   return [
     top,
+    ...keptProposalNote(stateNow()),
     ...presetChoice(stateNow()),
     footer(
       // Said again here: having chosen the other Lektor on this step, his text is going somewhere the first warning didn't name.
@@ -840,13 +883,18 @@ function plainPanel(content: string | HTMLElement, buttons: HTMLButtonElement[])
 /** Opened at once, because the dialog is what keeps the text still while the corrections are made. */
 async function correct(): Promise<void> {
   const state = stateNow();
+  const textKey = openKey;
   const text = editor.value;
   const controller = new AbortController();
   const leave = (): void => controller.abort();
   const waiting = showAsModal(dialog, plainPanel(waitingLine('AI Lektor ispravlja tekst…', WAITS[levelNow()].correcting, Date.now()), [button('Prekini', leave)]), leave);
   try {
     const instruction = PRESETS.find((preset) => preset.id === state.preset)?.prompt ?? '';
-    const proposed = await ai().corrections({ text, preset: state.preset, instruction, note: state.note }, controller.signal);
+    const asked = { text, preset: state.preset, instruction, note: state.note };
+    const proposed = withHisFirstLine(text, await ai().corrections(asked, controller.signal));
+    state.proposal = proposed;
+    state.proposalFor = text;
+    keepResults(textKey, state);
     stopWaitNote();
     waiting.close();
     review(text, proposed);
@@ -872,6 +920,7 @@ async function correct(): Promise<void> {
 
 function review(text: string, proposed: string): void {
   const state = stateNow();
+  const textKey = openKey;
   const close = openLektorDialog(dialog, required('confirm', HTMLDialogElement), { title: titleFrom(text), current: text, proposed }, 'sr', {
     onApply: (result) => {
       close();
@@ -879,11 +928,19 @@ function review(text: string, proposed: string): void {
       // How the app learns of any edit, so it is saved like one. The real thing keeps a version first, as Ranije verzije's bringBack does.
       editor.dispatchEvent(new Event('input', { bubbles: true }));
       state.readText = result;
+      // Taken, so nothing is left to come back to.
+      state.proposal = '';
+      state.proposalFor = '';
+      keepResults(textKey, state);
       // Back to the comment: this step is done, and the toast says what became of it.
       goTo('response');
       flashToast(required('toast', HTMLDivElement), 'Izmene su unete u tekst.', 'Stari tekst je u Ranijim verzijama.');
     },
-    onClose: () => close(),
+    onClose: () => {
+      close();
+      // Back to a step that now has these corrections to offer.
+      render();
+    },
   });
 }
 

@@ -50,6 +50,37 @@ function cleanedProposal(reply: string, original: string): string {
   return body + ending;
 }
 
+const FIRST_LINE = /^[ \t]*\S.*$/m;
+const SHARE_OF_WORDS_FOR_SAME_LINE = 0.5;
+
+function wordsOfLine(line: string): string[] {
+  const plain = line.normalize('NFD').replace(/\p{M}/gu, '').replace(/[đĐ]/g, 'dj').toLowerCase();
+  return plain.match(/\p{L}+|\p{N}+/gu) ?? [];
+}
+
+/** Whether a line is his line, corrected, rather than something the reply put in its place. */
+function isSameLine(his: string, theirs: string): boolean {
+  const hisWords = wordsOfLine(his);
+  if (hisWords.length === 0) return wordsOfLine(theirs).length === 0;
+  const theirWords = new Set(wordsOfLine(theirs));
+  return hisWords.filter((word) => theirWords.has(word)).length / hisWords.length >= SHARE_OF_WORDS_FOR_SAME_LINE;
+}
+
+/**
+ * Puts his title line back exactly as he wrote it, whatever was asked for and whatever came back:
+ * it holds his filing, in marks and spellings no corrector can know the point of. The app does this
+ * itself because asking the model hasn't been shown to be enough. If the reply dropped the title
+ * rather than changing it, his goes back on top, since replacing the first line would lose a real one.
+ */
+export function withHisFirstLine(original: string, proposal: string): string {
+  const his = FIRST_LINE.exec(original);
+  const theirs = FIRST_LINE.exec(proposal);
+  if (his === null || theirs === null) return proposal;
+  const hisHead = original.slice(0, his.index + his[0].length);
+  if (!isSameLine(his[0], theirs[0])) return `${hisHead}\n\n${proposal.trimStart()}`;
+  return hisHead + proposal.slice(theirs.index + theirs[0].length);
+}
+
 /** A reply that came back much shorter is not offered: already accepted in the review, it would delete his text. */
 export function proposalFrom(reply: string, original: string): string {
   const proposal = cleanedProposal(reply, original);
