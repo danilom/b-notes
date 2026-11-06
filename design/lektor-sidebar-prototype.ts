@@ -1,5 +1,6 @@
 import { describeWhen, strings } from '../src/language/wording.ts';
 import { titleFrom } from '../src/notes/note-title.ts';
+import { elapsedLine } from './lektor-elapsed-time.ts';
 import { readKeptResults, writeKeptResults } from './lektor-kept-results.ts';
 import { withHisFirstLine } from './lektor-instructions.ts';
 import { countWords } from '../src/notes/word-count.ts';
@@ -246,16 +247,18 @@ function stopWaitNote(): void {
 function waitingLine(doing: string, firstNote: string, since: number): HTMLElement {
   stopWaitNote();
   const note = el('p', 'lektor-wait-note', firstNote);
+  const clock = el('p', 'lektor-wait-clock');
   const { longS, veryLongS } = WAITS[levelNow()];
   const update = (): void => {
     const seconds = (Date.now() - since) / 1000;
+    clock.textContent = elapsedLine(seconds);
     if (seconds >= veryLongS) note.textContent = VERY_LONG_WAIT_NOTE;
     else if (seconds >= longS) note.textContent = LONG_WAIT_NOTE;
   };
   update();
   waitNoteTimer = setInterval(update, 1000);
   const line = el('div', 'lektor-waiting');
-  line.append(el('p', 'lektor-reading', doing), note);
+  line.append(el('p', 'lektor-reading', doing), clock, note);
   return line;
 }
 
