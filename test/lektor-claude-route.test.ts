@@ -129,6 +129,13 @@ describe('the dev server route to Claude', () => {
     assert.equal(reply['text'], undefined);
   });
 
+  it('answers whether it has a key without contacting Anthropic or giving the key back', async () => {
+    const { status, reply } = await ask({ provider: 'claude', action: 'has-key', key: 'test-key' });
+    assert.equal(status, 200);
+    assert.deepEqual(reply, { hasKey: true });
+    assert.equal(received, null);
+  });
+
   it('checks a key against the models list', async () => {
     respond = (response) => response.writeHead(200, { 'content-type': 'application/json' }).end('{}');
     const { status } = await ask({ provider: 'claude', action: 'check', key: 'test-key' });

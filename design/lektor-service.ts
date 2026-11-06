@@ -53,9 +53,10 @@ export interface LektorService {
   recipient: string;
   /** How its own words are introduced under an error. */
   whoseWords: string;
-  /** About how much of what was paid in is left, or null if it is free or nobody has said. */
-  creditLeft: () => number | null;
-  rememberCredit: (amount: number) => void;
+  /** Roughly what it has cost on this computer so far, or null if it is free. */
+  spent: () => number | null;
+  /** Whether a key is already saved, for the key panel to say so. */
+  isKeySaved: (signal: AbortSignal) => Promise<boolean>;
   /** Whether the service has a key, or needs one from him. */
   hasKey: () => boolean;
   /** Each service its own, so that a key typed for one never reaches the other. */

@@ -1,6 +1,6 @@
 import { dailyCapSentence } from './lektor-daily-cap.ts';
 import { correctionInstruction, FEEDBACK_INSTRUCTION, proposalFrom, SECOND_LOOK_INSTRUCTION, secondLookInput } from './lektor-instructions.ts';
-import { callServer, connectionCheck, isRecord, messageOf } from './lektor-server-call.ts';
+import { callServer, connectionCheck, isRecord, keyIsWithServer, messageOf } from './lektor-server-call.ts';
 import { type CorrectionRequest, type LektorService, LektorServiceError, type PresetId } from './lektor-service.ts';
 
 /* The free Lektor, on Google's Gemini. */
@@ -82,8 +82,8 @@ export const geminiAi: LektorService = {
   correctionModel: (preset) => modelsFor(preset)[0] ?? '',
   recipient: 'Guglu',
   whoseWords: 'Poruka Gugla',
-  creditLeft: () => null,
-  rememberCredit: () => undefined,
+  spent: () => null,
+  isKeySaved: async (signal) => keyIsWithServer(await callServer({ action: 'has-key', key: keyNow() }, signal)),
   // The dev server has its own, from testdata/, for when none has been pasted.
   hasKey: () => true,
   rememberKey: (key) => window.sessionStorage.setItem(KEY_STORE, key),

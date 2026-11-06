@@ -31,6 +31,11 @@ export async function callServer(body: object, signal: AbortSignal): Promise<{ s
   }
 }
 
+/** What the server says to "has-key": whether it has one to use, and never the key itself. */
+export function keyIsWithServer({ status, reply }: { status: number; reply: unknown }): boolean {
+  return status === 200 && isRecord(reply) && reply['hasKey'] === true;
+}
+
 /** The service's own words about what went wrong, if it gave any. */
 export function messageOf(answer: unknown): string {
   // Gemini's Interactions wraps its refusals in a list; nothing else does.

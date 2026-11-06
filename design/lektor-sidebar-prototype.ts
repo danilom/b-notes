@@ -7,10 +7,10 @@ import { icon } from '../src/ui/icons.ts';
 import { openLektorDialog } from '../src/ui/lektor/lektor-dialog.ts';
 import { flashToast } from '../src/ui/toast.ts';
 import { claudeAi } from './lektor-claude-ai.ts';
-import { creditLine, creditTyped } from './lektor-credit.ts';
 import { BEHAVIOUR_KEY, fakeAi, fakeThoroughAi } from './lektor-fake-ai.ts';
 import { geminiAi } from './lektor-gemini-ai.ts';
 import { type LektorService, LektorServiceError, type PresetId } from './lektor-service.ts';
+import { spentLine } from './lektor-spending.ts';
 
 /** Which Lektor he has chosen, in words about what it means for him rather than whose it is. */
 type Level = 'free' | 'thorough';
@@ -143,16 +143,17 @@ let openKey = currentKey();
 let lastTyped = 0;
 let lastListClick = 0;
 // The key belongs to the machine rather than to any one text.
-let keyDraft = '';
-let keyNote: KeyNote = null;
+const LEVELS: readonly Level[] = ['free', 'thorough'];
+const keyDrafts: Record<Level, string> = { free: '', thorough: '' };
+const keyNotes: Record<Level, KeyNote> = { free: null, thorough: null };
+/** What each service said about its key. */
+const keyServiceSaid: Record<Level, string> = { free: '', thorough: '' };
+const keysSaved: Record<Level, boolean> = { free: false, thorough: false };
 let isKeyJustSaved = false;
 let isAboutAiOpen = false;
 let lastFailureDetail = '';
 let lastServiceSaid = '';
 let lastFinalSentence = '';
-/** What the service said about the key: the key box belongs to no one text. */
-let keyServiceSaid = '';
-let creditDraft = '';
 let readingSince = 0;
 let waitNoteTimer: ReturnType<typeof setInterval> | null = null;
 let working: AbortController | null = null;
@@ -249,12 +250,12 @@ function stopRevealing(): void {
   revealTimer = null;
 }
 
-function failedWith(error: unknown): LektorServiceError['failure'] | null {
+function failedWith(error: unknown, service = ai()): LektorServiceError['failure'] | null {
   if (error instanceof DOMException && error.name === 'AbortError') return null;
   if (error instanceof LektorServiceError) {
     lastFailureDetail = error.detail;
     // Named now: he may choose the other Lektor before coming back to read this.
-    lastServiceSaid = error.serviceSaid === '' ? '' : `${ai().whoseWords}: ${error.serviceSaid}`;
+    lastServiceSaid = error.serviceSaid === '' ? '' : `${service.whoseWords}: ${error.serviceSaid}`;
     lastFinalSentence = error.finalSentence;
     return error.failure;
   }
@@ -290,8 +291,9 @@ async function read(ask: (text: string, signal: AbortSignal) => Promise<string>)
     state.serviceSaid = lastServiceSaid;
     state.screen = failure === 'bad-key' ? 'key' : 'failed';
     if (failure === 'bad-key') {
-      keyNote = 'refused';
-      keyServiceSaid = lastServiceSaid;
+      keyNotes[levelNow()] = 'refused';
+      keyServiceSaid[levelNow()] = lastServiceSaid;
+      void refreshSavedKeys();
     }
   }
   if (working === controller) working = null;
@@ -333,34 +335,60 @@ function keyNoteOf(failure: LektorServiceError['failure'] | null): KeyNote {
   return failure === 'offline' ? 'offline' : 'unavailable';
 }
 
-function rememberCreditDraft(): void {
-  const amount = creditTyped(creditDraft);
-  if (amount !== null) ai().rememberCredit(amount);
-  creditDraft = '';
+/** Asked when the panel opens, and redrawn only on news: a redraw would take the box away from under his pasting. */
+async function refreshSavedKeys(): Promise<void> {
+  const signal = new AbortController().signal;
+  const answers = await Promise.allSettled(LEVELS.map((level) => serviceFor(level).isKeySaved(signal)));
+  let isNews = false;
+  LEVELS.forEach((level, at) => {
+    const answer = answers[at];
+    if (answer?.status === 'rejected') console.error('Could not find out whether a Lektor key is saved', answer.reason);
+    if (answer?.status !== 'fulfilled' || answer.value === keysSaved[level]) return;
+    keysSaved[level] = answer.value;
+    isNews = true;
+  });
+  if (isNews && stateNow().screen === 'key') render();
 }
 
-/** The key only counts once the service has taken it, and what was pasted stays in the box until then. */
-async function checkKey(): Promise<void> {
+function openKeyPanel(): void {
+  stateNow().screen = 'key';
+  render();
+  void refreshSavedKeys();
+}
+
+/** One key, with its own answer: a refused one must not stop the other being saved. Returns false if he stopped it all. */
+async function checkOneKey(level: Level, signal: AbortSignal): Promise<boolean> {
+  const service = serviceFor(level);
+  try {
+    await service.keyCheck(keyDrafts[level], signal);
+    service.rememberKey(keyDrafts[level]);
+    keyDrafts[level] = '';
+    keyNotes[level] = null;
+    keysSaved[level] = true;
+  } catch (error) {
+    const failure = failedWith(error, service);
+    if (failure === null) return false;
+    keyNotes[level] = keyNoteOf(failure);
+    keyServiceSaid[level] = lastServiceSaid;
+  }
+  return true;
+}
+
+/** A key only counts once its service has taken it, and what was pasted stays in the box until then. */
+async function checkPastedKeys(): Promise<void> {
   const state = stateNow();
   stopWorking();
   const controller = new AbortController();
   working = controller;
-  keyNote = 'checking';
+  const pasted = LEVELS.filter((level) => keyDrafts[level] !== '');
+  for (const level of pasted) keyNotes[level] = 'checking';
   render();
-  try {
-    await ai().keyCheck(keyDraft, controller.signal);
-    ai().rememberKey(keyDraft);
-    rememberCreditDraft();
-    keyDraft = '';
-    keyNote = null;
+  const finished = await Promise.all(pasted.map((level) => checkOneKey(level, controller.signal)));
+  if (finished.includes(false)) return;
+  if (pasted.every((level) => keyNotes[level] === null)) {
     isKeyJustSaved = true;
     state.failure = null;
     state.screen = 'start';
-  } catch (error) {
-    const failure = failedWith(error);
-    if (failure === null) return;
-    keyNote = keyNoteOf(failure);
-    keyServiceSaid = lastServiceSaid;
   }
   if (working === controller) working = null;
   render();
@@ -458,8 +486,9 @@ function levelOption(level: Level, name: string): HTMLElement {
     render();
   });
   const words = el('span', '', name);
-  const credit = serviceFor(level).creditLeft();
-  if (credit !== null) words.append(el('span', 'lektor-credit', creditLine(credit)));
+  const spent = serviceFor(level).spent();
+  // Nothing to report before the first paid reply.
+  if (spent !== null && spent > 0) words.append(el('span', 'lektor-spent', spentLine(spent)));
   label.append(radio, words);
   return label;
 }
@@ -468,16 +497,13 @@ function levelOption(level: Level, name: string): HTMLElement {
 function levelChoice(): HTMLElement[] {
   return [
     el('p', 'lektor-heading', 'Koji AI Lektor?'),
-    levelOption('free', 'Besplatan i solidan'),
-    levelOption('thorough', 'Plaćen i temeljniji'),
+    levelOption('free', 'Besplatan i solidan (Google)'),
+    levelOption('thorough', 'Plaćen i temeljniji (Anthropic)'),
   ];
 }
 
 function startScreen(): HTMLElement[] {
-  const key = button('Promeni API ključ', () => {
-    stateNow().screen = 'key';
-    render();
-  }, 'lektor-link');
+  const key = button('API ključevi', openKeyPanel, 'lektor-link');
   const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', 'API ključ radi i sačuvan je.')] : [];
   const send = button(`Pošalji ceo tekst ${ai().recipient}`, () => void read(askForFeedback), 'status-action');
   send.disabled = wordsInText() < FEWEST_WORDS;
@@ -495,61 +521,50 @@ function startScreen(): HTMLElement[] {
   ];
 }
 
-function keyNoteElement(): HTMLElement[] {
-  if (keyNote === null) return [];
-  if (keyNote === 'checking') return [el('p', 'lektor-reading', 'Proveravam API ključ…')];
-  return [problem(KEY_NOTES[keyNote], keyServiceSaid)];
+function keyNoteElement(level: Level): HTMLElement[] {
+  const note = keyNotes[level];
+  if (note === null) return [];
+  if (note === 'checking') return [el('p', 'lektor-reading', 'Proveravam API ključ…')];
+  return [problem(KEY_NOTES[note], keyServiceSaid[level])];
 }
 
-/** Nothing can ask Anthropic what is left, so the count starts from what someone says was paid in. */
-function creditBox(isChecking: boolean): HTMLElement[] {
-  if (levelNow() !== 'thorough') return [];
-  const box = el('input', 'lektor-key');
-  box.type = 'text';
-  box.inputMode = 'decimal';
-  box.autocomplete = 'off';
-  box.value = creditDraft;
-  box.disabled = isChecking;
-  box.addEventListener('input', () => {
-    creditDraft = box.value;
-  });
-  return [el('label', 'lektor-label', 'Uplaćeno, u dolarima (nije obavezno)'), box];
+/** With nothing pasted there is nothing to check, and saving is simply going back. */
+function saveKeys(): void {
+  for (const level of LEVELS) keyDrafts[level] = keyDrafts[level].replace(/\s/g, '');
+  if (LEVELS.some((level) => keyDrafts[level] !== '')) {
+    void checkPastedKeys();
+    return;
+  }
+  for (const level of LEVELS) keyNotes[level] = null;
+  goTo('start');
 }
 
-function keyScreen(): HTMLElement[] {
-  const isChecking = keyNote === 'checking';
+function keyField(level: Level, name: string, isChecking: boolean): HTMLElement[] {
   const box = el('input', 'lektor-key');
   box.type = 'text';
   box.autocomplete = 'off';
   box.spellcheck = false;
-  box.value = keyDraft;
+  box.value = keyDrafts[level];
   box.disabled = isChecking;
+  // Not the key: it is never shown again. Pasting over this replaces it.
+  box.placeholder = keysSaved[level] ? 'sačuvan' : '';
   box.addEventListener('input', () => {
-    keyDraft = box.value;
+    keyDrafts[level] = box.value;
   });
-  const save = (): void => {
-    const pasted = box.value.replace(/\s/g, '');
-    if (pasted !== '') {
-      keyDraft = pasted;
-      void checkKey();
-      return;
-    }
-    // After a top-up there is a new amount but no new key.
-    if (creditTyped(creditDraft) === null) return;
-    rememberCreditDraft();
-    goTo('start');
-  };
   box.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') save();
+    if (event.key === 'Enter') saveKeys();
   });
-  const saveButton = button('Sačuvaj', save, 'status-action');
+  return [el('label', 'lektor-label', name), box, ...keyNoteElement(level)];
+}
+
+function keyScreen(): HTMLElement[] {
+  const isChecking = LEVELS.some((level) => keyNotes[level] === 'checking');
+  const saveButton = button('Sačuvaj', saveKeys, 'status-action');
   saveButton.disabled = isChecking;
   return [
     el('p', 'lektor-line', 'Za rad AI Lektora potreban je API ključ. Ako ti ga je neko poslao, zalepi ga ovde.'),
-    el('label', 'lektor-label', 'API ključ'),
-    box,
-    ...creditBox(isChecking),
-    ...keyNoteElement(),
+    ...keyField('free', 'API ključ za Google (besplatan)', isChecking),
+    ...keyField('thorough', 'API ključ za Anthropic (plaćen)', isChecking),
     footer([], saveButton),
   ];
 }
@@ -763,7 +778,10 @@ function render(): void {
     side.replaceChildren();
     return;
   }
-  if (state.screen === 'start' && !hasKey()) state.screen = 'key';
+  if (state.screen === 'start' && !hasKey()) {
+    state.screen = 'key';
+    void refreshSavedKeys();
+  }
   const body = el('div', 'lektor-side-body');
   body.append(...SCREENS[state.screen]());
   const title = el('div', 'lektor-side-title');
@@ -791,7 +809,9 @@ function settleWhatWasUnderway(state: TextState): void {
   }
   if (state.screen === 'key') {
     stopWorking();
-    if (keyNote === 'checking') keyNote = null;
+    for (const level of LEVELS) {
+      if (keyNotes[level] === 'checking') keyNotes[level] = null;
+    }
     if (hasKey()) state.screen = 'start';
   }
 }

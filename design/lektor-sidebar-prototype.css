@@ -572,8 +572,15 @@ body.lektor-open #lektor-side {
   gap: 0.4rem;
 }
 
-/* Under its name rather than beside it: the column is narrow, and this is the one figure he should be able to find. */
-.lektor-credit {
+/* Plain, unlike the italic example in the notes box: this states a fact about the field rather than suggesting what to write. */
+.lektor-key::placeholder {
+  color: var(--quiet);
+  font-style: normal;
+  opacity: 1;
+}
+
+/* Under its name rather than beside it: the column is narrow. */
+.lektor-spent {
   display: block;
   color: var(--quiet);
   font-size: 0.85em;

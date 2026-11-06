@@ -104,7 +104,9 @@ async function bodyOf(request) {
 }
 
 async function askGemini(asked) {
-  const headers = { 'x-goog-api-key': await keyFor(asked.key, GEMINI_KEY_FILE), 'Api-Revision': GEMINI_API_REVISION };
+  const key = await keyFor(asked.key, GEMINI_KEY_FILE);
+  if (asked.action === 'has-key') return Response.json({ hasKey: key !== '' });
+  const headers = { 'x-goog-api-key': key, 'Api-Revision': GEMINI_API_REVISION };
   if (asked.action === 'ping') {
     // Any answer at all means the internet is there, whatever Google thinks of the request.
     await fetch(`${GEMINI}/models?pageSize=1`, { signal: AbortSignal.timeout(8_000) });
@@ -124,6 +126,7 @@ async function askGemini(asked) {
 
 async function askClaude(asked) {
   const key = await keyFor(asked.key, CLAUDE_KEY_FILE);
+  if (asked.action === 'has-key') return Response.json({ hasKey: key !== '' });
   // Nothing is sent, least of all his text, on a request that can only be refused. No words: it isn't Anthropic talking.
   if (key === '') return Response.json({ error: { message: '' } }, { status: 401 });
   const headers = { 'x-api-key': key, 'anthropic-version': CLAUDE_API_VERSION };

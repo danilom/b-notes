@@ -129,26 +129,33 @@ describe('Claude replies', () => {
     assert.equal(sent[0]?.model, 'claude-opus-5-5');
   });
 
-  it('takes the reply\'s cost off what is left', async () => {
-    claudeAi.rememberCredit(10);
-    answerWith({ status: 200, body: finished('Utisak.') });
+  it('adds each reply\'s cost to what has been spent', async () => {
+    answerWith({ status: 200, body: finished('Utisak.') }, { status: 200, body: finished('Utisak.') });
     await claudeAi.feedback('tekst', signal);
-    assert.ok(Math.abs((claudeAi.creditLeft() ?? 0) - 9.748) < 1e-9);
+    await claudeAi.feedback('tekst', signal);
+    assert.ok(Math.abs((claudeAi.spent() ?? 0) - 0.504) < 1e-9);
   });
 
-  it('charges for a reply that is refused, since Anthropic does', async () => {
-    claudeAi.rememberCredit(10);
+  it('counts a reply that is refused, since Anthropic charges for it', async () => {
     answerWith({ status: 200, body: { text: '', stopReason: 'refusal', explanation: 'Ne mogu.', usage: { inputTokens: 1_000, outputTokens: 0 } } });
     const failure = await failureOf(claudeAi);
     assert.equal(failure.failure, 'declined');
     assert.equal(failure.serviceSaid, 'Ne mogu.');
-    assert.ok(Math.abs((claudeAi.creditLeft() ?? 0) - 9.996) < 1e-9);
+    assert.ok(Math.abs((claudeAi.spent() ?? 0) - 0.004) < 1e-9);
   });
 
-  it('shows no balance until someone has said what was paid in', async () => {
-    answerWith({ status: 200, body: finished('Utisak.') });
-    await claudeAi.feedback('tekst', signal);
-    assert.equal(claudeAi.creditLeft(), null);
+  it('has spent nothing before the first reply, even with a damaged store', () => {
+    assert.equal(claudeAi.spent(), 0);
+    window.localStorage.setItem('lektor-claude-spent', 'nije broj');
+    assert.equal(claudeAi.spent(), 0);
+  });
+
+  it('asks the server about its own key, not Google\'s', async () => {
+    answerWith({ status: 200, body: { hasKey: true } }, { status: 200, body: { hasKey: false } });
+    assert.equal(await claudeAi.isKeySaved(signal), true);
+    assert.equal(await geminiAi.isKeySaved(signal), false);
+    assert.equal(sent[0]?.provider, 'claude');
+    assert.equal(sent[1]?.provider, undefined);
   });
 
   it('treats a reply that hit the length limit as cut off', async () => {
@@ -156,13 +163,11 @@ describe('Claude replies', () => {
     assert.equal((await failureOf(claudeAi)).failure, 'cut-off');
   });
 
-  it('says the money is gone, puts the estimate right, and offers no retry', async () => {
-    claudeAi.rememberCredit(1.5);
+  it('says the money is gone and offers no retry', async () => {
     answerWith({ status: 400, body: error('Your credit balance is too low to access the Anthropic API.') });
     const failure = await failureOf(claudeAi);
     assert.equal(failure.failure, 'no-credit');
     assert.notEqual(failure.finalSentence, '');
-    assert.equal(claudeAi.creditLeft(), 0);
   });
 
   const cases: [string, number, string, LektorFailure][] = [

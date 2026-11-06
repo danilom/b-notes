@@ -1,5 +1,4 @@
 import { fetchRealSamples } from './diff-prototype-samples.ts';
-import { creditAfter } from './lektor-credit.ts';
 import { type LektorService, LektorServiceError, NO_CREDIT_SENTENCE, type PresetId } from './lektor-service.ts';
 
 /** How the pretend service behaves, chosen in the his-screens harness. */
@@ -140,8 +139,8 @@ export const fakeAi: LektorService = {
   correctionModel: () => 'probni, bez pravog AI',
   recipient: 'Guglu',
   whoseWords: 'Poruka Gugla',
-  creditLeft: () => null,
-  rememberCredit: () => undefined,
+  spent: () => null,
+  isKeySaved: () => Promise.resolve(window.sessionStorage.getItem('lektor-fake-key') !== null),
   hasKey: () => window.sessionStorage.getItem('lektor-fake-key') !== null,
   rememberKey: (key) => window.sessionStorage.setItem('lektor-fake-key', key),
   connectionCheck: fakeConnectionCheck,
@@ -151,14 +150,10 @@ export const fakeAi: LektorService = {
   corrections: ({ text, preset }, signal) => fakeCorrections(text, preset, signal),
 };
 
-/** Held only here and spent at about the real rate, so the balance can be watched going down without paying for it. */
-let fakeCredit: number | null = 10;
+/** Held only here and added to at about the real rate, so the figure can be watched without paying for it. */
+let fakeSpent = 0;
 const COMMENT_COST = 0.08;
 const CORRECTION_COST = 0.25;
-
-function spendFake(cost: number): void {
-  if (fakeCredit !== null) fakeCredit = creditAfter(fakeCredit, cost);
-}
 
 export const fakeThoroughAi: LektorService = {
   ...fakeAi,
@@ -166,18 +161,15 @@ export const fakeThoroughAi: LektorService = {
   correctionModel: () => 'probni temeljni, bez pravog AI',
   recipient: 'firmi Anthropic',
   whoseWords: 'Poruka firme Anthropic',
-  creditLeft: () => fakeCredit,
-  rememberCredit: (amount) => {
-    fakeCredit = amount;
-  },
+  spent: () => fakeSpent,
   feedback: async (text, signal) => {
     const comment = await fakeFeedback(text, signal);
-    spendFake(COMMENT_COST);
+    fakeSpent += COMMENT_COST;
     return comment;
   },
   corrections: async ({ text, preset }, signal) => {
     const proposal = await fakeCorrections(text, preset, signal);
-    spendFake(CORRECTION_COST);
+    fakeSpent += CORRECTION_COST;
     return proposal;
   },
 };
