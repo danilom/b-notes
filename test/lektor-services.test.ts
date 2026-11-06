@@ -163,6 +163,16 @@ describe('Claude replies', () => {
     assert.equal((await failureOf(claudeAi)).failure, 'cut-off');
   });
 
+  for (const limit of ['You have reached your specified API usage limits.', 'You have reached your specified workspace API usage limits.']) {
+    it(`treats a spend limit as the money being gone: ${limit}`, async () => {
+      answerWith({ status: 400, body: error(limit) });
+      const failure = await failureOf(claudeAi);
+      assert.equal(failure.failure, 'no-credit');
+      assert.notEqual(failure.finalSentence, '');
+      assert.equal(failure.serviceSaid, limit);
+    });
+  }
+
   it('says the money is gone and offers no retry', async () => {
     answerWith({ status: 400, body: error('Your credit balance is too low to access the Anthropic API.') });
     const failure = await failureOf(claudeAi);

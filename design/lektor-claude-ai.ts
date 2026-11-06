@@ -31,7 +31,10 @@ function refusal(status: number, reply: unknown): LektorServiceError {
   if (status === 502) return new LektorServiceError('offline', detail);
   // Out of time: the dev server's words, not Anthropic's.
   if (status === 504) return new LektorServiceError('overloaded', detail);
-  if (/credit balance/i.test(message)) return new LektorServiceError('no-credit', detail, message, NO_CREDIT_SENTENCE);
+  // A monthly limit set in the Console reads the same to him: nothing he does here will help until someone acts there.
+  if (/credit balance|specified (workspace )?API usage limits/i.test(message)) {
+    return new LektorServiceError('no-credit', detail, message, NO_CREDIT_SENTENCE);
+  }
   if (status === 429) return new LektorServiceError('limit', detail, message);
   if (status === 401 || status === 403) return new LektorServiceError('bad-key', detail, message);
   if (status === 400 && /too long|too large|maximum/i.test(message)) return new LektorServiceError('too-long', detail, message);
