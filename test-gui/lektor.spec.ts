@@ -67,7 +67,7 @@ test('keeps the old text as a version when corrections go in, and says these are
   await expect(page.locator('.lektor-response')).toContainText('PROBNI', { timeout: 15_000 });
 
   await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
-  await page.getByLabel('Uz to smele prepravke').check();
+  await page.getByLabel('Dubinska prerada').check();
   await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
   await expect(page.getByText('Probni predlozi, bez pravog AI')).toBeVisible({ timeout: 15_000 });
 
