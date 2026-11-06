@@ -1,0 +1,62 @@
+import { FileMissing, type FileSystem } from '../../platform/file-system.ts';
+import { describeError, type Log } from '../../platform/logging.ts';
+
+/*
+  What the Lektor last said about a text, kept so that closing the app doesn't throw away what
+  took minutes and may have cost money. In `userData`, so on this computer only and safe to
+  delete. A file per text, named by a hash: his names are hostile, and this needn't be readable.
+*/
+
+export interface KeptResults {
+  feedback: string;
+  /** The text as the Lektor last read it. */
+  readText: string;
+  readAt: number;
+  /** The last corrections he neither took nor replaced. */
+  proposal: string;
+  /** The text they were made from: they apply to that and to nothing else. */
+  proposalFor: string;
+}
+
+const FOLDER = 'lektor-kept';
+
+/** FNV-1a, which is enough here: the file also says which text it is about, and that is checked. */
+function hashOf(text: string): string {
+  let hash = 0x811c9dc5;
+  for (let at = 0; at < text.length; at += 1) {
+    hash ^= text.charCodeAt(at);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+const fileFor = (appFolder: string, textName: string): string => `${appFolder}/${FOLDER}/${hashOf(textName)}.json`;
+
+/** Whatever was stored is checked before it is believed: it may be from an older version, or damaged, or another text's. */
+export function keptResultsFrom(stored: unknown, textName: string): KeptResults | null {
+  if (typeof stored !== 'object' || stored === null) return null;
+  const { name, feedback, readText, readAt, proposal, proposalFor } = stored as Record<string, unknown>;
+  if (name !== textName) return null;
+  if (typeof feedback !== 'string' || typeof readText !== 'string' || typeof readAt !== 'number') return null;
+  if (typeof proposal !== 'string' || typeof proposalFor !== 'string') return null;
+  return { feedback, readText, readAt, proposal, proposalFor };
+}
+
+export async function readKeptResults(files: FileSystem, appFolder: string, textName: string, log: Log): Promise<KeptResults | null> {
+  try {
+    return keptResultsFrom(JSON.parse(await files.read(fileFor(appFolder, textName))), textName);
+  } catch (error) {
+    // Absent is the answer for every text the Lektor hasn't read, so only anything else is worth a line.
+    if (!(error instanceof FileMissing)) log.warn('The kept Lektor results could not be read', describeError(error));
+    return null;
+  }
+}
+
+/** A failure costs only the convenience, since the results on screen are still there: logged, and the Lektor carries on. */
+export async function writeKeptResults(files: FileSystem, appFolder: string, textName: string, results: KeptResults, log: Log): Promise<void> {
+  try {
+    await files.write(fileFor(appFolder, textName), JSON.stringify({ name: textName, ...results }));
+  } catch (error) {
+    log.warn('The Lektor results could not be kept', describeError(error));
+  }
+}

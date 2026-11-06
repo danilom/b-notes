@@ -6,6 +6,7 @@ import { BUILD_STAMP } from '../../platform/build-info.ts';
 import { LOG_LEVELS, createFileLogger } from './log-file.ts';
 import { createFileSystem } from './disk-file-system.ts';
 import { absenceReply } from '../../platform/file-system.ts';
+import { askLektorService, lektorRequestFrom } from '../../platform/lektor-remote.ts';
 import { logsFolderFor, notesFolderFor, readChosenFolders, whereToOpen, writeChosenFolders } from './chosen-folders.ts';
 import { findResophFolder } from './resoph-config.ts';
 import { createOtherEditors } from './windows-editors.ts';
@@ -103,6 +104,11 @@ const otherEditors = createOtherEditors(
 function asEditors(value: unknown): OtherEditor[] {
   if (!Array.isArray(value)) throw new TypeError('editors must be a list');
   return value.filter((each): each is OtherEditor => OTHER_EDITORS.some((known) => known === each));
+}
+
+function asNumber(value: unknown, name: string): number {
+  if (typeof value !== 'number') throw new TypeError(`${name} must be a number`);
+  return value;
 }
 
 function asString(value: unknown, name: string): string {
@@ -224,6 +230,36 @@ handle('app:restart', async () => {
 // The window's copy button. Here because the sandboxed preload has no clipboard.
 handle('app:copyToClipboard', async (args) => {
   clipboard.writeText(asString(args[0], 'text'));
+});
+/*
+  The Lektor's way to an AI service. Here because the page may not reach those addresses,
+  and logged here for what it did and never what it said: not his text, not a key. Token
+  counts, because they are how any idea of the cost can be checked.
+*/
+const lektorInFlight = new Map<number, AbortController>();
+handle('lektor:request', async (args) => {
+  const id = asNumber(args[0], 'id');
+  const request = lektorRequestFrom(args[1]);
+  const controller = new AbortController();
+  lektorInFlight.set(id, controller);
+  const started = Date.now();
+  try {
+    const response = await askLektorService(request, controller.signal);
+    log.info('Asked a Lektor service', {
+      provider: request.provider,
+      action: request.action,
+      model: request.model,
+      status: response.status,
+      ms: Date.now() - started,
+      usage: typeof response.reply === 'object' && response.reply !== null ? (response.reply as { usage?: unknown }).usage : undefined,
+    });
+    return response;
+  } finally {
+    lektorInFlight.delete(id);
+  }
+});
+handle('lektor:stop', async (args) => {
+  lektorInFlight.get(asNumber(args[0], 'id'))?.abort();
 });
 handle('editors:running', () => otherEditors.running());
 handle('editors:resophTray', () => otherEditors.resophTray());

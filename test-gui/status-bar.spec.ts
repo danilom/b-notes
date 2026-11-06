@@ -92,12 +92,12 @@ const HIS_WINDOWS = [
   { laptop: 'Asus', width: 1280, height: 650 },
 ];
 
-test('keeps the strip to its two rows at the size of his own windows', async ({ page }) => {
-  // The buttons for his text on top; the status line, Premesti u Resoph and
-  // Izgled below. Wrapping further is the fallback, not the arrangement: if
-  // his own window starts needing a third row, the strip has outgrown the
-  // space and wants deciding about rather than quietly taking another line of
-  // his writing.
+test('keeps the strip to at most two rows at the size of his own windows', async ({ page }) => {
+  // One row where everything fits, and otherwise the buttons for his text on
+  // top with the status line, Premesti u Resoph and Izgled below. Wrapping
+  // further is the fallback, not the arrangement: if his own window starts
+  // needing a third row, the strip has outgrown the space and wants deciding
+  // about rather than quietly taking another line of his writing.
   for (const { laptop, width, height } of HIS_WINDOWS) {
     await page.setViewportSize({ width, height });
     const rows = await page.locator('#status .status-action').evaluateAll((buttons) => {
@@ -105,7 +105,7 @@ test('keeps the strip to its two rows at the size of his own windows', async ({ 
       return new Set(tops).size;
     });
 
-    expect(rows, `on his ${laptop}`).toBe(2);
+    expect(rows, `on his ${laptop}`).toBeLessThanOrEqual(2);
   }
 });
 

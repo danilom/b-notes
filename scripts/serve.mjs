@@ -2,7 +2,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import path from 'node:path';
 
-import { readClaudeStream } from './claude-stream.mjs';
+import { askLektorService, lektorRequestFrom } from '../src/platform/lektor-remote.ts';
 
 /** The browser build, which is the one carrying the mock store. */
 const root = path.resolve('dist-browser');
@@ -33,7 +33,6 @@ const CONTENT_TYPES = new Map([
 const TOOL_PAGES = new Map([
   ['his-screens', 'tools/his-screens.html'],
   ['diff-prototype', 'design/diff-prototype.html'],
-  ['lektor-prototype', 'design/lektor-prototype.html'],
 ]);
 
 /*
@@ -68,29 +67,12 @@ async function readDiffSamples() {
 }
 
 /*
-  For trying the Lektor prototype on real AI. Here because the keys must not be
-  in the page, as in the app they will live in the main process. A key comes from the
-  page if he pasted one, or else from testdata/, which git ignores. Logs no text.
+  The browser build's way to an AI service, for what the main process does in the app:
+  the page may not reach those addresses itself. The same code as the app's. Logs no text.
 */
-const GEMINI = 'https://generativelanguage.googleapis.com/v1beta';
-const GEMINI_KEY_FILE = path.resolve('testdata/gemini-key.txt');
-const GEMINI_API_REVISION = '2026-05-20';
-// Replaceable so that the test of this route talks to a stand-in and spends nothing.
-const CLAUDE = process.env['LEKTOR_CLAUDE_URL'] ?? 'https://api.anthropic.com/v1';
-const CLAUDE_KEY_FILE = path.resolve('testdata/claude-key.txt');
-const CLAUDE_API_VERSION = '2026-10-21';
-const CLAUDE_LONGEST_REPLY_TOKENS = 64_000;
 const LARGEST_REQUEST_BYTES = 4 * 1024 * 1024;
-
-async function keyFor(given, file) {
-  if (typeof given === 'string' && given !== '') return given;
-  try {
-    return (await readFile(file, 'utf8')).trim();
-  } catch (error) {
-    if (error.code === 'ENOENT') return '';
-    throw error;
-  }
-}
+// Replaceable so that the test of this route talks to a stand-in and spends nothing.
+const LEKTOR_ADDRESSES = { claude: process.env['LEKTOR_CLAUDE_URL'] };
 
 async function bodyOf(request) {
   const chunks = [];
@@ -103,56 +85,6 @@ async function bodyOf(request) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 
-async function askGemini(asked) {
-  const key = await keyFor(asked.key, GEMINI_KEY_FILE);
-  if (asked.action === 'has-key') return Response.json({ hasKey: key !== '' });
-  const headers = { 'x-goog-api-key': key, 'Api-Revision': GEMINI_API_REVISION };
-  if (asked.action === 'ping') {
-    // Any answer at all means the internet is there, whatever Google thinks of the request.
-    await fetch(`${GEMINI}/models?pageSize=1`, { signal: AbortSignal.timeout(8_000) });
-    return new Response('{}', { status: 200 });
-  }
-  if (asked.action === 'check') {
-    return fetch(`${GEMINI}/models?pageSize=1`, { headers, signal: AbortSignal.timeout(15_000) });
-  }
-  return fetch(`${GEMINI}/interactions`, {
-    method: 'POST',
-    headers: { ...headers, 'Content-Type': 'application/json' },
-    // store: false, so Google keeps no conversation of its own.
-    body: JSON.stringify({ model: asked.model, system_instruction: asked.system, input: asked.input, store: false }),
-    signal: AbortSignal.timeout(180_000),
-  });
-}
-
-async function askClaude(asked) {
-  const key = await keyFor(asked.key, CLAUDE_KEY_FILE);
-  if (asked.action === 'has-key') return Response.json({ hasKey: key !== '' });
-  // Nothing is sent, least of all his text, on a request that can only be refused. No words: it isn't Anthropic talking.
-  if (key === '') return Response.json({ error: { message: '' } }, { status: 401 });
-  const headers = { 'x-api-key': key, 'anthropic-version': CLAUDE_API_VERSION };
-  if (asked.action === 'check') {
-    return fetch(`${CLAUDE}/models?limit=1`, { headers, signal: AbortSignal.timeout(15_000) });
-  }
-  const response = await fetch(`${CLAUDE}/messages`, {
-    method: 'POST',
-    headers: { ...headers, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: asked.model,
-      max_tokens: CLAUDE_LONGEST_REPLY_TOKENS,
-      output_config: { effort: 'medium' },
-      stream: true,
-      system: asked.system,
-      messages: [{ role: 'user', content: asked.input }],
-    }),
-    // A long essay took over four minutes when tried, so more than Gemini's three.
-    signal: AbortSignal.timeout(600_000),
-  });
-  if (!response.ok) return response;
-  const { text, stopReason, explanation, usage, error } = await readClaudeStream(response.body);
-  if (error !== null) return Response.json({ error }, { status: error.type === 'rate_limit_error' ? 429 : 529 });
-  return Response.json({ text, stopReason, explanation, usage });
-}
-
 async function serveLektorAi(request, response) {
   // Never to anyone else on the network: this spends the key.
   const from = request.socket.remoteAddress ?? '';
@@ -162,18 +94,22 @@ async function serveLektorAi(request, response) {
   }
   const answer = (status, body) => {
     response.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-    response.end(body);
+    response.end(JSON.stringify(body));
   };
   try {
-    const asked = await bodyOf(request);
+    const asked = lektorRequestFrom(await bodyOf(request));
     const started = Date.now();
-    const reply = await (asked.provider === 'claude' ? askClaude(asked) : askGemini(asked));
-    console.log('Lektor AI', asked.action, asked.model ?? '', reply.status, `${Date.now() - started} ms`);
-    answer(reply.status, await reply.text());
+    const stop = new AbortController();
+    // He pressed Prekini, which the page shows the server by going away.
+    response.on('close', () => {
+      if (!response.writableEnded) stop.abort();
+    });
+    const { status, reply } = await askLektorService(asked, stop.signal, LEKTOR_ADDRESSES);
+    console.log('Lektor AI', asked.provider, asked.action, asked.model, status, `${Date.now() - started} ms`);
+    answer(status, reply);
   } catch (error) {
-    console.error('Lektor AI could not reach the service:', error.name);
-    // Reached but out of time is the service's trouble; only no answer at all reads as being offline.
-    answer(error.name === 'TimeoutError' ? 504 : 502, JSON.stringify({ error: { message: error.name } }));
+    console.error('Lektor AI could not be asked:', error.name);
+    answer(400, { error: { message: error.name } });
   }
 }
 

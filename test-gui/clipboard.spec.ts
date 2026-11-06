@@ -9,7 +9,7 @@ import { expect, test, type Page } from '@playwright/test';
  * if he does anything at all — neither of which exists outside a running page.
  */
 
-const COPY = 'Kopiraj ceo tekst';
+const COPY = 'Kopiraj sve';
 
 const openFirstText = async (page: Page): Promise<string> => {
   await page.locator('#list .note').first().click();

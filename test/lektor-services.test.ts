@@ -1,60 +1,50 @@
 import assert from 'node:assert/strict';
-import { afterEach, beforeEach, describe, it } from 'node:test';
+import { beforeEach, describe, it } from 'node:test';
 
-import { claudeAi } from '../design/lektor-claude-ai.ts';
-import { geminiAi } from '../design/lektor-gemini-ai.ts';
-import { correctionInstruction, proposalFrom, withHisFilingMarks } from '../design/lektor-instructions.ts';
-import { type LektorFailure, type LektorService, LektorServiceError } from '../design/lektor-service.ts';
+import { strings } from '../src/language/wording.ts';
+import { LEKTOR_STOPPED, LEKTOR_TIMED_OUT, LEKTOR_UNREACHED, type LektorRequest } from '../src/platform/lektor-remote.ts';
+import { createClaudeAi } from '../src/ui/lektor/lektor-claude-ai.ts';
+import { createGeminiAi } from '../src/ui/lektor/lektor-gemini-ai.ts';
+import { correctionInstruction, proposalFrom, withHisFilingMarks } from '../src/ui/lektor/lektor-instructions.ts';
+import { type LektorFailure, type LektorService, LektorServiceError } from '../src/ui/lektor/lektor-service.ts';
 
 /*
-  Neither service ever reaches the network here: fetch is replaced for every test, and one
+  Neither service reaches anything here: they are handed a stand-in for the host, and one
   that isn't given an answer fails rather than asking anyone. These tests cost nothing.
 */
 
-function storage(): Storage {
-  const held = new Map<string, string>();
-  return {
-    getItem: (key) => held.get(key) ?? null,
-    setItem: (key, value) => void held.set(key, value),
-    removeItem: (key) => void held.delete(key),
-    clear: () => held.clear(),
-    key: () => null,
-    get length() {
-      return held.size;
-    },
-  };
-}
+const words = strings('sr').lektor;
 
-interface Sent {
-  provider?: string;
-  model?: string;
-  system?: string;
-  input?: string;
-}
+let sent: LektorRequest[] = [];
+let answers: { status: number; body: unknown }[] = [];
+let warnings: string[] = [];
 
-const realFetch = globalThis.fetch;
-let sent: Sent[] = [];
-
-function answerWith(...answers: { status: number; body: unknown }[]): void {
-  const queue = [...answers];
-  globalThis.fetch = (async (_url: unknown, init?: RequestInit) => {
-    sent.push(JSON.parse(String(init?.body)) as Sent);
-    const next = queue.shift();
+const parts = {
+  ask: async (request: LektorRequest) => {
+    sent.push(request);
+    const next = answers.shift();
     if (next === undefined) throw new Error('A test asked for more answers than it was given');
-    return new Response(JSON.stringify(next.body), { status: next.status });
-  }) as typeof fetch;
+    return { status: next.status, reply: next.body };
+  },
+  keyNow: () => 'test-key',
+  noCreditSentence: () => words.noCredit,
+  dailyCapWords: () => words,
+  warn: (message: string) => {
+    warnings.push(message);
+  },
+};
+
+const geminiAi = createGeminiAi(parts);
+const claudeAi = createClaudeAi(parts);
+
+function answerWith(...next: { status: number; body: unknown }[]): void {
+  answers = next;
 }
 
 beforeEach(() => {
   sent = [];
-  Object.defineProperty(globalThis, 'window', { value: { sessionStorage: storage(), localStorage: storage() }, configurable: true });
-  globalThis.fetch = (() => {
-    throw new Error('This test has no answer prepared, and must not reach the network');
-  }) as typeof fetch;
-});
-
-afterEach(() => {
-  globalThis.fetch = realFetch;
+  answers = [];
+  warnings = [];
 });
 
 const signal = new AbortController().signal;
@@ -74,10 +64,11 @@ const CAP = 'Rate limit exceeded for model gemini-3.6-flash (limit: 20 requests 
 
 describe('Gemini refusals', () => {
   const cases: [string, number, unknown, LektorFailure][] = [
-    ['a server that could not reach Google as being offline', 502, error('TypeError'), 'offline'],
-    ['running out of time as trouble with the service', 504, error('TimeoutError'), 'overloaded'],
+    ['not reaching Google as being offline', LEKTOR_UNREACHED, error('TypeError'), 'offline'],
+    ['running out of time as trouble with the service', LEKTOR_TIMED_OUT, error('TimeoutError'), 'overloaded'],
     ['the free limit', 429, [error(CAP)], 'limit'],
     ['a key refused in a list, as Interactions sends it', 400, [error('API key not valid. Please pass a valid API key.')], 'bad-key'],
+    ['no key at all, with no words', 401, error(''), 'bad-key'],
     ['a text over the limit', 400, error('The input token count exceeds the maximum'), 'too-long'],
     ['an overloaded model with no other to try', 503, error('high demand'), 'overloaded'],
   ];
@@ -88,7 +79,7 @@ describe('Gemini refusals', () => {
     });
   }
 
-  it('hands on Google\'s own words, and tells him the time for the daily cap', async () => {
+  it("hands on Google's own words, and tells him the time for the daily cap", async () => {
     answerWith({ status: 429, body: error(CAP) });
     const failure = await failureOf(geminiAi);
     assert.equal(failure.serviceSaid, CAP);
@@ -100,8 +91,8 @@ describe('Gemini refusals', () => {
     assert.equal((await failureOf(geminiAi)).finalSentence, '');
   });
 
-  it('passes the dev server\'s own words off as nobody\'s', async () => {
-    answerWith({ status: 504, body: error('TimeoutError') });
+  it('passes our own words about a timeout off as nobody\'s', async () => {
+    answerWith({ status: LEKTOR_TIMED_OUT, body: error('TimeoutError') });
     assert.equal((await failureOf(geminiAi)).serviceSaid, '');
   });
 
@@ -117,16 +108,30 @@ describe('Gemini refusals', () => {
     await geminiAi.corrections({ text, preset: 'letters', instruction: 'x', note: '' }, signal);
     assert.deepEqual(sent.map((request) => request.model), ['gemini-3.1-flash-lite', 'gemini-3.6-flash']);
   });
+
+  it('makes a note of a refusal it does not recognise', async () => {
+    answerWith({ status: 400, body: error('Something new from Google') });
+    assert.equal((await failureOf(geminiAi)).failure, 'overloaded');
+    assert.equal(warnings.length, 1);
+  });
+
+  it('sends the key it is given, and asks Google', async () => {
+    answerWith({ status: 200, body: { output_text: 'Utisak.' } });
+    await geminiAi.feedback('tekst', signal);
+    assert.equal(sent[0]?.provider, 'gemini');
+    assert.equal(sent[0]?.key, 'test-key');
+  });
 });
 
 describe('Claude replies', () => {
   const finished = (text: string): { text: string; stopReason: string; usage: object } => ({ text, stopReason: 'end_turn', usage: { inputTokens: 8_000, outputTokens: 11_000 } });
 
-  it('asks the dev server for Claude and for Opus', async () => {
+  it('asks for Claude and for Opus, with the key it is given', async () => {
     answerWith({ status: 200, body: finished('Utisak.') });
     assert.equal(await claudeAi.feedback('tekst', signal), 'Utisak.');
     assert.equal(sent[0]?.provider, 'claude');
     assert.equal(sent[0]?.model, 'claude-opus-5-5');
+    assert.equal(sent[0]?.key, 'test-key');
   });
 
   it('hands on the explanation when it declines', async () => {
@@ -134,14 +139,6 @@ describe('Claude replies', () => {
     const failure = await failureOf(claudeAi);
     assert.equal(failure.failure, 'declined');
     assert.equal(failure.serviceSaid, 'Ne mogu.');
-  });
-
-  it('asks the server about its own key, not Google\'s', async () => {
-    answerWith({ status: 200, body: { hasKey: true } }, { status: 200, body: { hasKey: false } });
-    assert.equal(await claudeAi.isKeySaved(signal), true);
-    assert.equal(await geminiAi.isKeySaved(signal), false);
-    assert.equal(sent[0]?.provider, 'claude');
-    assert.equal(sent[1]?.provider, undefined);
   });
 
   it('treats a reply that hit the length limit as cut off', async () => {
@@ -163,17 +160,17 @@ describe('Claude replies', () => {
     answerWith({ status: 400, body: error('Your credit balance is too low to access the Anthropic API.') });
     const failure = await failureOf(claudeAi);
     assert.equal(failure.failure, 'no-credit');
-    assert.notEqual(failure.finalSentence, '');
+    assert.equal(failure.finalSentence, words.noCredit);
   });
 
   const cases: [string, number, string, LektorFailure][] = [
-    ['no key anywhere, sent by the dev server without any words', 401, '', 'bad-key'],
+    ['no key anywhere, with no words', 401, '', 'bad-key'],
     ['a refused key', 401, 'invalid x-api-key', 'bad-key'],
     ['the rate limit', 429, 'Number of requests has exceeded your rate limit', 'limit'],
     ['overload', 529, 'Overloaded', 'overloaded'],
     ['a text over the limit', 400, 'prompt is too long: 1200000 tokens > 1000000 maximum', 'too-long'],
-    ['a server that could not reach Anthropic', 502, 'TypeError', 'offline'],
-    ['running out of time', 504, 'TimeoutError', 'overloaded'],
+    ['not reaching Anthropic', LEKTOR_UNREACHED, 'TypeError', 'offline'],
+    ['running out of time', LEKTOR_TIMED_OUT, 'TimeoutError', 'overloaded'],
   ];
   for (const [what, status, message, failure] of cases) {
     it(`reads ${what}`, async () => {
@@ -181,6 +178,13 @@ describe('Claude replies', () => {
       assert.equal((await failureOf(claudeAi)).failure, failure);
     });
   }
+});
+
+describe('being stopped', () => {
+  it('comes back as stopping, not as a failure of the service', async () => {
+    answerWith({ status: LEKTOR_STOPPED, body: null });
+    await assert.rejects(geminiAi.feedback('tekst', signal), (thrown: unknown) => thrown instanceof DOMException && thrown.name === 'AbortError');
+  });
 });
 
 describe('correctionInstruction', () => {
@@ -207,7 +211,7 @@ describe('correctionInstruction', () => {
 });
 
 describe('withHisFilingMarks', () => {
-  it('lets the title\'s words be corrected', () => {
+  it("lets the title's words be corrected", () => {
     assert.equal(withHisFilingMarks('Cuprija- Sumrak\n\nStari most.\n', 'Ćuprija – Sumrak\n\nStari, stari most.\n'), 'Ćuprija – Sumrak\n\nStari, stari most.\n');
   });
 

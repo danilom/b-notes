@@ -1,5 +1,6 @@
 import type { FileSystem } from '../../platform/file-system.ts';
 import type { ChosenPlaces, Host, RunMode } from '../../platform/host.ts';
+import type { LektorRequest, LektorResponse } from '../../platform/lektor-remote.ts';
 import type { Log } from '../../platform/logging.ts';
 import type { OtherEditors } from '../../platform/other-editors.ts';
 import { startApp } from '../../ui/ui-app.ts';
@@ -18,6 +19,8 @@ declare global {
     }>;
     openFolder?: (path: string) => Promise<void>;
     copyToClipboard?: (text: string) => Promise<void>;
+    lektorRequest?: (id: number, request: LektorRequest) => Promise<LektorResponse>;
+    lektorStop?: (id: number) => Promise<void>;
     onBeforeClose?: (finish: () => Promise<void>) => void;
     chooseFolder?: (from: string) => Promise<string | null>;
     rememberFolders?: (next: ChosenPlaces) => Promise<void>;
@@ -27,6 +30,8 @@ declare global {
     setZoom?: (factor: number) => void;
   }
 }
+
+let lastLektorRequest = 0;
 
 /**
  * The packaged app's host: everything here comes across the preload bridge.
@@ -41,6 +46,8 @@ async function main(): Promise<void> {
     folders,
     openFolder,
     copyToClipboard,
+    lektorRequest,
+    lektorStop,
     onBeforeClose,
     chooseFolder,
     rememberFolders,
@@ -54,6 +61,8 @@ async function main(): Promise<void> {
     folders === undefined ||
     openFolder === undefined ||
     copyToClipboard === undefined ||
+    lektorRequest === undefined ||
+    lektorStop === undefined ||
     onBeforeClose === undefined ||
     chooseFolder === undefined ||
     rememberFolders === undefined ||
@@ -84,6 +93,13 @@ async function main(): Promise<void> {
     logsFolder: where.logs,
     openFolder,
     copyToClipboard,
+    askLektorService: (request, stop) => {
+      lastLektorRequest += 1;
+      const id = lastLektorRequest;
+      // A signal can't cross the bridge, so the stop goes over as a message of its own.
+      stop.addEventListener('abort', () => void lektorStop(id), { once: true });
+      return lektorRequest(id, request);
+    },
     onBeforeClose,
     chooseFolder,
     rememberFolders,

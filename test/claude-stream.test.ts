@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { readClaudeStream } from '../scripts/claude-stream.mjs';
+import { readClaudeStream } from '../src/platform/claude-reply-stream.ts';
 
 const line = (event: object): string => `event: x\ndata: ${JSON.stringify(event)}\n\n`;
 

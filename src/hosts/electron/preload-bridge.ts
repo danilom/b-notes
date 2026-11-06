@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer, webFrame } from 'electron';
 
 import type { FileSystem } from '../../platform/file-system.ts';
 import type { ChosenPlaces } from '../../platform/host.ts';
+import type { LektorRequest, LektorResponse } from '../../platform/lektor-remote.ts';
 import type { OtherEditor, OtherEditors } from '../../platform/other-editors.ts';
 
 /**
@@ -82,6 +83,13 @@ const onBeforeClose = (finish: () => Promise<void>): void => {
  */
 const copyToClipboard = (text: string): Promise<void> => ipcRenderer.invoke('app:copyToClipboard', text);
 
+/**
+ * The Lektor's way out to an AI service, and its way of calling one off. Numbered by
+ * the window, since a signal can't cross this bridge: see `browser-entry.ts`.
+ */
+const lektorRequest = (id: number, request: LektorRequest): Promise<LektorResponse> => ipcRenderer.invoke('lektor:request', id, request);
+const lektorStop = (id: number): Promise<void> => ipcRenderer.invoke('lektor:stop', id);
+
 const log = {
   info: (message: string, detail?: unknown) => ipcRenderer.send('log:write', 'info', message, detail),
   warn: (message: string, detail?: unknown) => ipcRenderer.send('log:write', 'warn', message, detail),
@@ -111,6 +119,8 @@ contextBridge.exposeInMainWorld('setZoom', setZoom);
 contextBridge.exposeInMainWorld('folders', folders);
 contextBridge.exposeInMainWorld('openFolder', openFolder);
 contextBridge.exposeInMainWorld('copyToClipboard', copyToClipboard);
+contextBridge.exposeInMainWorld('lektorRequest', lektorRequest);
+contextBridge.exposeInMainWorld('lektorStop', lektorStop);
 contextBridge.exposeInMainWorld('onBeforeClose', onBeforeClose);
 contextBridge.exposeInMainWorld('chooseFolder', chooseFolder);
 contextBridge.exposeInMainWorld('rememberFolders', rememberFolders);

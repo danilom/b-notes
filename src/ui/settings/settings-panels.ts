@@ -8,6 +8,7 @@ import type { Appearance } from './appearance.ts';
 import { type OpenPanel, openAppearancePanel } from './appearance-panel.ts';
 import type { Settings } from './app-settings.ts';
 import { openConfirmDialog } from '../dialogs/confirm-dialog.ts';
+import { type FakeBehaviour, writeFakeBehaviour } from '../lektor/lektor-fake-setting.ts';
 
 export interface SettingsPanelsParts {
   appearancePane: HTMLDialogElement;
@@ -21,6 +22,7 @@ export interface SettingsPanelsParts {
   advancedNow: () => AdvancedSettings;
   /** Whether test mode is on, for the switch in the advanced panel. */
   testModeNow: () => boolean;
+  fakeLektorNow: () => FakeBehaviour | null;
   languageNow: () => Language;
   settingsNow: () => Settings;
   /** Shown, not kept: what he is trying out goes on screen and nowhere else. */
@@ -73,7 +75,7 @@ export function createSettingsPanels(parts: SettingsPanelsParts): SettingsPanels
   function showAdvanced(): void {
     if (advancedPane.open) return;
 
-    const close = openAdvancedPanel(advancedPane, host, parts.advancedNow(), parts.testModeNow(), {
+    const close = openAdvancedPanel(advancedPane, host, parts.advancedNow(), parts.testModeNow(), parts.fakeLektorNow(), {
       onClose: () => {
         close();
       },
@@ -86,8 +88,9 @@ export function createSettingsPanels(parts: SettingsPanelsParts): SettingsPanels
           app the folders are settled before a window exists, so a reload alone
           would be handed the old ones anyway.
         */
-        const { ctrlCardAfterMs, testMode, ...folders } = settings;
+        const { ctrlCardAfterMs, testMode, fakeLektor, ...folders } = settings;
         void writeAdvanced(host.files, host.appFolder, { ctrlCardAfterMs })
+          .then(() => writeFakeBehaviour(host.files, host.appFolder, fakeLektor))
           .then(() => host.rememberFolders(folders))
           .then(() => restartWithTestMode(host, testMode))
           .catch((error: unknown) => {

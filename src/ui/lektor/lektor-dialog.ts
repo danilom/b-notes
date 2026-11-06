@@ -15,6 +15,8 @@ export interface LektorProposal {
   current: string;
   /** What the proofreader would make of it. */
   proposed: string;
+  /** Said at the top when this came from the test Lektor rather than from any AI. */
+  testNote: string | null;
 }
 
 export interface LektorHandlers {
@@ -34,11 +36,12 @@ export interface LektorHandlers {
 export function openLektorDialog(
   container: HTMLDialogElement,
   confirmContainer: HTMLDialogElement,
-  { title, current, proposed }: LektorProposal,
+  { title, current, proposed, testNote }: LektorProposal,
   language: Language,
   handlers: LektorHandlers,
 ): () => void {
   const words = strings(language);
+  const said = words.lektor.review;
   const pieces = mergeCloseChanges(separateTidying(diffTexts(current, proposed)));
   const hasAnything = pieces.some((piece) => piece.kind !== 'same');
   const large = pieces.filter((piece) => piece.kind === 'change').length;
@@ -62,7 +65,7 @@ export function openLektorDialog(
   }
 
   function stepperLabel(at: number, total: number): string {
-    return total > 1 && at === total ? `✓ Pregledano ${at} od ${total}` : words.changeAt(at, total);
+    return total > 1 && at === total ? said.reviewedAll(at, total) : words.changeAt(at, total);
   }
 
   function editingWithTheEnd(): ReturnType<typeof review.editing> {
@@ -82,7 +85,7 @@ export function openLektorDialog(
 
     const about = document.createElement('p');
     about.className = 'review-note-aside';
-    about.textContent = `Precrtano je tvoj stari tekst, zeleno je predlog. Veće promene: ${large}, sitne popravke: ${small}.`;
+    about.textContent = said.counts(large, small);
 
     column.append(
       about,
@@ -108,7 +111,7 @@ export function openLektorDialog(
   function nothingToSay(): HTMLElement {
     const box = document.createElement('div');
     box.className = 'review-text review-text-empty';
-    box.textContent = 'Lektor nema šta da popravi u ovom tekstu.';
+    box.textContent = said.nothing;
     return box;
   }
 
@@ -124,10 +127,10 @@ export function openLektorDialog(
     const closeQuestion = openConfirmDialog(
       confirmContainer,
       {
-        title: { mark: 'lektor', label: 'Zatvori bez unošenja', name: title },
-        body: 'Ono što si odlučio o ovim predlozima neće biti sačuvano. Tekst ostaje kakav je bio.',
-        confirm: 'Zatvori bez unošenja',
-        cancel: 'Nazad na ispravke',
+        title: { mark: 'lektor', label: said.leaveLabel, name: title },
+        body: said.leaveBody,
+        confirm: said.leaveLabel,
+        cancel: said.leaveCancel,
         danger: true,
         onConfirm: () => {
           closeQuestion();
@@ -148,10 +151,8 @@ export function openLektorDialog(
   stacked.className = 'review-heading';
   const note = document.createElement('p');
   note.className = 'review-note';
-  note.textContent = hasAnything
-    ? 'Pregledaj predloge ispravki u tekstu ispod. Ako ti nešto ne odgovara, pređi mišem preko toga i promeni.'
-    : 'Tekst je pregledan.';
-  stacked.append(titleOf({ mark: 'lektor', label: 'AI ispravke', name: title }), note);
+  note.textContent = testNote ?? (hasAnything ? said.guide : said.checked);
+  stacked.append(titleOf({ mark: 'lektor', label: said.title, name: title }), note);
 
   const dismiss = document.createElement('button');
   dismiss.type = 'button';
@@ -172,7 +173,7 @@ export function openLektorDialog(
   if (hasAnything) {
     const says = document.createElement('p');
     says.className = 'footer-note';
-    for (const line of ['Izmene ulaze u tvoj tekst.', words.versionRestoreKept]) {
+    for (const line of [said.goesIn, words.versionRestoreKept]) {
       const one = document.createElement('span');
       one.textContent = line;
       says.append(one);
@@ -181,7 +182,7 @@ export function openLektorDialog(
     const apply = document.createElement('button');
     apply.type = 'button';
     apply.className = 'keep';
-    apply.textContent = 'Unesi sve izmene u tekst';
+    apply.textContent = said.apply;
     apply.addEventListener('click', () => handlers.onApply(review.textNow()));
     applyButton = apply;
     footer.append(says, apply);

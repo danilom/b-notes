@@ -1,4 +1,5 @@
 import type { ChosenPlaces, Host } from '../../platform/host.ts';
+import { LEKTOR_STOPPED, LEKTOR_UNREACHED, type LektorRequest, type LektorResponse } from '../../platform/lektor-remote.ts';
 import type { Log } from '../../platform/logging.ts';
 import { startApp } from '../../ui/ui-app.ts';
 import { mockFileList } from './mock-file-list.ts';
@@ -30,6 +31,23 @@ const consoleLog: Log = {
  */
 function setZoom(factor: number): void {
   document.documentElement.style.zoom = String(factor);
+}
+
+/** Answers rather than rejects, as the packaged app's does. */
+async function askThroughDevServer(request: LektorRequest, stop: AbortSignal): Promise<LektorResponse> {
+  try {
+    const response = await fetch('/lektor-ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+      signal: stop,
+    });
+    return { status: response.status, reply: (await response.json()) as unknown };
+  } catch (error) {
+    if (stop.aborted) return { status: LEKTOR_STOPPED, reply: null };
+    console.warn('The dev server gave no answer about the Lektor', error);
+    return { status: LEKTOR_UNREACHED, reply: { error: { message: 'No answer from the dev server' } } };
+  }
 }
 
 /** What the interface asked to have run before the window goes. */
@@ -124,6 +142,8 @@ async function main(): Promise<void> {
       uses Electron's instead of this.
     */
     copyToClipboard: (text: string) => navigator.clipboard.writeText(text),
+    // Through the dev server, standing in for the main process: the page may not reach those addresses itself.
+    askLektorService: askThroughDevServer,
     logsFolder: `${MOCK_APP_FOLDER}/logs`,
     /*
       Nothing here can show a folder or ask for one: a browser tab has no

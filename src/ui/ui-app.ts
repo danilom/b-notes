@@ -35,6 +35,8 @@ import { openConfirmDialog } from './dialogs/confirm-dialog.ts';
 import { createCtrlCard } from './ctrl-card.ts';
 import { type FindInText, createFindInText } from './find-in-text.ts';
 import { icon } from './icons.ts';
+import { readFakeBehaviour } from './lektor/lektor-fake-setting.ts';
+import { type Lektor, createLektor } from './lektor/lektor-sidebar.ts';
 import { type KeptCopiesView, createKeptCopies } from './versions/kept-copies.ts';
 import { showLostTexts } from './lost-texts.ts';
 import { untilOtherEditorsClose } from './other-editors-gate.ts';
@@ -344,6 +346,66 @@ function canMoveToResoph(): boolean {
   if (host.resophFolder === null || openHandle === NO_NOTE || draft !== null) return false;
   const name = writing.tokenOf(openHandle);
   return name !== null && !isResophId(name);
+}
+
+/**
+ * Gets the text in front of him ready for the Lektor: on disk with his last words, and out of
+ * Resoph if it was still there, because a text the Lektor works on must be one b-notes can write.
+ */
+async function prepareForLektor(): Promise<boolean> {
+  if (openHandle === NO_NOTE || openIsInResoph()) typedSomething();
+  if (openHandle === NO_NOTE) return false;
+  const handle = openHandle;
+  await writing.flush(handle);
+  const { waiting, failures } = writing.stateOf(handle);
+  const name = writing.tokenOf(handle);
+  return !waiting && failures === 0 && name !== null && !isResophId(name);
+}
+
+/**
+ * A proofreader's corrections become his text, a version kept first and nothing changed if
+ * that can't be done: replacing his whole text is only all right while the way back is there.
+ */
+async function applyLektorCorrections(text: string): Promise<boolean> {
+  if (openHandle === NO_NOTE) return false;
+  try {
+    await writing.keepCopy(openHandle, editor.value);
+  } catch (error: unknown) {
+    log.error('Could not keep a copy before putting corrections in', { id: openName(), failure: describeError(error) });
+    notice = words.lektor.notApplied;
+    showStatus();
+    return false;
+  }
+  putInEditor(text);
+  return true;
+}
+
+/**
+ * What replacing his text means, which is more than putting it in the box: the caret goes to
+ * the top, the marks behind it are repainted for what is there now, and the save that follows
+ * is an ordinary one.
+ */
+function putInEditor(text: string): void {
+  editor.value = text;
+  editor.setSelectionRange(0, 0);
+  editor.scrollTop = 0;
+  findInText.fromTheTop();
+  findInText.again(search.value);
+  typedSomething();
+  editor.focus();
+}
+
+/** The Lektor, unless it could not be set up: nothing else depends on it. */
+let lektor: Lektor | null = null;
+
+/** Told what the app is doing. A fault in there must never stop the app doing it, opening his text least of all. */
+function tellLektor(what: (it: Lektor) => void): void {
+  if (lektor === null) return;
+  try {
+    what(lektor);
+  } catch (error: unknown) {
+    log.error('The Lektor failed to follow the app', describeError(error));
+  }
 }
 
 /** Whether the text in front of him is one still in Resoph, which there is nowhere to move. */
@@ -672,6 +734,7 @@ async function open(handle: NoteHandle): Promise<void> {
   draw();
   showStatus();
   void keptCopies.count();
+  tellLektor((it) => it.openTextChanged());
   log.info('Opened a text', { id: note.id });
 }
 
@@ -747,6 +810,7 @@ newNote.addEventListener('click', () => {
   openHandle = NO_NOTE;
   savedAt = null;
   editor.value = '';
+  tellLektor((it) => it.startedNewText());
   editorMarks.replaceChildren();
   findInText.nothing();
 
@@ -853,6 +917,7 @@ async function deleteOpenNote(id: string, handle: NoteHandle): Promise<void> {
   editor.value = '';
   savedAt = null;
   draft = null;
+  tellLektor((it) => it.startedNewText());
   void remember(null);
   await reload();
   findInText.again(search.value);
@@ -1061,6 +1126,7 @@ export async function startApp(runningOn: Host): Promise<void> {
   // effect next time the app opens, which is when whoever edited it is there.
   const advanced = await readAdvanced(host.files, host.appFolder);
   const testModeOn = await testModeIsOn(host);
+  const fakeLektor = await readFakeBehaviour(host.files, host.appFolder, log);
   if (testModeOn) testMode = startTestMode(host, listPane, (said, how) => flashToast(toast, said, how));
   createCtrlCard({
     within: writingBox,
@@ -1081,6 +1147,7 @@ export async function startApp(runningOn: Host): Promise<void> {
     settingsNow: () => settings,
     advancedNow: () => advanced,
     testModeNow: () => testModeOn,
+    fakeLektorNow: () => fakeLektor,
     preview: (appearance) => {
       showAppearanceOf(appearance);
       // Everything else in the panel is a stylesheet away. This one is a
@@ -1161,21 +1228,35 @@ export async function startApp(runningOn: Host): Promise<void> {
       notice = said;
       showStatus();
     },
-    /*
-      What replacing his text means, which is more than putting it in the box:
-      the caret goes to the top, the marks behind it are repainted for what is
-      there now, and the save that follows is an ordinary one.
-    */
-    putInEditor: (text) => {
-      editor.value = text;
-      editor.setSelectionRange(0, 0);
-      editor.scrollTop = 0;
-      findInText.fromTheTop();
-      findInText.again(search.value);
-      typedSomething();
-      editor.focus();
-    },
+    putInEditor,
   });
+
+  try {
+    lektor = createLektor({
+      side: element('lektor-side', HTMLElement),
+      opener: element('lektor-open', HTMLButtonElement),
+      openerLabel: element('lektor-open-label', HTMLSpanElement),
+      dialog: element('lektor-dialog', HTMLDialogElement),
+      confirmPane,
+      toast,
+      editor,
+      files: host.files,
+      notesFolder: host.notesFolder,
+      appFolder: host.appFolder,
+      log,
+      askService: host.askLektorService,
+      copyToClipboard: host.copyToClipboard,
+      languageNow: () => language,
+      textNow: () => openHandle,
+      textNameNow: openName,
+      prepareToSend: prepareForLektor,
+      applyCorrections: applyLektorCorrections,
+      fakeBehaviour: fakeLektor,
+    });
+  } catch (error: unknown) {
+    // His writing is what this window is for, and the app starts without the Lektor rather than not at all.
+    log.error('The Lektor could not be set up', describeError(error));
+  }
 
   findInText = createFindInText({
     editor,

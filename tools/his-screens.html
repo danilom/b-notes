@@ -137,22 +137,6 @@
       <span>His screens:</span>
       <span id="choices"></span>
       <button id="reload" type="button" title="Load the app in the frame again">Reload</button>
-      <button id="lektor-toggle" type="button" title="Load the Lektor prototype into the app in the frame">Lektor</button>
-      <label id="lektor-behaviour-label">
-        Fake AI:
-        <select id="lektor-behaviour">
-          <option value="real">REAL AI (sends the text)</option>
-          <option value="ok">works</option>
-          <option value="slow">slow</option>
-          <option value="offline">offline</option>
-          <option value="overloaded">overloaded</option>
-          <option value="limit">limit reached</option>
-          <option value="bad-key">key refused</option>
-          <option value="cut-off">reply cut off</option>
-          <option value="declined">request declined</option>
-          <option value="no-credit">paid credit gone</option>
-        </select>
-      </label>
       <span id="about"></span>
     </header>
     <div id="stage">
@@ -162,7 +146,7 @@
           <span>b-notes</span>
           <span class="controls"><span>─</span><span>☐</span><span>✕</span></span>
         </div>
-        <iframe id="app" title="b-notes" src="/" allow="clipboard-read; clipboard-write"></iframe>
+        <iframe id="app" title="b-notes" src="/"></iframe>
         <div id="taskbar">taskbar</div>
       </div>
     </div>
@@ -253,50 +237,15 @@
         let tries = 0;
         const ready = () => {
           const labelled = doc?.getElementById('copy-all-label')?.textContent;
-          if (doc && labelled) return applyLektor(doc);
           if ((tries += 1) < 60) setTimeout(ready, 100);
         };
         ready();
       });
 
       function rememberChoices() {
-        const search = lektor ? '?lektor=1' : '';
-        history.replaceState(null, '', `${location.pathname}${search}#${shown.id}`);
+                history.replaceState(null, '', `${location.pathname}#${shown.id}`);
       }
 
-      /*
-        The Lektor prototype, loaded into the running app in the frame: nothing
-        in the app knows about it. See
-        design/lektor-sidebar-prototype.ts. The fake AI reads how to behave
-        from the storage it shares with the frame, at each request.
-      */
-      let lektor = new URLSearchParams(location.search).has('lektor');
-      const lektorToggle = document.getElementById('lektor-toggle');
-      const lektorBehaviour = document.getElementById('lektor-behaviour');
-      const BEHAVIOUR_KEY = 'lektor-fake-behaviour';
-
-      function applyLektor(doc) {
-        if (!lektor) return;
-        const script = doc.createElement('script');
-        // Fresh each time: the server sends no cache headers, and this changes by the minute.
-        script.src = `/lektor-sidebar-prototype.js?${Date.now()}`;
-        doc.body.append(script);
-      }
-
-      function showLektorChoice() {
-        lektorToggle.setAttribute('aria-pressed', String(lektor));
-        document.getElementById('lektor-behaviour-label').hidden = !lektor;
-      }
-
-      lektorToggle.addEventListener('click', () => {
-        lektor = !lektor;
-        rememberChoices();
-        showLektorChoice();
-        frame.contentWindow?.location.reload();
-      });
-      lektorBehaviour.value = localStorage.getItem(BEHAVIOUR_KEY) ?? 'ok';
-      lektorBehaviour.addEventListener('change', () => localStorage.setItem(BEHAVIOUR_KEY, lektorBehaviour.value));
-      showLektorChoice();
     </script>
   </body>
 </html>

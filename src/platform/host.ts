@@ -1,4 +1,5 @@
 import type { FileSystem } from './file-system.ts';
+import type { LektorRequest, LektorResponse } from './lektor-remote.ts';
 import type { Log } from './logging.ts';
 import type { OtherEditors } from './other-editors.ts';
 
@@ -91,6 +92,14 @@ export interface Host {
    * the caller has to be made to deal with it.
    */
   readonly copyToClipboard: (text: string) => Promise<void>;
+  /**
+   * Asks an AI service, for the Lektor and nothing else.
+   *
+   * The host's job because the page may not reach those addresses itself, and in the
+   * app the key and the connection belong to the main process. Answers rather than
+   * rejects: see `askLektorService`.
+   */
+  readonly askLektorService: (request: LektorRequest, stop: AbortSignal) => Promise<LektorResponse>;
   /**
    * Asks for a folder, starting from `from`. Null when nothing was chosen.
    *

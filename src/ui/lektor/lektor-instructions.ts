@@ -1,4 +1,4 @@
-import { filingFrontOf } from '../src/notes/title-marks.ts';
+import { filingFrontOf } from '../../notes/title-marks.ts';
 import { type CorrectionRequest, type EarlierReading, LektorServiceError } from './lektor-service.ts';
 
 /*

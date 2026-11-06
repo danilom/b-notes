@@ -1,3 +1,5 @@
+import { LEKTOR_WORDS } from './lektor-wording.ts';
+
 export type Language = 'sr' | 'en';
 
 /**
@@ -14,6 +16,7 @@ export type Language = 'sr' | 'en';
  */
 const TEXT = {
   sr: {
+    lektor: LEKTOR_WORDS.sr,
     newNote: 'Novi tekst',
     appearance: 'Izgled',
     appearanceKeep: 'U redu',
@@ -93,7 +96,8 @@ const TEXT = {
     year: (date: Date) => String(date.getFullYear()),
     noteCount: (n: number) => `${n} ${plural(n, 'tekst', 'teksta', 'tekstova')}`,
 
-    copyAll: 'Kopiraj ceo tekst',
+    // Short, so the strip keeps to one row at his screens' width with the Lektor's button on it.
+    copyAll: 'Kopiraj sve',
     /*
       Two lines, because they answer two questions. The first says it worked,
       which is the whole job — nothing on screen changes when a copy lands, so
@@ -112,7 +116,7 @@ const TEXT = {
     ctrlPaste: 'Zalepi ono što si kopirao — ovde, u Gmailu, bilo gde.',
     ctrlUndo: 'Vraća tekst korak unazad.',
     ctrlUndoWhen: 'Ako se desilo nešto što nisi hteo, prvo probaj ovo. Možeš i nekoliko puta zaredom.',
-    ctrlCardWholeText: 'Za ceo tekst ne treba Ctrl — pritisni dugme „Kopiraj ceo tekst“ dole.',
+    ctrlCardWholeText: 'Za ceo tekst ne treba Ctrl — pritisni dugme „Kopiraj sve“ dole.',
     copied: 'Ceo tekst je kopiran na klipbord.',
     copiedHow: 'Zalepi ga u Gmail ili drugi program (paste, Ctrl+V).',
     inResophHint: 'Tekst je u Resophu. Kad počneš da pišeš, prenosi se u b-notes.',
@@ -392,6 +396,7 @@ const TEXT = {
     closeEditorsNotepadAsks: 'Notepad te pita da li da sačuva izmene. Klikni na Notepad dole na traci i izaberi „Save".',
   },
   en: {
+    lektor: LEKTOR_WORDS.en,
     newNote: 'New text',
     appearance: 'Appearance',
     appearanceKeep: 'OK',
@@ -448,13 +453,13 @@ const TEXT = {
     year: (date: Date) => String(date.getFullYear()),
     noteCount: (n: number) => `${n} text${n === 1 ? '' : 's'}`,
 
-    copyAll: 'Copy the whole text',
+    copyAll: 'Copy all',
     ctrlCardTitle: 'While you hold Ctrl',
     ctrlCopy: 'Copies the text you marked with the mouse.',
     ctrlPaste: 'Pastes what you copied — here, in Gmail, anywhere.',
     ctrlUndo: 'Takes the text one step back.',
     ctrlUndoWhen: 'If something happened that you did not want, try this first. You can do it several times over.',
-    ctrlCardWholeText: 'For the whole text you do not need Ctrl — press the "Copy whole text" button below.',
+    ctrlCardWholeText: 'For the whole text you do not need Ctrl — press the "Copy all" button below.',
     copied: 'The whole text is on the clipboard.',
     copiedHow: 'Paste it into Gmail or another program (Ctrl+V).',
     inResophHint: 'The text is in Resoph. Once you start writing, it moves to b-notes.',
@@ -583,7 +588,7 @@ const TEXT = {
   },
 } satisfies Record<
   Language,
-  Record<string, string | Record<string, string> | ((...args: never[]) => string)>
+  Record<string, string | Record<string, string> | ((...args: never[]) => string) | (typeof LEKTOR_WORDS)['sr']>
 >;
 
 /**

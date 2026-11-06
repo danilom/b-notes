@@ -86,21 +86,6 @@ const targets = [
     platform: 'browser',
     format: 'iife',
   },
-  {
-    ...shared,
-    entryPoints: ['design/lektor-prototype.ts'],
-    outfile: 'dist-browser/lektor-prototype.js',
-    platform: 'browser',
-    format: 'iife',
-  },
-  {
-    // Loaded into the running app by the his-screens harness.
-    ...shared,
-    entryPoints: ['design/lektor-sidebar-prototype.ts'],
-    outfile: 'dist-browser/lektor-sidebar-prototype.js',
-    platform: 'browser',
-    format: 'iife',
-  },
 ];
 
 await mkdir('dist', { recursive: true });
@@ -109,7 +94,8 @@ await cp('src/ui/index.html', 'dist/index.html');
 await cp('src/ui/index.html', 'dist-browser/index.html');
 await cp('src/ui/interface.css', 'dist/interface.css');
 await cp('src/ui/interface.css', 'dist-browser/interface.css');
-await cp('design/lektor-sidebar-prototype.css', 'dist-browser/lektor-sidebar-prototype.css');
+await cp('src/ui/lektor/lektor.css', 'dist/lektor.css');
+await cp('src/ui/lektor/lektor.css', 'dist-browser/lektor.css');
 
 /*
   The mark, to both. The SVG is what the page asks for as its favicon, which is

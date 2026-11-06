@@ -9,6 +9,7 @@
          packaged app's window and taskbar icon come from the exe. -->
     <link rel="icon" href="icon.svg" />
     <link rel="stylesheet" href="interface.css" />
+    <link rel="stylesheet" href="lektor.css" />
   </head>
   <body>
     <div id="side">
@@ -92,6 +93,10 @@
           <button id="delete-note" class="status-action" type="button" disabled>
             <span id="delete-note-label"></span>
           </button>
+          <!-- Last of the buttons about this text; Premesti u Resoph and Izgled stay at the far right. -->
+          <button id="lektor-open" class="status-action" type="button" disabled>
+            <span id="lektor-open-label"></span>
+          </button>
         </div>
         <span id="status-text"></span>
         <div id="status-quiet">
@@ -106,6 +111,8 @@
           </button>
         </div>
       </div>
+      <!-- Beside his text and above the strip: it belongs to the text, not to the app. -->
+      <aside id="lektor-side"></aside>
     </div>
 
     <dialog id="appearance"></dialog>
@@ -114,6 +121,7 @@
     <dialog id="deleted"></dialog>
     <dialog id="archive"></dialog>
     <dialog id="versions"></dialog>
+    <dialog id="lektor-dialog"></dialog>
     <!-- Not for him: whoever set the machine up. -->
     <dialog id="advanced"></dialog>
 

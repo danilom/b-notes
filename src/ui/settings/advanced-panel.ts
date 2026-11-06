@@ -5,6 +5,7 @@ import type { ResophTray } from '../../platform/other-editors.ts';
 import { type AdvancedSettings, DEFAULT_CTRL_CARD_AFTER_MS } from './advanced-settings.ts';
 import { icon } from '../icons.ts';
 import { testModeRow } from '../../test-mode/test-mode-panel-row.ts';
+import { FAKE_BEHAVIOURS, type FakeBehaviour } from '../lektor/lektor-fake-setting.ts';
 
 /**
  * The one surface in this app that is not written for him.
@@ -27,7 +28,7 @@ import { testModeRow } from '../../test-mode/test-mode-panel-row.ts';
  */
 export interface AdvancedHandlers {
   onClose: () => void;
-  onKeep: (settings: ChosenPlaces & { ctrlCardAfterMs: number | null; testMode: boolean }) => void;
+  onKeep: (settings: ChosenPlaces & { ctrlCardAfterMs: number | null; testMode: boolean; fakeLektor: FakeBehaviour | null }) => void;
 }
 
 /** A path, and the way to look at it. */
@@ -192,11 +193,36 @@ function waitRow(value: number | null, change: (to: number | null) => void): HTM
   return row;
 }
 
+/** The Lektor's third choice, with no AI and no network, and how it should behave. Off on his machines. */
+function fakeLektorRow(value: FakeBehaviour | null, change: (to: FakeBehaviour | null) => void): HTMLElement {
+  const row = document.createElement('div');
+  row.className = 'advanced-row';
+
+  const name = document.createElement('span');
+  name.className = 'advanced-label';
+  name.textContent = 'Test Lektor';
+
+  const field = document.createElement('select');
+  field.append(new Option('off', ''), ...FAKE_BEHAVIOURS.map((behaviour) => new Option(behaviour, behaviour)));
+  field.value = value ?? '';
+  field.addEventListener('change', () => {
+    change(FAKE_BEHAVIOURS.find((behaviour) => behaviour === field.value) ?? null);
+  });
+
+  const note = document.createElement('span');
+  note.className = 'advanced-note';
+  note.textContent = 'Adds a Lektor with no AI and no cost, acting out the chosen behaviour. This machine only.';
+
+  row.append(name, field, note);
+  return row;
+}
+
 export function openAdvancedPanel(
   container: HTMLDialogElement,
   host: Host,
   advanced: AdvancedSettings,
   testModeOn: boolean,
+  fakeLektorNow: FakeBehaviour | null,
   handlers: AdvancedHandlers,
 ): () => void {
   let resoph = host.resophFolder ?? '';
@@ -204,6 +230,7 @@ export function openAdvancedPanel(
   let logs = host.logsFolder;
   let wait: number | null = advanced.ctrlCardAfterMs;
   let testMode = testModeOn;
+  let fakeLektor = fakeLektorNow;
 
   let modal: Shown | null = null;
   const close = (): void => {
@@ -285,6 +312,9 @@ export function openAdvancedPanel(
         },
         host.testTools !== null,
       ),
+      fakeLektorRow(fakeLektor, (to) => {
+        fakeLektor = to;
+      }),
     );
 
     const footer = document.createElement('footer');
@@ -292,7 +322,7 @@ export function openAdvancedPanel(
     keep.type = 'button';
     keep.className = 'keep';
     keep.textContent = 'Apply and restart';
-    keep.addEventListener('click', () => handlers.onKeep({ resoph, notes, logs, ctrlCardAfterMs: wait, testMode }));
+    keep.addEventListener('click', () => handlers.onKeep({ resoph, notes, logs, ctrlCardAfterMs: wait, testMode, fakeLektor }));
 
     const cancel = document.createElement('button');
     cancel.type = 'button';
