@@ -56,6 +56,41 @@ test('asks for the keys, by name, when there are none', async ({ page }) => {
   await expect(page.getByText('API ključ za Anthropic (plaćen)')).toBeVisible();
 });
 
+async function withOnlyKey(page: Page, keys: Record<string, string>): Promise<void> {
+  await page.evaluate((saved) => {
+    const key = 'b-notes:mock-files';
+    const files = JSON.parse(window.localStorage.getItem(key) ?? '{}') as Record<string, unknown>;
+    files['b-notes/lektor.json'] = { text: JSON.stringify(saved), updatedAt: Date.now() };
+    window.localStorage.setItem(key, JSON.stringify(files));
+  }, keys);
+  await page.reload();
+  await expect(page.locator('#list .note').first()).toBeVisible();
+}
+
+test('with only the free key, greys out the paid Lektor and goes straight to the first step', async ({ page }) => {
+  await page.route('**/lektor-ai', (route) => route.fulfill({ json: {} }));
+  await withOnlyKey(page, { googleKey: 'not-a-real-key' });
+  await writeNewText(page);
+  await page.locator('#lektor-open').click();
+
+  await expect(page.getByLabel(/\(Google\)/)).toBeChecked();
+  await expect(page.getByLabel(/\(Anthropic\)/)).toBeDisabled();
+});
+
+test('with only the paid key, starts on it, and saving the keys box with nothing new leads back', async ({ page }) => {
+  await page.route('**/lektor-ai', (route) => route.fulfill({ json: {} }));
+  await withOnlyKey(page, { anthropicKey: 'not-a-real-key' });
+  await writeNewText(page);
+  await page.locator('#lektor-open').click();
+
+  await expect(page.getByLabel(/\(Anthropic\)/)).toBeChecked();
+  await expect(page.getByLabel(/\(Google\)/)).toBeDisabled();
+
+  await page.getByRole('button', { name: 'API ključevi' }).click();
+  await page.getByRole('button', { name: 'Sačuvaj' }).click();
+  await expect(page.getByLabel(/\(Anthropic\)/)).toBeChecked();
+});
+
 test('keeps the old text as a version when corrections go in, and says these are only a test', async ({ page }) => {
   await withTestLektor(page, 'ok');
   await writeNewText(page);

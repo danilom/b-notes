@@ -585,6 +585,11 @@ body.lektor-open #lektor-side {
   gap: 0.4rem;
 }
 
+.lektor-preset-unavailable {
+  color: var(--quiet);
+  opacity: 0.6;
+}
+
 /* Plain, unlike the italic example in the notes box: this states a fact about the field rather than suggesting what to write. */
 .lektor-key::placeholder {
   color: var(--quiet);

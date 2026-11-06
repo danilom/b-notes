@@ -242,7 +242,18 @@ export function createLektor(parts: LektorParts): Lektor {
     });
   }
 
-  const hasKey = (): boolean => level === 'fake' || settings[KEY_FIELD[level]] !== '';
+  const hasKeyFor = (option: Level): boolean => option === 'fake' || settings[KEY_FIELD[option]] !== '';
+  const hasKey = (): boolean => hasKeyFor(level);
+
+  /**
+   * One key is enough. Without a key for the level he is on, he moves to one he has one for, which
+   * can only mean the paid one when Google's is missing, and the choice on screen says so. Asking
+   * for the missing key instead left him on a screen where saving led straight back to it.
+   */
+  function settleOnLevelWithKey(): void {
+    if (hasKey()) return;
+    level = REAL_LEVELS.find(hasKeyFor) ?? level;
+  }
 
   function stopWorking(): void {
     working?.abort();
@@ -505,6 +516,8 @@ export function createLektor(parts: LektorParts): Lektor {
     radio.type = 'radio';
     radio.name = 'lektor-level';
     radio.checked = level === option;
+    radio.disabled = !hasKeyFor(option);
+    label.classList.toggle('lektor-preset-unavailable', radio.disabled);
     radio.addEventListener('change', () => chooseLevel(option));
     label.append(radio, el('span', '', words().levels[option]));
     return label;
@@ -814,6 +827,7 @@ export function createLektor(parts: LektorParts): Lektor {
       side.replaceChildren();
       return;
     }
+    settleOnLevelWithKey();
     if (state.screen === 'start' && !hasKey()) state.screen = 'key';
     const body = el('div', 'lektor-side-body');
     body.append(...SCREENS[state.screen]());
@@ -845,6 +859,7 @@ export function createLektor(parts: LektorParts): Lektor {
       for (const which of REAL_LEVELS) {
         if (keyNotes[which] === 'checking') keyNotes[which] = null;
       }
+      settleOnLevelWithKey();
       if (hasKey()) state.screen = 'start';
     }
   }
