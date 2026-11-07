@@ -129,9 +129,10 @@ export function openLektorDialog(
     const closeQuestion = openConfirmDialog(
       confirmContainer,
       {
-        title: { mark: 'lektor', label: said.leaveLabel, name: title },
+        // Not the text's name: that made it read as closing the text, and this closes only the window.
+        title: { mark: 'lektor', label: said.leaveTitle },
         body: review.hasDecisions() ? said.leaveBodyDecided : said.leaveBody,
-        confirm: said.leaveLabel,
+        confirm: said.leave,
         cancel: said.leaveCancel,
         danger: true,
         onConfirm: () => {
