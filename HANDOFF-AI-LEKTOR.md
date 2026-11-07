@@ -37,13 +37,13 @@ once the work below is merged.
 
 ## Where the code is
 
-**Nothing below is on GitHub yet.** Danilo needs to push it, or hand it over another way.
+All three are on GitHub (pushed 2026-11-08).
 
 | Branch | What it is | State |
 |---|---|---|
-| `main` | v1 and what came after | 4 commits ahead of `origin/main` |
+| `main` | v1, and the release safeguards since | what to start other work from |
 | `ai-lektor` | the AI Lektor, built on `main` | ~225 commits, not merged |
-| `rewrite-review` | the review redesign, on `ai-lektor` | 23 commits; this file is here |
+| `rewrite-review` | the review redesign, on `ai-lektor` | this file is here; continue on it |
 
 Merge order when ready: `rewrite-review` into `ai-lektor`, then `ai-lektor`
 into `main`, when Danilo says so. The Lektor shows a button in the status strip,
