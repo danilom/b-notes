@@ -960,7 +960,7 @@ export function createLektor(parts: LektorParts): Lektor {
 
   function review(text: string, proposed: string, madeBy: string): void {
     const state = stateNow();
-    const proposal = { title: titleFrom(text), current: text, proposed, testNote: madeBy === 'fake' ? words().review.testNote : null, madeBy: serviceLine(madeBy, words().levels) };
+    const proposal = { title: titleFrom(text), current: text, proposed, testNote: madeBy === 'fake' ? words().review.testNote : null, madeBy: serviceLine(madeBy, words().levels, words().review.madeBy) };
     const close = openLektorDialog(dialog, parts.confirmPane, proposal, parts.languageNow(), {
       onApply: (result) => {
         close();

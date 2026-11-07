@@ -250,7 +250,7 @@ test('says which Lektor wrote the comment and made the corrections, with a mark 
   await expect(page.locator('.lektor-comment-notes .lektor-service-line')).toHaveText('Probni (bez AI)', { timeout: 15_000 });
   await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
   await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
-  await expect(page.locator('#lektor-dialog .lektor-service-line')).toHaveText('Probni (bez AI)', { timeout: 15_000 });
+  await expect(page.locator('#lektor-dialog .lektor-service-line')).toHaveText('AI Lektor: Probni (bez AI)', { timeout: 15_000 });
 });
 
 test('offers no retry once the daily tries are gone, and passes on what the service said', async ({ page }) => {

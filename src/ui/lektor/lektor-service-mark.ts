@@ -22,13 +22,14 @@ export function serviceMark(level: string): HTMLImageElement {
 }
 
 /** The mark with the Lektor's name, for saying who something came from. Nothing at all when that isn't known, as with a comment from an older version. */
-export function serviceLine(level: string, names: Readonly<Record<string, string>>): HTMLElement[] {
+export function serviceLine(level: string, names: Readonly<Record<string, string>>, label = ''): HTMLElement[] {
   const name = names[level];
   if (name === undefined) return [];
   const line = document.createElement('p');
   line.className = 'lektor-service-line';
   const words = document.createElement('span');
   words.textContent = name;
+  if (label !== '') line.append(document.createTextNode(`${label} `));
   line.append(serviceMark(level), words);
   return [line];
 }
