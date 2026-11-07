@@ -730,10 +730,18 @@ export function createLektor(parts: LektorParts): Lektor {
     note.rows = 2;
     note.placeholder = words().notePlaceholder;
     note.value = state.note;
+    // As tall as what he has written, so he sees all of it: the box above gives way first, then the button moves down.
+    const fitNote = (): void => {
+      note.style.height = 'auto';
+      note.style.height = `${note.scrollHeight + note.offsetHeight - note.clientHeight}px`;
+    };
     note.addEventListener('input', () => {
       state.note = note.value;
+      fitNote();
       onChange();
     });
+    // Once it is on the page, which is the first moment it has a height to measure.
+    requestAnimationFrame(fitNote);
     const noteLabel = el('label', 'lektor-label', `${words().noteLabel} `);
     noteLabel.append(el('span', 'lektor-label-aside', words().noteOptional));
     return [
