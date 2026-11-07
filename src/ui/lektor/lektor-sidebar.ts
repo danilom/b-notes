@@ -505,12 +505,8 @@ export function createLektor(parts: LektorParts): Lektor {
 
   /** Under the button that would ask for a new one, where he is deciding. No arrow: that means the next step, and this is the way out of taking it. */
   function existingCommentRow(): HTMLElement {
-    const toComment = el('button', 'lektor-again');
-    toComment.type = 'button';
-    toComment.append(el('span', '', words().existingComment));
-    toComment.addEventListener('click', () => goTo('response'));
-    const row = el('div', 'lektor-back-row');
-    row.append(toComment);
+    const row = el('div', 'lektor-side-buttons');
+    row.append(button(words().existingComment, () => goTo('response'), 'status-action'));
     return row;
   }
 
