@@ -290,6 +290,38 @@ test('offers no retry once the daily tries are gone, and passes on what the serv
   await expect(page.getByRole('button', { name: 'Pokušaj ponovo' })).toHaveCount(0);
 });
 
+test('shows a Dubinska prerada as the new text alone, opens one change to look at, and shows the other kinds in red and green', async ({ page }) => {
+  await withTestLektor(page, 'ok');
+  await writeNewText(page);
+  await page.locator('#lektor-open').click();
+  await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
+  await page.getByRole('button', { name: 'Pređi na ispravke' }).click({ timeout: 15_000 });
+
+  await page.getByLabel('Dubinska prerada').check();
+  await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
+  const dialog = page.locator('#lektor-dialog');
+  const onlyNew = dialog.getByLabel('Prikaži samo novi tekst');
+  await expect(onlyNew).toBeChecked({ timeout: 15_000 });
+  await expect(dialog.locator('.lektor-service-line')).toContainText(/^Dubinska prerada · /);
+  await expect(dialog.locator('.review-text .diff-resolved').first()).toBeVisible();
+
+  await dialog.locator('.review-text .diff-change').first().hover();
+  await dialog.locator('.diff-bar').getByRole('button', { name: 'Vidi predlog' }).click();
+  await expect(dialog.locator('.diff-bar').getByRole('button', { name: 'Prihvati' })).toBeVisible();
+
+  await onlyNew.uncheck();
+  await expect(dialog.locator('.review-text .diff-resolved')).toHaveCount(0);
+  await dialog.locator('button.close').click();
+  await page.locator('#confirm button.danger', { hasText: 'Zatvori' }).click();
+
+  await page.locator('#lektor-open').click();
+  await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
+  await page.getByLabel('Stilska dorada').check();
+  await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
+  await expect(onlyNew).not.toBeChecked({ timeout: 15_000 });
+  await expect(dialog.locator('.lektor-service-line')).toContainText(/^Stilska dorada · /);
+});
+
 test('closes when a new text is started', async ({ page }) => {
   await withTestLektor(page, 'ok');
   await writeNewText(page);
