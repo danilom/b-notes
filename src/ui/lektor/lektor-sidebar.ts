@@ -135,6 +135,13 @@ function button(label: string, onClick: () => void, className = ''): HTMLButtonE
   return made;
 }
 
+/** The arrow is a shape as well as the colour, for a washed-out or warm screen. Not on saving, which goes nowhere new. */
+function nextStepButton(label: string, onClick: () => void): HTMLButtonElement {
+  const made = button(label, onClick, MAIN_ACTION);
+  made.append(icon('move-out'));
+  return made;
+}
+
 /** How much of the text differs from what was read, by words and ignoring their order. */
 export function shareChanged(before: string, after: string): number {
   const counts = new Map<string, number>();
@@ -536,7 +543,7 @@ export function createLektor(parts: LektorParts): Lektor {
   function startScreen(): HTMLElement[] {
     const key = button(words().keysLink, () => goTo('key'), 'lektor-link');
     const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', words().keyWorks)] : [];
-    const send = button(words().send(recipient()), () => void read(askForFeedback), MAIN_ACTION);
+    const send = nextStepButton(words().send(recipient()), () => void read(askForFeedback));
     send.disabled = wordsInText() < FEWEST_WORDS;
     if (send.disabled) send.title = words().tooShort;
     // Having come here to send again, he may think better of it: the comment he has is still there.
@@ -747,10 +754,10 @@ export function createLektor(parts: LektorParts): Lektor {
     const notes = commentNotes(state);
     const response = revealed(state);
     // There from the start: he needn't sit through the comment appearing to move on.
-    const onward = button(words().toCorrections, () => {
+    const onward = nextStepButton(words().toCorrections, () => {
       state.isRevealed = true;
       goTo('corrections');
-    }, MAIN_ACTION);
+    });
     return [notes, response, footer([], onward)];
   }
 
@@ -783,7 +790,7 @@ export function createLektor(parts: LektorParts): Lektor {
       footer(
         // Said again here: having chosen the other Lektor on this step, his text is going somewhere the first warning didn't name.
         [el('p', 'lektor-line', words().correctionsFoot(recipient()))],
-        button(words().sendForCorrections, () => void correct(), MAIN_ACTION),
+        nextStepButton(words().sendForCorrections, () => void correct()),
       ),
     ];
   }

@@ -411,6 +411,20 @@ body.lektor-open #lektor-side {
   border-top: 1px solid var(--line);
 }
 
+.lektor-main-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.lektor-main-action svg,
+.lektor-main-action:hover:not(:disabled) svg {
+  flex: none;
+  width: 1.1em;
+  height: 1.1em;
+  color: inherit;
+}
+
 .lektor-main-action:not(:disabled),
 .lektor-main-action:hover:not(:disabled),
 .lektor-main-action:active:not(:disabled) {
