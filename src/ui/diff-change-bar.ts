@@ -287,9 +287,15 @@ export function createDiffChangeBar(
     else showOver(current);
   };
 
-  box.addEventListener('scroll', () => {
+  const placeAgain = (): void => {
     if (shownOver !== null) place(shownOver);
-  });
+  };
+  box.addEventListener('scroll', placeAgain);
+  // The first bar is placed as the review opens, before its lines and the stepper have
+  // settled, and came out under the title instead of over it; and a window resized moves
+  // every line. Placed again once they have.
+  new ResizeObserver(placeAgain).observe(box);
+  requestAnimationFrame(() => requestAnimationFrame(placeAgain));
 
   return {
     setCurrent(change, how) {
