@@ -762,9 +762,8 @@ body.lektor-open #lektor-side {
   white-space: nowrap;
 }
 
-/* The other steps start under a small button that gives them room; this one has none to give it. */
-.lektor-side-body > .lektor-opening:first-child,
-.lektor-side-body > .lektor-key-saved:first-child {
+/* Some steps start under a small button that gives them room; the rest, whatever they start with, are given the same. */
+.lektor-side-body > :first-child:not(.lektor-back-row, .lektor-comment-head) {
   margin-top: 0.6rem;
 }
 

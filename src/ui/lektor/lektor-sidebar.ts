@@ -574,7 +574,7 @@ export function createLektor(parts: LektorParts): Lektor {
     const existing = stateNow().feedback === '' ? [] : [plainButtonRow(words().existingComment, () => goTo('response'))];
     return [
       ...saved,
-      el('p', 'lektor-line lektor-opening', words().blurb),
+      el('p', 'lektor-line', words().blurb),
       ...levelChoice(),
       choiceFoot(),
       footer([privacyWarning()], send, existing),
