@@ -596,17 +596,25 @@ body.lektor-open #lektor-side {
   opacity: 0.6;
 }
 
-/* An info box above the comment: it is still his to read, and this says what it is about. */
+/* An info box above the comment: it is still his to read, and this says how far it is from his text now, with the way to a new one. */
 .lektor-stale {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  padding: 0.45rem 0.6rem;
+  gap: 0.45rem;
+  margin-top: 0.2rem;
+  padding: 0.5rem 0.6rem;
   border: 1px solid var(--line);
   border-radius: 4px;
   background: var(--page);
   color: var(--ink);
   line-height: 1.35;
+}
+
+/* The panel's buttons are sized for the foot of the panel; here, among the small grey lines, one a size down. */
+.lektor-stale .lektor-side-buttons .status-action {
+  min-height: 1.9rem;
+  padding: 0.2rem 0.7rem;
+  font-size: inherit;
 }
 
 .lektor-stale-said {

@@ -226,6 +226,8 @@ test('in the same sitting, opens on the comment after a big change, says how big
   await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} ${LONG_ENOUGH}`);
   await page.locator('#lektor-open').click();
   await expect(page.locator('.lektor-stale')).toContainText(/promenio si oko \d+ reči/);
+  // Only the note's own way to a new one, not a second at the top.
+  await expect(page.getByRole('button', { name: 'Traži novi utisak' })).toHaveCount(1);
 
   // Left on the corrections step.
   await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
@@ -269,7 +271,7 @@ test('says which Lektor wrote the comment and made the corrections, with a mark 
   await expect(page.getByRole('button', { name: /^Pošalji ceo tekst/ }).locator('.lektor-service-mark')).toHaveCount(1);
   await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
   await expect(page.locator('.lektor-waiting .lektor-service-line')).toHaveText('AI Lektor: Probni (bez AI)');
-  await expect(page.locator('.lektor-comment-notes .lektor-service-line')).toHaveText('Probni (bez AI)', { timeout: 15_000 });
+  await expect(page.locator('.lektor-comment-notes .lektor-service-line')).toHaveText('AI Lektor: Probni (bez AI)', { timeout: 15_000 });
   await expect(page.getByRole('button', { name: 'Pređi na ispravke' }).locator('.lektor-service-mark')).toHaveCount(0);
   await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
   await expect(page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).locator('.lektor-service-mark')).toHaveCount(1);

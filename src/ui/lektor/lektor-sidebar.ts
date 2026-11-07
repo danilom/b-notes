@@ -751,11 +751,13 @@ export function createLektor(parts: LektorParts): Lektor {
 
   /** Ours rather than the AI's, like everything around its words: how old this is, the way to a newer one, and what to make of it. */
   function commentNotes(state: TextState): HTMLElement {
-    const age = el('div', 'lektor-comment-age');
-    age.append(el('span', '', words().writtenWhen(describeWhen(state.readAt, parts.languageNow()))), backButton(words().askForNewComment, 'start'));
-    const notes = el('div', 'lektor-comment-notes');
     const stale = staleNote(state);
-    notes.append(age, ...serviceLine(state.readBy, words().levels), ...(stale === null ? [] : [stale]), ...aboutAi());
+    const age = el('div', 'lektor-comment-age');
+    age.append(el('span', '', words().writtenWhen(describeWhen(state.readAt, parts.languageNow()))));
+    // In the note when there is one, so that there is only ever one way to a new comment on screen.
+    if (stale === null) age.append(backButton(words().askForNewComment, 'start'));
+    const notes = el('div', 'lektor-comment-notes');
+    notes.append(...serviceLine(state.readBy, words().levels, words().serviceLabel), age, ...(stale === null ? [] : [stale]), ...aboutAi());
     return notes;
   }
 
