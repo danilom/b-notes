@@ -482,11 +482,11 @@ export function createLektor(parts: LektorParts): Lektor {
    * the sidebar's foot, so a sentence about a button stays against that button on a
    * tall screen too. Where the content runs long, he scrolls down to it.
    */
-  function footer(lines: HTMLElement[], main: HTMLButtonElement): HTMLElement {
+  function footer(lines: HTMLElement[], main: HTMLButtonElement, afterMain: HTMLElement[] = []): HTMLElement {
     const buttons = el('div', 'lektor-side-buttons');
     buttons.append(main);
     const made = el('div', 'lektor-side-foot');
-    made.append(...lines, buttons);
+    made.append(...lines, buttons, ...afterMain);
     return made;
   }
 
@@ -503,11 +503,11 @@ export function createLektor(parts: LektorParts): Lektor {
     return warning;
   }
 
-  /** Forward rather than back: he may have got here by reopening, and the comment is simply there to go to. */
+  /** Under the button that would ask for a new one, where he is deciding. No arrow: that means the next step, and this is the way out of taking it. */
   function existingCommentRow(): HTMLElement {
     const toComment = el('button', 'lektor-again');
     toComment.type = 'button';
-    toComment.append(el('span', '', words().existingComment), icon('move-out'));
+    toComment.append(el('span', '', words().existingComment));
     toComment.addEventListener('click', () => goTo('response'));
     const row = el('div', 'lektor-back-row');
     row.append(toComment);
@@ -549,13 +549,12 @@ export function createLektor(parts: LektorParts): Lektor {
     // Having come here to send again, he may think better of it: the comment he has is still there.
     const existing = stateNow().feedback === '' ? [] : [existingCommentRow()];
     return [
-      ...existing,
       ...saved,
       el('p', 'lektor-line', words().blurb),
       ...levelChoice(),
       el('p', 'lektor-model', words().model(ai().commentModel)),
       key,
-      footer([privacyWarning()], send),
+      footer([privacyWarning()], send, existing),
     ];
   }
 
