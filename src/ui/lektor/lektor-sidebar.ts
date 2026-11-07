@@ -288,14 +288,13 @@ export function createLektor(parts: LektorParts): Lektor {
    * isn't his doing, and he needn't decide anything. By what has passed rather than a
    * forecast, because the wait hardly depends on the text and varies threefold regardless.
    */
-  /** `since` is from the steady clock, not the wall clock: on one of his machines the wall clock jumps by seconds, and the wait seemed to. */
   function waitingLine(doing: string, firstNote: string, since: number, longS: number): HTMLElement {
     stopWaitNote();
     const note = el('p', 'lektor-wait-note', firstNote);
     const clock = el('p', 'lektor-wait-clock');
     const { veryLongS } = WAITS[level];
     const update = (): void => {
-      const seconds = (performance.now() - since) / 1000;
+      const seconds = (Date.now() - since) / 1000;
       clock.textContent = elapsedLine(seconds, words().elapsed);
       if (seconds >= veryLongS) note.textContent = words().waitVeryLong;
       else if (seconds >= longS) note.textContent = words().waitLong;
@@ -346,7 +345,7 @@ export function createLektor(parts: LektorParts): Lektor {
     const controller = new AbortController();
     working = controller;
     isKeyJustSaved = false;
-    readingSince = performance.now();
+    readingSince = Date.now();
     state.screen = 'reading';
     render();
     try {
@@ -920,7 +919,7 @@ export function createLektor(parts: LektorParts): Lektor {
     const chosenLevel = level;
     const controller = new AbortController();
     const leave = (): void => controller.abort();
-    const waitingPanel = plainPanel(waitingLine(words().correcting, words().waits[level].correcting, performance.now(), WAITS[level].correctingLongS), [button(words().stop, leave)]);
+    const waitingPanel = plainPanel(waitingLine(words().correcting, words().waits[level].correcting, Date.now(), WAITS[level].correctingLongS), [button(words().stop, leave)]);
     const waiting = showAsModal(dialog, waitingPanel, leave);
     try {
       if (!(await parts.prepareToSend())) throw new LektorServiceError('not-brought-over', 'not on disk');
