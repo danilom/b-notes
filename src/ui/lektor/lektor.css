@@ -742,17 +742,13 @@ body.lektor-open #lektor-side {
   font-size: var(--lektor-small);
 }
 
-/*
-  The model in line with the names of the choices above it, past the circle and the mark:
-  it is a footnote to them. The way to the keys at the other end of the row.
-*/
+/* What the choice runs on, at the panel's own margin, with the way to the keys at the other end of the row. */
 .lektor-choice-foot {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 0.4rem;
   margin-bottom: 0.3rem;
-  padding-left: calc(var(--lektor-radio) + 0.8rem + 1.05 * var(--lektor-text));
   font-size: var(--lektor-small);
 }
 
