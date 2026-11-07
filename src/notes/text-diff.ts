@@ -432,14 +432,50 @@ function withEdgesFolded(pieces: readonly TextPiece[]): TextPiece[] {
     if (change?.kind !== 'change') continue;
     const before = touchingFix(folded, at, -1);
     const after = touchingFix(folded, at, 1);
+    if (before === null && after === null) continue;
     let [removed, added] = [change.removed, change.added];
     if (before !== null) [removed, added] = [before.fix.removed + before.spaces + removed, before.fix.added + before.spaces + added];
     if (after !== null) [removed, added] = [removed + after.spaces + after.fix.removed, added + after.spaces + after.fix.added];
     const [from, to] = [at - (before?.reach ?? 0), at + (after?.reach ?? 0)];
-    folded.splice(from, to - from + 1, { kind: 'change', removed, added });
-    at = from;
+    const parts = withSharedSpacesOutside(removed, added);
+    folded.splice(from, to - from + 1, ...parts);
+    at = from + parts.findIndex((part) => part.kind === 'change');
   }
-  return folded;
+  return withSameRunsJoined(folded);
+}
+
+/**
+ * A folded change, with the spaces both sides begin or end with put back outside it. The
+ * space between "tvrdio" and "da" belongs to both texts; left in, the change put it in as
+ * well as taking it out, and the review drew a space being put in.
+ */
+function withSharedSpacesOutside(removed: string, added: string): TextPiece[] {
+  const lead = sharedSpaces(removed, added, (text) => /^[ \t]*/.exec(text)?.[0] ?? '');
+  const trail = sharedSpaces(removed.slice(lead.length), added.slice(lead.length), (text) => /[ \t]*$/.exec(text)?.[0] ?? '', true);
+  const core: TextPiece = {
+    kind: 'change',
+    removed: removed.slice(lead.length, removed.length - trail.length),
+    added: added.slice(lead.length, added.length - trail.length),
+  };
+  return [...(lead === '' ? [] : [{ kind: 'same' as const, text: lead }]), core, ...(trail === '' ? [] : [{ kind: 'same' as const, text: trail }])];
+}
+
+/** The run of spaces at one end that both texts have, as long as the shorter of the two. */
+function sharedSpaces(one: string, other: string, spacesAt: (text: string) => string, atEnd = false): string {
+  const [first, second] = [spacesAt(one), spacesAt(other)];
+  const length = Math.min(first.length, second.length);
+  return atEnd ? first.slice(first.length - length) : first.slice(0, length);
+}
+
+/** Neighbouring unchanged pieces made one, as the rest of the comparison has them. */
+function withSameRunsJoined(pieces: readonly TextPiece[]): TextPiece[] {
+  const joined: TextPiece[] = [];
+  for (const piece of pieces) {
+    const last = joined.at(-1);
+    if (piece.kind === 'same' && last?.kind === 'same') joined[joined.length - 1] = { kind: 'same', text: last.text + piece.text };
+    else joined.push(piece);
+  }
+  return joined;
 }
 
 /**

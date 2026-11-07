@@ -525,7 +525,8 @@ describe('joining changes that sit close together', () => {
     const after = 'Marko je tvrdio da tamo gori svijeća.';
     const pieces = mergeCloseChanges(separateTidying(diffTexts(before, after)));
 
-    assert.deepEqual(changesIn(pieces), [[', onako kako je on to umio, ', ' ']]);
+    // The space before "da" is in both texts, so it stays outside: nothing is put in.
+    assert.deepEqual(changesIn(pieces), [[', onako kako je on to umio,', '']]);
     assert.equal(pieces.filter((piece) => piece.kind === 'tidy').length, 0);
     assert.equal(side(pieces, 'removed'), before);
     assert.equal(side(pieces, 'added'), after);
