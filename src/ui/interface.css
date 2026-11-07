@@ -2709,15 +2709,31 @@ dialog::backdrop {
   font-weight: 700;
 }
 
-/* Where he resolved something that left no text. Drawn rather than typed, because
-   a symbol from a font comes out as thin as that font makes it. */
+/* Where he resolved something that left no text: ∅, his own shorthand for nothing,
+   as the buttons that lead here say it. Drawn rather than typed, because a symbol
+   from a font comes out as thin as that font makes it. */
 .diff-resolved-empty {
+  position: relative;
   display: inline-block;
-  width: 0.66em;
-  height: 0.66em;
-  margin: 0 0.12em;
-  border: 3px dotted var(--diff-resolved-ink);
+  box-sizing: border-box;
+  width: 0.7em;
+  height: 0.7em;
+  margin: 0 0.18em;
+  border: 2.5px solid var(--diff-resolved-ink);
+  border-radius: 50%;
   vertical-align: -0.06em;
+}
+
+/* The stroke through it, past the ring at both ends as the sign has it. */
+.diff-resolved-empty::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2.5px;
+  height: 1em;
+  background: var(--diff-resolved-ink);
+  transform: translate(-50%, -50%) rotate(40deg);
 }
 
 /* A letter he has chosen: dealt with, so green, still a small mark to be seen. */
