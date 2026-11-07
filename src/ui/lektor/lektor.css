@@ -434,6 +434,17 @@ body.lektor-open #lektor-side {
   color: var(--on-chosen);
 }
 
+/* On the blue the marks melt into it or clash with it, so each gets an outline in its own shape, which a filter can follow and a border can't. */
+.lektor-sends {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.lektor-main-action .lektor-service-mark {
+  filter: drop-shadow(1px 0 0 var(--on-chosen)) drop-shadow(-1px 0 0 var(--on-chosen)) drop-shadow(0 1px 0 var(--on-chosen)) drop-shadow(0 -1px 0 var(--on-chosen));
+}
+
 .lektor-link {
   align-self: flex-start;
   padding: 0;

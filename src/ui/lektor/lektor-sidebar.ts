@@ -245,6 +245,13 @@ export function createLektor(parts: LektorParts): Lektor {
     });
   }
 
+  /** On the buttons that send something, and only those: it sets them apart from the ones that only move him along, and says where it goes. */
+  function withWhereItGoes(made: HTMLButtonElement): HTMLButtonElement {
+    made.insertBefore(serviceMark(level), made.querySelector('svg'));
+    made.classList.add('lektor-sends');
+    return made;
+  }
+
   /** For whoever is looking into what ran, which he needn't be: only on hovering, where it is out of his way. */
   const modelTooltip = (model: string): string => `${words().model(model)}${words().modelPrice[level]}`;
   const hasKeyFor = (option: Level): boolean => option === 'fake' || settings[KEY_FIELD[option]] !== '';
@@ -536,7 +543,7 @@ export function createLektor(parts: LektorParts): Lektor {
   function startScreen(): HTMLElement[] {
     const key = button(words().keysLink, () => goTo('key'), 'lektor-link');
     const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', words().keyWorks)] : [];
-    const send = nextStepButton(words().send(recipient()), () => void read());
+    const send = withWhereItGoes(nextStepButton(words().send(recipient()), () => void read()));
     send.disabled = wordsInText() < FEWEST_WORDS;
     send.title = send.disabled ? words().tooShort : modelTooltip(ai().commentModel);
     // Having come here to send again, he may think better of it: the comment he has is still there.
@@ -768,9 +775,11 @@ export function createLektor(parts: LektorParts): Lektor {
     // True either way, so it stays still when the buttons change. Where the text goes was said on the first step, the only place he can change that.
     const reassurance = [el('p', 'lektor-line', words().correctionsFoot)];
     const sendsNow = modelTooltip(ai().correctionModel(state.preset));
-    if (saved === null) return footer(reassurance, nextStepButton(words().sendForCorrections, () => void correct(), sendsNow));
+    if (saved === null) return footer(reassurance, withWhereItGoes(nextStepButton(words().sendForCorrections, () => void correct(), sendsNow)));
     const see = nextStepButton(words().seeCorrections, () => review(editor.value, withEndingOf(editor.value, saved.proposed), saved.level), modelTooltip(saved.model));
-    return footer(reassurance, see, [plainButtonRow(words().newRequest, () => void correct(), sendsNow)]);
+    const again = plainButtonRow(words().newRequest, () => void correct(), sendsNow);
+    again.querySelectorAll('button').forEach(withWhereItGoes);
+    return footer(reassurance, see, [again]);
   }
 
   function correctionsScreen(): HTMLElement[] {
