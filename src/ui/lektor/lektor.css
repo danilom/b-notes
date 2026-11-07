@@ -598,7 +598,7 @@ body.lektor-open #lektor-side {
   display: block;
   width: 0.42em;
   height: 0.42em;
-  margin: 0.3em 0 0.6em;
+  margin: 0.3em 0 0.2em;
   background: var(--quiet);
   opacity: 0.6;
 }
