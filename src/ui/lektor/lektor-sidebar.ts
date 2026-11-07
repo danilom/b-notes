@@ -301,7 +301,7 @@ export function createLektor(parts: LektorParts): Lektor {
     update();
     waitNoteTimer = setInterval(update, 1000);
     const line = el('div', 'lektor-waiting');
-    line.append(el('p', 'lektor-reading', doing), clock, note);
+    line.append(el('p', 'lektor-reading', doing), ...serviceLine(level, words().levels), clock, note);
     return line;
   }
 
