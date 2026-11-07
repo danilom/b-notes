@@ -819,7 +819,7 @@ export function createLektor(parts: LektorParts): Lektor {
     const choice = { preset: state.preset, level, note: state.note };
     const saved = savedCorrections(state, editor.value, choice);
     // True either way, so it stays still when the buttons change. Where the text goes was said on the first step, the only place he can change that.
-    const reassurance = [el('p', 'lektor-line', words().correctionsFoot)];
+    const reassurance = [el('p', 'lektor-line lektor-reassurance', words().correctionsFoot)];
     const sendsNow = modelTooltip(ai().correctionModel(state.preset));
     if (saved === null) return footer(reassurance, withWhereItGoes(nextStepButton(words().sendForCorrections, () => void correct(), sendsNow)));
     const see = nextStepButton(words().seeCorrections, () => review(editor.value, withEndingOf(editor.value, saved.proposed), saved.level), modelTooltip(saved.model));

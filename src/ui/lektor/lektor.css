@@ -470,7 +470,7 @@ body.lektor-open #lektor-side {
   color: var(--ink);
 }
 
-.lektor-label,
+/* Bold only for a question he has to answer. A label over a box only says what the box is, so it is plain. */
 .lektor-heading {
   font-weight: 600;
 }
@@ -499,8 +499,15 @@ body.lektor-open #lektor-side {
 /* Italic so it reads as an example and not as something already written; not fainter, or he can't read it. */
 .lektor-note::placeholder {
   color: var(--quiet);
+  font-size: var(--lektor-small);
   font-style: italic;
   opacity: 1;
+}
+
+/* Reassurance rather than an instruction, so small print; what he types in the box above stays full size, since it is his own and he checks it as he goes. */
+.lektor-reassurance {
+  color: var(--quiet);
+  font-size: var(--lektor-small);
 }
 
 /* His writing's own font, at a size the narrow column can carry: this is something to read, not chrome. */
@@ -709,7 +716,8 @@ body.lektor-open #lektor-side {
   border-radius: 4px;
   background: var(--wash);
   color: var(--quiet);
-  font-size: var(--lektor-text);
+  /* Small print: there to look at if he wants to, not something to act on. */
+  font-size: var(--lektor-small);
   line-height: 1.4;
   cursor: default;
 }
