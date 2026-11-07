@@ -136,34 +136,53 @@
         a fill as an inset shadow, since the struck line through red is a background and
         a background laid over it would hide it. Pressed drops a pixel, as a button does.
       */
-      #view[data-hover='buttons'] :is(.diff-change, .diff-change-carried):hover :is(.diff-new, .diff-gone) {
+      #view:is([data-hover='buttons'], [data-hover='underline']) :is(.diff-change, .diff-change-carried):hover :is(.diff-new, .diff-gone) {
         box-shadow: inset 0 0 0 100vmax var(--wash-firm);
       }
 
       /* With no fill, a darker ground, on a target wider than the words: grown into the
          space around them, and taken back by a margin, so that no line moves. Letters
          grow less, so that two of them one letter apart, as in šiša, do not meet. */
-      #view[data-hover='buttons'] :is(.diff-change, .diff-change-carried):has(.diff-resolved) {
+      #view:is([data-hover='buttons'], [data-hover='underline']) :is(.diff-change, .diff-change-carried):has(.diff-resolved) {
         padding: 0.18em 0.25em;
         margin: 0 -0.25em;
         border-radius: 3px;
         box-decoration-break: clone;
       }
 
-      #view[data-hover='buttons'] .diff-tidied-letter {
+      #view:is([data-hover='buttons'], [data-hover='underline']) .diff-tidied-letter {
         padding: 0.18em 0.1em;
         margin: 0 -0.1em;
         border-radius: 2px;
       }
 
-      #view[data-hover='buttons'] :is(.diff-change, .diff-change-carried):has(.diff-resolved):hover,
-      #view[data-hover='buttons'] .diff-tidied-letter:hover {
+      #view:is([data-hover='buttons'], [data-hover='underline']) :is(.diff-change, .diff-change-carried):has(.diff-resolved):hover,
+      #view:is([data-hover='buttons'], [data-hover='underline']) .diff-tidied-letter:hover {
         background: var(--wash-firm);
       }
 
-      #view[data-hover='buttons'] :is(.diff-change, .diff-change-carried, .diff-tidied-letter):active {
+      #view:is([data-hover='buttons'], [data-hover='underline']) :is(.diff-change, .diff-change-carried, .diff-tidied-letter):active {
         position: relative;
         top: 1px;
+      }
+
+      /*
+        5. As 4, and under the change pointed at, the current change's own dashed line in
+        grey: the same mark, quieter, so that it says "this one" without outranking the
+        current one, which has it in ink. Not on the current change, which has it already.
+      */
+      #view[data-hover='underline'] :is(.diff-change, .diff-change-carried):hover:not(.diff-current) {
+        --marks-reach: 0.05em;
+        padding-bottom: calc(var(--marks-reach) + 2px + 3px);
+        background-image: linear-gradient(90deg, transparent 2px, var(--quiet) 2px 10px, transparent 10px);
+        background-position: left bottom;
+        background-repeat: round no-repeat;
+        background-size: 12px 3px;
+        box-decoration-break: clone;
+      }
+
+      #view[data-hover='underline'] :is(.diff-change, .diff-change-carried):has(.diff-small):hover:not(.diff-current) {
+        --marks-reach: 0.12em;
       }
 
       /* 3. One yellow highlighter for any change, filled or not, as on paper. */
@@ -204,6 +223,7 @@
           <option value="darker">2. Tamnije, i svetlozeleno iza zelenog</option>
           <option value="marker">3. Žuti marker za sve</option>
           <option value="buttons" selected>4. Kao dugmad: zatamnjeno, veća meta (izabrano)</option>
+          <option value="underline">5. Kao 4, i siva isprekidana linija ispod</option>
         </select>
       </label>
       <label>
