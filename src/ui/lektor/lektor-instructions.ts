@@ -1,5 +1,5 @@
 import { filingFrontOf } from '../../notes/title-marks.ts';
-import { type CorrectionRequest, type EarlierReading, LektorServiceError } from './lektor-service.ts';
+import { type CorrectionRequest, LektorServiceError } from './lektor-service.ts';
 
 /*
   What the Lektor asks, the same whichever AI is asked, so that any difference between
@@ -13,9 +13,6 @@ U drugom reci gde si zastao ili želeo nešto više, i opet navedi to mesto.
 U trećem reci nešto o celini.
 
 Bez opšte hvale, bez ocena i bez spiska saveta. Ne izmišljaj lično iskustvo. Ako nisi siguran u neku činjenicu, nemoj je tvrditi. Piši narečjem kojim je tekst pisan.
-Vrati samo te pasuse, običnim tekstom, bez naslova i oznaka.`;
-
-export const SECOND_LOOK_INSTRUCTION = `Ti si pažljiv čitalac koji je već jednom čitao ovaj tekst. Autor ga je u međuvremenu menjao. U jednom ili dva kratka pasusa, obraćajući mu se sa „ti”, reci šta njegove izmene menjaju u tvom utisku. Govori samo o onome što se između dve verzije zaista promenilo i navedi to mesto. Ako je izmena sitna, reci to u jednoj rečenici. Bez opšte hvale. Piši narečjem kojim je tekst pisan.
 Vrati samo te pasuse, običnim tekstom, bez naslova i oznaka.`;
 
 /** What he doesn't need to read: rules about the shape of the answer, added to what he does. */
@@ -33,10 +30,6 @@ Return the whole text, with no comment and no markers around it.`;
 
 /** A corrected text this much shorter has lost something, rather than been corrected. */
 const SHORTEST_SHARE_KEPT = 0.6;
-
-export function secondLookInput(text: string, earlier: EarlierReading): string {
-  return `Tekst kakav je bio:\n${earlier.text}\n\nTvoj raniji utisak:\n${earlier.comment}\n\nTekst sada:\n${text}`;
-}
 
 export function correctionInstruction(request: CorrectionRequest): string {
   const note = request.note.trim() === '' ? '' : `\n\nThe author adds (in his own words): ${request.note.trim()}`;

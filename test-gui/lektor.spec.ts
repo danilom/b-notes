@@ -116,10 +116,9 @@ test('keeps the old text as a version when corrections go in, and says these are
   await expect(page.locator('#see-versions')).toContainText('(1)');
   expect(requestsToAi).toBe(0);
 
-  // The job is done, so the sidebar goes; opened again, the comment is there and says it is about an earlier text.
+  // The job is done, so the sidebar goes; opened again after so small a change, the comment is there and says it is about an earlier text.
   await expect(page.locator('body')).not.toHaveClass(/lektor-open/);
   await page.locator('#lektor-open').click();
-  await page.getByRole('button', { name: 'Postojeći AI utisak' }).click();
   await expect(page.locator('.lektor-response')).toContainText('PROBNI');
   await expect(page.locator('.lektor-stale')).toBeVisible();
 });
@@ -190,6 +189,57 @@ test('shows corrections already made instead of sending again, until the request
   await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} Jos jedna recenica.`);
   await expect(send).toBeVisible();
   await expect(see).toHaveCount(0);
+});
+
+test('after a few changed words, opens on the comment and asks before sending the same corrections again', async ({ page }) => {
+  await withTestLektor(page, 'ok');
+  await writeNewText(page);
+  await page.locator('#lektor-open').click();
+  await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
+  await page.getByRole('button', { name: 'Pređi na ispravke' }).click({ timeout: 15_000 });
+  await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
+  await expect(page.getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible({ timeout: 15_000 });
+  await page.locator('#lektor-dialog button.close').click();
+  await page.locator('#confirm').getByRole('button', { name: 'Zatvori bez unošenja' }).click();
+
+  await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} Jos.`);
+  await page.locator('#lektor-open').click();
+  await expect(page.locator('.lektor-stale')).toHaveText('Ovaj utisak je o ranijoj verziji teksta.');
+  await expect(page.locator('.lektor-stale button')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
+
+  const send = page.getByRole('button', { name: 'Pošalji zahtev za ispravke' });
+  const question = page.locator('#confirm');
+  await send.click();
+  await expect(question).toContainText('samo nekoliko reči');
+  await question.getByRole('button', { name: 'Odustani' }).click();
+  await expect(page.getByRole('button', { name: 'Unesi sve izmene u tekst' })).toHaveCount(0);
+  await expect(send).toBeVisible();
+
+  // Another kind is another request, so nothing to ask.
+  await page.getByLabel('Dubinska prerada').check();
+  await send.click();
+  await expect(page.getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible({ timeout: 15_000 });
+});
+
+test('after many changed words, offers the first step and sends corrections without asking', async ({ page }) => {
+  await withTestLektor(page, 'ok');
+  await writeNewText(page);
+  await page.locator('#lektor-open').click();
+  await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
+  await page.getByRole('button', { name: 'Pređi na ispravke' }).click({ timeout: 15_000 });
+  await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
+  await expect(page.getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible({ timeout: 15_000 });
+  await page.locator('#lektor-dialog button.close').click();
+  await page.locator('#confirm').getByRole('button', { name: 'Zatvori bez unošenja' }).click();
+
+  await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} ${LONG_ENOUGH}`);
+  await page.locator('#lektor-open').click();
+  await page.getByRole('button', { name: 'Postojeći AI utisak' }).click();
+  await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
+  await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
+  await expect(page.locator('#confirm')).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible({ timeout: 15_000 });
 });
 
 test('offers no retry once the daily tries are gone, and passes on what the service said', async ({ page }) => {

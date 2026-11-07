@@ -43,6 +43,9 @@ export const withEndingOf = (text: string, proposed: string): string => proposed
 const isSameChoice = (one: CorrectionChoice, other: CorrectionChoice): boolean =>
   one.preset === other.preset && one.level === other.level && one.note.trim() === other.note.trim();
 
+/** Whether there are corrections for this request on the text as it was, whatever it is now. */
+export const hasCorrectionsFor = ({ proposals }: Pick<KeptResults, 'proposals'>, choice: CorrectionChoice): boolean => proposals.some((kept) => isSameChoice(kept, choice));
+
 /** The corrections already made for just this, if any: against any other text, the review would offer to undo his edits. */
 export function savedCorrections({ proposals, proposalsFor }: Pick<KeptResults, 'proposals' | 'proposalsFor'>, text: string, choice: CorrectionChoice): KeptProposal | null {
   if (!isSameText(text, proposalsFor)) return null;

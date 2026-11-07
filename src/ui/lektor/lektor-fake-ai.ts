@@ -109,10 +109,6 @@ export function createFakeAi(behaviour: FakeBehaviour, finalSentences: { noCredi
       await pretendToWork(READING_MS, signal);
       return fakeComment(text);
     },
-    secondLook: async (text, _earlier, signal) => {
-      await pretendToWork(READING_MS, signal);
-      return `[PROBNI UTISAK, bez pravog AI] Pogledao sam izmene.\n\n${fakeComment(text)}`;
-    },
     corrections: async ({ text, preset }, signal) => {
       await pretendToWork(CORRECTING_MS, signal);
       return fakeProposal(text, preset);

@@ -34,12 +34,6 @@ export interface CorrectionRequest {
   note: string;
 }
 
-/** What was read before, and what was said about it. Without the old text it can only guess what changed, and it does. */
-export interface EarlierReading {
-  text: string;
-  comment: string;
-}
-
 export interface LektorService {
   /** Who his text goes to. */
   company: 'google' | 'anthropic' | 'nobody';
@@ -52,6 +46,5 @@ export interface LektorService {
   keyCheck: (key: string, signal: AbortSignal) => Promise<void>;
   feedback: (text: string, signal: AbortSignal) => Promise<string>;
   /** Carries on from an earlier comment, on a text he has changed since. */
-  secondLook: (text: string, earlier: EarlierReading, signal: AbortSignal) => Promise<string>;
   corrections: (request: CorrectionRequest, signal: AbortSignal) => Promise<string>;
 }

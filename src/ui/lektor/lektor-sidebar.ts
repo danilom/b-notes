@@ -6,6 +6,7 @@ import { countWords } from '../../notes/word-count.ts';
 import type { FileSystem } from '../../platform/file-system.ts';
 import type { LektorRequest, LektorResponse } from '../../platform/lektor-remote.ts';
 import { describeError, type Log } from '../../platform/logging.ts';
+import { openConfirmDialog } from '../dialogs/confirm-dialog.ts';
 import { titleOf } from '../dialogs/dialog-heading.ts';
 import { showAsModal } from '../dialogs/modal.ts';
 import { icon } from '../icons.ts';
@@ -18,10 +19,11 @@ import { createFakeAi } from './lektor-fake-ai.ts';
 import type { FakeBehaviour } from './lektor-fake-setting.ts';
 import { createGeminiAi } from './lektor-gemini-ai.ts';
 import { withHisFilingMarks } from './lektor-instructions.ts';
-import { isSameText, type KeptProposal, readKeptResults, savedCorrections, withCorrections, withEndingOf, writeKeptResults } from './lektor-kept-results.ts';
+import { hasCorrectionsFor, isSameText, type KeptProposal, readKeptResults, savedCorrections, withCorrections, withEndingOf, writeKeptResults } from './lektor-kept-results.ts';
 import { PRESET_ORDER, PRESET_PROMPTS } from './lektor-presets.ts';
 import { type LektorFailure, type LektorService, LektorServiceError, type PresetId } from './lektor-service.ts';
 import type { LektorServiceParts } from './lektor-service-call.ts';
+import { isSmallEdit } from './lektor-small-edit.ts';
 import { type LektorSettings, NO_LEKTOR_SETTINGS, readLektorSettings, type RealLevel, writeLektorSettings } from './lektor-settings.ts';
 
 /*
@@ -100,8 +102,6 @@ export interface Lektor {
   startedNewText(): void;
 }
 
-/** Past this share of its words changed, the response is more about the old text than this one. */
-const MUCH_CHANGED = 0.2;
 const REVEAL_MS = 10_000;
 const FOLLOWING_SLACK_PX = 40;
 /** When to say a wait has gone on. The thorough one writes for minutes on end when all is well. */
@@ -141,16 +141,6 @@ function nextStepButton(label: string, onClick: () => void, tooltip = ''): HTMLB
   made.append(icon('move-out'));
   made.title = tooltip;
   return made;
-}
-
-/** How much of the text differs from what was read, by words and ignoring their order. */
-export function shareChanged(before: string, after: string): number {
-  const counts = new Map<string, number>();
-  const wordsBefore = before.split(/\s+/);
-  for (const word of wordsBefore) counts.set(word, (counts.get(word) ?? 0) + 1);
-  for (const word of after.split(/\s+/)) counts.set(word, (counts.get(word) ?? 0) - 1);
-  const differing = [...counts.values()].reduce((sum, count) => sum + Math.abs(count), 0);
-  return differing / Math.max(wordsBefore.length, 1);
 }
 
 export function createLektor(parts: LektorParts): Lektor {
@@ -336,7 +326,7 @@ export function createLektor(parts: LektorParts): Lektor {
     }
   }
 
-  async function read(ask: (service: LektorService, text: string, signal: AbortSignal) => Promise<string>): Promise<void> {
+  async function read(): Promise<void> {
     const state = stateNow();
     const service = ai();
     stopWorking();
@@ -351,7 +341,7 @@ export function createLektor(parts: LektorParts): Lektor {
       const name = parts.textNameNow();
       const text = editor.value;
       log.info('The Lektor was asked to read a text', { level, model: service.commentModel });
-      const answer = await ask(service, text, controller.signal);
+      const answer = await service.feedback(text, controller.signal);
       state.feedback = answer;
       state.readText = text;
       state.readAt = Date.now();
@@ -366,8 +356,6 @@ export function createLektor(parts: LektorParts): Lektor {
     if (working === controller) working = null;
     render();
   }
-
-  const askForFeedback = (service: LektorService, text: string, signal: AbortSignal): Promise<string> => service.feedback(text, signal);
 
   /** Before anything else on opening: there is no point in his choosing anything he can't send. */
   async function checkConnection(): Promise<void> {
@@ -544,7 +532,7 @@ export function createLektor(parts: LektorParts): Lektor {
   function startScreen(): HTMLElement[] {
     const key = button(words().keysLink, () => goTo('key'), 'lektor-link');
     const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', words().keyWorks)] : [];
-    const send = nextStepButton(words().send(recipient()), () => void read(askForFeedback));
+    const send = nextStepButton(words().send(recipient()), () => void read());
     send.disabled = wordsInText() < FEWEST_WORDS;
     send.title = send.disabled ? words().tooShort : modelTooltip(ai().commentModel);
     // Having come here to send again, he may think better of it: the comment he has is still there.
@@ -630,7 +618,7 @@ export function createLektor(parts: LektorParts): Lektor {
     return [
       top,
       problem(words().failures[failure ?? 'overloaded'], serviceSaid),
-      footer([], button(words().tryAgain, () => void read(askForFeedback), 'status-action')),
+      footer([], button(words().tryAgain, () => void read(), 'status-action')),
     ];
   }
 
@@ -670,15 +658,11 @@ export function createLektor(parts: LektorParts): Lektor {
 
   function staleNote(state: TextState): HTMLElement | null {
     if (isSameText(editor.value, state.readText)) return null;
-    const isMuchChanged = shareChanged(state.readText, editor.value) > MUCH_CHANGED;
+    // Only says what the comment is about. Offering to do something here would invite sending the text again just to clear it.
     const note = el('div', 'lektor-stale');
-    const earlier = { text: state.readText, comment: state.feedback };
     const said = el('span', 'lektor-stale-said');
-    said.append(icon('info'), el('span', '', isMuchChanged ? words().staleMuch : words().staleLittle));
-    note.append(
-      said,
-      button(words().secondLook, () => void read((service, text, signal) => service.secondLook(text, earlier, signal)), 'lektor-link'),
-    );
+    said.append(icon('info'), el('span', '', words().stale));
+    note.append(said);
     return note;
   }
 
@@ -734,7 +718,7 @@ export function createLektor(parts: LektorParts): Lektor {
   /** Ours rather than the AI's, like everything around its words: how old this is, the way to a newer one, and what to make of it. */
   function commentNotes(state: TextState): HTMLElement {
     const age = el('div', 'lektor-comment-age');
-    age.append(el('span', '', words().writtenWhen(describeWhen(state.readAt, parts.languageNow()))), backButton(words().sendAgain, 'start'));
+    age.append(el('span', '', words().writtenWhen(describeWhen(state.readAt, parts.languageNow()))), backButton(words().askForNewComment, 'start'));
     const notes = el('div', 'lektor-comment-notes');
     const stale = staleNote(state);
     notes.append(age, ...(stale === null ? [] : [stale]), ...aboutAi());
@@ -770,6 +754,35 @@ export function createLektor(parts: LektorParts): Lektor {
   }
 
   /**
+   * After a few changed words the corrections he has can't simply be shown again, since they would
+   * undo those words, so this is the one place left to ask. Sending is still his choice: a try spent
+   * is no great harm, and he may well have changed the very thing he wants looked at.
+   */
+  function sendCorrections(state: TextState): void {
+    const isRepeat = hasCorrectionsFor(state, { preset: state.preset, level, note: state.note }) && isSmallEdit(state.proposalsFor, editor.value);
+    if (!isRepeat) {
+      void correct();
+      return;
+    }
+    const said = words().smallEdit;
+    const close = openConfirmDialog(
+      parts.confirmPane,
+      {
+        title: { mark: 'lektor', label: said.confirm, name: titleFrom(editor.value) },
+        body: said.body,
+        confirm: said.confirm,
+        cancel: said.cancel,
+        onConfirm: () => {
+          close();
+          void correct();
+        },
+        onCancel: () => close(),
+      },
+      parts.languageNow(),
+    );
+  }
+
+  /**
    * What the buttons offer follows from what he has chosen. With corrections already made for just
    * this, looking at them is the step on, and costs nothing. Sending again stays possible, because
    * the same request can come back much better, but it is no longer what happens by habit.
@@ -780,7 +793,7 @@ export function createLektor(parts: LektorParts): Lektor {
     // True either way, so it stays still when the buttons change. Where the text goes was said on the first step, the only place he can change that.
     const reassurance = [el('p', 'lektor-line', words().correctionsFoot)];
     const sendsNow = modelTooltip(ai().correctionModel(state.preset));
-    if (saved === null) return footer(reassurance, nextStepButton(words().sendForCorrections, () => void correct(), sendsNow));
+    if (saved === null) return footer(reassurance, nextStepButton(words().sendForCorrections, () => sendCorrections(state), sendsNow));
     const see = nextStepButton(words().seeCorrections, () => review(editor.value, withEndingOf(editor.value, saved.proposed)), modelTooltip(saved.model));
     return footer(reassurance, see, [plainButtonRow(words().newRequest, () => void correct(), sendsNow)]);
   }
@@ -990,8 +1003,9 @@ export function createLektor(parts: LektorParts): Lektor {
     const state = stateNow();
     await readSettingsOnce();
     await readKeptOnce(state);
-    // What he already has for this very text is what he came back to; asking again is the choice he makes from there.
-    if (state.screen === 'start' && state.feedback !== '' && isSameText(editor.value, state.readText)) state.screen = 'response';
+    // What he already has is what he came back to, a few changed words later too: asking again is the choice he makes from there.
+    const isStillAboutThis = isSameText(editor.value, state.readText) || isSmallEdit(state.readText, editor.value);
+    if (state.screen === 'start' && state.feedback !== '' && isStillAboutThis) state.screen = 'response';
     state.isOpen = true;
     log.info('Opened the Lektor', { level });
     // A response he already has needs no internet to read.
