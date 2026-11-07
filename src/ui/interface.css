@@ -2716,6 +2716,9 @@ dialog::backdrop {
 /* A change he has dealt with: still different, but no longer asking for anything. */
 .diff-resolved {
   color: var(--diff-resolved-ink);
+  /* Bold: green in his own weight was too faint to tell from the black around it on a
+     day-lit screen, and a rewrite shown as its new text is mostly this. */
+  font-weight: 700;
 }
 
 .diff-resolved-small {
