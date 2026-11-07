@@ -105,10 +105,10 @@ const MUCH_CHANGED = 0.2;
 const REVEAL_MS = 10_000;
 const FOLLOWING_SLACK_PX = 40;
 /** When to say a wait has gone on. The thorough one writes for minutes on end when all is well. */
-const WAITS: Readonly<Record<Level, { longS: number; veryLongS: number }>> = {
-  free: { longS: 30, veryLongS: 60 },
-  thorough: { longS: 300, veryLongS: 480 },
-  fake: { longS: 30, veryLongS: 60 },
+const WAITS: Readonly<Record<Level, { readingLongS: number; correctingLongS: number; veryLongS: number }>> = {
+  free: { readingLongS: 30, correctingLongS: 90, veryLongS: 120 },
+  thorough: { readingLongS: 300, correctingLongS: 300, veryLongS: 480 },
+  fake: { readingLongS: 30, correctingLongS: 90, veryLongS: 120 },
 };
 /** Under this there is nothing for a reader to respond to: a title or a stray line, though not a short poem. */
 const FEWEST_WORDS = 10;
@@ -278,11 +278,11 @@ export function createLektor(parts: LektorParts): Lektor {
    * isn't his doing, and he needn't decide anything. By what has passed rather than a
    * forecast, because the wait hardly depends on the text and varies threefold regardless.
    */
-  function waitingLine(doing: string, firstNote: string, since: number): HTMLElement {
+  function waitingLine(doing: string, firstNote: string, since: number, longS: number): HTMLElement {
     stopWaitNote();
     const note = el('p', 'lektor-wait-note', firstNote);
     const clock = el('p', 'lektor-wait-clock');
-    const { longS, veryLongS } = WAITS[level];
+    const { veryLongS } = WAITS[level];
     const update = (): void => {
       const seconds = (Date.now() - since) / 1000;
       clock.textContent = elapsedLine(seconds, words().elapsed);
@@ -602,7 +602,7 @@ export function createLektor(parts: LektorParts): Lektor {
 
   function readingScreen(): HTMLElement[] {
     return [
-      waitingLine(words().reading(words().companyName[ai().company]), words().waits[level].reading, readingSince),
+      waitingLine(words().reading(words().companyName[ai().company]), words().waits[level].reading, readingSince, WAITS[level].readingLongS),
       footer(
         [],
         button(words().stop, () => {
@@ -910,7 +910,7 @@ export function createLektor(parts: LektorParts): Lektor {
     const controller = new AbortController();
     const leave = (): void => controller.abort();
     const doing = words().correcting(words().companyName[service.company]);
-    const waitingPanel = plainPanel(waitingLine(doing, words().waits[level].correcting, Date.now()), [button(words().stop, leave)]);
+    const waitingPanel = plainPanel(waitingLine(doing, words().waits[level].correcting, Date.now(), WAITS[level].correctingLongS), [button(words().stop, leave)]);
     const waiting = showAsModal(dialog, waitingPanel, leave);
     try {
       if (!(await parts.prepareToSend())) throw new LektorServiceError('not-brought-over', 'not on disk');

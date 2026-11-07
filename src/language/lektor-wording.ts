@@ -57,7 +57,7 @@ export const LEKTOR_WORDS = {
     reading: (company: string) => `AI Lektor (${company}) čita tekst…`,
     correcting: (company: string) => `AI Lektor (${company}) ispravlja tekst…`,
     waits: {
-      free: { reading: 'Obično traje pola minuta.', correcting: 'Obično traje oko pola minuta.' },
+      free: { reading: 'Obično traje pola minuta.', correcting: 'Obično traje oko minut.' },
       thorough: { reading: 'Obično traje oko minut.', correcting: 'Može da potraje nekoliko minuta.' },
       fake: { reading: 'Probni način: traje par sekundi.', correcting: 'Probni način: traje par sekundi.' },
     },
@@ -168,7 +168,7 @@ export const LEKTOR_WORDS = {
     reading: (company: string) => `The AI Lektor (${company}) is reading the text…`,
     correcting: (company: string) => `The AI Lektor (${company}) is correcting the text…`,
     waits: {
-      free: { reading: 'Usually takes half a minute.', correcting: 'Usually takes about half a minute.' },
+      free: { reading: 'Usually takes half a minute.', correcting: 'Usually takes about a minute.' },
       thorough: { reading: 'Usually takes about a minute.', correcting: 'May take several minutes.' },
       fake: { reading: 'Test mode: takes a few seconds.', correcting: 'Test mode: takes a few seconds.' },
     },

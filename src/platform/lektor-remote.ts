@@ -40,8 +40,9 @@ const CLAUDE_LONGEST_REPLY_TOKENS = 64_000;
 
 const PING_LIMIT_MS = 8_000;
 const KEY_CHECK_LIMIT_MS = 15_000;
-const GEMINI_LIMIT_MS = 180_000;
-/** A long essay took over four minutes when tried, so more than Gemini's three. */
+/** A whole essay on the one model took nearly two minutes when tried, so room for a longer one or a slow day. */
+const GEMINI_LIMIT_MS = 240_000;
+/** A long essay took over four minutes when tried, so more than Gemini's. */
 const CLAUDE_LIMIT_MS = 600_000;
 
 const TIMED_OUT = 'TimeoutError';
