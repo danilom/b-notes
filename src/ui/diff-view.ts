@@ -7,7 +7,7 @@ import {
 } from '../notes/text-diff.ts';
 import { letterSegmentsOf } from '../notes/text-review.ts';
 import { scrollShowing } from './change-in-view.ts';
-import { type DiffChangeBar, type DiffEditing, createDiffChangeBar } from './diff-change-bar.ts';
+import { type BecameCurrent, type DiffChangeBar, type DiffEditing, createDiffChangeBar } from './diff-change-bar.ts';
 import { beginningAndEnd } from './deleted-and-archived/text-snippet.ts';
 import { createStepper } from './stepper.ts';
 
@@ -134,11 +134,17 @@ function stepperOver(
   marked: string,
   words: DiffViewOptions['stepper'],
   review?: {
-    markCurrent: (change: HTMLElement, isCurrent: boolean) => void;
+    markCurrent: (change: HTMLElement, isCurrent: boolean, how: BecameCurrent) => void;
     changeAt: (clicked: Element) => HTMLElement | null;
     key: SVGElement;
     /** Set where changes can be acted on: there is then always a current one, even the only one. */
-    editing?: { startAt: number | undefined };
+    editing?: {
+      startAt: number | undefined;
+      /** A coloured letter was clicked, for its choices. */
+      onLetter: (letter: HTMLElement) => void;
+      /** Somewhere that is no change was clicked, which puts the bar away. */
+      onNothing: () => void;
+    };
   },
 ): HTMLElement {
   const changes = [...box.querySelectorAll<HTMLElement>(marked)];
@@ -154,9 +160,9 @@ function stepperOver(
   // the panel laid out. Hidden is the safe state to start in.
   steps.root.hidden = true;
 
-  function select(which: number): HTMLElement | undefined {
+  function select(which: number, how: BecameCurrent): HTMLElement | undefined {
     const was = changes[showing];
-    if (was !== undefined) review?.markCurrent(was, false);
+    if (was !== undefined) review?.markCurrent(was, false, how);
 
     showing = Math.max(0, Math.min(which, changes.length - 1));
     steps.showing(words.at(showing + 1, changes.length), {
@@ -165,12 +171,12 @@ function stepperOver(
     });
 
     const change = changes[showing];
-    if (change !== undefined) review?.markCurrent(change, true);
+    if (change !== undefined) review?.markCurrent(change, true, how);
     return change;
   }
 
-  function goTo(which: number): void {
-    const change = select(which);
+  function goTo(which: number, how: BecameCurrent = 'stepped'): void {
+    const change = select(which, how);
     if (change === undefined) return;
     box.scrollTop = scrollShowing(
       { top: change.offsetTop - box.offsetTop, height: change.offsetHeight },
@@ -186,18 +192,43 @@ function stepperOver(
     if (!(event.target instanceof Element) || getSelection()?.isCollapsed === false) return;
     const clicked = review?.changeAt(event.target);
     const which = clicked === null || clicked === undefined ? -1 : changes.indexOf(clicked);
-    if (which >= 0) select(which);
+    if (which >= 0) select(which, 'clicked');
+  }
+
+  /**
+   * In a review: a change clicked opens its bar, a coloured letter its choices, and
+   * anywhere else puts the bar away. Only the change itself counts, not the plain words
+   * around it, or in a rewrite, where nearly every paragraph has one, there would be no
+   * empty place left to click; except a paragraph whose only change is the break that
+   * opens it, which has nothing else to click.
+   */
+  function actOnClick(event: MouseEvent, editing: NonNullable<NonNullable<typeof review>['editing']>): void {
+    if (!(event.target instanceof Element) || getSelection()?.isCollapsed === false) return;
+    if (event.target.closest('.diff-edit') !== null) return;
+    const letter = event.target.closest<HTMLElement>('.diff-tidied-letter');
+    if (letter !== null) {
+      editing.onLetter(letter);
+      return;
+    }
+    const paragraph = event.target.closest('.diff-paragraph');
+    const isOnChange = event.target.closest(CHANGE_FRAGMENT) !== null;
+    const isBreakOnly = paragraph?.classList.contains('diff-paragraph-changed') === true && paragraph.querySelector(CHANGE_FRAGMENT) === null;
+    const clicked = isOnChange || isBreakOnly ? review?.changeAt(event.target) : null;
+    const which = clicked === null || clicked === undefined ? -1 : changes.indexOf(clicked);
+    if (which >= 0) select(which, 'clicked');
+    else editing.onNothing();
   }
 
   // After the view is in the document, or every measurement here is zero.
   queueMicrotask(() => {
-    if (review?.editing !== undefined) {
+    const editing = review?.editing;
+    if (editing !== undefined) {
       if (changes.length === 0) return;
       steps.root.hidden = changes.length < 2;
-      box.addEventListener('click', selectClicked);
-      const { startAt } = review.editing;
-      if (startAt === undefined) goTo(0);
-      else select(startAt);
+      box.addEventListener('click', (event) => actOnClick(event, editing));
+      const { startAt } = editing;
+      if (startAt === undefined) goTo(0, 'restored');
+      else select(startAt, 'restored');
       return;
     }
     // A text short enough to read without scrolling has nothing to steer
@@ -208,7 +239,7 @@ function stepperOver(
     if (changes.length === 0 || !worthShowing) return;
     steps.root.hidden = false;
     if (review !== undefined) box.addEventListener('click', selectClicked);
-    goTo(0);
+    goTo(0, 'restored');
   });
   return steps.root;
 }
@@ -478,10 +509,10 @@ export function createTextDiffView(
   const changes = [...text.querySelectorAll<HTMLElement>('.diff-change')];
   const bar: DiffChangeBar | null = editing === undefined ? null : createDiffChangeBar(framed, text, changes, editing);
 
-  const markCurrent = (change: HTMLElement, isCurrent: boolean): void => {
+  const markCurrent = (change: HTMLElement, isCurrent: boolean, how: BecameCurrent): void => {
     markCurrentChange(change, isCurrent);
     if (!isCurrent) return;
-    bar?.setCurrent(change);
+    bar?.setCurrent(change, how);
     editing?.onCurrent(changes.indexOf(change));
   };
 
@@ -491,7 +522,9 @@ export function createTextDiffView(
       markCurrent,
       changeAt,
       key: currentChangeKey(),
-      ...(editing === undefined ? {} : { editing: { startAt: editing.startAt } }),
+      ...(bar === null || editing === undefined
+        ? {}
+        : { editing: { startAt: editing.startAt, onLetter: (letter: HTMLElement) => bar.showLetter(letter), onNothing: () => bar.close() } }),
     }),
   );
   return framed;

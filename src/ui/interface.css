@@ -2670,6 +2670,20 @@ dialog::backdrop {
 /* The box fills the dialog and the lines stay a readable length, in its middle. */
 .lektor-body .review-text {
   padding-inline: max(1.5rem, calc((100% - var(--measure)) / 2));
+  /* Room for the bar over a change on the first line, which is often the title: inside the
+     box, beside the stepper, rather than over the box's edge and on top of the stepper. */
+  padding-top: calc(var(--ui-size) * 3.4);
+}
+
+/* Each change answers a click, and says so under the pointer: a look, never a popup. */
+.lektor-body .review-text :is(.diff-change, .diff-change-carried, .diff-tidied-letter) {
+  cursor: pointer;
+}
+
+.lektor-body .review-text :is(.diff-change, .diff-change-carried, .diff-tidied-letter):hover {
+  outline: 2px solid var(--quiet);
+  outline-offset: 1px;
+  border-radius: 2px;
 }
 
 /* One paragraph of the whole-text diff. */

@@ -1,12 +1,22 @@
 import { icon } from './icons.ts';
 
+/**
+ * Whether the bar shows over the current change. `quiet` after he has decided one, until he
+ * steps or clicks to a change: it is done, and the bar going is how he sees that. `closed` once
+ * he has put it away, until he clicks a change: stepping then moves through the changes without it.
+ */
+export type BarState = 'shown' | 'quiet' | 'closed';
+
+/** How a change came to be the current one, which decides whether its bar shows. */
+export type BecameCurrent = 'restored' | 'stepped' | 'clicked';
+
 /** What the reviewer of a proposal can do to it, from the bar above each change. */
 export interface DiffEditing {
   /** The change to start on, by its place among the changes. */
   startAt?: number;
-  /** Whether the bar over that change was closed before this drawing of it. */
-  startsClosed?: boolean;
-  onBarClosed: (closed: boolean) => void;
+  /** How the bar was left before this drawing of the view. */
+  barStarts?: BarState;
+  onBarState: (state: BarState) => void;
   isResolved: (changeAt: number) => boolean;
   /** Whether the change has old words to bring back and new words to take, each of which may be nothing. */
   sidesOf: (changeAt: number) => { hasOld: boolean; hasNew: boolean };
@@ -29,17 +39,15 @@ export interface DiffEditing {
   onCurrent: (changeAt: number) => void;
 }
 
-/** Long enough that a pointer passing over on its way somewhere raises nothing. */
-const SHOW_AFTER_MS = 100;
-/** Long enough for an unsteady hand to get from the word up to the button. */
-const HIDE_AFTER_MS = 500;
 const GAP_ABOVE_PX = 3;
 
-const HOVERABLE = '.diff-change, .diff-change-carried, .diff-tidied-letter';
-
 export interface DiffChangeBar {
-  /** The change whose bar shows when the pointer is over no other. */
-  setCurrent: (change: HTMLElement | null) => void;
+  /** The change now current, and how it got to be, which decides whether its bar shows. */
+  setCurrent: (change: HTMLElement | null, how: BecameCurrent) => void;
+  /** The choices for one coloured letter, over it, when he clicks it. */
+  showLetter: (letter: HTMLElement) => void;
+  /** Put away, as X does: a click on nothing in particular. */
+  close: () => void;
 }
 
 function barButton(said: string, className: string, onClick: () => void): HTMLButtonElement {
@@ -111,8 +119,10 @@ function startEditing(change: HTMLElement, fragments: readonly Element[], at: nu
 }
 
 /**
- * The small bar above a change: over whichever the pointer is on, and otherwise
- * over the current one. Nothing has to be clicked or stepped to first.
+ * The small bar above a change: over the current one, when he clicks a change or steps
+ * to one. Not on the pointer passing over: a hand resting on the text while he reads
+ * raised bars over the line he was reading, and an unsteady one could not get to the
+ * buttons before they went.
  *
  * One bar, floating over the box rather than inside it, so that it moves no lines
  * and is not cut off by the edge of the box.
@@ -130,15 +140,13 @@ export function createDiffChangeBar(
 
   let current: HTMLElement | null = null;
   let shownOver: Element | null = null;
-  let showTimer: ReturnType<typeof setTimeout> | undefined;
-  let hideTimer: ReturnType<typeof setTimeout> | undefined;
   let isEditing = false;
-  /** Whether he closed the bar over the current change. Kept by the caller, across redraws. */
-  let isOutOfTheWay = editing.startsClosed === true;
+  /** Kept by the caller, across redraws. */
+  let state: BarState = editing.barStarts ?? 'shown';
 
-  const setOutOfTheWay = (closed: boolean): void => {
-    isOutOfTheWay = closed;
-    editing.onBarClosed(closed);
+  const setState = (next: BarState): void => {
+    state = next;
+    editing.onBarState(next);
   };
 
   const fragmentsAll = (): Element[] => [...box.querySelectorAll('.diff-change, .diff-change-carried')];
@@ -185,16 +193,17 @@ export function createDiffChangeBar(
   }
 
   /**
-   * Out of the way, for reading the line it was covering. Until the pointer goes back
-   * onto that change, or he steps or clicks to one; passing over anything else on the
-   * way does not bring it back. The change stays current meanwhile.
+   * Out of the way, for reading what it was covering, until he clicks a change. Stepping
+   * meanwhile moves the frame and not the bar. The change stays current.
    */
+  function putAway(): void {
+    if (isEditing) return;
+    setState('closed');
+    hide();
+  }
+
   function closeButton(): HTMLButtonElement {
-    const close = barButton('', 'stepper-close', () => {
-      cancelTimers();
-      setOutOfTheWay(true);
-      hide();
-    });
+    const close = barButton('', 'stepper-close', putAway);
     close.title = 'Zatvori';
     close.setAttribute('aria-label', 'Zatvori');
     close.append(icon('close'));
@@ -272,64 +281,27 @@ export function createDiffChangeBar(
     shownOver = null;
   }
 
-  /**
-   * The bar stays up by itself only over a change still open. One he has dealt with
-   * goes quiet, which is how he sees it is done, and answers when the pointer is on it.
-   */
+  /** Over the current change, decided or not, unless he has put it away or has just decided it. */
   const showCurrent = (): void => {
-    const isOpen = current !== null && !editing.isResolved(changes.indexOf(current));
-    if (current === null || !isOpen || isEditing || isOutOfTheWay) hide();
+    if (current === null || isEditing || state !== 'shown') hide();
     else showOver(current);
   };
 
-  function cancelTimers(): void {
-    clearTimeout(showTimer);
-    clearTimeout(hideTimer);
-  }
-
-  // On the pointer moving and not merely being there, so that a pointer left
-  // resting on the text does not raise a bar over what he is reading.
-  box.addEventListener('pointermove', (event) => {
-    if (!(event.target instanceof Element) || isEditing) return;
-    const over = event.target.closest(HOVERABLE);
-    if (over === shownOver) {
-      if (over !== null) cancelTimers();
-      return;
-    }
-    cancelTimers();
-    if (over === null) {
-      hideTimer = setTimeout(showCurrent, HIDE_AFTER_MS);
-      return;
-    }
-    showTimer = setTimeout(() => {
-      if (isOutOfTheWay && changeOfFragment(over, changes, fragmentsAll()) === current) setOutOfTheWay(false);
-      showOver(over);
-    }, SHOW_AFTER_MS);
-  });
-
-  box.addEventListener('pointerleave', () => {
-    cancelTimers();
-    hideTimer = setTimeout(showCurrent, HIDE_AFTER_MS);
-  });
-
-  bar.addEventListener('pointerenter', cancelTimers);
-  bar.addEventListener('pointerleave', () => {
-    hideTimer = setTimeout(showCurrent, HIDE_AFTER_MS);
-  });
-
   box.addEventListener('scroll', () => {
     if (shownOver !== null) place(shownOver);
-    else if (current !== null && !isEditing) showCurrent();
   });
 
   return {
-    setCurrent(change) {
-      // The first call only restores where a redraw left off. After that it is him
-      // stepping or clicking to a change, which brings the bar back.
-      if (current !== null && isOutOfTheWay) setOutOfTheWay(false);
+    setCurrent(change, how) {
       current = change;
-      cancelTimers();
+      // Clicking a change always shows its bar; stepping does unless he put it away; a redraw keeps what was.
+      if (how === 'clicked' || (how === 'stepped' && state === 'quiet')) setState('shown');
       showCurrent();
     },
+    showLetter(letter) {
+      if (isEditing) return;
+      showOver(letter);
+    },
+    close: putAway,
   };
 }

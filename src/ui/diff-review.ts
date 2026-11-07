@@ -1,6 +1,6 @@
 import type { TextPiece } from '../notes/text-diff.ts';
 import { type ChangeDecision, piecesAfter, textAfter } from '../notes/text-review.ts';
-import type { DiffEditing } from './diff-change-bar.ts';
+import type { BarState, DiffEditing } from './diff-change-bar.ts';
 
 /** One proposal being gone through: what he has done to it, and where he is in it. */
 export interface DiffReview {
@@ -30,7 +30,7 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
   const opened = new Set<number>();
   let isOnlyNew = showsOnlyNew;
   let currentChange: number | undefined;
-  let isBarClosed = false;
+  let barState: BarState = 'shown';
 
   /** Drawn as their new text alone, and so as an accepted one is; never recorded as accepted. */
   const isShownAsNew = (at: number): boolean => isOnlyNew && !changes.has(at) && !opened.has(at);
@@ -51,7 +51,8 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
     if (decision === null) changes.delete(at);
     else changes.set(at, decision);
     currentChange = at;
-    isBarClosed = false;
+    // Decided, it goes quiet until he moves on; put back to the proposal, its choices are wanted again.
+    barState = decision === null ? 'shown' : 'quiet';
     redraw();
   };
 
@@ -75,9 +76,9 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
     },
     editing: () => ({
       ...(currentChange === undefined ? {} : { startAt: currentChange }),
-      startsClosed: isBarClosed,
-      onBarClosed: (closed) => {
-        isBarClosed = closed;
+      barStarts: barState,
+      onBarState: (state) => {
+        barState = state;
       },
       isResolved: (at) => changes.has(at) || isShownAsNew(at),
       sidesOf: (at) => {
@@ -92,7 +93,7 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
       onOpen: (at) => {
         opened.add(at);
         currentChange = at;
-        isBarClosed = false;
+        barState = 'shown';
         redraw();
       },
       onEdit: (at, text) => decide(at, { kind: 'edited', text }),
@@ -102,6 +103,8 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
         const chosen = [...(letters.get(tidyAt) ?? [])];
         chosen[slot] = letter;
         letters.set(tidyAt, chosen);
+        // Chosen, the letter is done, and the bar does not jump to the current change instead.
+        if (barState === 'shown') barState = 'quiet';
         redraw();
       },
       onCurrent: (at) => {
