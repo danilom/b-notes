@@ -106,7 +106,7 @@ test('keeps the old text as a version when corrections go in, and says these are
   await expect(page.locator('.lektor-response')).toContainText('PROBNI', { timeout: 15_000 });
 
   await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
-  await page.getByLabel('Dubinska prerada').check();
+  await page.getByLabel('Slova i zarezi').check();
   await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
   await expect(page.getByText('Probni predlozi, bez pravog AI')).toBeVisible({ timeout: 15_000 });
 
@@ -276,7 +276,7 @@ test('says which Lektor wrote the comment and made the corrections, with a mark 
   await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
   await expect(page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).locator('.lektor-service-mark')).toHaveCount(1);
   await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
-  await expect(page.locator('#lektor-dialog .lektor-service-line')).toHaveText('AI Lektor: Probni: bez AI, samo za proveru', { timeout: 15_000 });
+  await expect(page.locator('#lektor-dialog .lektor-service-line')).toHaveText('Slova i zarezi · AI Lektor: Probni: bez AI, samo za proveru', { timeout: 15_000 });
 });
 
 test('offers no retry once the daily tries are gone, and passes on what the service said', async ({ page }) => {
