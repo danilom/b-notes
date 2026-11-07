@@ -14,6 +14,10 @@ export interface DiffEditing {
   onAccept: (changeAt: number) => void;
   /** Back to the proposal, red and green, from where any of it can be chosen again. */
   onReopen: (changeAt: number) => void;
+  /** Whether this change is undecided and only drawn as its new text; absent where nothing is. */
+  isShownAsNew?: (changeAt: number) => boolean;
+  /** Opens a change shown as new into red and green, deciding nothing. */
+  onOpen?: (changeAt: number) => void;
   onEdit: (changeAt: number, text: string) => void;
   /** Called when an edit is backed out of, so that what it disturbed can be drawn again. */
   onCancelEdit: () => void;
@@ -155,6 +159,12 @@ export function createDiffChangeBar(
       startEditing(change, fragmentsOf(change), at, editing);
     });
 
+    const { onOpen } = editing;
+    if (onOpen !== undefined && editing.isShownAsNew?.(at) === true) {
+      // A look and not an undo: nothing of his is on it to lose, unlike Vrati predlog.
+      bar.replaceChildren(edit, barButton('Vidi predlog', 'diff-bar-open', () => onOpen(at)), closeButton());
+      return;
+    }
     if (editing.isResolved(at)) {
       // Plain, unlike the choices: this is a step back, and not one more decision.
       const reopen = barButton('Vrati predlog', 'diff-bar-reopen', () => editing.onReopen(at));
