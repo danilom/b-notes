@@ -143,8 +143,9 @@ In this order:
 3. **Line thickness,** an open question: 3px renders unevenly at Windows scaling
    (5.25 real pixels at 175%, 4.5 at his 150%). 2px for both lines would be
    exact on his screen.
-4. **Run the whole browser suite** before merging. The Lektor tests (16) last
-   passed before the edge folding, the bar placement fix and the CSS changes.
+4. **Run the whole browser suite again** after the bar redesign, before merging.
+   As this note was written, `rewrite-review` passed all of it (83 tests, 5.7 min)
+   and the unit suite (1154).
 
 Small things known:
 - The prototype's own "Sitne popravke: N" line counts before merging; the app counts after.
