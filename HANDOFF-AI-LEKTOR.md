@@ -50,6 +50,28 @@ into `main`, when Danilo says so. The Lektor shows a button in the status strip,
 so merging it into `main` makes `main` no longer releasable as v1 + fixes.
 Hotfixes for v1 can branch from the `v0.8.4` tag.
 
+## Files that are not in git
+
+Real texts and model replies are gitignored, because they are the client's
+private essays and the repository is public. Danilo sends whatever is needed
+separately and privately. Keep them in `testdata/`, never commit them, and send
+them to no AI service without asking Danilo first.
+
+| What | Where | What it is for |
+|---|---|---|
+| Sample texts and saved Opus replies | `testdata/diff-samples/` | Real essays paired with proposals (`.current.txt`, `.proposed.txt`), and Opus's corrections of two of them (`.lektor-<kind>.txt`). The prototype's real samples, and the test Lektor's saved replies in the browser build. |
+| The same replies, for the app | `%APPDATA%\b-notes\lektor-test-replies\` | Recreate it by copying an essay's `.current.txt` and `.lektor-*.txt` files there from `diff-samples/`. |
+| Model comparison runs | `testdata/lektor-comparison/` | The replies behind "Which models, and why" in `DESIGN.md`. `models-1` to `models-5` are the latest (Opus medium/low, Sonnet, Gemini, per essay and kind); `claude-*/task-*.txt` hold the prompts of that time. Only needed to re-check models or prompts. The scripts that ran them were not kept. |
+| His texts as the browser build's list | `testdata/corpus.json` | What `npm run ui` lists. Without it the build starts on its invented sample texts, which is enough for most work. |
+
+Not needed for the Lektor: `real-redacted/`, `corpus/`, `corpus-analysis/`,
+`metadata/`, `resoph-corpus.json` and the logs, all from the corpus and Resoph work.
+
+**Never sent: `testdata/gemini-key.txt` and `testdata/claude-key.txt`.** Get a
+Gemini key of your own from Google AI Studio. Its free tier allows 20 requests a
+day per project, so your own project won't use up Danilo's. A Claude key for paid
+tests comes from Danilo, if at all.
+
 ## The AI Lektor (`ai-lektor`)
 
 Working, in the app and the browser build:
