@@ -492,8 +492,10 @@ body.lektor-open #lektor-side {
   font: inherit;
 }
 
+/* It grows with what he writes, so it neither scrolls nor needs a handle to make it bigger. */
 .lektor-note {
-  resize: vertical;
+  overflow-y: hidden;
+  resize: none;
 }
 
 /* Italic so it reads as an example and not as something already written; not fainter, or he can't read it. */

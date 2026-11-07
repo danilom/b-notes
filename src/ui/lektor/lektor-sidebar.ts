@@ -829,16 +829,7 @@ export function createLektor(parts: LektorParts): Lektor {
     // True either way, so it stays still when the buttons change. Where the text goes was said on the first step, the only place he can change that.
     const reassurance = [el('p', 'lektor-line lektor-reassurance', words().correctionsFoot)];
     const sendsNow = modelTooltip(ai().correctionModel(state.preset));
-    if (saved === null) {
-      // The second button's room kept, empty: typing a note changes which buttons there are, and the box above, which takes what height is left, would jump with every keystroke that did.
-      const room = plainButtonRow(words().newRequest, () => undefined);
-      room.style.visibility = 'hidden';
-      room.setAttribute('aria-hidden', 'true');
-      room.querySelectorAll('button').forEach((kept) => {
-        kept.disabled = true;
-      });
-      return footer(reassurance, withWhereItGoes(nextStepButton(words().sendForCorrections, () => void correct(), sendsNow)), [room]);
-    }
+    if (saved === null) return footer(reassurance, withWhereItGoes(nextStepButton(words().sendForCorrections, () => void correct(), sendsNow)));
     const see = nextStepButton(words().seeCorrections, () => review(editor.value, withEndingOf(editor.value, saved.proposed), saved.level), modelTooltip(saved.model));
     const again = plainButtonRow(words().newRequest, () => void correct(), sendsNow);
     again.querySelectorAll('button').forEach(withWhereItGoes);
@@ -855,7 +846,19 @@ export function createLektor(parts: LektorParts): Lektor {
       foot.replaceWith(fresh);
       foot = fresh;
     };
-    return [top, ...presetChoice(state, refreshFoot), foot];
+    const choice = presetChoice(state, refreshFoot);
+    const prompt = choice.find((part) => part.classList.contains('lektor-prompt'));
+    /*
+      Its height taken once, from the room the screen leaves it when the step opens, and kept: the
+      buttons changing as he types a note, or the note growing, then move what is below it rather
+      than squeezing it, and a long note scrolls the panel.
+    */
+    requestAnimationFrame(() => {
+      if (prompt === undefined || !prompt.isConnected) return;
+      prompt.style.height = `${prompt.getBoundingClientRect().height}px`;
+      prompt.style.flex = 'none';
+    });
+    return [top, ...choice, foot];
   }
 
   const SCREENS: Readonly<Record<Screen, () => HTMLElement[]>> = {
