@@ -821,7 +821,16 @@ export function createLektor(parts: LektorParts): Lektor {
     // True either way, so it stays still when the buttons change. Where the text goes was said on the first step, the only place he can change that.
     const reassurance = [el('p', 'lektor-line lektor-reassurance', words().correctionsFoot)];
     const sendsNow = modelTooltip(ai().correctionModel(state.preset));
-    if (saved === null) return footer(reassurance, withWhereItGoes(nextStepButton(words().sendForCorrections, () => void correct(), sendsNow)));
+    if (saved === null) {
+      // The second button's room kept, empty: typing a note changes which buttons there are, and the box above, which takes what height is left, would jump with every keystroke that did.
+      const room = plainButtonRow(words().newRequest, () => undefined);
+      room.style.visibility = 'hidden';
+      room.setAttribute('aria-hidden', 'true');
+      room.querySelectorAll('button').forEach((kept) => {
+        kept.disabled = true;
+      });
+      return footer(reassurance, withWhereItGoes(nextStepButton(words().sendForCorrections, () => void correct(), sendsNow)), [room]);
+    }
     const see = nextStepButton(words().seeCorrections, () => review(editor.value, withEndingOf(editor.value, saved.proposed), saved.level), modelTooltip(saved.model));
     const again = plainButtonRow(words().newRequest, () => void correct(), sendsNow);
     again.querySelectorAll('button').forEach(withWhereItGoes);
