@@ -775,14 +775,10 @@ export function createLektor(parts: LektorParts): Lektor {
   function correctionsFoot(state: TextState): HTMLElement {
     const choice = { preset: state.preset, level, note: state.note };
     const saved = savedCorrections(state, editor.value, choice);
-    if (saved === null) {
-      return footer(
-        // Said again here: having chosen the other Lektor on this step, his text is going somewhere the first warning didn't name.
-        [el('p', 'lektor-line', words().correctionsFoot(recipient()))],
-        nextStepButton(words().sendForCorrections, () => void correct()),
-      );
-    }
-    return footer([], nextStepButton(words().seeCorrections, () => review(editor.value, saved)), [plainButtonRow(words().newRequest, () => void correct())]);
+    // True either way, so it stays still when the buttons change. Where the text goes was said on the first step, the only place he can change that.
+    const reassurance = [el('p', 'lektor-line', words().correctionsFoot)];
+    if (saved === null) return footer(reassurance, nextStepButton(words().sendForCorrections, () => void correct()));
+    return footer(reassurance, nextStepButton(words().seeCorrections, () => review(editor.value, saved)), [plainButtonRow(words().newRequest, () => void correct())]);
   }
 
   function correctionsScreen(): HTMLElement[] {
