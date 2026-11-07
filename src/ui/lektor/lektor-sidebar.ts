@@ -144,8 +144,14 @@ function button(label: string, onClick: () => void, className = ''): HTMLButtonE
 
 /** The arrow is a shape as well as the colour, for a washed-out or warm screen. Not on saving, which goes nowhere new. */
 function nextStepButton(label: string, onClick: () => void, tooltip = ''): HTMLButtonElement {
-  const made = button(label, onClick, MAIN_ACTION);
+  const made = windowButton(label, onClick, tooltip);
   made.append(icon('move-out'));
+  return made;
+}
+
+/** The main button where it opens the corrections window: no arrow, which means the next step in the panel, and plain like every other button in the app that opens a window. */
+function windowButton(label: string, onClick: () => void, tooltip = ''): HTMLButtonElement {
+  const made = button(label, onClick, MAIN_ACTION);
   made.title = tooltip;
   return made;
 }
@@ -829,8 +835,8 @@ export function createLektor(parts: LektorParts): Lektor {
     // True either way, so it stays still when the buttons change. Where the text goes was said on the first step, the only place he can change that.
     const reassurance = [el('p', 'lektor-line lektor-reassurance', words().correctionsFoot)];
     const sendsNow = modelTooltip(ai().correctionModel(state.preset));
-    if (saved === null) return footer(reassurance, withWhereItGoes(nextStepButton(words().sendForCorrections, () => void correct(), sendsNow)));
-    const see = nextStepButton(words().seeCorrections, () => review(editor.value, withEndingOf(editor.value, saved.proposed), saved.level), modelTooltip(saved.model));
+    if (saved === null) return footer(reassurance, withWhereItGoes(windowButton(words().sendForCorrections, () => void correct(), sendsNow)));
+    const see = windowButton(words().seeCorrections, () => review(editor.value, withEndingOf(editor.value, saved.proposed), saved.level), modelTooltip(saved.model));
     const again = plainButtonRow(words().newRequest, () => void correct(), sendsNow);
     again.querySelectorAll('button').forEach(withWhereItGoes);
     return footer(reassurance, see, [again]);
