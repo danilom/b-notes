@@ -39,6 +39,7 @@ body.lektor-open #status {
   --lektor-text: var(--ui-size);
   --lektor-small: calc(var(--ui-size) * 0.79);
   --lektor-reading: calc(var(--text-size) * 0.82);
+  --lektor-radio: 13px;
 }
 
 #lektor-side {
@@ -739,4 +740,40 @@ body.lektor-open #lektor-side {
 .lektor-model {
   color: var(--quiet);
   font-size: var(--lektor-small);
+}
+
+/*
+  The model in line with the names of the choices above it, past the circle and the mark:
+  it is a footnote to them. The way to the keys at the other end of the row.
+*/
+.lektor-choice-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin-bottom: 0.3rem;
+  padding-left: calc(var(--lektor-radio) + 0.8rem + 1.05 * var(--lektor-text));
+  font-size: var(--lektor-small);
+}
+
+.lektor-choice-foot .lektor-model {
+  margin: 0;
+}
+
+/* A button split over two lines reads as two things: the model's name may wrap instead. */
+.lektor-choice-foot .lektor-again {
+  white-space: nowrap;
+}
+
+/* The other steps start under a small button that gives them room; this one has none to give it. */
+.lektor-side-body > .lektor-opening:first-child,
+.lektor-side-body > .lektor-key-saved:first-child {
+  margin-top: 0.6rem;
+}
+
+/* In line with the words above them: the browser indents a circle a few pixels by default. */
+.lektor-preset input[type='radio'] {
+  width: var(--lektor-radio);
+  height: var(--lektor-radio);
+  margin: 0;
 }

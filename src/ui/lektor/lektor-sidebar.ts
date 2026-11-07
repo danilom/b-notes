@@ -551,8 +551,21 @@ export function createLektor(parts: LektorParts): Lektor {
     return [el('p', 'lektor-heading', words().whichLektor), levelOption('free'), levelOption('thorough'), ...test];
   }
 
+  /**
+   * What the choice runs on, and the way to the keys that decide which choices there are: both about
+   * the choice, so under it, and small. The keys on the right, out of the reading path, but not up
+   * in the corner where the ways between steps are.
+   */
+  function choiceFoot(): HTMLElement {
+    const keys = el('button', 'lektor-again', words().keysLink);
+    keys.type = 'button';
+    keys.addEventListener('click', () => goTo('key'));
+    const row = el('div', 'lektor-choice-foot');
+    row.append(el('p', 'lektor-model', words().model(ai().commentModel)), keys);
+    return row;
+  }
+
   function startScreen(): HTMLElement[] {
-    const key = button(words().keysLink, () => goTo('key'), 'lektor-link');
     const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', words().keyWorks)] : [];
     const send = withWhereItGoes(nextStepButton(words().send(recipient()), () => void read()));
     send.disabled = wordsInText() < FEWEST_WORDS;
@@ -561,10 +574,9 @@ export function createLektor(parts: LektorParts): Lektor {
     const existing = stateNow().feedback === '' ? [] : [plainButtonRow(words().existingComment, () => goTo('response'))];
     return [
       ...saved,
-      el('p', 'lektor-line', words().blurb),
+      el('p', 'lektor-line lektor-opening', words().blurb),
       ...levelChoice(),
-      el('p', 'lektor-model', words().model(ai().commentModel)),
-      key,
+      choiceFoot(),
       footer([privacyWarning()], send, existing),
     ];
   }
