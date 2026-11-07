@@ -638,6 +638,16 @@ function sayWholeIfCut(): void {
 // Checked again when the window changes size, which is what cuts it.
 new ResizeObserver(sayWholeIfCut).observe(statusText);
 
+/*
+  The Lektor's panel as wide as the list on the other side. The list asks for a width and gives
+  some of it up in a narrower window, so no number in a stylesheet stays equal to it: two side
+  panels almost but not quite alike look like a mistake. Measured from the list as it is drawn.
+*/
+const listColumn = element('side', HTMLElement);
+new ResizeObserver(() => {
+  document.documentElement.style.setProperty('--side-width', `${listColumn.getBoundingClientRect().width}px`);
+}).observe(listColumn);
+
 
 
 

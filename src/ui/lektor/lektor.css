@@ -15,7 +15,8 @@ body.list-hidden #side {
 */
 body.lektor-open #main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 19rem;
+  /* As wide as the list on the other side, which the app measures; the fallback is only for the moment before it has. */
+  grid-template-columns: minmax(0, 1fr) var(--side-width, 19rem);
   grid-template-rows: minmax(0, 1fr) auto;
 }
 
