@@ -372,8 +372,7 @@ async function applyLektorCorrections(text: string): Promise<boolean> {
     await writing.keepCopy(openHandle, editor.value);
   } catch (error: unknown) {
     log.error('Could not keep a copy before putting corrections in', { id: openName(), failure: describeError(error) });
-    notice = words.lektor.notApplied;
-    showStatus();
+    sayFailed(words.lektor.notApplied);
     return false;
   }
   putInEditor(text);
@@ -439,9 +438,8 @@ async function moveOpenToResoph(): Promise<void> {
   try {
     await writing.moveToResoph(openHandle);
   } catch (failure: unknown) {
-    // Said in the status line rather than floated: it is an answer he needs
-    // to read, and nothing of his is at risk, since nothing moved.
-    notice = failure instanceof ResophMoveRefused ? refusalSaid(failure.reason) : words.notMoved;
+    // Floated and kept in the status line: it is an answer he needs to read, and nothing of his is at risk, since nothing moved.
+    sayFailed(failure instanceof ResophMoveRefused ? refusalSaid(failure.reason) : words.notMoved);
     log.warn('A text was not moved to Resoph', describeError(failure));
     return;
   } finally {
@@ -589,6 +587,17 @@ function showWhatChangedUnderHim(): void {
 window.addEventListener('focus', () => {
   void onReturn();
 });
+
+/**
+ * A press that did not work. The status line alone was too quiet: he pressed something and saw
+ * nothing happen, which looks like a glitch and is when he presses again. So a toast where he is
+ * looking, and the status line besides, where it stays to be read after the toast has gone.
+ */
+function sayFailed(said: string): void {
+  notice = said;
+  showStatus();
+  flashToast(toast, said, '');
+}
 
 function showStatus(): void {
   const now = whatIsHappening();
@@ -884,8 +893,7 @@ async function copyWholeText(): Promise<void> {
       paste something else entirely — and a warning that floats away is one he
       may never have been looking at.
     */
-    notice = words.notCopied;
-    showStatus();
+    sayFailed(words.notCopied);
     log.error('Could not copy the text to the clipboard', describeError(error));
     return;
   }
@@ -907,8 +915,7 @@ async function deleteOpenNote(id: string, handle: NoteHandle): Promise<void> {
       him — but he pressed a button and watched nothing occur, which is when he
       presses it again. The line that reports saving reports this too.
     */
-    notice = words.notDeleted;
-    showStatus();
+    sayFailed(words.notDeleted);
     log.error('Could not put a text away', describeError(error));
     return;
   }
@@ -1187,6 +1194,7 @@ export async function startApp(runningOn: Host): Promise<void> {
       notice = said;
       showStatus();
     },
+    sayFailed,
   });
 
   putAway = createPutAwayTexts({
@@ -1208,6 +1216,7 @@ export async function startApp(runningOn: Host): Promise<void> {
       notice = said;
       showStatus();
     },
+    sayFailed,
   });
 
   keptCopies = createKeptCopies({
@@ -1228,6 +1237,7 @@ export async function startApp(runningOn: Host): Promise<void> {
       notice = said;
       showStatus();
     },
+    sayFailed,
     flash: (said) => flashToast(toast, said, ''),
     putInEditor,
   });

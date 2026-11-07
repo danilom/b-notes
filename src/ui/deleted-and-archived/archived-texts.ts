@@ -29,6 +29,8 @@ export interface ArchivedParts {
   refresh: () => Promise<void>;
   openText: (handle: NoteHandle) => Promise<void>;
   say: (notice: string) => void;
+  /** A press that did not work: said where he is looking, and kept in the status line. */
+  sayFailed: (notice: string) => void;
 }
 
 export interface ArchivedTexts {
@@ -90,7 +92,7 @@ export function createArchivedTexts(parts: ArchivedParts): ArchivedTexts {
       archives = await writing.archives();
       await parts.refresh();
     } catch (error: unknown) {
-      parts.say(words.archiveNotBrought);
+      parts.sayFailed(words.archiveNotBrought);
       log.error('Could not bring a text in from the archive', {
         archive: note.archive,
         id: note.id,
@@ -149,7 +151,7 @@ export function createArchivedTexts(parts: ArchivedParts): ArchivedTexts {
         onUnreadable: (error: unknown) => {
           close();
           strip.focus();
-          parts.say(words.archiveUnreadable);
+          parts.sayFailed(words.archiveUnreadable);
           log.error('Could not read the archive', describeError(error));
         },
       },

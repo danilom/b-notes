@@ -35,6 +35,8 @@ export interface PutAwayParts {
   /** A text is back in his list and should be in front of him. */
   openText: (handle: NoteHandle) => Promise<void>;
   say: (notice: string) => void;
+  /** A press that did not work: said where he is looking, and kept in the status line. */
+  sayFailed: (notice: string) => void;
 }
 
 export interface PutAwayTexts {
@@ -82,7 +84,7 @@ export function createPutAwayTexts(parts: PutAwayParts): PutAwayTexts {
       // What he was destroying is still in the list, which is the safe way to
       // fail.
       closeList();
-      parts.say(words.notDestroyed);
+      parts.sayFailed(words.notDestroyed);
       log.error('Could not destroy a text', describeError(error));
       return;
     }
@@ -130,7 +132,7 @@ export function createPutAwayTexts(parts: PutAwayParts): PutAwayTexts {
       await parts.refresh();
     } catch (error: unknown) {
       // The dialog has already closed, so the line is his to read.
-      parts.say(words.notRestored);
+      parts.sayFailed(words.notRestored);
       log.error('Could not bring a text back', describeError(error));
       return;
     }

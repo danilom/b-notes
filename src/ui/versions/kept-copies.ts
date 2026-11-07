@@ -32,6 +32,8 @@ export interface KeptCopiesParts {
   say: (notice: string) => void;
   /** The answer to a press that opens nothing: beside the status bar's quiet line, it would look like nothing happened. */
   flash: (said: string) => void;
+  /** A press that did not work: said where he is looking, and kept in the status line. */
+  sayFailed: (notice: string) => void;
   /**
    * A copy becomes his text.
    *
@@ -129,7 +131,7 @@ export function createKeptCopies(parts: KeptCopiesParts): KeptCopiesView {
       restored = { note: open.name, version: await writing.keepCopy(open.handle, editor.value) };
     } catch (failure) {
       log.error('Could not keep a copy before bringing a version back', { id: open.name, failure });
-      parts.say(words.notRestored);
+      parts.sayFailed(words.notRestored);
       return;
     }
 
