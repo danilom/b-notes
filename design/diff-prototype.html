@@ -134,7 +134,8 @@
       /*
         4. As the buttons answer: the wash they darken with, over whatever is there. Over
         a fill as an inset shadow, since the struck line through red is a background and
-        a background laid over it would hide it. Pressed drops a pixel, as a button does.
+        a background laid over it would hide it. Not the button's pixel drop when pressed:
+        one word jumping among words that stay still read as a glitch, not a press.
       */
       #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) :is(.diff-change, .diff-change-carried):hover :is(.diff-new, .diff-gone) {
         box-shadow: inset 0 0 0 100vmax var(--wash-firm);
@@ -166,11 +167,6 @@
       #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) .diff-tidied-letter:hover {
         /* The colour alone: the current change's dashed line is a background image, and the shorthand wiped it. */
         background-color: var(--wash-firm);
-      }
-
-      #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) :is(.diff-change, .diff-change-carried, .diff-tidied-letter):active {
-        position: relative;
-        top: 1px;
       }
 
       /*
