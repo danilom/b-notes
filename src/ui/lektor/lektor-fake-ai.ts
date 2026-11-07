@@ -70,6 +70,10 @@ function fakeComment(text: string): string {
   return [
     `[PROBNI UTISAK, bez pravog AI] Ostala mi je rečenica: „${quote(Math.floor(words.length / 3))}…”`,
     `Zastao sam kod „${quote(Math.floor((words.length * 2) / 3))}…”`,
+    'Ovaj deo je tu da utisak bude duži od ekrana, kao što pravi ume da bude, pa da se vidi kako se čita kad mora da se pomera. Pravi utisak bi ovde rekao nešto o tome kako tekst teče, gde se zgušnjava, a gde mu ponestane daha.',
+    'Možda bi primetio da prvi deo više objašnjava nego što pokazuje, i da je najjači onde gde pisac samo opisuje šta vidi. Možda bi pomenuo neku reč koja se ponavlja, ili rečenicu koja je duža nego što treba da bude.',
+    'Ništa od ovoga nije pročitano: rečenice gore su uzete iz tvog teksta po broju reči, ne po smislu, a ove ovde su napisane unapred, za svaki tekst iste.',
+    'Pravi utisak ima najviše tri kratka pasusa. Ovaj ih ima više, namerno, da bi se videlo kako izgleda kad ne stane na ekran, i gde je kraj kad se do njega stigne.',
     'U celini, ovo je samo tekst za isprobavanje, i niko ga nije pročitao.',
   ].join('\n\n');
 }

@@ -846,19 +846,7 @@ export function createLektor(parts: LektorParts): Lektor {
       foot.replaceWith(fresh);
       foot = fresh;
     };
-    const choice = presetChoice(state, refreshFoot);
-    const prompt = choice.find((part) => part.classList.contains('lektor-prompt'));
-    /*
-      Its height taken once, from the room the screen leaves it when the step opens, and kept: the
-      buttons changing as he types a note, or the note growing, then move what is below it rather
-      than squeezing it, and a long note scrolls the panel.
-    */
-    requestAnimationFrame(() => {
-      if (prompt === undefined || !prompt.isConnected) return;
-      prompt.style.height = `${prompt.getBoundingClientRect().height}px`;
-      prompt.style.flex = 'none';
-    });
-    return [top, ...choice, foot];
+    return [top, ...presetChoice(state, refreshFoot), foot];
   }
 
   const SCREENS: Readonly<Record<Screen, () => HTMLElement[]>> = {

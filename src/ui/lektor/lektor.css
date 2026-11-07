@@ -726,10 +726,16 @@ body.lektor-open #lektor-side {
 }
 
 /* As tall as the screen leaves room for, scrolling by itself beyond that: the button below stays in view, and this still reads as something to read. */
+/* Five lines, whatever the screen: enough to show what it is, and the same every time, so nothing below it moves with it. */
 .lektor-side-body > .lektor-prompt {
-  flex: 0 1 auto;
-  min-height: 4.4em;
+  box-sizing: content-box;
+  height: 7em;
   overflow-y: auto;
+}
+
+/* At the foot of the panel, like the button that leads here: wherever the step ends, the way on is in the same place. */
+.lektor-side-body:has(> .lektor-prompt) > .lektor-side-foot {
+  margin-top: auto;
 }
 
 /* Thin, unlike every other scrollbar in the app, which he needs to be able to hit. Nothing depends on this one. */
