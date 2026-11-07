@@ -641,6 +641,12 @@ body.lektor-open #lektor-side {
   height: 1.05em;
 }
 
+/* Drawn smaller in a box of the same size: it is a dense shape, and at the same size looks heavier than the others. */
+.lektor-service-mark-thorough {
+  padding: 0.09em;
+  box-sizing: border-box;
+}
+
 .lektor-service-line {
   display: flex;
   align-items: center;
