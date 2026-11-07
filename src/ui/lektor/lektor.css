@@ -725,11 +725,12 @@ body.lektor-open #lektor-side {
   cursor: default;
 }
 
-/* As tall as the screen leaves room for, scrolling by itself beyond that: the button below stays in view, and this still reads as something to read. */
 /* Five lines, whatever the screen: enough to show what it is, and the same every time, so nothing below it moves with it. */
 .lektor-side-body > .lektor-prompt {
   box-sizing: content-box;
   height: 7em;
+  /* None at the foot: a scrolling box shows its next line in its bottom padding, and a sliver of a sixth line reads as text cut off. The line's own spacing keeps the fifth off the frame. */
+  padding-bottom: 0;
   overflow-y: auto;
 }
 

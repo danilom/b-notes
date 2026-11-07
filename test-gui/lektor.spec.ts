@@ -166,7 +166,7 @@ test('shows corrections already made instead of sending again, until the request
   const send = page.getByRole('button', { name: 'Pošalji zahtev za ispravke' });
   await expect(see).toBeVisible();
   await expect(see).toHaveAttribute('title', /^Model: /);
-  await expect(page.getByRole('button', { name: 'Pošalji nov zahtev' })).toHaveAttribute('title', /^Model: /);
+  await expect(page.getByRole('button', { name: 'Pošalji nov zahtev za ispravke' })).toHaveAttribute('title', /^Model: /);
 
   await page.getByLabel('Dubinska prerada').check();
   await expect(send).toBeVisible();
