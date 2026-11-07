@@ -2911,7 +2911,7 @@ dialog::backdrop {
    inline text moves no lines. Each tile is a dash with half a gap either side,
    and `round` fits a whole number of them, so no dash is cut off at the end. */
 .diff-current {
-  --underline: 4px;
+  --underline: 3px;
   --parting: 2px;
   /* Below the marks inside, which themselves reach a little below the text. */
   --marks-reach: 0.05em;
