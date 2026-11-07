@@ -73,10 +73,10 @@ test('with only the free key, greys out the paid Lektor and goes straight to the
   await writeNewText(page);
   await page.locator('#lektor-open').click();
 
-  await expect(page.getByLabel(/\(Google\)/)).toBeChecked();
-  await expect(page.getByLabel(/\(Anthropic\)/)).toBeDisabled();
-  await expect(page.locator('label', { hasText: '(Anthropic)' })).toHaveAttribute('title', 'Nije unet API ključ.');
-  await expect(page.locator('label', { hasText: '(Google)' })).not.toHaveAttribute('title', /./);
+  await expect(page.getByLabel(/^Google:/)).toBeChecked();
+  await expect(page.getByLabel(/^Anthropic:/)).toBeDisabled();
+  await expect(page.locator('label', { hasText: 'Anthropic:' })).toHaveAttribute('title', 'Nije unet API ključ.');
+  await expect(page.locator('label', { hasText: 'Google:' })).not.toHaveAttribute('title', /./);
   await expect(page.getByRole('button', { name: /^Pošalji ceo tekst/ })).toHaveAttribute('title', 'Model: gemini-3.6-flash (besplatan)');
 });
 
@@ -86,13 +86,13 @@ test('with only the paid key, starts on it, and saving the keys box with nothing
   await writeNewText(page);
   await page.locator('#lektor-open').click();
 
-  await expect(page.getByLabel(/\(Anthropic\)/)).toBeChecked();
-  await expect(page.getByLabel(/\(Google\)/)).toBeDisabled();
+  await expect(page.getByLabel(/^Anthropic:/)).toBeChecked();
+  await expect(page.getByLabel(/^Google:/)).toBeDisabled();
   await expect(page.getByRole('button', { name: /^Pošalji ceo tekst/ })).toHaveAttribute('title', 'Model: claude-opus-5-5 (plaćen)');
 
   await page.getByRole('button', { name: 'API ključevi' }).click();
   await page.getByRole('button', { name: 'Sačuvaj' }).click();
-  await expect(page.getByLabel(/\(Anthropic\)/)).toBeChecked();
+  await expect(page.getByLabel(/^Anthropic:/)).toBeChecked();
 });
 
 test('keeps the old text as a version when corrections go in, and says these are only a test', async ({ page }) => {
