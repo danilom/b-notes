@@ -520,6 +520,35 @@ describe('joining changes that sit close together', () => {
     assert.deepEqual(mergeCloseChanges(pieces), pieces);
   });
 
+  it('makes a comma at the very edge of a change part of it, so one edit is one change', () => {
+    const before = 'Marko je tvrdio, onako kako je on to umio, da tamo gori svijeća.';
+    const after = 'Marko je tvrdio da tamo gori svijeća.';
+    const pieces = mergeCloseChanges(separateTidying(diffTexts(before, after)));
+
+    assert.deepEqual(changesIn(pieces), [[', onako kako je on to umio, ', ' ']]);
+    assert.equal(pieces.filter((piece) => piece.kind === 'tidy').length, 0);
+    assert.equal(side(pieces, 'removed'), before);
+    assert.equal(side(pieces, 'added'), after);
+  });
+
+  it('folds punctuation touching a change on either side, with only spaces between', () => {
+    const pieces = [same('a'), tidy(',', ''), same(' '), change('b', ''), same(' '), tidy('', ';'), same(' c')];
+
+    assert.deepEqual(mergeCloseChanges(pieces), [same('a'), change(', b ', '  ;'), same(' c')]);
+  });
+
+  it('leaves a restored letter beside a change as a small fix of its own word', () => {
+    const pieces = [tidy('kuca', 'kuća'), same(' '), change('', 'nova ')];
+
+    assert.deepEqual(mergeCloseChanges(pieces), pieces);
+  });
+
+  it('leaves punctuation apart from a change when a word stands between them', () => {
+    const pieces = [tidy('', ','), same(' i '), change('pere', 'održava')];
+
+    assert.deepEqual(mergeCloseChanges(pieces), pieces);
+  });
+
   it('never joins across tidying that holds a blank line', () => {
     const pieces = [change('stara', 'nova'), tidy('\n\n\n', '\n\n'), change('kuća', 'zgrada')];
 

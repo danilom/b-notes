@@ -401,6 +401,47 @@ function stretchOf(pieces: readonly TextPiece[]): Pick<Change, 'removed' | 'adde
   return { removed, added };
 }
 
+/** Punctuation or spacing only: no letter or digit put in or taken out. */
+const isPunctuationOnly = ({ removed, added }: Pick<Change, 'removed' | 'added'>): boolean => !/[\p{L}\p{N}]/u.test(removed + added);
+
+/** Nothing, or spaces on the same line: what can stand between a change and its own edge. */
+const isOnlySpaces = (piece: TextPiece | undefined): piece is Extract<TextPiece, { kind: 'same' }> =>
+  piece?.kind === 'same' && /^[ \t]*$/.test(piece.text);
+
+/** The tidy piece on one side of a change at `at`, with the spaces between, if it touches it there. */
+function touchingFix(pieces: readonly TextPiece[], at: number, step: -1 | 1): { fix: Change; spaces: string; reach: number } | null {
+  const near = pieces[at + step];
+  const spaces = isOnlySpaces(near) ? near.text : '';
+  const reach = isOnlySpaces(near) ? 2 : 1;
+  const fix = pieces[at + step * reach];
+  if (fix?.kind !== 'tidy' || !isPunctuationOnly(fix) || holdsParagraphEnd(fix)) return null;
+  return { fix, spaces, reach };
+}
+
+/**
+ * A comma or a space put right at the very edge of a change, made part of it. Taken
+ * apart, "tvrdio, onako kako je on to umio, da" losing all but "tvrdio da" came out
+ * as a small fix for the comma and a change for the words: two marks and two things
+ * to decide, for what he sees as one edit. A restored letter stays apart, being a
+ * correction to a word of its own.
+ */
+function withEdgesFolded(pieces: readonly TextPiece[]): TextPiece[] {
+  const folded = [...pieces];
+  for (let at = 0; at < folded.length; at += 1) {
+    const change = folded[at];
+    if (change?.kind !== 'change') continue;
+    const before = touchingFix(folded, at, -1);
+    const after = touchingFix(folded, at, 1);
+    let [removed, added] = [change.removed, change.added];
+    if (before !== null) [removed, added] = [before.fix.removed + before.spaces + removed, before.fix.added + before.spaces + added];
+    if (after !== null) [removed, added] = [removed + after.spaces + after.fix.removed, added + after.spaces + after.fix.added];
+    const [from, to] = [at - (before?.reach ?? 0), at + (after?.reach ?? 0)];
+    folded.splice(from, to - from + 1, { kind: 'change', removed, added });
+    at = from;
+  }
+  return folded;
+}
+
 /**
  * Joins changes that sit close together into one, so a rewritten sentence reads
  * as the old one and then the new one, not as a scatter of single words around
@@ -415,7 +456,7 @@ function stretchOf(pieces: readonly TextPiece[]): Pick<Change, 'removed' | 'adde
 export function mergeCloseChanges(pieces: readonly TextPiece[]): TextPiece[] {
   const merged: TextPiece[] = [];
 
-  for (const piece of pieces) {
+  for (const piece of withEdgesFolded(pieces)) {
     merged.push(piece);
 
     // Each join makes a bigger change, which may now be able to absorb what is
