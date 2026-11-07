@@ -685,19 +685,17 @@ export function createLektor(parts: LektorParts): Lektor {
 
   /**
    * Only after a big change: one that is always there becomes decoration. A number, because a
-   * sentence that never changes reads as furniture too, and the way to a new one right beside it,
-   * since this is when one is worth a try.
+   * sentence that never changes reads as furniture too. A tip rather than a warning, so a line
+   * and not a box: nothing of his is at risk, only the comment is behind his text.
    */
-  function staleNote(state: TextState): HTMLElement | null {
+  function staleNote(state: TextState): HTMLElement[] {
     const standing = standingNow(state);
     // Also when he chose to look at an outdated one from the first step: it is as far from his text there.
-    if (standing.kind === 'current') return null;
-    const note = el('div', 'lektor-stale');
-    const said = el('span', 'lektor-stale-said');
+    if (standing.kind === 'current') return [];
     const count = strings(parts.languageNow()).wordCount(standing.wordsChanged);
-    said.append(icon('info'), el('span', '', words().changedSince(count)));
-    note.append(said, plainButtonRow(words().askForNewComment, () => goTo('start')));
-    return note;
+    const note = el('p', 'lektor-stale');
+    note.append(icon('info'), el('span', '', words().changedSince(count)));
+    return [note];
   }
 
   function presetChoice(state: TextState, onChange: () => void): HTMLElement[] {
@@ -750,15 +748,25 @@ export function createLektor(parts: LektorParts): Lektor {
   }
 
   /** Ours rather than the AI's, like everything around its words: how old this is, the way to a newer one, and what to make of it. */
-  function commentNotes(state: TextState): HTMLElement {
-    const stale = staleNote(state);
-    const age = el('div', 'lektor-comment-age');
-    age.append(el('span', '', words().writtenWhen(describeWhen(state.readAt, parts.languageNow()))));
-    // In the note when there is one, so that there is only ever one way to a new comment on screen.
-    if (stale === null) age.append(backButton(words().askForNewComment, 'start'));
-    const notes = el('div', 'lektor-comment-notes');
-    notes.append(...serviceLine(state.readBy, words().levels, words().serviceLabel), age, ...(stale === null ? [] : [stale]), ...aboutAi());
-    return notes;
+  /** Above the comment, only what bears on reading it: whether his text has moved on since, and the way to a new one, always in the same corner. */
+  function commentHead(state: TextState): HTMLElement {
+    const head = el('div', 'lektor-comment-head');
+    const way = el('div', 'lektor-back-row');
+    way.append(backButton(words().askForNewComment, 'start'));
+    head.append(...staleNote(state), way);
+    return head;
+  }
+
+  /** Who wrote it and when, after it, as a letter is signed: there to be found, not read first. */
+  function commentSignature(state: TextState): HTMLElement {
+    const when = describeWhen(state.readAt, parts.languageNow());
+    const who = serviceLine(state.readBy, words().levels, words().serviceLabel);
+    const signed = who[0];
+    if (signed !== undefined) signed.append(el('span', 'lektor-comment-when', ` · ${when}`));
+    const signature = el('div', 'lektor-comment-notes');
+    // A comment from before the app said who wrote it has only its time to sign with.
+    signature.append(...(signed === undefined ? [el('p', '', words().writtenWhen(when))] : [signed]), ...aboutAi());
+    return signature;
   }
 
   function goTo(screen: Screen): void {
@@ -770,14 +778,15 @@ export function createLektor(parts: LektorParts): Lektor {
   /** One thing at a time: the comment is all there is to read here, and what comes next is his to choose. */
   function responseScreen(): HTMLElement[] {
     const state = stateNow();
-    const notes = commentNotes(state);
+    const head = commentHead(state);
     const response = revealed(state);
+    const signature = commentSignature(state);
     // There from the start: he needn't sit through the comment appearing to move on.
     const onward = nextStepButton(words().toCorrections, () => {
       state.isRevealed = true;
       goTo('corrections');
     });
-    return [notes, response, footer([], onward)];
+    return [head, response, signature, footer([], onward)];
   }
 
   /** The small grey button that goes back a step, in the one place on the screen it is ever found. */

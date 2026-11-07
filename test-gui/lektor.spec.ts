@@ -225,8 +225,8 @@ test('in the same sitting, opens on the comment after a big change, says how big
 
   await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} ${LONG_ENOUGH}`);
   await page.locator('#lektor-open').click();
-  await expect(page.locator('.lektor-stale')).toContainText(/promenio si oko \d+ reči/);
-  // Only the note's own way to a new one, not a second at the top.
+  await expect(page.locator('.lektor-stale')).toContainText(/nije video tvoje poslednje izmene \(oko \d+ reči\)/);
+  // One way to a new one, not a second beside the note.
   await expect(page.getByRole('button', { name: 'Traži novi utisak' })).toHaveCount(1);
 
   // Left on the corrections step.
@@ -235,8 +235,8 @@ test('in the same sitting, opens on the comment after a big change, says how big
   await page.locator('#lektor-open').click();
   await expect(page.locator('.lektor-response')).toContainText('PROBNI');
 
-  // Left on the first step, which the note's own button leads to.
-  await page.locator('.lektor-stale').getByRole('button', { name: 'Traži novi utisak' }).click();
+  // Left on the first step, which the one way to a new comment leads to.
+  await page.getByRole('button', { name: 'Traži novi utisak' }).click();
   await expect(page.getByRole('button', { name: 'Postojeći AI utisak' })).toBeVisible();
   await page.locator('#lektor-open').click();
   await page.locator('#lektor-open').click();
@@ -260,7 +260,7 @@ test('after a big change he comes back to later, opens on the step that asks for
   await expect(page.getByRole('button', { name: /^Pošalji ceo tekst/ })).toBeVisible();
   await page.getByRole('button', { name: 'Postojeći AI utisak' }).click();
   await expect(page.locator('.lektor-response')).toContainText('PROBNI');
-  await expect(page.locator('.lektor-stale')).toContainText(/promenio si oko d+ reči/);
+  await expect(page.locator('.lektor-stale')).toContainText(/nije video tvoje poslednje izmene \(oko \d+ reči\)/);
 });
 
 test('says which Lektor wrote the comment and made the corrections, with a mark beside each choice', async ({ page }) => {
@@ -271,7 +271,7 @@ test('says which Lektor wrote the comment and made the corrections, with a mark 
   await expect(page.getByRole('button', { name: /^Pošalji ceo tekst/ }).locator('.lektor-service-mark')).toHaveCount(1);
   await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
   await expect(page.locator('.lektor-waiting .lektor-service-line')).toHaveText('AI Lektor: Probni (bez AI)');
-  await expect(page.locator('.lektor-comment-notes .lektor-service-line')).toHaveText('AI Lektor: Probni (bez AI)', { timeout: 15_000 });
+  await expect(page.locator('.lektor-comment-notes .lektor-service-line')).toContainText('AI Lektor: Probni (bez AI) · ', { timeout: 15_000 });
   await expect(page.getByRole('button', { name: 'Pređi na ispravke' }).locator('.lektor-service-mark')).toHaveCount(0);
   await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
   await expect(page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).locator('.lektor-service-mark')).toHaveCount(1);
