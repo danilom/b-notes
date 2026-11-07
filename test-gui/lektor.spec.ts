@@ -139,10 +139,10 @@ test('does not touch the text when the version cannot be kept', async ({ page })
 
   await expect(page.locator('#status-text')).toContainText('Izmene nisu unete');
   await expect(page.locator('#editor')).toHaveValue(before);
-  await expect(page.getByRole('button', { name: 'Pogledaj poslednje predloge' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pogledaj ispravke' })).toBeVisible();
 });
 
-test('will not open kept corrections once the text has changed', async ({ page }) => {
+test('shows corrections already made instead of sending again, until the request or the text differs', async ({ page }) => {
   await withTestLektor(page, 'ok');
   await writeNewText(page);
   await page.locator('#lektor-open').click();
@@ -159,11 +159,33 @@ test('will not open kept corrections once the text has changed', async ({ page }
   await page.locator('#lektor-open').click();
   await page.getByRole('button', { name: 'Postojeći AI utisak' }).click();
   await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
-  await expect(page.getByRole('button', { name: 'Pogledaj poslednje predloge' })).toBeVisible();
+  const see = page.getByRole('button', { name: 'Pogledaj ispravke' });
+  const send = page.getByRole('button', { name: 'Pošalji zahtev za ispravke' });
+  await expect(see).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pošalji nov zahtev' })).toBeVisible();
 
+  await page.getByLabel('Dubinska prerada').check();
+  await expect(send).toBeVisible();
+  await expect(see).toHaveCount(0);
+  await page.getByLabel('Slova i zarezi').check();
+  await expect(see).toBeVisible();
+
+  await page.locator('.lektor-note').fill('Bez zareza');
+  await expect(send).toBeVisible();
+  await page.locator('.lektor-note').fill('');
+  await expect(see).toBeVisible();
+
+  await see.click();
+  await expect(page.getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible();
+  await page.locator('#lektor-dialog button.close').click();
+  await page.locator('#confirm').getByRole('button', { name: 'Zatvori bez unošenja' }).click();
+
+  await page.locator('#lektor-open').click();
+  await page.getByRole('button', { name: 'Postojeći AI utisak' }).click();
+  await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
   await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} Jos jedna recenica.`);
-
-  await expect(page.getByRole('button', { name: 'Pogledaj poslednje predloge' })).toHaveCount(0);
+  await expect(send).toBeVisible();
+  await expect(see).toHaveCount(0);
 });
 
 test('offers no retry once the daily tries are gone, and passes on what the service said', async ({ page }) => {

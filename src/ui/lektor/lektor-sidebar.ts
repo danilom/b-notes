@@ -18,7 +18,7 @@ import { createFakeAi } from './lektor-fake-ai.ts';
 import type { FakeBehaviour } from './lektor-fake-setting.ts';
 import { createGeminiAi } from './lektor-gemini-ai.ts';
 import { withHisFilingMarks } from './lektor-instructions.ts';
-import { readKeptResults, writeKeptResults } from './lektor-kept-results.ts';
+import { type KeptProposal, readKeptResults, savedCorrections, withCorrections, writeKeptResults } from './lektor-kept-results.ts';
 import { PRESET_ORDER, PRESET_PROMPTS } from './lektor-presets.ts';
 import { type LektorFailure, type LektorService, LektorServiceError, type PresetId } from './lektor-service.ts';
 import type { LektorServiceParts } from './lektor-service-call.ts';
@@ -52,10 +52,10 @@ interface TextState {
   /** The text as the Lektor last read it. */
   readText: string;
   readAt: number;
-  /** The last corrections he neither took nor replaced. */
-  proposal: string;
+  /** The corrections he hasn't taken, one for each kind and Lektor. */
+  proposals: KeptProposal[];
   /** The text they were made from: against any other, the review would offer to undo his edits. */
-  proposalFor: string;
+  proposalsFor: string;
   /** Whether what was kept from an earlier day has been looked for. */
   isKeptRead: boolean;
   preset: PresetId;
@@ -211,8 +211,8 @@ export function createLektor(parts: LektorParts): Lektor {
       isRevealed: false,
       readText: '',
       readAt: 0,
-      proposal: '',
-      proposalFor: '',
+      proposals: [],
+      proposalsFor: '',
       isKeptRead: false,
       preset: 'letters',
       note: '',
@@ -234,9 +234,9 @@ export function createLektor(parts: LektorParts): Lektor {
   }
 
   /** Under the name it has after being brought over, so asked for only once it has been. */
-  function keepResults(name: string | null, { feedback, readText, readAt, proposal, proposalFor }: TextState): void {
+  function keepResults(name: string | null, { feedback, readText, readAt, proposals, proposalsFor }: TextState): void {
     if (name === null) return;
-    void writeKeptResults(parts.files, parts.appFolder, name, { feedback, readText, readAt, proposal, proposalFor }, log);
+    void writeKeptResults(parts.files, parts.appFolder, name, { feedback, readText, readAt, proposals, proposalsFor }, log);
   }
 
   async function readSettingsOnce(): Promise<void> {
@@ -503,10 +503,10 @@ export function createLektor(parts: LektorParts): Lektor {
     return warning;
   }
 
-  /** Under the button that would ask for a new one, where he is deciding. No arrow: that means the next step, and this is the way out of taking it. */
-  function existingCommentRow(): HTMLElement {
+  /** The other choice, under the main button where he is deciding. No arrow: that means the next step, and this is the way out of taking it. */
+  function plainButtonRow(label: string, onClick: () => void): HTMLElement {
     const row = el('div', 'lektor-side-buttons');
-    row.append(button(words().existingComment, () => goTo('response'), 'status-action'));
+    row.append(button(label, onClick, 'status-action'));
     return row;
   }
 
@@ -543,7 +543,7 @@ export function createLektor(parts: LektorParts): Lektor {
     send.disabled = wordsInText() < FEWEST_WORDS;
     if (send.disabled) send.title = words().tooShort;
     // Having come here to send again, he may think better of it: the comment he has is still there.
-    const existing = stateNow().feedback === '' ? [] : [existingCommentRow()];
+    const existing = stateNow().feedback === '' ? [] : [plainButtonRow(words().existingComment, () => goTo('response'))];
     return [
       ...saved,
       el('p', 'lektor-line', words().blurb),
@@ -677,7 +677,7 @@ export function createLektor(parts: LektorParts): Lektor {
     return note;
   }
 
-  function presetChoice(state: TextState): HTMLElement[] {
+  function presetChoice(state: TextState, onChange: () => void): HTMLElement[] {
     const prompt = el('p', 'lektor-prompt', PRESET_PROMPTS[state.preset]);
     const model = el('p', 'lektor-model', words().model(ai().correctionModel(state.preset)));
     const options = PRESET_ORDER.map((preset) => {
@@ -690,6 +690,7 @@ export function createLektor(parts: LektorParts): Lektor {
         state.preset = preset;
         prompt.textContent = PRESET_PROMPTS[preset];
         model.textContent = words().model(ai().correctionModel(preset));
+        onChange();
       });
       label.append(radio, document.createTextNode(words().presets[preset]));
       return label;
@@ -700,6 +701,7 @@ export function createLektor(parts: LektorParts): Lektor {
     note.value = state.note;
     note.addEventListener('input', () => {
       state.note = note.value;
+      onChange();
     });
     const noteLabel = el('label', 'lektor-label', `${words().noteLabel} `);
     noteLabel.append(el('span', 'lektor-label-aside', words().noteOptional));
@@ -766,28 +768,34 @@ export function createLektor(parts: LektorParts): Lektor {
   }
 
   /**
-   * The corrections he hasn't taken, while they still fit the text. Once it has changed they simply
-   * aren't offered: the review compares them with the text as it is now, so it would offer his own
-   * later edits as things to undo, and a sentence about why would only be one more thing to puzzle over.
+   * What the buttons offer follows from what he has chosen. With corrections already made for just
+   * this, looking at them is the step on, and costs nothing. Sending again stays possible, because
+   * the same request can come back much better, but it is no longer what happens by habit.
    */
-  function keptProposalNote(state: TextState): HTMLElement[] {
-    if (state.proposal === '' || editor.value !== state.proposalFor) return [];
-    return [button(words().keptProposalOpen, () => review(editor.value, state.proposal), 'lektor-link')];
-  }
-
-  function correctionsScreen(): HTMLElement[] {
-    const top = el('div', 'lektor-back-row');
-    // Beside the way back where it fits, so that it pushes the button off a small screen as little as it can.
-    top.append(...keptProposalNote(stateNow()), backButton(words().backToComment, 'response'));
-    return [
-      top,
-      ...presetChoice(stateNow()),
-      footer(
+  function correctionsFoot(state: TextState): HTMLElement {
+    const choice = { preset: state.preset, level, note: state.note };
+    const saved = savedCorrections(state, editor.value, choice);
+    if (saved === null) {
+      return footer(
         // Said again here: having chosen the other Lektor on this step, his text is going somewhere the first warning didn't name.
         [el('p', 'lektor-line', words().correctionsFoot(recipient()))],
         nextStepButton(words().sendForCorrections, () => void correct()),
-      ),
-    ];
+      );
+    }
+    return footer([], nextStepButton(words().seeCorrections, () => review(editor.value, saved)), [plainButtonRow(words().newRequest, () => void correct())]);
+  }
+
+  function correctionsScreen(): HTMLElement[] {
+    const state = stateNow();
+    const top = el('div', 'lektor-back-row');
+    top.append(backButton(words().backToComment, 'response'));
+    let foot = correctionsFoot(state);
+    const refreshFoot = (): void => {
+      const fresh = correctionsFoot(state);
+      foot.replaceWith(fresh);
+      foot = fresh;
+    };
+    return [top, ...presetChoice(state, refreshFoot), foot];
   }
 
   const SCREENS: Readonly<Record<Screen, () => HTMLElement[]>> = {
@@ -909,6 +917,7 @@ export function createLektor(parts: LektorParts): Lektor {
   async function correct(): Promise<void> {
     const state = stateNow();
     const service = ai();
+    const chosenLevel = level;
     const controller = new AbortController();
     const leave = (): void => controller.abort();
     const doing = words().correcting(words().companyName[service.company]);
@@ -919,10 +928,10 @@ export function createLektor(parts: LektorParts): Lektor {
       const name = parts.textNameNow();
       const text = editor.value;
       log.info('The Lektor was asked for corrections', { level, preset: state.preset });
-      const asked = { text, preset: state.preset, instruction: PRESET_PROMPTS[state.preset], note: state.note };
+      const { preset, note } = state;
+      const asked = { text, preset, instruction: PRESET_PROMPTS[preset], note };
       const proposed = withHisFilingMarks(text, await service.corrections(asked, controller.signal));
-      state.proposal = proposed;
-      state.proposalFor = text;
+      Object.assign(state, withCorrections(state, text, { preset, level: chosenLevel, note, proposed }));
       keepResults(name, state);
       stopWaitNote();
       waiting.close();
@@ -942,8 +951,8 @@ export function createLektor(parts: LektorParts): Lektor {
       return;
     }
     // Taken, so nothing is left to come back to. The comment was about the text before them, and says so when he next looks.
-    state.proposal = '';
-    state.proposalFor = '';
+    state.proposals = [];
+    state.proposalsFor = '';
     keepResults(parts.textNameNow(), state);
     log.info('Corrections from the Lektor were put in the text');
     finishWithReview(state);

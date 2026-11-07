@@ -3,9 +3,10 @@ import { beforeEach, describe, it } from 'node:test';
 
 import { FileMissing, type FileSystem } from '../src/platform/file-system.ts';
 import type { Log } from '../src/platform/logging.ts';
-import { keptResultsFrom, readKeptResults, writeKeptResults } from '../src/ui/lektor/lektor-kept-results.ts';
+import { keptResultsFrom, readKeptResults, savedCorrections, withCorrections, writeKeptResults } from '../src/ui/lektor/lektor-kept-results.ts';
 
-const RESULTS = { feedback: 'Utisak.', readText: 'Tekst.', readAt: 5, proposal: 'Tekst!', proposalFor: 'Tekst.' };
+const LETTERS = { preset: 'letters', level: 'free', note: '', proposed: 'Tekst!' };
+const RESULTS = { feedback: 'Utisak.', readText: 'Tekst.', readAt: 5, proposals: [LETTERS], proposalsFor: 'Tekst.' };
 const NAME = '   * čudno ime %2A ~1.txt';
 
 let held: Map<string, string>;
@@ -56,8 +57,18 @@ describe('kept Lektor results', () => {
     assert.equal(warnings.length, 1);
   });
 
-  it('are not believed when a field is missing or of the wrong kind, or they are about another text', () => {
-    assert.equal(keptResultsFrom({ name: NAME, ...RESULTS, proposalFor: undefined }, NAME), null);
+  it('keep the comment from an older version, but not its corrections', () => {
+    const { proposals: _proposals, proposalsFor: _proposalsFor, ...comment } = RESULTS;
+    const older = { name: NAME, ...comment, proposal: 'Tekst!', proposalFor: 'Tekst.' };
+    assert.deepEqual(keptResultsFrom(older, NAME), { ...comment, proposals: [], proposalsFor: '' });
+  });
+
+  it('leave out only the corrections that cannot be believed', () => {
+    const stored = { name: NAME, ...RESULTS, proposals: [LETTERS, { preset: 'grammar' }, null] };
+    assert.deepEqual(keptResultsFrom(stored, NAME)?.proposals, [LETTERS]);
+  });
+
+  it('are not believed when a field of the comment is of the wrong kind, or they are about another text', () => {
     assert.equal(keptResultsFrom({ name: NAME, ...RESULTS, readAt: 'juče' }, NAME), null);
     assert.equal(keptResultsFrom({ name: 'drugi', ...RESULTS }, NAME), null);
     assert.equal(keptResultsFrom(null, NAME), null);
@@ -67,5 +78,52 @@ describe('kept Lektor results', () => {
     const refusing = { write: async () => Promise.reject(new Error('Disk full')) } as unknown as FileSystem;
     await assert.doesNotReject(writeKeptResults(refusing, 'Podaci', NAME, RESULTS, log));
     assert.equal(warnings.length, 1);
+  });
+});
+
+describe('saved corrections', () => {
+  const TEXT = 'Tekst.';
+  const choice = { preset: 'letters', level: 'free', note: '' };
+  const none = { proposals: [], proposalsFor: '' };
+
+  it('are found for the same text, kind, Lektor and note', () => {
+    assert.equal(savedCorrections(RESULTS, TEXT, choice), 'Tekst!');
+  });
+
+  it('count a note the same whatever spaces surround it', () => {
+    const kept = withCorrections(none, TEXT, { ...LETTERS, note: 'Bez zareza' });
+    assert.equal(savedCorrections(kept, TEXT, { ...choice, note: '  Bez zareza ' }), 'Tekst!');
+  });
+
+  it('are not found when any part of the request differs', () => {
+    assert.equal(savedCorrections(RESULTS, 'Tekst, malo drugaciji.', choice), null);
+    assert.equal(savedCorrections(RESULTS, TEXT, { ...choice, preset: 'grammar' }), null);
+    assert.equal(savedCorrections(RESULTS, TEXT, { ...choice, level: 'thorough' }), null);
+    assert.equal(savedCorrections(RESULTS, TEXT, { ...choice, note: 'Bez zareza' }), null);
+  });
+
+  it('are not found when there are none, even for an empty text', () => {
+    assert.equal(savedCorrections(none, '', choice), null);
+  });
+
+  it('stand side by side for each kind and each Lektor', () => {
+    const grammar = withCorrections(RESULTS, TEXT, { ...LETTERS, preset: 'grammar', proposed: 'Gramatika' });
+    const both = withCorrections(grammar, TEXT, { ...LETTERS, level: 'thorough', proposed: 'Placeno' });
+    assert.equal(savedCorrections(both, TEXT, choice), 'Tekst!');
+    assert.equal(savedCorrections(both, TEXT, { ...choice, preset: 'grammar' }), 'Gramatika');
+    assert.equal(savedCorrections(both, TEXT, { ...choice, level: 'thorough' }), 'Placeno');
+  });
+
+  it('are replaced by a newer set of the same kind from the same Lektor, whatever its note', () => {
+    const newer = withCorrections(RESULTS, TEXT, { ...LETTERS, note: 'Bez zareza', proposed: 'Novo' });
+    assert.equal(newer.proposals.length, 1);
+    assert.equal(savedCorrections(newer, TEXT, { ...choice, note: 'Bez zareza' }), 'Novo');
+    assert.equal(savedCorrections(newer, TEXT, choice), null);
+  });
+
+  it('are all dropped once a set is made for a changed text', () => {
+    const changed = withCorrections(RESULTS, 'Drugi tekst.', { ...LETTERS, preset: 'grammar', proposed: 'Drugo' });
+    assert.deepEqual(changed.proposals.map((kept) => kept.proposed), ['Drugo']);
+    assert.equal(changed.proposalsFor, 'Drugi tekst.');
   });
 });

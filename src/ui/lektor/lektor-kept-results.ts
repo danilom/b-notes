@@ -7,18 +7,48 @@ import { describeError, type Log } from '../../platform/logging.ts';
   delete. A file per text, named by a hash: his names are hostile, and this needn't be readable.
 */
 
+/** What a set of corrections was asked for: the same again needn't be sent again. */
+export interface CorrectionChoice {
+  preset: string;
+  /** The Lektor that made them: a free reply must not take the place of a paid one. */
+  level: string;
+  note: string;
+}
+
+export interface KeptProposal extends CorrectionChoice {
+  proposed: string;
+}
+
 export interface KeptResults {
   feedback: string;
   /** The text as the Lektor last read it. */
   readText: string;
   readAt: number;
-  /** The last corrections he neither took nor replaced. */
-  proposal: string;
-  /** The text they were made from: they apply to that and to nothing else. */
-  proposalFor: string;
+  /** The corrections he hasn't taken, one for each kind and Lektor. */
+  proposals: KeptProposal[];
+  /** The text they were all made from: they apply to that and to nothing else. */
+  proposalsFor: string;
 }
 
 const FOLDER = 'lektor-kept';
+
+const isSameChoice = (one: CorrectionChoice, other: CorrectionChoice): boolean =>
+  one.preset === other.preset && one.level === other.level && one.note.trim() === other.note.trim();
+
+/** The corrections already made for just this, if any: against any other text, the review would offer to undo his edits. */
+export function savedCorrections({ proposals, proposalsFor }: Pick<KeptResults, 'proposals' | 'proposalsFor'>, text: string, choice: CorrectionChoice): string | null {
+  if (text !== proposalsFor) return null;
+  return proposals.find((kept) => isSameChoice(kept, choice))?.proposed ?? null;
+}
+
+/** With a new set added: it replaces the same kind from the same Lektor, and a changed text leaves none of the others standing. */
+export function withCorrections({ proposals, proposalsFor }: Pick<KeptResults, 'proposals' | 'proposalsFor'>, text: string, kept: KeptProposal): Pick<KeptResults, 'proposals' | 'proposalsFor'> {
+  const stillFitting = text === proposalsFor ? proposals : [];
+  return {
+    proposals: [...stillFitting.filter((other) => other.preset !== kept.preset || other.level !== kept.level), kept],
+    proposalsFor: text,
+  };
+}
 
 /** FNV-1a, which is enough here: the file also says which text it is about, and that is checked. */
 function hashOf(text: string): string {
@@ -32,14 +62,24 @@ function hashOf(text: string): string {
 
 const fileFor = (appFolder: string, textName: string): string => `${appFolder}/${FOLDER}/${hashOf(textName)}.json`;
 
-/** Whatever was stored is checked before it is believed: it may be from an older version, or damaged, or another text's. */
+function isKeptProposal(stored: unknown): stored is KeptProposal {
+  if (typeof stored !== 'object' || stored === null) return false;
+  const { preset, level, note, proposed } = stored as Record<string, unknown>;
+  return typeof preset === 'string' && typeof level === 'string' && typeof note === 'string' && typeof proposed === 'string';
+}
+
+/**
+ * Whatever was stored is checked before it is believed: it may be from an older version, or damaged,
+ * or another text's. Corrections that can't be believed cost only asking again, so the comment,
+ * which he may want to read and may have cost money, is not given up along with them.
+ */
 export function keptResultsFrom(stored: unknown, textName: string): KeptResults | null {
   if (typeof stored !== 'object' || stored === null) return null;
-  const { name, feedback, readText, readAt, proposal, proposalFor } = stored as Record<string, unknown>;
+  const { name, feedback, readText, readAt, proposals, proposalsFor } = stored as Record<string, unknown>;
   if (name !== textName) return null;
   if (typeof feedback !== 'string' || typeof readText !== 'string' || typeof readAt !== 'number') return null;
-  if (typeof proposal !== 'string' || typeof proposalFor !== 'string') return null;
-  return { feedback, readText, readAt, proposal, proposalFor };
+  if (!Array.isArray(proposals) || typeof proposalsFor !== 'string') return { feedback, readText, readAt, proposals: [], proposalsFor: '' };
+  return { feedback, readText, readAt, proposals: proposals.filter(isKeptProposal), proposalsFor };
 }
 
 export async function readKeptResults(files: FileSystem, appFolder: string, textName: string, log: Log): Promise<KeptResults | null> {
