@@ -156,8 +156,10 @@ test('shows corrections already made instead of sending again, until the request
   await page.locator('#confirm').getByRole('button', { name: 'Zatvori bez unošenja' }).click();
   await expect(page.locator('body')).not.toHaveClass(/lektor-open/);
 
+  // The text is still what was read, so the comment is what he comes back to, with no send button in the way.
   await page.locator('#lektor-open').click();
-  await page.getByRole('button', { name: 'Postojeći AI utisak' }).click();
+  await expect(page.locator('.lektor-response')).toContainText('PROBNI');
+  await expect(page.getByRole('button', { name: /^Pošalji ceo tekst/ })).toHaveCount(0);
   await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
   const see = page.getByRole('button', { name: 'Pogledaj ispravke' });
   const send = page.getByRole('button', { name: 'Pošalji zahtev za ispravke' });
@@ -181,7 +183,6 @@ test('shows corrections already made instead of sending again, until the request
   await page.locator('#confirm').getByRole('button', { name: 'Zatvori bez unošenja' }).click();
 
   await page.locator('#lektor-open').click();
-  await page.getByRole('button', { name: 'Postojeći AI utisak' }).click();
   await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
   await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} Jos jedna recenica.`);
   await expect(send).toBeVisible();

@@ -961,8 +961,8 @@ export function createLektor(parts: LektorParts): Lektor {
 
   /**
    * The job he came for is over either way, and his text is what is in front of him. A sidebar left
-   * asking him to send it again would look like one more thing he has to do. Opened again, it starts
-   * from the beginning, with the comment still there to go to.
+   * asking him to send it again would look like one more thing he has to do. Opened again, it shows
+   * the comment if the text is still what was read, and otherwise starts from the beginning.
    */
   function finishWithReview(state: TextState): void {
     state.screen = 'start';
@@ -989,6 +989,8 @@ export function createLektor(parts: LektorParts): Lektor {
     const state = stateNow();
     await readSettingsOnce();
     await readKeptOnce(state);
+    // What he already has for this very text is what he came back to; asking again is the choice he makes from there.
+    if (state.screen === 'start' && state.feedback !== '' && editor.value === state.readText) state.screen = 'response';
     state.isOpen = true;
     log.info('Opened the Lektor', { level });
     // A response he already has needs no internet to read.
