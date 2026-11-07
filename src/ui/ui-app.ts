@@ -1273,6 +1273,7 @@ export async function startApp(runningOn: Host): Promise<void> {
       prepareToSend: prepareForLektor,
       applyCorrections: applyLektorCorrections,
       fakeBehaviour: fakeLektor,
+      realReply: host.realLektorReply,
     });
   } catch (error: unknown) {
     // His writing is what this window is for, and the app starts without the Lektor rather than not at all.

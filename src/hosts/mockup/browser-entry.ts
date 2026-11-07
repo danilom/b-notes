@@ -50,6 +50,24 @@ async function askThroughDevServer(request: LektorRequest, stop: AbortSignal): P
   }
 }
 
+/** A real reply the dev server keeps for this text, or null: none saved, or no dev server to ask. */
+async function realReplyFromDevServer(text: string, preset: string): Promise<string | null> {
+  try {
+    const response = await fetch('/lektor-real-reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, preset }),
+    });
+    if (!response.ok) throw new Error(`The dev server answered ${String(response.status)}`);
+    const body: unknown = await response.json();
+    const proposed = typeof body === 'object' && body !== null && 'proposed' in body ? body.proposed : null;
+    return typeof proposed === 'string' ? proposed : null;
+  } catch (error) {
+    console.warn('No real Lektor reply to show; the test Lektor makes its own', error);
+    return null;
+  }
+}
+
 /** What the interface asked to have run before the window goes. */
 let finishBeforeClose: (() => Promise<void>) | null = null;
 
@@ -144,6 +162,7 @@ async function main(): Promise<void> {
     copyToClipboard: (text: string) => navigator.clipboard.writeText(text),
     // Through the dev server, standing in for the main process: the page may not reach those addresses itself.
     askLektorService: askThroughDevServer,
+    realLektorReply: realReplyFromDevServer,
     logsFolder: `${MOCK_APP_FOLDER}/logs`,
     /*
       Nothing here can show a folder or ask for one: a browser tab has no

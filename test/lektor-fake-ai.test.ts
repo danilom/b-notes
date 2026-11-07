@@ -56,6 +56,13 @@ describe('the test Lektor', () => {
     assert.equal(fakeProposal('', 'letters'), '');
   });
 
+  it('returns a real reply saved for the text in place of its own, and its own where none is saved', async () => {
+    const saved = async (text: string, preset: string): Promise<string | null> => (preset === 'rewrite' ? `${text} prerađeno` : null);
+    const fake = createFakeAi('ok', { ...finals, realReply: saved });
+    assert.equal(await fake.corrections({ text: TEXT, preset: 'rewrite', instruction: '', note: '' }, signal), `${TEXT} prerađeno`);
+    assert.equal(await fake.corrections({ text: TEXT, preset: 'letters', instruction: '', note: '' }, signal), fakeProposal(TEXT, 'letters'));
+  });
+
   it('says plainly that its comment is a test', async () => {
     const comment = await createFakeAi('ok', finals).feedback(TEXT, signal);
     assert.match(comment, /^\[PROBNI UTISAK/);

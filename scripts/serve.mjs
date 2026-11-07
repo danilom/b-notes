@@ -67,6 +67,40 @@ async function readDiffSamples() {
 }
 
 /*
+  A real service's corrections of a sample text, for the test Lektor to hand back instead of its
+  own made-up ones, so the review can be tried on what a real one sends. Kept beside the text as
+  `<name>.lektor-<preset>.txt`, in testdata/ like the rest, and found by the text itself: only
+  the same text, word for word, gets them. Null when there are none.
+*/
+const PRESETS = new Set(['letters', 'grammar', 'wording', 'rewrite']);
+
+async function readRealReply(text, preset) {
+  if (!PRESETS.has(preset)) return null;
+  for (const sample of await readDiffSamples()) {
+    if (sample.current.trimEnd() !== text.trimEnd()) continue;
+    try {
+      return await readFile(path.join(DIFF_SAMPLES_FOLDER, `${sample.name}.lektor-${preset}.txt`), 'utf8');
+    } catch (error) {
+      if (error.code === 'ENOENT') return null;
+      throw error;
+    }
+  }
+  return null;
+}
+
+async function serveRealReply(request, response) {
+  try {
+    const { text, preset } = await bodyOf(request);
+    const proposed = typeof text === 'string' && typeof preset === 'string' ? await readRealReply(text, preset) : null;
+    response.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    response.end(JSON.stringify({ proposed }));
+  } catch (error) {
+    console.error('Failed to look up a real Lektor reply', error);
+    response.writeHead(500).end('Server error');
+  }
+}
+
+/*
   The browser build's way to an AI service, for what the main process does in the app:
   the page may not reach those addresses itself. The same code as the app's. Logs no text.
 */
@@ -127,6 +161,11 @@ const server = createServer((request, response) => {
   if (relative === 'reset') {
     response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
     response.end('<script>localStorage.clear(); sessionStorage.clear(); location.replace("/");</script>');
+    return;
+  }
+
+  if (relative === 'lektor-real-reply' && request.method === 'POST') {
+    void serveRealReply(request, response);
     return;
   }
 

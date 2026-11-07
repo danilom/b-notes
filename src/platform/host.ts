@@ -101,6 +101,14 @@ export interface Host {
    */
   readonly askLektorService: (request: LektorRequest, stop: AbortSignal) => Promise<LektorResponse>;
   /**
+   * A real service's saved corrections of this exact text, for the test Lektor to return in place
+   * of its made-up ones; null when none are saved. Only the browser build has any, from the dev
+   * server's testdata; the app leaves this out, and the test Lektor then makes its own.
+   *
+   * @param preset Which kind of correction: `letters`, `grammar`, `wording` or `rewrite`.
+   */
+  readonly realLektorReply?: (text: string, preset: string) => Promise<string | null>;
+  /**
    * Asks for a folder, starting from `from`. Null when nothing was chosen.
    *
    * The host's job because only it has a picker: Electron has the real one, and

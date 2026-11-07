@@ -140,8 +140,16 @@ function fakeComment(text: string): string {
   ].join('\n\n');
 }
 
-/** @param noCreditSentence What running out of money says, in his language. */
-export function createFakeAi(behaviour: FakeBehaviour, finalSentences: { noCredit: () => string; dailyCap: (said: string) => string | null }): LektorService {
+interface FakeAiParts {
+  /** What running out of money says, in his language. */
+  noCredit: () => string;
+  /** What running out of the day's tries says, if `said` is that. */
+  dailyCap: (said: string) => string | null;
+  /** A real service's saved corrections of this text, returned in place of made-up ones when there are some. */
+  realReply?: ((text: string, preset: PresetId) => Promise<string | null>) | undefined;
+}
+
+export function createFakeAi(behaviour: FakeBehaviour, finalSentences: FakeAiParts): LektorService {
   async function wait(ms: number, signal: AbortSignal): Promise<void> {
     await new Promise<void>((resolve, reject) => {
       const timer = setTimeout(resolve, behaviour === 'slow' ? ms * SLOW_FACTOR : ms);
@@ -177,7 +185,7 @@ export function createFakeAi(behaviour: FakeBehaviour, finalSentences: { noCredi
     },
     corrections: async ({ text, preset }, signal) => {
       await pretendToWork(CORRECTING_MS, signal);
-      return fakeProposal(text, preset);
+      return (await finalSentences.realReply?.(text, preset)) ?? fakeProposal(text, preset);
     },
   };
 }

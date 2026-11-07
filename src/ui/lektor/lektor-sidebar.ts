@@ -99,6 +99,8 @@ export interface LektorParts {
   applyCorrections: (text: string) => Promise<boolean>;
   /** How the test Lektor behaves, or null where it isn't on offer, as on his machines. */
   fakeBehaviour: FakeBehaviour | null;
+  /** A real service's saved corrections of this text, for the test Lektor to return; absent where there are none to have. */
+  realReply?: (text: string, preset: PresetId) => Promise<string | null>;
 }
 
 export interface Lektor {
@@ -195,6 +197,7 @@ export function createLektor(parts: LektorParts): Lektor {
     fake: createFakeAi(parts.fakeBehaviour ?? 'ok', {
       noCredit: () => words().noCredit,
       dailyCap: (said) => dailyCapSentence(said, new Date(), words()),
+      realReply: parts.realReply,
     }),
   };
 
