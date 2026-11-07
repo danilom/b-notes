@@ -38,6 +38,13 @@ describe('the test Lektor', () => {
     assert.ok(rewrite > grammar);
   });
 
+  it('reworks whole runs of words in Dubinska prerada, as the real services do, and none in Slova i zarezi', () => {
+    const longRuns = (proposal: string): number =>
+      mergeCloseChanges(diffTexts(TEXT, proposal)).filter((piece) => piece.kind === 'change' && (piece.removed.match(/\p{L}+/gu) ?? []).length >= 6).length;
+    assert.ok(longRuns(fakeProposal(TEXT, 'rewrite')) >= 3);
+    assert.equal(longRuns(fakeProposal(TEXT, 'letters')), 0);
+  });
+
   it('leaves his lines and spacing alone', () => {
     const proposal = fakeProposal(TEXT, 'rewrite');
     assert.equal(proposal.split('\n').length, TEXT.split('\n').length);

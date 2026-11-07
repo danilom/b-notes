@@ -25,9 +25,36 @@ const SERVICE_SAID: Partial<Record<FakeBehaviour, string>> = {
 
 const LETTERS_GAINING_MARKS: Readonly<Record<string, string>> = { c: 'č', s: 'š', z: 'ž', C: 'Č', S: 'Š', Z: 'Ž' };
 
-/** How often a word changes, by how much the preset is meant to change. */
-const WORDS_BETWEEN_TIDY_FIXES: Readonly<Record<PresetId, number>> = { letters: 6, grammar: 5, wording: 5, rewrite: 4 };
-const WORDS_BETWEEN_LARGER_CHANGES: Readonly<Record<PresetId, number>> = { letters: 0, grammar: 90, wording: 45, rewrite: 15 };
+interface ChangeRates {
+  /** One word in this many gains a missing mark, if it has a letter that can take one, which about half do. */
+  marksEvery: number;
+  /** One word in this many gains a comma after it. */
+  commasEvery: number;
+  /** One word in this many becomes a two-word placeholder; 0 for never. */
+  swapsEvery: number;
+  /** The share of sentences replaced whole. */
+  sentencesRedone: number;
+  /** The share of sentences with a run of words replaced inside them. */
+  runsRedone: number;
+}
+
+/*
+  How much each preset changes, matched to what Opus medium and Gemini actually did with two of
+  his essays (measured 2026-11-07 with the app's own diff). Of the words, small fixes touch about
+  one in nine in every preset; Stilska touches 16 to 26 per cent in all, with a few runs of six
+  words or more; Dubinska 35 to 42 per cent, about a fifth of it in runs of six to forty words.
+  The review has to carry the strongest of these, so the test one has to give it them.
+*/
+const RATES: Readonly<Record<PresetId, ChangeRates>> = {
+  letters: { marksEvery: 4, commasEvery: 25, swapsEvery: 0, sentencesRedone: 0, runsRedone: 0 },
+  grammar: { marksEvery: 4, commasEvery: 18, swapsEvery: 50, sentencesRedone: 0, runsRedone: 0.02 },
+  wording: { marksEvery: 4, commasEvery: 25, swapsEvery: 16, sentencesRedone: 0.03, runsRedone: 0.07 },
+  rewrite: { marksEvery: 4, commasEvery: 25, swapsEvery: 10, sentencesRedone: 0.18, runsRedone: 0.18 },
+};
+
+/** What a reworked passage says instead, in brackets, so it can't be taken for a real suggestion. */
+const STAND_IN_WORDS =
+  'ovde bi stajala ista misao rečena drugačije kako bi je lektor preradio ali ovo je samo probni tekst bez pravog AI napisan da se vidi kako izgleda veća izmena'.split(' ');
 
 /** A small generator seeded from the text, so the same text always gets the same changes. */
 function seededFrom(text: string): () => number {
@@ -48,19 +75,54 @@ function withMissingMark(word: string, random: () => number): string {
   return letters.join('');
 }
 
+/** About as many bracketed stand-in words as it replaces, starting anywhere in the list. */
+function standIn(wordCount: number, random: () => number): string {
+  const length = Math.max(3, Math.round(wordCount * (0.7 + random() * 0.6)));
+  const from = Math.floor(random() * STAND_IN_WORDS.length);
+  const words = Array.from({ length }, (_, at) => STAND_IN_WORDS[(from + at) % STAND_IN_WORDS.length]);
+  return `[${words.join(' ')}]`;
+}
+
+/** A run of six to twelve words in the middle of a sentence replaced, the rest of it kept. */
+function withRunRedone(sentence: string, random: () => number): string {
+  const words = [...sentence.matchAll(/\p{L}+/gu)];
+  if (words.length < 10) return sentence;
+  const length = 6 + Math.floor(random() * Math.min(7, words.length - 8));
+  const first = 1 + Math.floor(random() * (words.length - length - 1));
+  const [start, end] = [words[first], words[first + length - 1]];
+  if (start?.index === undefined || end?.index === undefined) return sentence;
+  return sentence.slice(0, start.index) + standIn(length, random) + sentence.slice(end.index + end[0].length);
+}
+
+/** Each word as the preset's small changes leave it: a mark restored, a comma added, or a placeholder. */
+function wordFixer(rates: ChangeRates, random: () => number): (word: string, next: string) => string {
+  let wordsSeen = 0;
+  return (word, next) => {
+    wordsSeen += 1;
+    if (rates.swapsEvery > 0 && wordsSeen % rates.swapsEvery === 0) return '[probna izmena]';
+    const marked = wordsSeen % rates.marksEvery === 0 ? withMissingMark(word, random) : word;
+    return wordsSeen % rates.commasEvery === 0 && next === ' ' ? `${marked},` : marked;
+  };
+}
+
 /**
- * A proposal with nothing real in it: some missing marks and, for the stronger presets, a few
- * larger changes, so the review has both kinds to show. Words only: his lines and spacing stay.
+ * A proposal with nothing real in it, but as much of it as a real one: small fixes for every
+ * preset, and for the stronger ones sentences and runs reworked at the rates the real services
+ * showed. Within lines only: his lines and spacing stay.
  */
 export function fakeProposal(text: string, preset: PresetId): string {
   const random = seededFrom(text);
-  const tidyEvery = WORDS_BETWEEN_TIDY_FIXES[preset];
-  const largerEvery = WORDS_BETWEEN_LARGER_CHANGES[preset];
-  let wordsSeen = 0;
-  return text.replace(/\p{L}+/gu, (word) => {
-    wordsSeen += 1;
-    if (largerEvery > 0 && wordsSeen % largerEvery === 0) return '[probna izmena]';
-    return wordsSeen % tidyEvery === 0 ? withMissingMark(word, random) : word;
+  const rates = RATES[preset];
+  const fixWord = wordFixer(rates, random);
+  const sentence = /[^\n.!?…]*\p{L}[^\n.!?…]*/gu;
+  return text.replace(sentence, (found) => {
+    const roll = random();
+    if (roll < rates.sentencesRedone) {
+      const [lead, trail] = [/^\s*/u.exec(found)?.[0] ?? '', /\s*$/u.exec(found)?.[0] ?? ''];
+      return lead + standIn((found.match(/\p{L}+/gu) ?? []).length, random) + trail;
+    }
+    if (roll < rates.sentencesRedone + rates.runsRedone) return withRunRedone(found, random);
+    return found.replace(/\p{L}+/gu, (word, at: number) => fixWord(word, found.charAt(at + word.length)));
   });
 }
 
