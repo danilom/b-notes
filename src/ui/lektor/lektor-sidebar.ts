@@ -18,7 +18,7 @@ import { createFakeAi } from './lektor-fake-ai.ts';
 import type { FakeBehaviour } from './lektor-fake-setting.ts';
 import { createGeminiAi } from './lektor-gemini-ai.ts';
 import { withHisFilingMarks } from './lektor-instructions.ts';
-import { type KeptProposal, readKeptResults, savedCorrections, withCorrections, writeKeptResults } from './lektor-kept-results.ts';
+import { isSameText, type KeptProposal, readKeptResults, savedCorrections, withCorrections, withEndingOf, writeKeptResults } from './lektor-kept-results.ts';
 import { PRESET_ORDER, PRESET_PROMPTS } from './lektor-presets.ts';
 import { type LektorFailure, type LektorService, LektorServiceError, type PresetId } from './lektor-service.ts';
 import type { LektorServiceParts } from './lektor-service-call.ts';
@@ -669,7 +669,7 @@ export function createLektor(parts: LektorParts): Lektor {
   }
 
   function staleNote(state: TextState): HTMLElement | null {
-    if (editor.value === state.readText) return null;
+    if (isSameText(editor.value, state.readText)) return null;
     const isMuchChanged = shareChanged(state.readText, editor.value) > MUCH_CHANGED;
     const note = el('div', 'lektor-stale');
     const earlier = { text: state.readText, comment: state.feedback };
@@ -781,7 +781,7 @@ export function createLektor(parts: LektorParts): Lektor {
     const reassurance = [el('p', 'lektor-line', words().correctionsFoot)];
     const sendsNow = modelTooltip(ai().correctionModel(state.preset));
     if (saved === null) return footer(reassurance, nextStepButton(words().sendForCorrections, () => void correct(), sendsNow));
-    const see = nextStepButton(words().seeCorrections, () => review(editor.value, saved.proposed), modelTooltip(saved.model));
+    const see = nextStepButton(words().seeCorrections, () => review(editor.value, withEndingOf(editor.value, saved.proposed)), modelTooltip(saved.model));
     return footer(reassurance, see, [plainButtonRow(words().newRequest, () => void correct(), sendsNow)]);
   }
 
@@ -991,7 +991,7 @@ export function createLektor(parts: LektorParts): Lektor {
     await readSettingsOnce();
     await readKeptOnce(state);
     // What he already has for this very text is what he came back to; asking again is the choice he makes from there.
-    if (state.screen === 'start' && state.feedback !== '' && editor.value === state.readText) state.screen = 'response';
+    if (state.screen === 'start' && state.feedback !== '' && isSameText(editor.value, state.readText)) state.screen = 'response';
     state.isOpen = true;
     log.info('Opened the Lektor', { level });
     // A response he already has needs no internet to read.

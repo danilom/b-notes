@@ -34,18 +34,24 @@ export interface KeptResults {
 
 const FOLDER = 'lektor-kept';
 
+/** A stray Enter at the very end doesn't make it another text: nothing of his could be undone by treating it as the same. */
+export const isSameText = (one: string, other: string): boolean => one.trimEnd() === other.trimEnd();
+
+/** Corrections with the text's own ending, so that the review doesn't offer to change it back. */
+export const withEndingOf = (text: string, proposed: string): string => proposed.trimEnd() + text.slice(text.trimEnd().length);
+
 const isSameChoice = (one: CorrectionChoice, other: CorrectionChoice): boolean =>
   one.preset === other.preset && one.level === other.level && one.note.trim() === other.note.trim();
 
 /** The corrections already made for just this, if any: against any other text, the review would offer to undo his edits. */
 export function savedCorrections({ proposals, proposalsFor }: Pick<KeptResults, 'proposals' | 'proposalsFor'>, text: string, choice: CorrectionChoice): KeptProposal | null {
-  if (text !== proposalsFor) return null;
+  if (!isSameText(text, proposalsFor)) return null;
   return proposals.find((kept) => isSameChoice(kept, choice)) ?? null;
 }
 
 /** With a new set added: it replaces the same kind from the same Lektor, and a changed text leaves none of the others standing. */
 export function withCorrections({ proposals, proposalsFor }: Pick<KeptResults, 'proposals' | 'proposalsFor'>, text: string, kept: KeptProposal): Pick<KeptResults, 'proposals' | 'proposalsFor'> {
-  const stillFitting = text === proposalsFor ? proposals : [];
+  const stillFitting = isSameText(text, proposalsFor) ? proposals : [];
   return {
     proposals: [...stillFitting.filter((other) => other.preset !== kept.preset || other.level !== kept.level), kept],
     proposalsFor: text,

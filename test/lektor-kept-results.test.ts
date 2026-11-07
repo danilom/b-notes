@@ -3,7 +3,7 @@ import { beforeEach, describe, it } from 'node:test';
 
 import { FileMissing, type FileSystem } from '../src/platform/file-system.ts';
 import type { Log } from '../src/platform/logging.ts';
-import { keptResultsFrom, readKeptResults, savedCorrections, withCorrections, writeKeptResults } from '../src/ui/lektor/lektor-kept-results.ts';
+import { keptResultsFrom, readKeptResults, savedCorrections, withCorrections, withEndingOf, writeKeptResults } from '../src/ui/lektor/lektor-kept-results.ts';
 
 const LETTERS = { preset: 'letters', level: 'free', note: '', proposed: 'Tekst!', model: 'gemini-3.6-flash' };
 const RESULTS = { feedback: 'Utisak.', readText: 'Tekst.', readAt: 5, proposals: [LETTERS], proposalsFor: 'Tekst.' };
@@ -98,6 +98,26 @@ describe('saved corrections', () => {
   it('count a note the same whatever spaces surround it', () => {
     const kept = withCorrections(none, TEXT, { ...LETTERS, note: 'Bez zareza' });
     assert.equal(savedCorrections(kept, TEXT, { ...choice, note: '  Bez zareza ' })?.proposed, 'Tekst!');
+  });
+
+  it('are still found when only spaces or blank lines at the very end differ', () => {
+    assert.deepEqual(savedCorrections(RESULTS, 'Tekst.  \n\n', choice), LETTERS);
+    assert.deepEqual(savedCorrections({ proposals: [LETTERS], proposalsFor: 'Tekst.\n\n' }, TEXT, choice), LETTERS);
+  });
+
+  it('are not found when spaces differ anywhere but the very end', () => {
+    assert.equal(savedCorrections(RESULTS, ' Tekst.', choice), null);
+    assert.equal(savedCorrections({ proposals: [LETTERS], proposalsFor: 'Prvi deo. Drugi deo.' }, 'Prvi deo.  Drugi deo.', choice), null);
+  });
+
+  it('stay when a set is made for a text that differs only at its very end', () => {
+    const grammar = withCorrections(RESULTS, 'Tekst.\n', { ...LETTERS, preset: 'grammar' });
+    assert.equal(grammar.proposals.length, 2);
+  });
+
+  it('take on the ending the text has now, so the review does not offer to change it back', () => {
+    assert.equal(withEndingOf('Tekst.\n\n', 'Tekst!\n'), 'Tekst!\n\n');
+    assert.equal(withEndingOf('Tekst.', 'Tekst!\n'), 'Tekst!');
   });
 
   it('are not found when any part of the request differs', () => {
