@@ -22,7 +22,6 @@ import { isSameText, type KeptProposal, readKeptResults, savedCorrections, withC
 import { PRESET_ORDER, PRESET_PROMPTS } from './lektor-presets.ts';
 import { type LektorFailure, type LektorService, LektorServiceError, type PresetId } from './lektor-service.ts';
 import type { LektorServiceParts } from './lektor-service-call.ts';
-import { isSmallEdit } from './lektor-small-edit.ts';
 import { type LektorSettings, NO_LEKTOR_SETTINGS, readLektorSettings, type RealLevel, writeLektorSettings } from './lektor-settings.ts';
 
 /*
@@ -945,8 +944,7 @@ export function createLektor(parts: LektorParts): Lektor {
 
   /**
    * The job he came for is over either way, and his text is what is in front of him. A sidebar left
-   * asking him to send it again would look like one more thing he has to do. Opened again, it shows
-   * the comment if the text is still what was read, and otherwise starts from the beginning.
+   * asking him to send it again would look like one more thing he has to do.
    */
   function finishWithReview(state: TextState): void {
     state.screen = 'start';
@@ -973,9 +971,8 @@ export function createLektor(parts: LektorParts): Lektor {
     const state = stateNow();
     await readSettingsOnce();
     await readKeptOnce(state);
-    // What he already has is what he came back to, a few changed words later too: asking again is the choice he makes from there.
-    const isStillAboutThis = isSameText(editor.value, state.readText) || isSmallEdit(state.readText, editor.value);
-    if (state.screen === 'start' && state.feedback !== '' && isStillAboutThis) state.screen = 'response';
+    // Always the same thing to him, never something that depends on how he last left it: what the Lektor said, or, until it has said anything, the step that asks it.
+    if (state.feedback !== '') state.screen = 'response';
     state.isOpen = true;
     log.info('Opened the Lektor', { level });
     // A response he already has needs no internet to read.

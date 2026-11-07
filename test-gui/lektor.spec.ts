@@ -191,7 +191,7 @@ test('shows corrections already made instead of sending again, until the request
   await expect(see).toHaveCount(0);
 });
 
-test('after a few changed words, opens on the comment with only a note, and sends corrections without asking', async ({ page }) => {
+test('once there is a comment, opens on it with only a note after a change, and sends corrections without asking', async ({ page }) => {
   await withTestLektor(page, 'ok');
   await writeNewText(page);
   await page.locator('#lektor-open').click();
@@ -212,7 +212,7 @@ test('after a few changed words, opens on the comment with only a note, and send
   await expect(page.getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible({ timeout: 15_000 });
 });
 
-test('after many changed words, opens on the first step', async ({ page }) => {
+test('opens on the comment however much has changed and however he last left it', async ({ page }) => {
   await withTestLektor(page, 'ok');
   await writeNewText(page);
   await page.locator('#lektor-open').click();
@@ -225,8 +225,20 @@ test('after many changed words, opens on the first step', async ({ page }) => {
 
   await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} ${LONG_ENOUGH}`);
   await page.locator('#lektor-open').click();
-  await expect(page.getByRole('button', { name: /^Pošalji ceo tekst/ })).toBeVisible();
+  await expect(page.locator('.lektor-stale')).toBeVisible();
+
+  // Left on the corrections step.
+  await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
+  await page.locator('#lektor-open').click();
+  await page.locator('#lektor-open').click();
+  await expect(page.locator('.lektor-response')).toContainText('PROBNI');
+
+  // Left on the first step, which is still there to go to.
+  await page.getByRole('button', { name: 'Traži novi utisak' }).click();
   await expect(page.getByRole('button', { name: 'Postojeći AI utisak' })).toBeVisible();
+  await page.locator('#lektor-open').click();
+  await page.locator('#lektor-open').click();
+  await expect(page.locator('.lektor-response')).toContainText('PROBNI');
 });
 
 test('offers no retry once the daily tries are gone, and passes on what the service said', async ({ page }) => {
