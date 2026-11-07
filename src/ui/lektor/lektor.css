@@ -435,6 +435,12 @@ body.lektor-open #lektor-side {
   font-weight: 600;
 }
 
+.lektor-label-aside {
+  color: var(--quiet);
+  font-size: 0.85em;
+  font-weight: 400;
+}
+
 .lektor-key,
 .lektor-note {
   box-sizing: border-box;
@@ -637,9 +643,10 @@ body.lektor-open #lektor-side {
   cursor: default;
 }
 
-/* Short, and scrolling by itself: what matters on this screen is the choice above and the button below. */
+/* As tall as the screen leaves room for, scrolling by itself beyond that: the button below stays in view, and this still reads as something to read. */
 .lektor-side-body > .lektor-prompt {
-  max-height: 3.2em;
+  flex: 0 1 auto;
+  min-height: 4.4em;
   overflow-y: auto;
 }
 

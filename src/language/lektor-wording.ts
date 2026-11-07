@@ -87,7 +87,8 @@ export const LEKTOR_WORDS = {
     whatToCorrect: 'Šta da uradim?',
     presets: { letters: 'Slova i zarezi', grammar: 'Pravopis i gramatika', wording: 'Stilska dorada', rewrite: 'Dubinska prerada' },
     promptLabel: 'Uputstvo za AI Lektora:',
-    noteLabel: 'Tvoja dodatna uputstva (nije obavezno)',
+    noteLabel: 'Tvoja dodatna uputstva',
+    noteOptional: '(nije obavezno)',
     notePlaceholder: 'Example: simplify overly long sentences',
     aboutAi:
       'AI je program koji je učio iz ogromne količine tekstova i piše ono što zvuči verovatno. Ne razume tekst kao čovek i nema sopstveno iskustvo. Zato ponekad sa sigurnošću kaže nešto netačno: navod, činjenicu, ime. Ovaj komentar je utisak AI programa, a ne stručna kritika.',
@@ -197,7 +198,8 @@ export const LEKTOR_WORDS = {
     whatToCorrect: 'What should I do?',
     presets: { letters: 'Letters and commas', grammar: 'Spelling and grammar', wording: 'Style polish', rewrite: 'Deep rework' },
     promptLabel: 'Instruction for the AI Lektor:',
-    noteLabel: 'Your own instructions (optional)',
+    noteLabel: 'Your own instructions',
+    noteOptional: '(optional)',
     notePlaceholder: 'Example: simplify overly long sentences',
     aboutAi:
       'AI is a program that learned from an enormous amount of text and writes what sounds likely. It does not understand a text as a person does and has no experience of its own. So it sometimes confidently says something untrue: a quotation, a fact, a name. This comment is an AI program\'s impression, not expert criticism.',

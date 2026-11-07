@@ -699,12 +699,14 @@ export function createLektor(parts: LektorParts): Lektor {
     note.addEventListener('input', () => {
       state.note = note.value;
     });
+    const noteLabel = el('label', 'lektor-label', `${words().noteLabel} `);
+    noteLabel.append(el('span', 'lektor-label-aside', words().noteOptional));
     return [
       el('p', 'lektor-heading', words().whatToCorrect),
       ...options,
       el('p', 'lektor-prompt-label', words().promptLabel),
       prompt,
-      el('label', 'lektor-label', words().noteLabel),
+      noteLabel,
       note,
       model,
     ];
