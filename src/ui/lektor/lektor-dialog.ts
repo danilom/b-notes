@@ -19,6 +19,10 @@ export interface LektorProposal {
   testNote: string | null;
   /** Who made them, said above the text: they may be from days ago. */
   madeBy: readonly HTMLElement[];
+  /** Which kind of correction they are, said before who made them: it says how much to expect. */
+  kind: string;
+  /** Whether the changes start drawn as their new text alone, for a rewrite read as a text. */
+  showsOnlyNew: boolean;
 }
 
 export interface LektorHandlers {
@@ -38,7 +42,7 @@ export interface LektorHandlers {
 export function openLektorDialog(
   container: HTMLDialogElement,
   confirmContainer: HTMLDialogElement,
-  { title, current, proposed, testNote, madeBy }: LektorProposal,
+  { title, current, proposed, testNote, madeBy, kind, showsOnlyNew }: LektorProposal,
   language: Language,
   handlers: LektorHandlers,
 ): () => void {
@@ -52,7 +56,7 @@ export function openLektorDialog(
   const preview = document.createElement('div');
   preview.className = 'review-preview';
 
-  const review = createDiffReview(pieces, redraw);
+  const review = createDiffReview(pieces, redraw, showsOnlyNew);
   let applyButton: HTMLButtonElement | null = null;
 
   /**
@@ -81,16 +85,48 @@ export function openLektorDialog(
     };
   }
 
+  /** Drawing the changes he hasn't decided as their new text alone, or in red and green. Decides nothing. */
+  function onlyNewChoice(): HTMLElement {
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.checked = review.showsOnlyNew();
+    box.addEventListener('change', () => review.setShowsOnlyNew(box.checked));
+    const label = document.createElement('label');
+    label.className = 'lektor-only-new';
+    label.append(box, said.onlyNew);
+    return label;
+  }
+
+  /** The kind of correction first, in the reading colour, and who made them after it. */
+  function withKind(made: readonly HTMLElement[]): HTMLElement[] {
+    const named = document.createElement('span');
+    named.className = 'lektor-review-kind';
+    named.textContent = kind;
+    const [line] = made;
+    if (line === undefined) {
+      const alone = document.createElement('p');
+      alone.className = 'lektor-service-line';
+      alone.append(named);
+      return [alone];
+    }
+    line.prepend(named, ' · ');
+    return [...made];
+  }
+
   function viewOfDiff(): HTMLElement {
     const column = document.createElement('div');
     column.className = 'review-body lektor-body';
 
     const about = document.createElement('p');
     about.className = 'review-note-aside';
-    about.textContent = said.counts(large, small);
+    about.textContent = review.showsOnlyNew() ? said.countsOnlyNew(large, small) : said.counts(large, small);
+
+    const aboutRow = document.createElement('div');
+    aboutRow.className = 'lektor-about-row';
+    aboutRow.append(about, ...(large > 0 ? [onlyNewChoice()] : []));
 
     column.append(
-      about,
+      aboutRow,
       createTextDiffView(
         review.piecesNow(),
         { previous: words.changePrevious, next: words.changeNext, at: stepperLabel },
@@ -197,7 +233,7 @@ export function openLektorDialog(
   done.addEventListener('click', leave);
   footer.append(done);
 
-  panel.append(header, ...madeBy, body, footer);
+  panel.append(header, ...withKind(madeBy), body, footer);
 
   const modal = showAsModal(container, panel, leave);
   if (hasAnything) redraw();

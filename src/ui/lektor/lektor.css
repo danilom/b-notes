@@ -686,6 +686,40 @@ body.lektor-open #lektor-side {
   font-size: inherit;
 }
 
+/* Darker than who made them: the kind says how much to expect, and is read first. */
+.lektor-review-kind {
+  color: var(--ink);
+}
+
+/* The counts and the choice of how to show them, together: both are about how to read what is below. */
+.lektor-about-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 1.2rem;
+}
+
+.lektor-about-row > .review-note-aside {
+  flex: 1 1 20rem;
+}
+
+.lektor-only-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.45rem;
+  color: var(--ink);
+  font-family: var(--ui-font);
+  font-size: calc(var(--ui-size) * 0.85);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.lektor-only-new input {
+  margin: 0;
+  cursor: pointer;
+}
+
 .lektor-service-line .lektor-service-mark {
   display: inline-block;
   margin-right: 0.3em;

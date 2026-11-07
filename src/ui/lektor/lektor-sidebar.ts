@@ -839,7 +839,7 @@ export function createLektor(parts: LektorParts): Lektor {
     const reassurance = [el('p', 'lektor-line lektor-reassurance', words().correctionsFoot)];
     const sendsNow = modelTooltip(ai().correctionModel(state.preset));
     if (saved === null) return footer(reassurance, withWhereItGoes(windowButton(words().sendForCorrections, () => void correct(), sendsNow)));
-    const see = windowButton(words().seeCorrections, () => review(editor.value, withEndingOf(editor.value, saved.proposed), saved.level), modelTooltip(saved.model));
+    const see = windowButton(words().seeCorrections, () => review(editor.value, withEndingOf(editor.value, saved.proposed), saved.level, choice.preset), modelTooltip(saved.model));
     const again = plainButtonRow(words().newRequest, () => void correct(), sendsNow);
     again.querySelectorAll('button').forEach(withWhereItGoes);
     return footer(reassurance, see, [again]);
@@ -995,7 +995,7 @@ export function createLektor(parts: LektorParts): Lektor {
       keepResults(name, state);
       stopWaitNote();
       waiting.close();
-      review(text, proposed, chosenLevel);
+      review(text, proposed, chosenLevel, preset);
     } catch (error) {
       stopWaitNote();
       waiting.close();
@@ -1030,9 +1030,9 @@ export function createLektor(parts: LektorParts): Lektor {
     render();
   }
 
-  function review(text: string, proposed: string, madeBy: string): void {
+  function review(text: string, proposed: string, madeBy: string, preset: PresetId): void {
     const state = stateNow();
-    const proposal = { title: titleFrom(text), current: text, proposed, testNote: madeBy === 'fake' ? words().review.testNote : null, madeBy: serviceLine(madeBy, words().levels, words().serviceLabel) };
+    const proposal = { title: titleFrom(text), current: text, proposed, testNote: madeBy === 'fake' ? words().review.testNote : null, madeBy: serviceLine(madeBy, words().levels, words().serviceLabel), kind: words().presets[preset], showsOnlyNew: preset === 'rewrite' };
     const close = openLektorDialog(dialog, parts.confirmPane, proposal, parts.languageNow(), {
       onApply: (result) => {
         close();
