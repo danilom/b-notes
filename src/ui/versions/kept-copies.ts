@@ -30,6 +30,8 @@ export interface KeptCopiesParts {
   lengthsNow: () => LengthBands;
   /** Something to tell him once, said where he reads such things. */
   say: (notice: string) => void;
+  /** The answer to a press that opens nothing: beside the status bar's quiet line, it would look like nothing happened. */
+  flash: (said: string) => void;
   /**
    * A copy becomes his text.
    *
@@ -143,13 +145,21 @@ export function createKeptCopies(parts: KeptCopiesParts): KeptCopiesView {
     const { handle, name } = open;
 
     void (async () => {
+      let stored: Awaited<ReturnType<Writing['versionsOf']>>;
+      try {
+        stored = await writing.versionsOf(handle);
+      } catch (error: unknown) {
+        log.error('Could not read the copies kept of a text', { id: name, failure: describeError(error) });
+        parts.flash(words.versionsUnreadable);
+        return;
+      }
       // A copy that matches his text exactly is not worth offering, and the
       // count on the button cannot know that without reading every file, so
       // the button can be there with nothing behind it. Saying so is better
       // than a press that does nothing.
-      const versions = versionsWorthShowing(await writing.versionsOf(handle), editor.value);
+      const versions = versionsWorthShowing(stored, editor.value);
       if (versions.length === 0) {
-        parts.say(words.versionsAllSame);
+        parts.flash(words.versionsAllSame);
         return;
       }
 

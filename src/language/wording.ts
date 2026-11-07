@@ -311,6 +311,7 @@ const TEXT = {
     // Both read as the copy against his text: what it holds on top of what he
     // has, and what he has that it never did.
     versionsAllSame: 'Sve sačuvane verzije su iste kao aktivni tekst.',
+    versionsUnreadable: 'Ranije verzije sada ne mogu da se otvore.',
     /*
       Razlika rather than izmena, which is the name of one of the three kinds
       of block this counts — (±) Izmenjeno. Counting all three by the name of
@@ -555,6 +556,7 @@ const TEXT = {
     },
     versionWasCalled: (title: string) => `Was called: “${title}”`,
     versionsAllSame: 'Every copy kept is the same as the active text.',
+    versionsUnreadable: 'The earlier versions cannot be opened just now.',
     changeAt: (at: number, total: number) => `Difference ${at} of ${total}`,
     changePrevious: 'Previous',
     changeNext: 'Next',

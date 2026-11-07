@@ -1228,6 +1228,7 @@ export async function startApp(runningOn: Host): Promise<void> {
       notice = said;
       showStatus();
     },
+    flash: (said) => flashToast(toast, said, ''),
     putInEditor,
   });
 
