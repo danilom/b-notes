@@ -589,12 +589,16 @@ body.lektor-open #lektor-side {
   margin-top: auto;
 }
 
-/* The small square a magazine article ends with, right after the last word as it is there: drawn, so it looks the same in any font. */
+/*
+  The small square a magazine article ends with, on a line of its own: drawn, so it looks the same
+  in any font. Close under the last line it ends, and well clear of the signature, which is not the
+  comment's.
+*/
 .lektor-response-end {
-  display: inline-block;
+  display: block;
   width: 0.42em;
   height: 0.42em;
-  margin-left: 0.4em;
+  margin: 0.3em 0 0.9em;
   background: var(--quiet);
   opacity: 0.6;
 }
