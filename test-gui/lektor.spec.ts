@@ -154,7 +154,7 @@ test('shows corrections already made instead of sending again, until the request
   await page.locator('#lektor-dialog button.close').click();
   // Not one stray click away: these may have cost money.
   await expect(page.locator('body')).toHaveClass(/lektor-open/);
-  await page.locator('#confirm').getByRole('button', { name: 'Zatvori', exact: true }).click();
+  await page.locator('#confirm button.danger', { hasText: 'Zatvori' }).click();
   await expect(page.locator('body')).not.toHaveClass(/lektor-open/);
 
   // The text is still what was read, so the comment is what he comes back to, with no send button in the way.
@@ -182,7 +182,7 @@ test('shows corrections already made instead of sending again, until the request
   await see.click();
   await expect(page.getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible();
   await page.locator('#lektor-dialog button.close').click();
-  await page.locator('#confirm').getByRole('button', { name: 'Zatvori', exact: true }).click();
+  await page.locator('#confirm button.danger', { hasText: 'Zatvori' }).click();
 
   await page.locator('#lektor-open').click();
   await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
@@ -200,7 +200,7 @@ test('says nothing about a small change, and sends corrections without asking', 
   await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
   await expect(page.getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible({ timeout: 15_000 });
   await page.locator('#lektor-dialog button.close').click();
-  await page.locator('#confirm').getByRole('button', { name: 'Zatvori', exact: true }).click();
+  await page.locator('#confirm button.danger', { hasText: 'Zatvori' }).click();
 
   await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} Jos.`);
   await page.locator('#lektor-open').click();
@@ -221,7 +221,7 @@ test('in the same sitting, opens on the comment after a big change, says how big
   await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
   await expect(page.getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible({ timeout: 15_000 });
   await page.locator('#lektor-dialog button.close').click();
-  await page.locator('#confirm').getByRole('button', { name: 'Zatvori', exact: true }).click();
+  await page.locator('#confirm button.danger', { hasText: 'Zatvori' }).click();
 
   await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} ${LONG_ENOUGH}`);
   await page.locator('#lektor-open').click();
