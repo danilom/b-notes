@@ -14,6 +14,18 @@ const nothing = (): void => undefined;
 const drawnAsNew = (review: ReturnType<typeof createDiffReview>): number =>
   review.piecesNow().filter((piece) => piece.kind === 'change' && piece.resolved === true).length;
 
+describe('the sides of a change', () => {
+  it('says which side is nothing, so the bar can say so on its button', () => {
+    const changed = mergeCloseChanges(separateTidying(diffTexts('Most stoji nad rekom. Ljudi prelaze preko njega svaki dan i gledaju vodu dugo.', 'Most stoji nad širokom rekom. Ljudi prelaze preko njega svaki dan i gledaju vodu.')));
+    const editing = createDiffReview(changed, nothing).editing();
+    const sides = changed.flatMap((piece, at) => (piece.kind === 'change' ? [at] : [])).map((_, at) => editing.sidesOf(at));
+    assert.deepEqual(sides, [
+      { hasOld: false, hasNew: true },
+      { hasOld: true, hasNew: false },
+    ]);
+  });
+});
+
 describe('showing only the new text', () => {
   it('draws every undecided change as its new text, without deciding any of them', () => {
     assert.ok(changeCount >= 2);

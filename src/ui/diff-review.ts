@@ -80,6 +80,10 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
         isBarClosed = closed;
       },
       isResolved: (at) => changes.has(at) || isShownAsNew(at),
+      sidesOf: (at) => {
+        const change = pieces.flatMap((piece) => (piece.kind === 'change' ? [piece] : []))[at];
+        return { hasOld: /\S/.test(change?.removed ?? ''), hasNew: /\S/.test(change?.added ?? '') };
+      },
       isShownAsNew,
       wordingOf,
       onUndo: (at) => decide(at, { kind: 'undone' }),

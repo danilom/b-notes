@@ -8,6 +8,8 @@ export interface DiffEditing {
   startsClosed?: boolean;
   onBarClosed: (closed: boolean) => void;
   isResolved: (changeAt: number) => boolean;
+  /** Whether the change has old words to bring back and new words to take, each of which may be nothing. */
+  sidesOf: (changeAt: number) => { hasOld: boolean; hasNew: boolean };
   /** The wording an edit of this change starts from: whatever it is now showing. */
   wordingOf: (changeAt: number) => string;
   onUndo: (changeAt: number) => void;
@@ -172,9 +174,11 @@ export function createDiffChangeBar(
       bar.replaceChildren(edit, reopen, closeButton());
       return;
     }
+    // The side that is nothing says so, in the sign he writes it with: the same two choices, one of them empty.
+    const { hasOld, hasNew } = editing.sidesOf(at);
     bar.replaceChildren(
-      barButton('Vrati staro', 'diff-bar-old', () => editing.onUndo(at)),
-      barButton('Prihvati', 'diff-bar-new', () => editing.onAccept(at)),
+      barButton(hasOld ? 'Vrati staro' : 'Vrati staro (∅)', 'diff-bar-old', () => editing.onUndo(at)),
+      barButton(hasNew ? 'Prihvati' : 'Prihvati (∅)', 'diff-bar-new', () => editing.onAccept(at)),
       edit,
       closeButton(),
     );
