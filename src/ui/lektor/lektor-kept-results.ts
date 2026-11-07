@@ -17,6 +17,8 @@ export interface CorrectionChoice {
 
 export interface KeptProposal extends CorrectionChoice {
   proposed: string;
+  /** What made them, which may not be what would make them today. */
+  model: string;
 }
 
 export interface KeptResults {
@@ -36,9 +38,9 @@ const isSameChoice = (one: CorrectionChoice, other: CorrectionChoice): boolean =
   one.preset === other.preset && one.level === other.level && one.note.trim() === other.note.trim();
 
 /** The corrections already made for just this, if any: against any other text, the review would offer to undo his edits. */
-export function savedCorrections({ proposals, proposalsFor }: Pick<KeptResults, 'proposals' | 'proposalsFor'>, text: string, choice: CorrectionChoice): string | null {
+export function savedCorrections({ proposals, proposalsFor }: Pick<KeptResults, 'proposals' | 'proposalsFor'>, text: string, choice: CorrectionChoice): KeptProposal | null {
   if (text !== proposalsFor) return null;
-  return proposals.find((kept) => isSameChoice(kept, choice))?.proposed ?? null;
+  return proposals.find((kept) => isSameChoice(kept, choice)) ?? null;
 }
 
 /** With a new set added: it replaces the same kind from the same Lektor, and a changed text leaves none of the others standing. */
@@ -64,8 +66,8 @@ const fileFor = (appFolder: string, textName: string): string => `${appFolder}/$
 
 function isKeptProposal(stored: unknown): stored is KeptProposal {
   if (typeof stored !== 'object' || stored === null) return false;
-  const { preset, level, note, proposed } = stored as Record<string, unknown>;
-  return typeof preset === 'string' && typeof level === 'string' && typeof note === 'string' && typeof proposed === 'string';
+  const { preset, level, note, proposed, model } = stored as Record<string, unknown>;
+  return typeof preset === 'string' && typeof level === 'string' && typeof note === 'string' && typeof proposed === 'string' && typeof model === 'string';
 }
 
 /**

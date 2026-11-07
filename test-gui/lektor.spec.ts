@@ -77,6 +77,7 @@ test('with only the free key, greys out the paid Lektor and goes straight to the
   await expect(page.getByLabel(/\(Anthropic\)/)).toBeDisabled();
   await expect(page.locator('label', { hasText: '(Anthropic)' })).toHaveAttribute('title', 'Nije unet API ključ.');
   await expect(page.locator('label', { hasText: '(Google)' })).not.toHaveAttribute('title', /./);
+  await expect(page.getByRole('button', { name: /^Pošalji ceo tekst/ })).toHaveAttribute('title', 'Model: gemini-3.6-flash (besplatan)');
 });
 
 test('with only the paid key, starts on it, and saving the keys box with nothing new leads back', async ({ page }) => {
@@ -87,6 +88,7 @@ test('with only the paid key, starts on it, and saving the keys box with nothing
 
   await expect(page.getByLabel(/\(Anthropic\)/)).toBeChecked();
   await expect(page.getByLabel(/\(Google\)/)).toBeDisabled();
+  await expect(page.getByRole('button', { name: /^Pošalji ceo tekst/ })).toHaveAttribute('title', 'Model: claude-opus-5-5 (plaćen)');
 
   await page.getByRole('button', { name: 'API ključevi' }).click();
   await page.getByRole('button', { name: 'Sačuvaj' }).click();
@@ -164,7 +166,8 @@ test('shows corrections already made instead of sending again, until the request
   const see = page.getByRole('button', { name: 'Pogledaj ispravke' });
   const send = page.getByRole('button', { name: 'Pošalji zahtev za ispravke' });
   await expect(see).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Pošalji nov zahtev' })).toBeVisible();
+  await expect(see).toHaveAttribute('title', /^Model: /);
+  await expect(page.getByRole('button', { name: 'Pošalji nov zahtev' })).toHaveAttribute('title', /^Model: /);
 
   await page.getByLabel('Dubinska prerada').check();
   await expect(send).toBeVisible();

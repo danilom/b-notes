@@ -136,9 +136,10 @@ function button(label: string, onClick: () => void, className = ''): HTMLButtonE
 }
 
 /** The arrow is a shape as well as the colour, for a washed-out or warm screen. Not on saving, which goes nowhere new. */
-function nextStepButton(label: string, onClick: () => void): HTMLButtonElement {
+function nextStepButton(label: string, onClick: () => void, tooltip = ''): HTMLButtonElement {
   const made = button(label, onClick, MAIN_ACTION);
   made.append(icon('move-out'));
+  made.title = tooltip;
   return made;
 }
 
@@ -252,6 +253,8 @@ export function createLektor(parts: LektorParts): Lektor {
     });
   }
 
+  /** For whoever is looking into what ran, which he needn't be: only on hovering, where it is out of his way. */
+  const modelTooltip = (model: string): string => `${words().model(model)}${words().modelPrice[level]}`;
   const hasKeyFor = (option: Level): boolean => option === 'fake' || settings[KEY_FIELD[option]] !== '';
   const hasKey = (): boolean => hasKeyFor(level);
 
@@ -347,7 +350,7 @@ export function createLektor(parts: LektorParts): Lektor {
       if (!(await parts.prepareToSend())) throw new LektorServiceError('not-brought-over', 'not on disk');
       const name = parts.textNameNow();
       const text = editor.value;
-      log.info('The Lektor was asked to read a text', { level });
+      log.info('The Lektor was asked to read a text', { level, model: service.commentModel });
       const answer = await ask(service, text, controller.signal);
       state.feedback = answer;
       state.readText = text;
@@ -504,9 +507,11 @@ export function createLektor(parts: LektorParts): Lektor {
   }
 
   /** The other choice, under the main button where he is deciding. No arrow: that means the next step, and this is the way out of taking it. */
-  function plainButtonRow(label: string, onClick: () => void): HTMLElement {
+  function plainButtonRow(label: string, onClick: () => void, tooltip = ''): HTMLElement {
     const row = el('div', 'lektor-side-buttons');
-    row.append(button(label, onClick, 'status-action'));
+    const made = button(label, onClick, 'status-action');
+    made.title = tooltip;
+    row.append(made);
     return row;
   }
 
@@ -541,7 +546,7 @@ export function createLektor(parts: LektorParts): Lektor {
     const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', words().keyWorks)] : [];
     const send = nextStepButton(words().send(recipient()), () => void read(askForFeedback));
     send.disabled = wordsInText() < FEWEST_WORDS;
-    if (send.disabled) send.title = words().tooShort;
+    send.title = send.disabled ? words().tooShort : modelTooltip(ai().commentModel);
     // Having come here to send again, he may think better of it: the comment he has is still there.
     const existing = stateNow().feedback === '' ? [] : [plainButtonRow(words().existingComment, () => goTo('response'))];
     return [
@@ -679,7 +684,6 @@ export function createLektor(parts: LektorParts): Lektor {
 
   function presetChoice(state: TextState, onChange: () => void): HTMLElement[] {
     const prompt = el('p', 'lektor-prompt', PRESET_PROMPTS[state.preset]);
-    const model = el('p', 'lektor-model', words().model(ai().correctionModel(state.preset)));
     const options = PRESET_ORDER.map((preset) => {
       const label = el('label', 'lektor-preset');
       const radio = el('input', '');
@@ -689,7 +693,6 @@ export function createLektor(parts: LektorParts): Lektor {
       radio.addEventListener('change', () => {
         state.preset = preset;
         prompt.textContent = PRESET_PROMPTS[preset];
-        model.textContent = words().model(ai().correctionModel(preset));
         onChange();
       });
       label.append(radio, document.createTextNode(words().presets[preset]));
@@ -712,7 +715,6 @@ export function createLektor(parts: LektorParts): Lektor {
       prompt,
       noteLabel,
       note,
-      model,
     ];
   }
 
@@ -777,8 +779,10 @@ export function createLektor(parts: LektorParts): Lektor {
     const saved = savedCorrections(state, editor.value, choice);
     // True either way, so it stays still when the buttons change. Where the text goes was said on the first step, the only place he can change that.
     const reassurance = [el('p', 'lektor-line', words().correctionsFoot)];
-    if (saved === null) return footer(reassurance, nextStepButton(words().sendForCorrections, () => void correct()));
-    return footer(reassurance, nextStepButton(words().seeCorrections, () => review(editor.value, saved)), [plainButtonRow(words().newRequest, () => void correct())]);
+    const sendsNow = modelTooltip(ai().correctionModel(state.preset));
+    if (saved === null) return footer(reassurance, nextStepButton(words().sendForCorrections, () => void correct(), sendsNow));
+    const see = nextStepButton(words().seeCorrections, () => review(editor.value, saved.proposed), modelTooltip(saved.model));
+    return footer(reassurance, see, [plainButtonRow(words().newRequest, () => void correct(), sendsNow)]);
   }
 
   function correctionsScreen(): HTMLElement[] {
@@ -923,11 +927,12 @@ export function createLektor(parts: LektorParts): Lektor {
       if (!(await parts.prepareToSend())) throw new LektorServiceError('not-brought-over', 'not on disk');
       const name = parts.textNameNow();
       const text = editor.value;
-      log.info('The Lektor was asked for corrections', { level, preset: state.preset });
+      const model = service.correctionModel(state.preset);
+      log.info('The Lektor was asked for corrections', { level, preset: state.preset, model });
       const { preset, note } = state;
       const asked = { text, preset, instruction: PRESET_PROMPTS[preset], note };
       const proposed = withHisFilingMarks(text, await service.corrections(asked, controller.signal));
-      Object.assign(state, withCorrections(state, text, { preset, level: chosenLevel, note, proposed }));
+      Object.assign(state, withCorrections(state, text, { preset, level: chosenLevel, note, proposed, model }));
       keepResults(name, state);
       stopWaitNote();
       waiting.close();
