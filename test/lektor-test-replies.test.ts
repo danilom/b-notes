@@ -51,8 +51,12 @@ describe('a saved test reply', () => {
     assert.equal(await lookUp(SAVED, 'Most\r\n\r\nStari most je tu.\r\n'), 'Most\r\n\r\nStari most još stoji.');
   });
 
-  it('is not given for a text that differs by a word', async () => {
-    assert.equal(await lookUp(SAVED, 'Most\n\nStari most je ovde.'), null);
+  it('is given for a text with the same title whose body was changed, so other things can be tried on it', async () => {
+    assert.equal(await lookUp(SAVED, 'Most\n\nStari most je ovde, i još nešto.'), 'Most\n\nStari most još stoji.');
+  });
+
+  it('is not given for a text with another title', async () => {
+    assert.equal(await lookUp(SAVED, 'Mostovi\n\nStari most je tu.'), null);
   });
 
   it('is not given for a kind nobody saved, nor where there is no folder', async () => {

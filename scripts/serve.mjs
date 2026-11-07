@@ -69,15 +69,17 @@ async function readDiffSamples() {
 /*
   A real service's corrections of a sample text, for the test Lektor to hand back instead of its
   own made-up ones, so the review can be tried on what a real one sends. Kept beside the text as
-  `<name>.lektor-<preset>.txt`, in testdata/ like the rest, and found by the text itself: only
-  the same text, word for word, gets them. Null when there are none.
+  `<name>.lektor-<preset>.txt`, in testdata/ like the rest, and found by the text's title, as
+  the app finds its own: a text changed to try something else still gets them. Null when there
+  are none.
 */
 const PRESETS = new Set(['letters', 'grammar', 'wording', 'rewrite']);
+const titleOf = (text) => text.trimStart().split(/\r?\n/, 1)[0]?.trim() ?? '';
 
 async function readRealReply(text, preset) {
   if (!PRESETS.has(preset)) return null;
   for (const sample of await readDiffSamples()) {
-    if (sample.current.trimEnd() !== text.trimEnd()) continue;
+    if (titleOf(sample.current) !== titleOf(text)) continue;
     try {
       return await readFile(path.join(DIFF_SAMPLES_FOLDER, `${sample.name}.lektor-${preset}.txt`), 'utf8');
     } catch (error) {
