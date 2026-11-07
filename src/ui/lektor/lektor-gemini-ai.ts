@@ -1,21 +1,17 @@
 import { LEKTOR_TIMED_OUT, LEKTOR_UNREACHED } from '../../platform/lektor-remote.ts';
 import { type DailyCapWords, dailyCapSentence } from './lektor-daily-cap.ts';
 import { correctionInstruction, FEEDBACK_INSTRUCTION, proposalFrom, SECOND_LOOK_INSTRUCTION, secondLookInput } from './lektor-instructions.ts';
-import { type CorrectionRequest, type LektorService, LektorServiceError, type PresetId } from './lektor-service.ts';
+import { type CorrectionRequest, type LektorService, LektorServiceError } from './lektor-service.ts';
 import { callService, connectionCheck, isRecord, type LektorServiceParts, messageOf } from './lektor-service-call.ts';
 
 /* The free Lektor, on Google's Gemini. */
 
 /**
- * Only the good one: a weaker model's comment would be taken for what the Lektor is like,
- * so when this one can't answer he is told, rather than quietly given something worse.
+ * One model for everything, and the good one: a weaker model's work would be taken for what the
+ * Lektor is like, and on plain corrections the quick one got words wrong. When this one can't
+ * answer he is told, rather than quietly given something worse.
  */
-const THINKING_MODELS = ['gemini-3.6-flash'];
-/** Plain corrections are as good on the quick model, and an overloaded one is passed over for the better. */
-const CORRECTION_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.6-flash'];
-
-/** Suggesting takes more thought than correcting: the quicker model hardly offers any. */
-const modelsFor = (preset: PresetId): readonly string[] => (preset === 'wording' || preset === 'rewrite' ? THINKING_MODELS : CORRECTION_MODELS);
+const MODEL = 'gemini-3.6-flash';
 
 /** What a refusal means to him. Only the kinds he should hear differently are told apart. */
 function refusal(status: number, reply: unknown, parts: GeminiParts): LektorServiceError {
@@ -50,45 +46,33 @@ export interface GeminiParts extends LektorServiceParts {
 }
 
 export function createGeminiAi(parts: GeminiParts): LektorService {
-  async function ask(models: readonly string[], system: string, input: string, signal: AbortSignal): Promise<string> {
-    let lastTried = '';
-    let lastSaid = '';
-    for (const model of models) {
-      const request = { provider: 'gemini', action: 'send', key: parts.keyNow(), model, system, input } as const;
-      const { status, reply } = await callService(parts, request, signal);
-      if (status === 503 || status === 500) {
-        lastSaid = messageOf(reply);
-        lastTried = `${status}: ${lastSaid}`;
-        parts.warn('A Lektor model passed over', { model, status });
-        continue;
-      }
-      if (status !== 200) throw refusal(status, reply, parts);
-      const words = wordsOf(reply);
-      const finished = !isRecord(reply) || reply['status'] === undefined || reply['status'] === 'completed';
-      if (words === null || words.trim() === '' || !finished) {
-        throw new LektorServiceError('cut-off', `${model}: ${isRecord(reply) ? String(reply['status']) : 'no reply'}`);
-      }
-      return words;
+  async function ask(system: string, input: string, signal: AbortSignal): Promise<string> {
+    const request = { provider: 'gemini', action: 'send', key: parts.keyNow(), model: MODEL, system, input } as const;
+    const { status, reply } = await callService(parts, request, signal);
+    if (status !== 200) throw refusal(status, reply, parts);
+    const words = wordsOf(reply);
+    const finished = !isRecord(reply) || reply['status'] === undefined || reply['status'] === 'completed';
+    if (words === null || words.trim() === '' || !finished) {
+      throw new LektorServiceError('cut-off', `${MODEL}: ${isRecord(reply) ? String(reply['status']) : 'no reply'}`);
     }
-    throw new LektorServiceError('overloaded', lastTried, lastSaid);
+    return words;
   }
 
   async function corrections(request: CorrectionRequest, signal: AbortSignal): Promise<string> {
-    const reply = await ask(modelsFor(request.preset), correctionInstruction(request), request.text, signal);
-    return proposalFrom(reply, request.text);
+    return proposalFrom(await ask(correctionInstruction(request), request.text, signal), request.text);
   }
 
   return {
     company: 'google',
-    commentModel: THINKING_MODELS[0] ?? '',
-    correctionModel: (preset) => modelsFor(preset)[0] ?? '',
+    commentModel: MODEL,
+    correctionModel: () => MODEL,
     connectionCheck: (signal) => connectionCheck(parts, signal),
     keyCheck: async (key, signal) => {
       const { status, reply } = await callService(parts, { provider: 'gemini', action: 'check', key, model: '', system: '', input: '' }, signal);
       if (status !== 200) throw refusal(status, reply, parts);
     },
-    feedback: async (text, signal) => (await ask(THINKING_MODELS, FEEDBACK_INSTRUCTION, text, signal)).trim(),
-    secondLook: async (text, earlier, signal) => (await ask(THINKING_MODELS, SECOND_LOOK_INSTRUCTION, secondLookInput(text, earlier), signal)).trim(),
+    feedback: async (text, signal) => (await ask(FEEDBACK_INSTRUCTION, text, signal)).trim(),
+    secondLook: async (text, earlier, signal) => (await ask(SECOND_LOOK_INSTRUCTION, secondLookInput(text, earlier), signal)).trim(),
     corrections,
   };
 }

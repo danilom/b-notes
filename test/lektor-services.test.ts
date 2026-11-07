@@ -70,7 +70,7 @@ describe('Gemini refusals', () => {
     ['a key refused in a list, as Interactions sends it', 400, [error('API key not valid. Please pass a valid API key.')], 'bad-key'],
     ['no key at all, with no words', 401, error(''), 'bad-key'],
     ['a text over the limit', 400, error('The input token count exceeds the maximum'), 'too-long'],
-    ['an overloaded model with no other to try', 503, error('high demand'), 'overloaded'],
+    ['an overloaded model', 503, error('high demand'), 'overloaded'],
   ];
   for (const [what, status, body, failure] of cases) {
     it(`reads ${what}`, async () => {
@@ -102,12 +102,14 @@ describe('Gemini refusals', () => {
     assert.deepEqual(sent.map((request) => request.model), ['gemini-3.6-flash']);
   });
 
-  it('moves plain corrections up to the better model when the quick one is overloaded', async () => {
-    const text = 'Neki tekst koji treba ispraviti.';
-    answerWith({ status: 503, body: error('high demand') }, { status: 200, body: { output_text: text } });
-    await geminiAi.corrections({ text, preset: 'letters', instruction: 'x', note: '' }, signal);
-    assert.deepEqual(sent.map((request) => request.model), ['gemini-3.1-flash-lite', 'gemini-3.6-flash']);
-  });
+  for (const preset of ['letters', 'grammar', 'wording', 'rewrite'] as const) {
+    it(`asks the one model for ${preset}, and asks it only once when it is overloaded`, async () => {
+      const text = 'Neki tekst koji treba ispraviti.';
+      answerWith({ status: 503, body: error('high demand') });
+      await assert.rejects(geminiAi.corrections({ text, preset, instruction: 'x', note: '' }, signal), (thrown: unknown) => thrown instanceof LektorServiceError && thrown.failure === 'overloaded' && thrown.serviceSaid === 'high demand');
+      assert.deepEqual(sent.map((request) => request.model), ['gemini-3.6-flash']);
+    });
+  }
 
   it('makes a note of a refusal it does not recognise', async () => {
     answerWith({ status: 400, body: error('Something new from Google') });
