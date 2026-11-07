@@ -407,8 +407,9 @@ body.lektor-open #lektor-side {
 
 /* The next step, in the only solid colour in the panel, and under a line: its own thing, apart from all that is above it. */
 .lektor-side-buttons:has(.lektor-main-action) {
+  margin-top: 0.4rem;
   padding-top: 0.5rem;
-  border-top: 1px solid var(--line);
+  border-top: 1.5px solid color-mix(in srgb, var(--quiet) 45%, var(--line));
 }
 
 .lektor-main-action {
