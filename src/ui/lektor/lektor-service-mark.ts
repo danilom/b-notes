@@ -29,7 +29,7 @@ export function serviceLine(level: string, names: Readonly<Record<string, string
   line.className = 'lektor-service-line';
   const words = document.createElement('span');
   words.textContent = name;
-  if (label !== '') line.append(document.createTextNode(`${label} `));
+  if (label !== '') line.append(Object.assign(document.createElement('span'), { textContent: label }));
   line.append(serviceMark(level), words);
   return [line];
 }
