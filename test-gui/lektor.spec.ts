@@ -101,7 +101,7 @@ test('keeps the old text as a version when corrections go in, and says these are
   const before = await page.locator('#editor').inputValue();
 
   await page.locator('#lektor-open').click();
-  await expect(page.getByLabel('Probni (bez AI)')).toBeChecked();
+  await expect(page.getByLabel('Probni: bez AI, samo za proveru')).toBeChecked();
   await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
   await expect(page.locator('.lektor-response')).toContainText('PROBNI', { timeout: 15_000 });
 
@@ -270,13 +270,13 @@ test('says which Lektor wrote the comment and made the corrections, with a mark 
   await expect(page.locator('input[name="lektor-level"] + .lektor-service-mark')).toHaveCount(3);
   await expect(page.getByRole('button', { name: /^Pošalji ceo tekst/ }).locator('.lektor-service-mark')).toHaveCount(1);
   await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
-  await expect(page.locator('.lektor-waiting .lektor-service-line')).toHaveText('AI Lektor: Probni (bez AI)');
-  await expect(page.locator('.lektor-comment-notes .lektor-service-line')).toContainText('AI Lektor: Probni (bez AI) · ', { timeout: 15_000 });
+  await expect(page.locator('.lektor-waiting .lektor-service-line')).toHaveText('AI Lektor: Probni: bez AI, samo za proveru');
+  await expect(page.locator('.lektor-comment-notes .lektor-service-line')).toContainText('AI Lektor: Probni: bez AI, samo za proveru · ', { timeout: 15_000 });
   await expect(page.getByRole('button', { name: 'Pređi na ispravke' }).locator('.lektor-service-mark')).toHaveCount(0);
   await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
   await expect(page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).locator('.lektor-service-mark')).toHaveCount(1);
   await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
-  await expect(page.locator('#lektor-dialog .lektor-service-line')).toHaveText('AI Lektor: Probni (bez AI)', { timeout: 15_000 });
+  await expect(page.locator('#lektor-dialog .lektor-service-line')).toHaveText('AI Lektor: Probni: bez AI, samo za proveru', { timeout: 15_000 });
 });
 
 test('offers no retry once the daily tries are gone, and passes on what the service said', async ({ page }) => {
