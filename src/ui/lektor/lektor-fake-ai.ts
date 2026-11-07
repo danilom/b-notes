@@ -126,6 +126,14 @@ export function fakeProposal(text: string, preset: PresetId): string {
   });
 }
 
+/** Said in the reply itself, on a line of its own under the title, so a saved reply is never taken for the test one's or a fresh one. */
+export const SAVED_REPLY_MARK = '[SAVED OPUS CORRECTIONS]';
+
+function withSavedMark(reply: string): string {
+  const titleEnd = reply.indexOf('\n');
+  return titleEnd === -1 ? `${SAVED_REPLY_MARK}\n${reply}` : `${reply.slice(0, titleEnd)}\n${SAVED_REPLY_MARK}${reply.slice(titleEnd)}`;
+}
+
 function fakeComment(text: string): string {
   const words = text.split(/\s+/).filter((word) => word.length > 0);
   const quote = (from: number): string => words.slice(from, from + 8).join(' ');
@@ -185,7 +193,8 @@ export function createFakeAi(behaviour: FakeBehaviour, finalSentences: FakeAiPar
     },
     corrections: async ({ text, preset }, signal) => {
       await pretendToWork(CORRECTING_MS, signal);
-      return (await finalSentences.realReply?.(text, preset)) ?? fakeProposal(text, preset);
+      const real = (await finalSentences.realReply?.(text, preset)) ?? null;
+      return real === null ? fakeProposal(text, preset) : withSavedMark(real);
     },
   };
 }

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { diffTexts, mergeCloseChanges, separateTidying } from '../src/notes/text-diff.ts';
-import { createFakeAi, fakeProposal } from '../src/ui/lektor/lektor-fake-ai.ts';
+import { SAVED_REPLY_MARK, createFakeAi, fakeProposal } from '../src/ui/lektor/lektor-fake-ai.ts';
 import { LektorServiceError } from '../src/ui/lektor/lektor-service.ts';
 
 const TEXT = `Naslov sa recima
@@ -56,10 +56,10 @@ describe('the test Lektor', () => {
     assert.equal(fakeProposal('', 'letters'), '');
   });
 
-  it('returns a real reply saved for the text in place of its own, and its own where none is saved', async () => {
+  it('returns a real reply saved for the text in place of its own, marked under the title, and its own where none is saved', async () => {
     const saved = async (text: string, preset: string): Promise<string | null> => (preset === 'rewrite' ? `${text} prerađeno` : null);
     const fake = createFakeAi('ok', { ...finals, realReply: saved });
-    assert.equal(await fake.corrections({ text: TEXT, preset: 'rewrite', instruction: '', note: '' }, signal), `${TEXT} prerađeno`);
+    assert.equal(await fake.corrections({ text: TEXT, preset: 'rewrite', instruction: '', note: '' }, signal), `Naslov sa recima\n${SAVED_REPLY_MARK}${TEXT.slice('Naslov sa recima'.length)} prerađeno`);
     assert.equal(await fake.corrections({ text: TEXT, preset: 'letters', instruction: '', note: '' }, signal), fakeProposal(TEXT, 'letters'));
   });
 

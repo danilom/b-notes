@@ -37,6 +37,7 @@ import { type FindInText, createFindInText } from './find-in-text.ts';
 import { icon } from './icons.ts';
 import { readFakeBehaviour } from './lektor/lektor-fake-setting.ts';
 import { type Lektor, createLektor } from './lektor/lektor-sidebar.ts';
+import { savedTestReply } from './lektor/lektor-test-replies.ts';
 import { type KeptCopiesView, createKeptCopies } from './versions/kept-copies.ts';
 import { showLostTexts } from './lost-texts.ts';
 import { untilOtherEditorsClose } from './other-editors-gate.ts';
@@ -1273,7 +1274,7 @@ export async function startApp(runningOn: Host): Promise<void> {
       prepareToSend: prepareForLektor,
       applyCorrections: applyLektorCorrections,
       fakeBehaviour: fakeLektor,
-      realReply: host.realLektorReply,
+      realReply: host.realLektorReply ?? ((text, preset) => savedTestReply(host.files, host.appFolder, log, text, preset)),
     });
   } catch (error: unknown) {
     // His writing is what this window is for, and the app starts without the Lektor rather than not at all.
