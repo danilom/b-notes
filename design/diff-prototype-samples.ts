@@ -105,7 +105,51 @@ function untidyPair(): Pick<DiffSample, 'current' | 'proposed'> {
  * Each pair is one kind of edit a proofreader makes, rather than a realistic
  * essay, so that when one reads badly it is plain which kind that was.
  */
+/**
+ * Every kind of change the review has to draw, each once and far enough from the others
+ * not to be merged with them, for judging how each one looks and answers: some are rare
+ * in a real reply and easy to miss there.
+ */
+const EVERY_CASE: DiffSample = {
+  name: 'Svi slučajevi: naslov, dodato, obrisano, prepisano, slova, zarezi, spojeni i podeljeni pasusi',
+  current: [
+    'Kuća na kraju sela',
+    // A missing mark, a missing comma, and a word replaced.
+    'Kuca na kraju sela stajala je prazna godinama. Prozori su uvijek bili čisti i niko nije znao ko ih pere.',
+    // Only added: words at the end of a sentence.
+    'Djeca su prolazila pored nje svakog jutra.',
+    // Only removed: words in the middle of a sentence.
+    'Stari Marko je tvrdio, onako kako je on to umio, da tamo noću gori svijeća.',
+    // A whole sentence written anew.
+    'Niko mu nije vjerovao jer je Marko volio da priča i ono što nije vidio, a često i ono što se nikad nije ni dogodilo.',
+    // Two paragraphs that become one.
+    'Jedne zime vrata su se otvorila.',
+    'Na pragu je stajala žena u crnom kaputu.',
+    // One paragraph that becomes two.
+    'Niko je nije pitao odakle dolazi. Ona je ostala do proljeća.',
+    // A whole paragraph taken out.
+    'Tog proljeća rijeka je nabujala kao nikad prije.',
+    // One short word for another.
+    'Kad je otišla, kuća je opet ostala prazna i tiha.',
+  ].join('\n\n'),
+  proposed: [
+    // Only added, on the title line, where the bar has least room.
+    'Kuća na samom kraju sela',
+    'Kuća na kraju sela stajala je prazna godinama. Prozori su uvijek bili čisti, i niko nije znao ko ih održava.',
+    'Djeca su prolazila pored nje svakog jutra, ne gledajući u dvorište.',
+    'Stari Marko je tvrdio da tamo noću gori svijeća.',
+    'Selo ga je slušalo s osmijehom, jer je dobro poznavalo njegovu ljubav prema pričama ljepšim od istine.',
+    'Jedne zime vrata su se otvorila. Na pragu je stajala žena u crnom kaputu.',
+    'Niko je nije pitao odakle dolazi.',
+    'Ona je ostala do proljeća.',
+    'Kad je otišla, kuća je opet ostala prazna a tiha.',
+    // A whole paragraph put in.
+    'Ali prozori su i dalje bili čisti.',
+  ].join('\n\n'),
+};
+
 export const DIFF_SAMPLES: readonly DiffSample[] = [
+  EVERY_CASE,
   {
     name: 'Jedna rečenica preformulisana',
     current: [ROADS, WINTER, LETTER].join('\n\n'),

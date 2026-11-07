@@ -17,6 +17,8 @@ const sample = element('sample', HTMLSelectElement);
 const merging = element('merging', HTMLInputElement);
 const tidying = element('tidying', HTMLSelectElement);
 const dark = element('dark', HTMLInputElement);
+const onlyNew = element('only-new', HTMLInputElement);
+const hover = element('hover', HTMLSelectElement);
 const view = element('view', HTMLElement);
 
 function aside(text: string): HTMLParagraphElement {
@@ -43,11 +45,12 @@ function render(): void {
   const pieces = separateTidying(compared);
   const hasTidying = pieces.some((piece) => piece.kind === 'tidy');
   const shown = tidying.value === 'full' ? compared : pieces;
-  review ??= createDiffReview(merging.checked ? mergeCloseChanges(shown) : shown, renderKeepingPlace);
+  review ??= createDiffReview(merging.checked ? mergeCloseChanges(shown) : shown, renderKeepingPlace, onlyNew.checked);
   result.value = review.textNow();
 
   const column = document.createElement('div');
-  column.className = 'review-body';
+  // The Lektor's own, so that its rules for the review apply here as there.
+  column.className = 'review-body lektor-body';
   column.append(aside('Precrtano je trenutni tekst, zeleno je predlog.'));
   if (hasTidying && tidying.value !== 'full') column.append(aside(tidyingNote(pieces)));
   column.append(
@@ -96,19 +99,11 @@ function listSamples(selectedAt: number): void {
   sample.value = String(selectedAt);
 }
 
-/**
- * Puts his real texts at the top of the list and opens on the first, where the
- * server has any. If something has been done on the page by then, it stays as it is.
- */
+/** Puts his real texts at the top of the list, where the server has any, leaving the one open as it is. */
 async function addRealSamples(): Promise<void> {
   const real = await fetchRealSamples();
-  const stillOpening = Number(sample.value) === opening && current.value === samples[opening]?.current;
   samples.unshift(...real);
   listSamples(Number(sample.value) + real.length);
-  if (stillOpening && real.length > 0) {
-    sample.value = '0';
-    showSample(0);
-  }
 }
 
 sample.addEventListener('change', () => showSample(Number(sample.value)));
@@ -117,6 +112,13 @@ current.addEventListener('input', startOver);
 proposed.addEventListener('input', startOver);
 merging.addEventListener('change', startOver);
 tidying.addEventListener('change', startOver);
+onlyNew.addEventListener('change', startOver);
+
+const showHover = (): void => {
+  view.dataset['hover'] = hover.value;
+};
+hover.addEventListener('change', showHover);
+showHover();
 
 element('swap', HTMLButtonElement).addEventListener('click', () => {
   [current.value, proposed.value] = [proposed.value, current.value];
@@ -140,8 +142,8 @@ dark.addEventListener('change', () => {
   document.documentElement.dataset['mode'] = dark.checked ? 'dark' : 'light';
 });
 
-// Opens on the long untidy one, which is the case the page is mostly for judging.
-const opening = Math.max(0, samples.findIndex(({ name }) => name.startsWith('Dugačak neuredan')));
+// Opens on the one with every kind of change in it, for judging how each is drawn.
+const opening = Math.max(0, samples.findIndex(({ name }) => name.startsWith('Svi slučajevi')));
 listSamples(opening);
 showSample(opening);
 void addRealSamples();
