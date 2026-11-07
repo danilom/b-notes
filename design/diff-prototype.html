@@ -136,14 +136,14 @@
         a fill as an inset shadow, since the struck line through red is a background and
         a background laid over it would hide it. Pressed drops a pixel, as a button does.
       */
-      #view:is([data-hover='buttons'], [data-hover='underline']) :is(.diff-change, .diff-change-carried):hover :is(.diff-new, .diff-gone) {
+      #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) :is(.diff-change, .diff-change-carried):hover :is(.diff-new, .diff-gone) {
         box-shadow: inset 0 0 0 100vmax var(--wash-firm);
       }
 
       /* With no fill, a darker ground, on a target wider than the words: grown into the
          space around them, and taken back by a margin, so that no line moves. Letters
          grow less, so that two of them one letter apart, as in šiša, do not meet. */
-      #view:is([data-hover='buttons'], [data-hover='underline']) :is(.diff-change, .diff-change-carried):has(.diff-resolved) {
+      #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) :is(.diff-change, .diff-change-carried):has(.diff-resolved) {
         padding-top: 0.18em;
         padding-inline: 0.25em;
         margin: 0 -0.25em;
@@ -152,23 +152,23 @@
       }
 
       /* The current one keeps the room its dashed line is drawn in. */
-      #view:is([data-hover='buttons'], [data-hover='underline']) :is(.diff-change, .diff-change-carried):has(.diff-resolved):not(.diff-current) {
+      #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) :is(.diff-change, .diff-change-carried):has(.diff-resolved):not(.diff-current) {
         padding-bottom: 0.18em;
       }
 
-      #view:is([data-hover='buttons'], [data-hover='underline']) .diff-tidied-letter {
+      #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) .diff-tidied-letter {
         padding: 0.18em 0.1em;
         margin: 0 -0.1em;
         border-radius: 2px;
       }
 
-      #view:is([data-hover='buttons'], [data-hover='underline']) :is(.diff-change, .diff-change-carried):has(.diff-resolved):hover,
-      #view:is([data-hover='buttons'], [data-hover='underline']) .diff-tidied-letter:hover {
+      #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) :is(.diff-change, .diff-change-carried):has(.diff-resolved):hover,
+      #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) .diff-tidied-letter:hover {
         /* The colour alone: the current change's dashed line is a background image, and the shorthand wiped it. */
         background-color: var(--wash-firm);
       }
 
-      #view:is([data-hover='buttons'], [data-hover='underline']) :is(.diff-change, .diff-change-carried, .diff-tidied-letter):active {
+      #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) :is(.diff-change, .diff-change-carried, .diff-tidied-letter):active {
         position: relative;
         top: 1px;
       }
@@ -190,6 +190,62 @@
 
       #view[data-hover='underline'] :is(.diff-change, .diff-change-carried):has(.diff-small):hover:not(.diff-current) {
         --marks-reach: 0.12em;
+      }
+
+      /*
+        6. As 4, with the dashed line in the colour of what it is under: green under green
+        text, and under a replacement red under the red and green under the green. Under a
+        box the line is drawn by the box itself: its fill is redrawn to stop short of the
+        line, the wash goes inside the fill and not over the gap, and the struck line
+        through red is moved up by what was added below, so it stays where it was.
+      */
+      #view[data-hover='colour'] {
+        --hover-gap: 2px;
+        --hover-line: 3px;
+        --hover-room: calc(var(--hover-gap) + var(--hover-line));
+      }
+
+      #view[data-hover='colour'] :is(.diff-change, .diff-change-carried):has(.diff-resolved):hover:not(.diff-current) {
+        padding-bottom: calc(0.05em + var(--hover-room));
+        background-image: linear-gradient(90deg, transparent 2px, var(--diff-resolved-ink) 2px 10px, transparent 10px);
+        background-position: left bottom;
+        background-repeat: round no-repeat;
+        background-size: 12px var(--hover-line);
+      }
+
+      #view[data-hover='colour'] :is(.diff-change, .diff-change-carried):hover:not(.diff-current) :is(.diff-new, .diff-gone) {
+        padding-bottom: calc(0.05em + var(--hover-room));
+        box-shadow: none;
+        background-color: transparent;
+      }
+
+      #view[data-hover='colour'] :is(.diff-change, .diff-change-carried):hover:not(.diff-current) .diff-new {
+        background-image:
+          linear-gradient(90deg, transparent 2px, var(--diff-new-fill) 2px 10px, transparent 10px),
+          linear-gradient(var(--wash-firm), var(--wash-firm)),
+          linear-gradient(var(--diff-new-fill), var(--diff-new-fill));
+        background-position: left bottom, left top, left top;
+        background-repeat: round no-repeat, no-repeat, no-repeat;
+        background-size:
+          12px var(--hover-line),
+          100% calc(100% - var(--hover-room)),
+          100% calc(100% - var(--hover-room));
+      }
+
+      #view[data-hover='colour'] :is(.diff-change, .diff-change-carried):hover:not(.diff-current) .diff-gone {
+        background-image:
+          linear-gradient(90deg, transparent 2px, var(--diff-gone-fill) 2px 10px, transparent 10px),
+          linear-gradient(var(--diff-gone-ink), var(--diff-gone-ink)),
+          linear-gradient(var(--wash-firm), var(--wash-firm)),
+          linear-gradient(var(--diff-gone-fill), var(--diff-gone-fill));
+        /* The struck line at 58% of the box it had, which is now taller by the room below. */
+        background-position: left bottom, 50% calc(58% - 0.58 * var(--hover-room)), left top, left top;
+        background-repeat: round no-repeat, no-repeat, no-repeat, no-repeat;
+        background-size:
+          12px var(--hover-line),
+          calc(100% - 4px) 1px,
+          100% calc(100% - var(--hover-room)),
+          100% calc(100% - var(--hover-room));
       }
 
       /* 3. One yellow highlighter for any change, filled or not, as on paper. */
@@ -231,6 +287,7 @@
           <option value="marker">3. Žuti marker za sve</option>
           <option value="buttons" selected>4. Kao dugmad: zatamnjeno, veća meta (izabrano)</option>
           <option value="underline">5. Kao 4, i siva isprekidana linija ispod</option>
+          <option value="colour">6. Kao 4, i linija u boji izmene: zelena, crvena</option>
         </select>
       </label>
       <label>
