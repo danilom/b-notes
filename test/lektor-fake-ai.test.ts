@@ -15,8 +15,8 @@ ${'Ovo je sasvim obicna recenica koja sadrzi slova sto se mogu ispraviti, zasto 
 const signal = new AbortController().signal;
 const finals = { noCredit: () => 'Novac je potrošen.', dailyCap: () => 'Današnji pokušaji su potrošeni.' };
 
-function kinds(proposal: string): { tidy: number; larger: number } {
-  const pieces = mergeCloseChanges(separateTidying(diffTexts(TEXT, proposal)));
+function kinds(proposal: string, text = TEXT): { tidy: number; larger: number } {
+  const pieces = mergeCloseChanges(separateTidying(diffTexts(text, proposal)));
   return { tidy: pieces.filter((piece) => piece.kind === 'tidy').length, larger: pieces.filter((piece) => piece.kind === 'change').length };
 }
 
@@ -43,6 +43,11 @@ describe('the test Lektor', () => {
       mergeCloseChanges(diffTexts(TEXT, proposal)).filter((piece) => piece.kind === 'change' && (piece.removed.match(/\p{L}+/gu) ?? []).length >= 6).length;
     assert.ok(longRuns(fakeProposal(TEXT, 'rewrite')) >= 3);
     assert.equal(longRuns(fakeProposal(TEXT, 'letters')), 0);
+  });
+
+  it('finds something to fix in a short text whose every fourth word has no letter that can take a mark', () => {
+    const short = 'Naslov teksta\n\nOvo je sasvim obican tekst koji je dovoljno dugacak da ga citalac moze da procita do kraja.';
+    assert.ok(kinds(fakeProposal(short, 'letters'), short).tidy > 0);
   });
 
   it('leaves his lines and spacing alone', () => {

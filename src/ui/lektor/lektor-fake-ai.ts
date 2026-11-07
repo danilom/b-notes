@@ -26,7 +26,7 @@ const SERVICE_SAID: Partial<Record<FakeBehaviour, string>> = {
 const LETTERS_GAINING_MARKS: Readonly<Record<string, string>> = { c: 'č', s: 'š', z: 'ž', C: 'Č', S: 'Š', Z: 'Ž' };
 
 interface ChangeRates {
-  /** One word in this many gains a missing mark, if it has a letter that can take one, which about half do. */
+  /** One mark is restored for every this many words, on the word due or the next that has a letter that can take one. */
   marksEvery: number;
   /** One word in this many gains a comma after it. */
   commasEvery: number;
@@ -46,10 +46,10 @@ interface ChangeRates {
   The review has to carry the strongest of these, so the test one has to give it them.
 */
 const RATES: Readonly<Record<PresetId, ChangeRates>> = {
-  letters: { marksEvery: 4, commasEvery: 25, swapsEvery: 0, sentencesRedone: 0, runsRedone: 0 },
-  grammar: { marksEvery: 4, commasEvery: 18, swapsEvery: 50, sentencesRedone: 0, runsRedone: 0.02 },
-  wording: { marksEvery: 4, commasEvery: 25, swapsEvery: 16, sentencesRedone: 0.03, runsRedone: 0.07 },
-  rewrite: { marksEvery: 4, commasEvery: 25, swapsEvery: 10, sentencesRedone: 0.18, runsRedone: 0.18 },
+  letters: { marksEvery: 8, commasEvery: 25, swapsEvery: 0, sentencesRedone: 0, runsRedone: 0 },
+  grammar: { marksEvery: 8, commasEvery: 18, swapsEvery: 50, sentencesRedone: 0, runsRedone: 0.02 },
+  wording: { marksEvery: 8, commasEvery: 25, swapsEvery: 16, sentencesRedone: 0.03, runsRedone: 0.07 },
+  rewrite: { marksEvery: 8, commasEvery: 25, swapsEvery: 10, sentencesRedone: 0.18, runsRedone: 0.18 },
 };
 
 /** What a reworked passage says instead, in brackets, so it can't be taken for a real suggestion. */
@@ -97,10 +97,14 @@ function withRunRedone(sentence: string, random: () => number): string {
 /** Each word as the preset's small changes leave it: a mark restored, a comma added, or a placeholder. */
 function wordFixer(rates: ChangeRates, random: () => number): (word: string, next: string) => string {
   let wordsSeen = 0;
+  // Carried to the next word that can take it, so a short text whose due words happen to have no c, s or z still gets its fixes.
+  let isMarkOwed = false;
   return (word, next) => {
     wordsSeen += 1;
+    if (wordsSeen % rates.marksEvery === 0) isMarkOwed = true;
     if (rates.swapsEvery > 0 && wordsSeen % rates.swapsEvery === 0) return '[probna izmena]';
-    const marked = wordsSeen % rates.marksEvery === 0 ? withMissingMark(word, random) : word;
+    const marked = isMarkOwed ? withMissingMark(word, random) : word;
+    if (marked !== word) isMarkOwed = false;
     return wordsSeen % rates.commasEvery === 0 && next === ' ' ? `${marked},` : marked;
   };
 }
