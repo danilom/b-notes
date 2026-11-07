@@ -26,6 +26,8 @@ export interface KeptResults {
   /** The text as the Lektor last read it. */
   readText: string;
   readAt: number;
+  /** Which Lektor wrote the comment. Empty when that isn't known, as from an older version. */
+  readBy: string;
   /** The corrections he hasn't taken, one for each kind and Lektor. */
   proposals: KeptProposal[];
   /** The text they were all made from: they apply to that and to nothing else. */
@@ -83,11 +85,12 @@ function isKeptProposal(stored: unknown): stored is KeptProposal {
  */
 export function keptResultsFrom(stored: unknown, textName: string): KeptResults | null {
   if (typeof stored !== 'object' || stored === null) return null;
-  const { name, feedback, readText, readAt, proposals, proposalsFor } = stored as Record<string, unknown>;
+  const { name, feedback, readText, readAt, readBy: storedBy, proposals, proposalsFor } = stored as Record<string, unknown>;
   if (name !== textName) return null;
   if (typeof feedback !== 'string' || typeof readText !== 'string' || typeof readAt !== 'number') return null;
-  if (!Array.isArray(proposals) || typeof proposalsFor !== 'string') return { feedback, readText, readAt, proposals: [], proposalsFor: '' };
-  return { feedback, readText, readAt, proposals: proposals.filter(isKeptProposal), proposalsFor };
+  const readBy = typeof storedBy === 'string' ? storedBy : '';
+  if (!Array.isArray(proposals) || typeof proposalsFor !== 'string') return { feedback, readText, readAt, readBy, proposals: [], proposalsFor: '' };
+  return { feedback, readText, readAt, readBy, proposals: proposals.filter(isKeptProposal), proposalsFor };
 }
 
 export async function readKeptResults(files: FileSystem, appFolder: string, textName: string, log: Log): Promise<KeptResults | null> {

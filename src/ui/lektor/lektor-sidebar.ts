@@ -22,6 +22,7 @@ import { isSameText, type KeptProposal, readKeptResults, savedCorrections, withC
 import { PRESET_ORDER, PRESET_PROMPTS } from './lektor-presets.ts';
 import { type LektorFailure, type LektorService, LektorServiceError, type PresetId } from './lektor-service.ts';
 import type { LektorServiceParts } from './lektor-service-call.ts';
+import { serviceLine, serviceMark } from './lektor-service-mark.ts';
 import { type LektorSettings, NO_LEKTOR_SETTINGS, readLektorSettings, type RealLevel, writeLektorSettings } from './lektor-settings.ts';
 
 /*
@@ -52,6 +53,8 @@ interface TextState {
   /** The text as the Lektor last read it. */
   readText: string;
   readAt: number;
+  /** Which Lektor wrote the comment. Empty when that isn't known. */
+  readBy: string;
   /** The corrections he hasn't taken, one for each kind and Lektor. */
   proposals: KeptProposal[];
   /** The text they were made from: against any other, the review would offer to undo his edits. */
@@ -200,6 +203,7 @@ export function createLektor(parts: LektorParts): Lektor {
       isRevealed: false,
       readText: '',
       readAt: 0,
+      readBy: '',
       proposals: [],
       proposalsFor: '',
       isKeptRead: false,
@@ -223,9 +227,9 @@ export function createLektor(parts: LektorParts): Lektor {
   }
 
   /** Under the name it has after being brought over, so asked for only once it has been. */
-  function keepResults(name: string | null, { feedback, readText, readAt, proposals, proposalsFor }: TextState): void {
+  function keepResults(name: string | null, { feedback, readText, readAt, readBy, proposals, proposalsFor }: TextState): void {
     if (name === null) return;
-    void writeKeptResults(parts.files, parts.appFolder, name, { feedback, readText, readAt, proposals, proposalsFor }, log);
+    void writeKeptResults(parts.files, parts.appFolder, name, { feedback, readText, readAt, readBy, proposals, proposalsFor }, log);
   }
 
   async function readSettingsOnce(): Promise<void> {
@@ -327,6 +331,7 @@ export function createLektor(parts: LektorParts): Lektor {
   async function read(): Promise<void> {
     const state = stateNow();
     const service = ai();
+    const readBy = level;
     stopWorking();
     const controller = new AbortController();
     working = controller;
@@ -343,6 +348,7 @@ export function createLektor(parts: LektorParts): Lektor {
       state.feedback = answer;
       state.readText = text;
       state.readAt = Date.now();
+      state.readBy = readBy;
       state.isRevealed = false;
       state.screen = 'response';
       keepResults(name, state);
@@ -517,7 +523,7 @@ export function createLektor(parts: LektorParts): Lektor {
     label.classList.toggle('lektor-preset-unavailable', radio.disabled);
     label.title = radio.disabled ? words().levelWithoutKey : '';
     radio.addEventListener('change', () => chooseLevel(option));
-    label.append(radio, el('span', '', words().levels[option]));
+    label.append(radio, serviceMark(option), el('span', '', words().levels[option]));
     return label;
   }
 
@@ -719,7 +725,7 @@ export function createLektor(parts: LektorParts): Lektor {
     age.append(el('span', '', words().writtenWhen(describeWhen(state.readAt, parts.languageNow()))), backButton(words().askForNewComment, 'start'));
     const notes = el('div', 'lektor-comment-notes');
     const stale = staleNote(state);
-    notes.append(age, ...(stale === null ? [] : [stale]), ...aboutAi());
+    notes.append(age, ...serviceLine(state.readBy, words().levels), ...(stale === null ? [] : [stale]), ...aboutAi());
     return notes;
   }
 
@@ -763,7 +769,7 @@ export function createLektor(parts: LektorParts): Lektor {
     const reassurance = [el('p', 'lektor-line', words().correctionsFoot)];
     const sendsNow = modelTooltip(ai().correctionModel(state.preset));
     if (saved === null) return footer(reassurance, nextStepButton(words().sendForCorrections, () => void correct(), sendsNow));
-    const see = nextStepButton(words().seeCorrections, () => review(editor.value, withEndingOf(editor.value, saved.proposed)), modelTooltip(saved.model));
+    const see = nextStepButton(words().seeCorrections, () => review(editor.value, withEndingOf(editor.value, saved.proposed), saved.level), modelTooltip(saved.model));
     return footer(reassurance, see, [plainButtonRow(words().newRequest, () => void correct(), sendsNow)]);
   }
 
@@ -918,7 +924,7 @@ export function createLektor(parts: LektorParts): Lektor {
       keepResults(name, state);
       stopWaitNote();
       waiting.close();
-      review(text, proposed);
+      review(text, proposed, chosenLevel);
     } catch (error) {
       stopWaitNote();
       waiting.close();
@@ -952,9 +958,9 @@ export function createLektor(parts: LektorParts): Lektor {
     render();
   }
 
-  function review(text: string, proposed: string): void {
+  function review(text: string, proposed: string, madeBy: string): void {
     const state = stateNow();
-    const proposal = { title: titleFrom(text), current: text, proposed, testNote: level === 'fake' ? words().review.testNote : null };
+    const proposal = { title: titleFrom(text), current: text, proposed, testNote: madeBy === 'fake' ? words().review.testNote : null, madeBy: serviceLine(madeBy, words().levels) };
     const close = openLektorDialog(dialog, parts.confirmPane, proposal, parts.languageNow(), {
       onApply: (result) => {
         close();

@@ -17,6 +17,8 @@ export interface LektorProposal {
   proposed: string;
   /** Said at the top when this came from the test Lektor rather than from any AI. */
   testNote: string | null;
+  /** Who made them, said at the top: they may be from days ago. */
+  madeBy: readonly HTMLElement[];
 }
 
 export interface LektorHandlers {
@@ -36,7 +38,7 @@ export interface LektorHandlers {
 export function openLektorDialog(
   container: HTMLDialogElement,
   confirmContainer: HTMLDialogElement,
-  { title, current, proposed, testNote }: LektorProposal,
+  { title, current, proposed, testNote, madeBy }: LektorProposal,
   language: Language,
   handlers: LektorHandlers,
 ): () => void {
@@ -152,7 +154,7 @@ export function openLektorDialog(
   const note = document.createElement('p');
   note.className = 'review-note';
   note.textContent = testNote ?? (hasAnything ? said.guide : said.checked);
-  stacked.append(titleOf({ mark: 'lektor', label: said.title, name: title }), note);
+  stacked.append(titleOf({ mark: 'lektor', label: said.title, name: title }), ...madeBy, note);
 
   const dismiss = document.createElement('button');
   dismiss.type = 'button';

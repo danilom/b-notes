@@ -6,7 +6,7 @@ import type { Log } from '../src/platform/logging.ts';
 import { keptResultsFrom, readKeptResults, savedCorrections, withCorrections, withEndingOf, writeKeptResults } from '../src/ui/lektor/lektor-kept-results.ts';
 
 const LETTERS = { preset: 'letters', level: 'free', note: '', proposed: 'Tekst!', model: 'gemini-3.6-flash' };
-const RESULTS = { feedback: 'Utisak.', readText: 'Tekst.', readAt: 5, proposals: [LETTERS], proposalsFor: 'Tekst.' };
+const RESULTS = { feedback: 'Utisak.', readText: 'Tekst.', readAt: 5, readBy: 'free', proposals: [LETTERS], proposalsFor: 'Tekst.' };
 const NAME = '   * čudno ime %2A ~1.txt';
 
 let held: Map<string, string>;
@@ -57,10 +57,10 @@ describe('kept Lektor results', () => {
     assert.equal(warnings.length, 1);
   });
 
-  it('keep the comment from an older version, but not its corrections', () => {
-    const { proposals: _proposals, proposalsFor: _proposalsFor, ...comment } = RESULTS;
+  it('keep the comment from an older version, but not its corrections, and do not guess who wrote it', () => {
+    const { proposals: _proposals, proposalsFor: _proposalsFor, readBy: _readBy, ...comment } = RESULTS;
     const older = { name: NAME, ...comment, proposal: 'Tekst!', proposalFor: 'Tekst.' };
-    assert.deepEqual(keptResultsFrom(older, NAME), { ...comment, proposals: [], proposalsFor: '' });
+    assert.deepEqual(keptResultsFrom(older, NAME), { ...comment, readBy: '', proposals: [], proposalsFor: '' });
   });
 
   it('leave out only the corrections that cannot be believed', () => {

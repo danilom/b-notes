@@ -241,6 +241,18 @@ test('opens on the comment however much has changed and however he last left it'
   await expect(page.locator('.lektor-response')).toContainText('PROBNI');
 });
 
+test('says which Lektor wrote the comment and made the corrections, with a mark beside each choice', async ({ page }) => {
+  await withTestLektor(page, 'ok');
+  await writeNewText(page);
+  await page.locator('#lektor-open').click();
+  await expect(page.locator('input[name="lektor-level"] + .lektor-service-mark')).toHaveCount(3);
+  await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
+  await expect(page.locator('.lektor-comment-notes .lektor-service-line')).toHaveText('Probni (bez AI)', { timeout: 15_000 });
+  await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
+  await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
+  await expect(page.locator('#lektor-dialog .lektor-service-line')).toHaveText('Probni (bez AI)', { timeout: 15_000 });
+});
+
 test('offers no retry once the daily tries are gone, and passes on what the service said', async ({ page }) => {
   await withTestLektor(page, 'limit');
   await writeNewText(page);
