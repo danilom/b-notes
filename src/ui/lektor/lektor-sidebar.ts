@@ -608,7 +608,7 @@ export function createLektor(parts: LektorParts): Lektor {
 
   function readingScreen(): HTMLElement[] {
     return [
-      waitingLine(words().reading(words().companyName[ai().company]), words().waits[level].reading, readingSince, WAITS[level].readingLongS),
+      waitingLine(words().reading, words().waits[level].reading, readingSince, WAITS[level].readingLongS),
       footer(
         [],
         button(words().stop, () => {
@@ -917,8 +917,7 @@ export function createLektor(parts: LektorParts): Lektor {
     const chosenLevel = level;
     const controller = new AbortController();
     const leave = (): void => controller.abort();
-    const doing = words().correcting(words().companyName[service.company]);
-    const waitingPanel = plainPanel(waitingLine(doing, words().waits[level].correcting, Date.now(), WAITS[level].correctingLongS), [button(words().stop, leave)]);
+    const waitingPanel = plainPanel(waitingLine(words().correcting, words().waits[level].correcting, Date.now(), WAITS[level].correctingLongS), [button(words().stop, leave)]);
     const waiting = showAsModal(dialog, waitingPanel, leave);
     try {
       if (!(await parts.prepareToSend())) throw new LektorServiceError('not-brought-over', 'not on disk');

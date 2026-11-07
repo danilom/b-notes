@@ -53,9 +53,8 @@ export const LEKTOR_WORDS = {
     keysLink: 'API ključevi',
     save: 'Sačuvaj',
     connecting: 'Proveravam vezu sa internetom…',
-    companyName: { google: 'Google', anthropic: 'Anthropic', nobody: 'probni' },
-    reading: (company: string) => `AI Lektor (${company}) čita tekst…`,
-    correcting: (company: string) => `AI Lektor (${company}) ispravlja tekst…`,
+    reading: 'AI Lektor čita tekst…',
+    correcting: 'AI Lektor ispravlja tekst…',
     waits: {
       free: { reading: 'Obično traje pola minuta.', correcting: 'Obično traje oko minut.' },
       thorough: { reading: 'Obično traje oko minut.', correcting: 'Može da potraje nekoliko minuta.' },
@@ -165,9 +164,8 @@ export const LEKTOR_WORDS = {
     keysLink: 'API keys',
     save: 'Save',
     connecting: 'Checking the internet connection…',
-    companyName: { google: 'Google', anthropic: 'Anthropic', nobody: 'test' },
-    reading: (company: string) => `The AI Lektor (${company}) is reading the text…`,
-    correcting: (company: string) => `The AI Lektor (${company}) is correcting the text…`,
+    reading: 'The AI Lektor is reading the text…',
+    correcting: 'The AI Lektor is correcting the text…',
     waits: {
       free: { reading: 'Usually takes half a minute.', correcting: 'Usually takes about a minute.' },
       thorough: { reading: 'Usually takes about a minute.', correcting: 'May take several minutes.' },
