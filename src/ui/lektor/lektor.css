@@ -228,21 +228,21 @@ body.lektor-open #lektor-side {
   line-height: 1.4;
 }
 
+/* One small message, so one face, size and colour, here and in the dialog, whose empty pane would otherwise lend it italics. */
 .lektor-waiting {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  color: var(--quiet);
+  font-family: var(--ui-font);
+  font-size: var(--ui-size);
+  font-style: normal;
+  line-height: 1.4;
 }
 
 .lektor-waiting p {
   margin: 0;
-}
-
-.lektor-wait-note {
-  color: var(--quiet);
-  font-size: 0.85em;
-  font-style: normal;
-  line-height: 1.35;
+  font-size: inherit;
 }
 
 /* Something is happening, in every place he waits on the AI: words alone look stuck after ten seconds. */
@@ -251,8 +251,6 @@ body.lektor-open #lektor-side {
   align-items: center;
   gap: 0.5rem;
   color: var(--quiet);
-  font-family: var(--writing-font);
-  font-style: italic;
 }
 
 .lektor-reading::before {
