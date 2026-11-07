@@ -709,12 +709,13 @@ body.lektor-open #lektor-side {
   margin-bottom: -0.35rem;
 }
 
-/* Read-only, and looking it beside the white box he can type in: the panel's grey made a shade deeper, smaller type, an ordinary arrow. */
+/* Read-only, and looking it beside the white box he can type in: no fill of its own, smaller type, an ordinary arrow. */
 .lektor-prompt {
   padding: 0.45rem 0.6rem;
   border: 1px solid var(--line);
   border-radius: 4px;
-  background: var(--wash);
+  /* No fill: grey on the panel's grey only added weight. The frame stays, as the edge of what scrolls. */
+  background: none;
   color: var(--quiet);
   /* Small print: there to look at if he wants to, not something to act on. */
   font-size: var(--lektor-small);
