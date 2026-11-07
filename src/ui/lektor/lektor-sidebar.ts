@@ -6,7 +6,6 @@ import { countWords } from '../../notes/word-count.ts';
 import type { FileSystem } from '../../platform/file-system.ts';
 import type { LektorRequest, LektorResponse } from '../../platform/lektor-remote.ts';
 import { describeError, type Log } from '../../platform/logging.ts';
-import { openConfirmDialog } from '../dialogs/confirm-dialog.ts';
 import { titleOf } from '../dialogs/dialog-heading.ts';
 import { showAsModal } from '../dialogs/modal.ts';
 import { icon } from '../icons.ts';
@@ -19,7 +18,7 @@ import { createFakeAi } from './lektor-fake-ai.ts';
 import type { FakeBehaviour } from './lektor-fake-setting.ts';
 import { createGeminiAi } from './lektor-gemini-ai.ts';
 import { withHisFilingMarks } from './lektor-instructions.ts';
-import { hasCorrectionsFor, isSameText, type KeptProposal, readKeptResults, savedCorrections, withCorrections, withEndingOf, writeKeptResults } from './lektor-kept-results.ts';
+import { isSameText, type KeptProposal, readKeptResults, savedCorrections, withCorrections, withEndingOf, writeKeptResults } from './lektor-kept-results.ts';
 import { PRESET_ORDER, PRESET_PROMPTS } from './lektor-presets.ts';
 import { type LektorFailure, type LektorService, LektorServiceError, type PresetId } from './lektor-service.ts';
 import type { LektorServiceParts } from './lektor-service-call.ts';
@@ -754,35 +753,6 @@ export function createLektor(parts: LektorParts): Lektor {
   }
 
   /**
-   * After a few changed words the corrections he has can't simply be shown again, since they would
-   * undo those words, so this is the one place left to ask. Sending is still his choice: a try spent
-   * is no great harm, and he may well have changed the very thing he wants looked at.
-   */
-  function sendCorrections(state: TextState): void {
-    const isRepeat = hasCorrectionsFor(state, { preset: state.preset, level, note: state.note }) && isSmallEdit(state.proposalsFor, editor.value);
-    if (!isRepeat) {
-      void correct();
-      return;
-    }
-    const said = words().smallEdit;
-    const close = openConfirmDialog(
-      parts.confirmPane,
-      {
-        title: { mark: 'lektor', label: said.confirm, name: titleFrom(editor.value) },
-        body: said.body,
-        confirm: said.confirm,
-        cancel: said.cancel,
-        onConfirm: () => {
-          close();
-          void correct();
-        },
-        onCancel: () => close(),
-      },
-      parts.languageNow(),
-    );
-  }
-
-  /**
    * What the buttons offer follows from what he has chosen. With corrections already made for just
    * this, looking at them is the step on, and costs nothing. Sending again stays possible, because
    * the same request can come back much better, but it is no longer what happens by habit.
@@ -793,7 +763,7 @@ export function createLektor(parts: LektorParts): Lektor {
     // True either way, so it stays still when the buttons change. Where the text goes was said on the first step, the only place he can change that.
     const reassurance = [el('p', 'lektor-line', words().correctionsFoot)];
     const sendsNow = modelTooltip(ai().correctionModel(state.preset));
-    if (saved === null) return footer(reassurance, nextStepButton(words().sendForCorrections, () => sendCorrections(state), sendsNow));
+    if (saved === null) return footer(reassurance, nextStepButton(words().sendForCorrections, () => void correct(), sendsNow));
     const see = nextStepButton(words().seeCorrections, () => review(editor.value, withEndingOf(editor.value, saved.proposed)), modelTooltip(saved.model));
     return footer(reassurance, see, [plainButtonRow(words().newRequest, () => void correct(), sendsNow)]);
   }

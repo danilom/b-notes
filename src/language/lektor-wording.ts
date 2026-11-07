@@ -97,11 +97,6 @@ export const LEKTOR_WORDS = {
     toCorrections: 'Pređi na ispravke',
     seeCorrections: 'Pogledaj ispravke',
     newRequest: 'Pošalji nov zahtev',
-    smallEdit: {
-      body: 'Od poslednjih ispravki promenio si samo nekoliko reči. Da ipak pošaljem ceo tekst ponovo?',
-      confirm: 'Pošalji ponovo',
-      cancel: 'Odustani',
-    },
     correctionsFoot: 'Videćeš predloge. Tekst se ne menja dok ih ne uneseš.',
     sendForCorrections: 'Pošalji zahtev za ispravke',
     applied: 'Izmene su unete u tekst.',
@@ -213,11 +208,6 @@ export const LEKTOR_WORDS = {
     toCorrections: 'On to corrections',
     seeCorrections: 'See the corrections',
     newRequest: 'Send a new request',
-    smallEdit: {
-      body: 'You have changed only a few words since the last corrections. Send the whole text again anyway?',
-      confirm: 'Send again',
-      cancel: 'Cancel',
-    },
     correctionsFoot: 'You will see the suggestions. The text does not change until you put them in.',
     sendForCorrections: 'Send the request for corrections',
     applied: 'The changes are in the text.',

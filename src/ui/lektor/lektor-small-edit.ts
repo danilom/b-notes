@@ -2,8 +2,9 @@ import { diffTexts } from '../../notes/text-diff.ts';
 import { isSameText } from './lektor-kept-results.ts';
 
 /*
-  Whether a text has changed by so little that sending it all again isn't worth a try, which
-  is one of twenty a day on the free Lektor and real money on the paid one.
+  Whether a text has changed by so little that the comment on it still stands, so that he comes back
+  to that rather than to a button that would spend a try, one of twenty a day on the free Lektor and
+  real money on the paid one.
 */
 
 /** A number of words rather than a share: a share of a long essay would let a whole paragraph pass as tiny. */
