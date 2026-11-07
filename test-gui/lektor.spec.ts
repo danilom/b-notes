@@ -225,7 +225,7 @@ test('in the same sitting, opens on the comment after a big change, says how big
 
   await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} ${LONG_ENOUGH}`);
   await page.locator('#lektor-open').click();
-  await expect(page.locator('.lektor-stale')).toContainText(/nije video tvoje poslednje izmene \(oko \d+ reči\)/);
+  await expect(page.locator('.lektor-stale')).toContainText(/napisan pre tvojih poslednjih izmena \(oko \d+ reči\)/);
   // One way to a new one, not a second beside the note.
   await expect(page.getByRole('button', { name: 'Traži novi utisak' })).toHaveCount(1);
 
@@ -260,7 +260,7 @@ test('after a big change he comes back to later, opens on the step that asks for
   await expect(page.getByRole('button', { name: /^Pošalji ceo tekst/ })).toBeVisible();
   await page.getByRole('button', { name: 'Postojeći AI utisak' }).click();
   await expect(page.locator('.lektor-response')).toContainText('PROBNI');
-  await expect(page.locator('.lektor-stale')).toContainText(/nije video tvoje poslednje izmene \(oko \d+ reči\)/);
+  await expect(page.locator('.lektor-stale')).toContainText(/napisan pre tvojih poslednjih izmena \(oko \d+ reči\)/);
 });
 
 test('says which Lektor wrote the comment and made the corrections, with a mark beside each choice', async ({ page }) => {
