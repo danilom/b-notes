@@ -301,7 +301,8 @@ export function createLektor(parts: LektorParts): Lektor {
     update();
     waitNoteTimer = setInterval(update, 1000);
     const line = el('div', 'lektor-waiting');
-    line.append(el('p', 'lektor-reading', doing), ...serviceLine(level, words().levels), clock, note);
+    // Who first, then what it is doing: read together, the two make the sentence.
+    line.append(...serviceLine(level, words().levels, words().serviceLabel), el('p', 'lektor-reading', doing), clock, note);
     return line;
   }
 
@@ -968,7 +969,7 @@ export function createLektor(parts: LektorParts): Lektor {
 
   function review(text: string, proposed: string, madeBy: string): void {
     const state = stateNow();
-    const proposal = { title: titleFrom(text), current: text, proposed, testNote: madeBy === 'fake' ? words().review.testNote : null, madeBy: serviceLine(madeBy, words().levels, words().review.madeBy) };
+    const proposal = { title: titleFrom(text), current: text, proposed, testNote: madeBy === 'fake' ? words().review.testNote : null, madeBy: serviceLine(madeBy, words().levels, words().serviceLabel) };
     const close = openLektorDialog(dialog, parts.confirmPane, proposal, parts.languageNow(), {
       onApply: (result) => {
         close();

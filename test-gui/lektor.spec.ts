@@ -248,7 +248,7 @@ test('says which Lektor wrote the comment and made the corrections, with a mark 
   await expect(page.locator('input[name="lektor-level"] + .lektor-service-mark')).toHaveCount(3);
   await expect(page.getByRole('button', { name: /^Pošalji ceo tekst/ }).locator('.lektor-service-mark')).toHaveCount(1);
   await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
-  await expect(page.locator('.lektor-waiting .lektor-service-line')).toHaveText('Probni (bez AI)');
+  await expect(page.locator('.lektor-waiting .lektor-service-line')).toHaveText('AI Lektor: Probni (bez AI)');
   await expect(page.locator('.lektor-comment-notes .lektor-service-line')).toHaveText('Probni (bez AI)', { timeout: 15_000 });
   await expect(page.getByRole('button', { name: 'Pređi na ispravke' }).locator('.lektor-service-mark')).toHaveCount(0);
   await page.getByRole('button', { name: 'Pređi na ispravke' }).click();

@@ -659,9 +659,11 @@ body.lektor-open #lektor-side {
   box-sizing: border-box;
 }
 
+/* As far below the header's line as the header's words are above it, and in line with the note under it. */
 .lektor-panel > .lektor-service-line {
   flex: none;
-  margin-bottom: 0;
+  margin: 0.6rem 0 0;
+  padding-left: 1.5rem;
 }
 
 .lektor-service-line {
