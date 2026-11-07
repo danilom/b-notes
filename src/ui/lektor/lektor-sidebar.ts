@@ -310,7 +310,7 @@ export function createLektor(parts: LektorParts): Lektor {
     waitNoteTimer = setInterval(update, 1000);
     const line = el('div', 'lektor-waiting');
     // Who first, then what it is doing: read together, the two make the sentence.
-    line.append(...serviceLine(level, words().levels, words().serviceLabel), el('p', 'lektor-reading', doing), clock, note);
+    line.append(...serviceLine(level, words().shortLevels, words().serviceLabel), el('p', 'lektor-reading', doing), clock, note);
     return line;
   }
 
@@ -760,7 +760,7 @@ export function createLektor(parts: LektorParts): Lektor {
   /** Who wrote it and when, after it, as a letter is signed: there to be found, not read first. */
   function commentSignature(state: TextState): HTMLElement {
     const when = describeWhen(state.readAt, parts.languageNow());
-    const who = serviceLine(state.readBy, words().levels, words().serviceLabel);
+    const who = serviceLine(state.readBy, words().shortLevels, words().serviceLabel);
     const signed = who[0];
     if (signed !== undefined) signed.append(el('span', 'lektor-comment-when', ` · ${when}`));
     const signature = el('div', 'lektor-comment-notes');

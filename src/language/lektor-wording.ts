@@ -77,6 +77,8 @@ export const LEKTOR_WORDS = {
     existingComment: 'Postojeći AI utisak',
     whichLektor: 'Izaberi AI Lektora:',
     levels: { free: 'Google: besplatan, ok, brz', thorough: 'Anthropic: plaćen, temeljan, spor', fake: 'Probni: bez AI, samo za proveru' },
+    /** Where the service only needs naming: the full description is for choosing, and for the review, which has the room. */
+    shortLevels: { free: 'Google: besplatan', thorough: 'Anthropic: plaćen', fake: 'Probni: bez AI' },
     levelWithoutKey: 'Nije unet API ključ.',
     blurb: 'AI Lektor čita tvoj tekst, kaže šta misli i, ako želiš, predlaže ispravke.',
     model: (name: string) => `Model: ${name}`,
@@ -188,6 +190,7 @@ export const LEKTOR_WORDS = {
     existingComment: 'Existing AI impression',
     whichLektor: 'Choose the AI Lektor:',
     levels: { free: 'Google: free, ok, fast', thorough: 'Anthropic: paid, thorough, slow', fake: 'Test: no AI, for checking only' },
+    shortLevels: { free: 'Google: free', thorough: 'Anthropic: paid', fake: 'Test: no AI' },
     levelWithoutKey: 'No API key has been entered.',
     blurb: 'The AI Lektor reads your text, says what it thinks and, if you wish, suggests corrections.',
     model: (name: string) => `Model: ${name}`,
