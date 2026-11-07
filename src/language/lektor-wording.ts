@@ -59,7 +59,7 @@ export const LEKTOR_WORDS = {
     waits: {
       free: { reading: 'Obično traje pola minuta.', correcting: 'Obično traje oko minut.' },
       thorough: { reading: 'Obično traje oko minut.', correcting: 'Može da potraje nekoliko minuta.' },
-      fake: { reading: 'Traje par sekundi.', correcting: 'Traje par sekundi.' },
+      fake: { reading: 'Obično traje par sekundi.', correcting: 'Obično traje par sekundi.' },
     },
     waitLong: 'Još malo. AI Lektoru danas treba duže nego obično.',
     waitVeryLong: 'Treba mu mnogo duže nego obično. Možeš da sačekaš: ako ne završi za dva minuta, sam će odustati.',
@@ -172,7 +172,7 @@ export const LEKTOR_WORDS = {
     waits: {
       free: { reading: 'Usually takes half a minute.', correcting: 'Usually takes about a minute.' },
       thorough: { reading: 'Usually takes about a minute.', correcting: 'May take several minutes.' },
-      fake: { reading: 'Takes a few seconds.', correcting: 'Takes a few seconds.' },
+      fake: { reading: 'Usually takes a few seconds.', correcting: 'Usually takes a few seconds.' },
     },
     waitLong: 'Not long now. The AI Lektor is taking longer than usual today.',
     waitVeryLong: 'It is taking much longer than usual. You can wait: if it has not finished in two minutes, it will give up by itself.',
