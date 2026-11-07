@@ -18,6 +18,7 @@ const merging = element('merging', HTMLInputElement);
 const tidying = element('tidying', HTMLSelectElement);
 const dark = element('dark', HTMLInputElement);
 const onlyNew = element('only-new', HTMLInputElement);
+const readOnly = element('read-only', HTMLInputElement);
 const hover = element('hover', HTMLSelectElement);
 const view = element('view', HTMLElement);
 
@@ -57,7 +58,8 @@ function render(): void {
     createTextDiffView(
       review.piecesNow(),
       { previous: words.changePrevious, next: words.changeNext, at: words.changeAt },
-      { showTidied: tidying.value === 'coloured', editing: review.editing() },
+      // Without the editing, the view only shows: no bar, nothing decided, a click only makes a change current.
+      readOnly.checked ? { showTidied: tidying.value === 'coloured' } : { showTidied: tidying.value === 'coloured', editing: review.editing() },
     ),
   );
   view.replaceChildren(column);
@@ -113,6 +115,7 @@ proposed.addEventListener('input', startOver);
 merging.addEventListener('change', startOver);
 tidying.addEventListener('change', startOver);
 onlyNew.addEventListener('change', startOver);
+readOnly.addEventListener('change', startOver);
 
 const showHover = (): void => {
   view.dataset['hover'] = hover.value;
