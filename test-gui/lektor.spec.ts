@@ -305,7 +305,7 @@ test('shows a Dubinska prerada as the new text alone, opens one change to look a
   await expect(dialog.locator('.lektor-service-line')).toContainText(/^Dubinska prerada · /);
   await expect(dialog.locator('.review-text .diff-resolved').first()).toBeVisible();
 
-  await dialog.locator('.review-text .diff-change').first().hover();
+  await dialog.locator('.review-text .diff-change').first().click();
   await dialog.locator('.diff-bar').getByRole('button', { name: 'Vidi predlog' }).click();
   await expect(dialog.locator('.diff-bar').getByRole('button', { name: 'Prihvati' })).toBeVisible();
 
@@ -320,6 +320,39 @@ test('shows a Dubinska prerada as the new text alone, opens one change to look a
   await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
   await expect(onlyNew).not.toBeChecked({ timeout: 15_000 });
   await expect(dialog.locator('.lektor-service-line')).toContainText(/^Stilska dorada · /);
+});
+
+test('raises the bar over a change on a click and never on hovering, puts it away on a click elsewhere, and steps without it until a change is clicked', async ({ page }) => {
+  await withTestLektor(page, 'ok');
+  await page.locator('#new-note').click();
+  await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} ${LONG_ENOUGH}\n\n${LONG_ENOUGH} ${LONG_ENOUGH}\n\n${LONG_ENOUGH}`);
+  await page.locator('#lektor-open').click();
+  await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
+  await page.getByRole('button', { name: 'Pređi na ispravke' }).click({ timeout: 15_000 });
+  await page.getByLabel('Stilska dorada').check();
+  await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
+
+  const dialog = page.locator('#lektor-dialog');
+  const bar = dialog.locator('.diff-bar');
+  const changes = dialog.locator('.review-text .diff-change');
+  const next = dialog.locator('.review-steps').getByRole('button', { name: 'Sledeća' });
+  await expect(bar).toBeVisible({ timeout: 15_000 });
+
+  await dialog.locator('.review-text').click({ position: { x: 5, y: 5 } });
+  await expect(bar).toBeHidden();
+  await changes.nth(2).hover();
+  await page.waitForTimeout(800);
+  await expect(bar).toBeHidden();
+  await next.click();
+  await expect(dialog.locator('.review-steps')).toContainText('Razlika 2 od');
+  await expect(bar).toBeHidden();
+
+  await changes.nth(2).click();
+  await expect(bar).toBeVisible();
+  await bar.getByRole('button', { name: /^Prihvati/ }).click();
+  await expect(bar).toBeHidden();
+  await next.click();
+  await expect(bar).toBeVisible();
 });
 
 test('closes when a new text is started', async ({ page }) => {
