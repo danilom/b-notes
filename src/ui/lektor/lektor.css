@@ -498,9 +498,9 @@ body.lektor-open #lektor-side {
   resize: none;
 }
 
-/* Italic so it reads as an example and not as something already written; not fainter, or he can't read it. */
+/* Italic so it reads as an example and not as something already written, and in the app's own placeholder grey, the same as the search box's. */
 .lektor-note::placeholder {
-  color: var(--quiet);
+  color: var(--hint);
   font-size: var(--lektor-small);
   font-style: italic;
   opacity: 1;
@@ -694,7 +694,7 @@ body.lektor-open #lektor-side {
 
 /* Plain, unlike the italic example in the notes box: this states a fact about the field rather than suggesting what to write. */
 .lektor-key::placeholder {
-  color: var(--quiet);
+  color: var(--hint);
   font-style: normal;
   opacity: 1;
 }
