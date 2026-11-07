@@ -18,7 +18,8 @@ import { createFakeAi } from './lektor-fake-ai.ts';
 import type { FakeBehaviour } from './lektor-fake-setting.ts';
 import { createGeminiAi } from './lektor-gemini-ai.ts';
 import { withHisFilingMarks } from './lektor-instructions.ts';
-import { isSameText, type KeptProposal, readKeptResults, savedCorrections, withCorrections, withEndingOf, writeKeptResults } from './lektor-kept-results.ts';
+import { standingOf } from './lektor-comment-standing.ts';
+import { type KeptProposal, readKeptResults, savedCorrections, withCorrections, withEndingOf, writeKeptResults } from './lektor-kept-results.ts';
 import { PRESET_ORDER, PRESET_PROMPTS } from './lektor-presets.ts';
 import { type LektorFailure, type LektorService, LektorServiceError, type PresetId } from './lektor-service.ts';
 import type { LektorServiceParts } from './lektor-service-call.ts';
@@ -61,6 +62,10 @@ interface TextState {
   proposalsFor: string;
   /** Whether what was kept from an earlier day has been looked for. */
   isKeptRead: boolean;
+  /** Whether the comment was written while the app has been open, rather than read back from an earlier run. */
+  isCommentFromThisRun: boolean;
+  /** Whether he has put corrections in since the comment, which ends what it was for. */
+  hasTakenCorrections: boolean;
   preset: PresetId;
   note: string;
 }
@@ -208,6 +213,8 @@ export function createLektor(parts: LektorParts): Lektor {
       proposals: [],
       proposalsFor: '',
       isKeptRead: false,
+      isCommentFromThisRun: false,
+      hasTakenCorrections: false,
       preset: 'letters',
       note: '',
     };
@@ -357,6 +364,8 @@ export function createLektor(parts: LektorParts): Lektor {
       state.feedback = answer;
       state.readText = text;
       state.readAt = Date.now();
+      state.isCommentFromThisRun = true;
+      state.hasTakenCorrections = false;
       state.readBy = readBy;
       state.isRevealed = false;
       state.screen = 'response';
@@ -669,13 +678,25 @@ export function createLektor(parts: LektorParts): Lektor {
     return box;
   }
 
+  function standingNow(state: TextState): ReturnType<typeof standingOf> {
+    const { readText, isCommentFromThisRun: isFromThisRun, hasTakenCorrections, readAt } = state;
+    return standingOf({ readText, text: editor.value, isFromThisRun, hasTakenCorrections, readAt, now: Date.now() });
+  }
+
+  /**
+   * Only after a big change: one that is always there becomes decoration. A number, because a
+   * sentence that never changes reads as furniture too, and the way to a new one right beside it,
+   * since this is when one is worth a try.
+   */
   function staleNote(state: TextState): HTMLElement | null {
-    if (isSameText(editor.value, state.readText)) return null;
-    // Only says what the comment is about. Offering to do something here would invite sending the text again just to clear it.
+    const standing = standingNow(state);
+    // Also when he chose to look at an outdated one from the first step: it is as far from his text there.
+    if (standing.kind === 'current') return null;
     const note = el('div', 'lektor-stale');
     const said = el('span', 'lektor-stale-said');
-    said.append(icon('info'), el('span', '', words().stale));
-    note.append(said);
+    const count = strings(parts.languageNow()).wordCount(standing.wordsChanged);
+    said.append(icon('info'), el('span', '', words().changedSince(count)));
+    note.append(said, plainButtonRow(words().askForNewComment, () => goTo('start')));
     return note;
   }
 
@@ -952,6 +973,7 @@ export function createLektor(parts: LektorParts): Lektor {
     // Taken, so nothing is left to come back to. The comment was about the text before them, and says so when he next looks.
     state.proposals = [];
     state.proposalsFor = '';
+    state.hasTakenCorrections = true;
     keepResults(parts.textNameNow(), state);
     log.info('Corrections from the Lektor were put in the text');
     finishWithReview(state);
@@ -987,8 +1009,9 @@ export function createLektor(parts: LektorParts): Lektor {
     const state = stateNow();
     await readSettingsOnce();
     await readKeptOnce(state);
-    // Always the same thing to him, never something that depends on how he last left it: what the Lektor said, or, until it has said anything, the step that asks it.
-    if (state.feedback !== '') state.screen = 'response';
+    // Never something that depends on how he last left it: what the Lektor said, or the step that asks it,
+    // when it has said nothing yet or what it said is about a text he has since changed a lot and come back to.
+    if (state.feedback !== '') state.screen = standingNow(state).kind === 'outdated' ? 'start' : 'response';
     state.isOpen = true;
     log.info('Opened the Lektor', { level });
     // A response he already has needs no internet to read.

@@ -116,11 +116,11 @@ test('keeps the old text as a version when corrections go in, and says these are
   await expect(page.locator('#see-versions')).toContainText('(1)');
   expect(requestsToAi).toBe(0);
 
-  // The job is done, so the sidebar goes; opened again after so small a change, the comment is there and says it is about an earlier text.
+  // The job is done, so the sidebar goes; opened again after so small a change, the comment is there and still holds.
   await expect(page.locator('body')).not.toHaveClass(/lektor-open/);
   await page.locator('#lektor-open').click();
   await expect(page.locator('.lektor-response')).toContainText('PROBNI');
-  await expect(page.locator('.lektor-stale')).toBeVisible();
+  await expect(page.locator('.lektor-stale')).toHaveCount(0);
 });
 
 test('does not touch the text when the version cannot be kept', async ({ page }) => {
@@ -191,7 +191,7 @@ test('shows corrections already made instead of sending again, until the request
   await expect(see).toHaveCount(0);
 });
 
-test('once there is a comment, opens on it with only a note after a change, and sends corrections without asking', async ({ page }) => {
+test('says nothing about a small change, and sends corrections without asking', async ({ page }) => {
   await withTestLektor(page, 'ok');
   await writeNewText(page);
   await page.locator('#lektor-open').click();
@@ -204,15 +204,15 @@ test('once there is a comment, opens on it with only a note after a change, and 
 
   await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} Jos.`);
   await page.locator('#lektor-open').click();
-  await expect(page.locator('.lektor-stale')).toHaveText('Ovaj utisak je o ranijoj verziji teksta.');
-  await expect(page.locator('.lektor-stale button')).toHaveCount(0);
+  await expect(page.locator('.lektor-response')).toContainText('PROBNI');
+  await expect(page.locator('.lektor-stale')).toHaveCount(0);
   await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
 
   await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
   await expect(page.getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible({ timeout: 15_000 });
 });
 
-test('opens on the comment however much has changed and however he last left it', async ({ page }) => {
+test('in the same sitting, opens on the comment after a big change, says how big, and offers a new one', async ({ page }) => {
   await withTestLektor(page, 'ok');
   await writeNewText(page);
   await page.locator('#lektor-open').click();
@@ -225,7 +225,7 @@ test('opens on the comment however much has changed and however he last left it'
 
   await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} ${LONG_ENOUGH}`);
   await page.locator('#lektor-open').click();
-  await expect(page.locator('.lektor-stale')).toBeVisible();
+  await expect(page.locator('.lektor-stale')).toContainText(/promenio si oko \d+ reči/);
 
   // Left on the corrections step.
   await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
@@ -233,12 +233,32 @@ test('opens on the comment however much has changed and however he last left it'
   await page.locator('#lektor-open').click();
   await expect(page.locator('.lektor-response')).toContainText('PROBNI');
 
-  // Left on the first step, which is still there to go to.
-  await page.getByRole('button', { name: 'Traži novi utisak' }).click();
+  // Left on the first step, which the note's own button leads to.
+  await page.locator('.lektor-stale').getByRole('button', { name: 'Traži novi utisak' }).click();
   await expect(page.getByRole('button', { name: 'Postojeći AI utisak' })).toBeVisible();
   await page.locator('#lektor-open').click();
   await page.locator('#lektor-open').click();
   await expect(page.locator('.lektor-response')).toContainText('PROBNI');
+});
+
+test('after a big change he comes back to later, opens on the step that asks for a new comment', async ({ page }) => {
+  await withTestLektor(page, 'ok');
+  await writeNewText(page);
+  await page.locator('#lektor-open').click();
+  await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
+  await expect(page.locator('.lektor-response')).toContainText('PROBNI', { timeout: 15_000 });
+  await page.locator('#lektor-open').click();
+  await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} ${LONG_ENOUGH}`);
+  await expect(page.locator('#status-text')).toContainText('Sačuvano');
+
+  // The app closed and opened again.
+  await page.reload();
+  await page.locator('#list .note', { hasText: 'Naslov teksta' }).first().click();
+  await page.locator('#lektor-open').click();
+  await expect(page.getByRole('button', { name: /^Pošalji ceo tekst/ })).toBeVisible();
+  await page.getByRole('button', { name: 'Postojeći AI utisak' }).click();
+  await expect(page.locator('.lektor-response')).toContainText('PROBNI');
+  await expect(page.locator('.lektor-stale')).toContainText(/promenio si oko d+ reči/);
 });
 
 test('says which Lektor wrote the comment and made the corrections, with a mark beside each choice', async ({ page }) => {
