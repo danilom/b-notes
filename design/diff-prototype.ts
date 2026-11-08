@@ -70,8 +70,8 @@ function legend(pieces: readonly TextPiece[]): HTMLElement[] {
   const count = (kind: TextPiece['kind']): number => pieces.filter((piece) => piece.kind === kind).length;
   const items = [
     legendItem(markedSample('diff-gone diff-struck', '', 'reč'), 'tvoj stari tekst'),
-    legendItem(markedSample('diff-new', '', 'reč'), 'predlog'),
-    legendItem(markedSample('diff-own', '', 'reč'), 'tvoja izmena'),
+    legendItem(markedSample('diff-new', '', 'reč'), 'AI predlog'),
+    legendItem(markedSample('diff-own', '', 'reč'), 'tvoja upisana izmena'),
     legendItem(markedSample('diff-tidied', 're', 'č'), 'ispravljeno slovo'),
     legendItem(markedSample('diff-resolved', '', 'reč'), 'izabrano'),
   ];
