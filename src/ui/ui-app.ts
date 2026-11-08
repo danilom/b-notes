@@ -643,10 +643,15 @@ new ResizeObserver(sayWholeIfCut).observe(statusText);
   The Lektor's panel as wide as the list on the other side. The list asks for a width and gives
   some of it up in a narrower window, so no number in a stylesheet stays equal to it: two side
   panels almost but not quite alike look like a mistake. Measured from the list as it is drawn.
+
+  Divided by the CSS zoom the list is under, which the measurement includes and the width set
+  from it would have applied again: the browser build zooms that way, and its Lektor panel came
+  out wider than the list by exactly the zoom. The packaged app zooms the page, where it is 1.
 */
 const listColumn = element('side', HTMLElement);
 new ResizeObserver(() => {
-  document.documentElement.style.setProperty('--side-width', `${listColumn.getBoundingClientRect().width}px`);
+  const width = listColumn.getBoundingClientRect().width / listColumn.currentCSSZoom;
+  document.documentElement.style.setProperty('--side-width', `${width}px`);
 }).observe(listColumn);
 
 
