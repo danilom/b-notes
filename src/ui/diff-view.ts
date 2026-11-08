@@ -355,7 +355,8 @@ function markedPart(drawn: DiffPart): (HTMLElement | string)[] {
  */
 function tidiedPart({ text, was = '', proposed = text, tidyAt = 0, letters = [] }: DiffPart): (HTMLElement | string)[] {
   let slot = -1;
-  return letterSegmentsOf(was, proposed).map((segment) => {
+  const segments = letterSegmentsOf(was, proposed);
+  const parts = segments.map((segment) => {
     if (segment.kind === 'fixed' && segment.put !== true) return segment.text;
 
     const part = document.createElement('span');
@@ -374,6 +375,30 @@ function tidiedPart({ text, was = '', proposed = text, tidyAt = 0, letters = [] 
     part.dataset['choices'] = JSON.stringify(segment.choices);
     return part;
   });
+  markCloseLetters(parts);
+  return parts;
+}
+
+/**
+ * Marks corrected letters with another within one character of them, as in šč or
+ * šiša, on the side it is on. A letter's target is wider than the letter, and two
+ * that close would grow into each other, so that side keeps to the letter.
+ */
+function markCloseLetters(parts: readonly (HTMLElement | string)[]): void {
+  let previous: HTMLElement | null = null;
+  let between = 0;
+  for (const part of parts) {
+    if (!(part instanceof HTMLElement && part.classList.contains('diff-tidied-letter'))) {
+      between += [...(typeof part === 'string' ? part : (part.textContent ?? ''))].length;
+      continue;
+    }
+    if (previous !== null && between <= 1) {
+      previous.classList.add('diff-letter-close-after');
+      part.classList.add('diff-letter-close-before');
+    }
+    previous = part;
+    between = 0;
+  }
 }
 
 /** A proofreader's caret, where something was corrected and left nothing else to show. */

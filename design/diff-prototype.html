@@ -245,8 +245,10 @@
       }
 
       /* With no fill, a darker ground, on a target wider than the words: grown into the
-         space around them, and taken back by a margin, so that no line moves. Letters
-         grow less, so that two of them one letter apart, as in šiša, do not meet. */
+         space around them, and taken back by a margin, so that no line moves. A single
+         letter grows further, being so small a thing to hit, except on a side where
+         another corrected letter is within one character, as in ščepao or šiša: there
+         the two would grow into each other, so that side keeps to the letter. */
       #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) :is(.diff-change, .diff-change-carried):has(.diff-resolved) {
         padding-top: 0.18em;
         padding-inline: 0.25em;
@@ -261,9 +263,20 @@
       }
 
       #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) .diff-tidied-letter {
-        padding: 0.18em 0.1em;
-        margin: 0 -0.1em;
+        --letter-reach: 0.3em;
+        padding: 0.18em var(--letter-reach);
+        margin: 0 calc(-1 * var(--letter-reach));
         border-radius: 2px;
+      }
+
+      #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) .diff-letter-close-before {
+        padding-left: 0;
+        margin-left: 0;
+      }
+
+      #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) .diff-letter-close-after {
+        padding-right: 0;
+        margin-right: 0;
       }
 
       #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) :is(.diff-change, .diff-change-carried):has(.diff-resolved):hover,
@@ -493,7 +506,7 @@
           <label class="prototype-pick">
             <span>Olovka</span>
             <select id="pencil">
-              <option value="button" selected>Na dugmetu Izmeni</option>
+              <option value="button" selected>Na dugmetu Izmeni (izabrano)</option>
               <option value="box">U plavom polju</option>
               <option value="none">Bez olovke</option>
             </select>

@@ -129,6 +129,8 @@ const EVERY_CASE: DiffSample = {
     'Kuca na kraju sela stajala je prazna godinama. Prozori su uvijek bili čisti i niko nije znao ko ih pere.',
     // Only added: words at the end of a sentence.
     'Djeca su prolazila pored nje svakog jutra.',
+    // Two corrected letters side by side, and two one letter apart, whose targets must not meet.
+    'Jednom je pas scepao dijete za rukav, a otac ga je istog dana sisao.',
     // Only removed: words in the middle of a sentence.
     'Stari Marko je tvrdio, onako kako je on to umio, da tamo noću gori svijeća.',
     // A whole sentence written anew.
@@ -152,6 +154,7 @@ const EVERY_CASE: DiffSample = {
     'Kuća na samom kraju sela',
     'Kuća na kraju sela stajala je prazna godinama. Prozori su uvijek bili čisti, i niko nije znao ko ih održava.',
     'Djeca su prolazila pored nje svakog jutra, ne gledajući u dvorište.',
+    'Jednom je pas ščepao dijete za rukav, a otac ga je istog dana šišao.',
     'Stari Marko je tvrdio da tamo noću gori svijeća.',
     'Selo ga je slušalo s osmijehom, jer je dobro poznavalo njegovu ljubav prema pričama ljepšim od istine.',
     'Jedne zime vrata su se otvorila. Na pragu je stajala žena u crnom kaputu.',
