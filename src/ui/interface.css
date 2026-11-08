@@ -231,7 +231,9 @@
   --l-chosen-soft: 31%;
   --l-found: 38%;
   --l-on-chosen: 10%;
-  --diff-new-fill: hsl(142 60% 68%);
+  /* As bright as the blue beside it: at 68% green's luminance was half again the red's,
+     and it stood out from the other two as no part of the meaning. */
+  --diff-new-fill: hsl(142 50% 58%);
   --diff-new-ink: hsl(0 0% 5%);
   --diff-gone-fill: hsl(4 75% 72%);
   --diff-gone-ink: hsl(0 0% 5%);
