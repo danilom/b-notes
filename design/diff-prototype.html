@@ -262,6 +262,13 @@
         padding-bottom: 0.18em;
       }
 
+      /* And is no wider than its words, since its dashed line runs the whole width and
+         stuck out past them. It is already the one in hand, and needs no bigger target. */
+      #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) :is(.diff-change, .diff-change-carried):has(.diff-resolved).diff-current {
+        padding-inline: 0;
+        margin-inline: 0;
+      }
+
       #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) .diff-tidied-letter {
         --letter-reach: 0.3em;
         padding: 0.18em var(--letter-reach);
