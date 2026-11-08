@@ -24,6 +24,7 @@ const ownLook = element('own-look', HTMLSelectElement);
 const chosenLook = element('chosen-look', HTMLSelectElement);
 const choiceWords = element('choice-words', HTMLSelectElement);
 const dots = element('dots', HTMLInputElement);
+const preamble = element('preamble', HTMLInputElement);
 const view = element('view', HTMLElement);
 
 /** The bar's choices named for what each one is, rather than for what it does. */
@@ -59,8 +60,10 @@ function render(): void {
   const column = document.createElement('div');
   // The Lektor's own, so that its rules for the review apply here as there.
   column.className = 'review-body lektor-body';
-  column.append(aside('Precrtano je trenutni tekst, zeleno je predlog.'));
-  if (hasTidying && tidying.value !== 'full') column.append(aside(tidyingNote(pieces)));
+  if (preamble.checked) {
+    column.append(aside('Precrtano je trenutni tekst, zeleno je predlog.'));
+    if (hasTidying && tidying.value !== 'full') column.append(aside(tidyingNote(pieces)));
+  }
   column.append(
     createTextDiffView(
       review.piecesNow(),
@@ -139,6 +142,21 @@ const showLooks = (): void => {
 for (const control of [hover, ownLook, chosenLook, dots]) control.addEventListener('change', showLooks);
 showLooks();
 choiceWords.addEventListener('change', renderKeepingPlace);
+
+const PREAMBLE_KEY = 'diff-prototype:preamble';
+try {
+  preamble.checked = localStorage.getItem(PREAMBLE_KEY) !== 'off';
+} catch (error) {
+  console.warn('Whether to show the lines above the text could not be read back', error);
+}
+preamble.addEventListener('change', () => {
+  try {
+    localStorage.setItem(PREAMBLE_KEY, preamble.checked ? 'on' : 'off');
+  } catch (error) {
+    console.warn('Whether to show the lines above the text could not be remembered', error);
+  }
+  renderKeepingPlace();
+});
 
 element('swap', HTMLButtonElement).addEventListener('click', () => {
   [current.value, proposed.value] = [proposed.value, current.value];
