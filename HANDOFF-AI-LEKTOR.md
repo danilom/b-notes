@@ -43,10 +43,11 @@ All three are on GitHub (pushed 2026-11-08).
 |---|---|---|
 | `main` | v1, and the release safeguards since | what to start other work from |
 | `ai-lektor` | the AI Lektor, built on `main` | ~225 commits, not merged |
-| `rewrite-review` | the review redesign, on `ai-lektor` | this file is here; continue on it |
+| `rewrite-review` | the review redesign, on `ai-lektor` | first round of the redesign |
+| `change-choices` | the review's choices, its look, and Ranije verzije, on `rewrite-review` | continue on this one; not pushed |
 
-Merge order when ready: `rewrite-review` into `ai-lektor`, then `ai-lektor`
-into `main`, when Danilo says so. The Lektor shows a button in the status strip,
+Merge order when ready: `change-choices` into `rewrite-review`, that into
+`ai-lektor`, then `ai-lektor` into `main`, when Danilo says so. The Lektor shows a button in the status strip,
 so merging it into `main` makes `main` no longer releasable as v1 + fixes.
 Hotfixes for v1 can branch from the `v0.8.4` tag.
 
@@ -114,7 +115,8 @@ Still open on `ai-lektor`, not started:
 ## The review redesign (`rewrite-review`)
 
 A Dubinska prerada changes about 40% of a text, and the red-and-green view
-became unreadable. Done and committed:
+became unreadable. Done and committed (the checkbox, the bar and the line were
+reworked again on `change-choices`, below):
 
 - **"Prikaži samo novi tekst"**: a checkbox in the corrections window, on for
   Dubinska and off for the other kinds, every time. Ticked, undecided changes
@@ -135,43 +137,63 @@ became unreadable. Done and committed:
 **The prototype** (`design/diff-prototype.html`, served at
 `localhost:5173/diff-prototype` by `npm run ui`) runs the real review on
 samples. It opens on **"Svi slučajevi"**, an invented text with every kind of
-change once. It has "Samo novi tekst", "Samo za čitanje" (the diff without the
-bar, as Ranije verzije could use it), and six hover styles.
+change once, ending with "ščepao"/"šišao" (letters close together) and one long
+rewritten paragraph. The looks tried there and chosen are the app's own now;
+the ones not chosen are in git history.
 
-## Decided, not built
+## The review's choices and look (`change-choices`)
 
-In this order:
+Decided with Danilo on 2026-11-08 in the prototype, then moved into the app.
 
-1. **The bar redesign.** Agreed 2026-11-08, try it in the prototype first:
-   - Clicking any change opens it. "Vidi predlog" and "Vrati predlog" go:
-     the first is now just the click, the second looked like it but was destructive.
-   - An undecided change opens as old text (red, struck out) and the AI's text
-     (green), with **Vrati staro · Prihvati · Izmeni · ×**. Undecided means the
-     AI's suggestion, which is what goes in if he does nothing.
-   - "Izmeni" starts from the AI's text, as today. Any of the three makes it decided, shown in green.
-   - A decided change, clicked, shows every candidate side by side: old, AI's,
-     and his own wording if he wrote some, with each one not in effect struck
-     out. Same three buttons.
-   - From there, "Vrati staro" or "Prihvati" switch to that one and **clear his
-     own wording**; "Izmeni" edits his wording again, then it is green.
-   - In "Samo novi tekst", an undecided change clicked opens as an undecided one.
-2. **Hover option 6 into the app** (chosen): the buttons' darkening wash over
-   red and green boxes, a darker background and a bigger target for text
-   without a box, and the current change's dashed line under the change pointed
-   at, in its own colours (red under red, green under green). Not under single
-   coloured letters, which have their own underline. The CSS is in the
-   prototype; the app still shows a plain outline. In the app, the line should
-   also cover a change's pieces in other paragraphs, as the current change's does.
-3. **Line thickness,** an open question: 3px renders unevenly at Windows scaling
-   (5.25 real pixels at 175%, 4.5 at his 150%). 2px for both lines would be
-   exact on his screen.
-4. **Run the whole browser suite again** after the bar redesign, before merging.
-   As this note was written, `rewrite-review` passed all of it (83 tests, 5.7 min)
-   and the unit suite (1154).
+**What a change is now.** Every change always has a wording in effect: the AI's,
+unless he picks another. Nothing is "undecided". A change is either *open*,
+showing its wordings side by side (red old text, green AI predlog, blue his own
+wording if he typed one), all but the one in effect struck out, or *collapsed*
+to the one in effect, in bold green ("biće uneto").
+
+- **The bar** over an open change: **Vrati staro · Prihvati · Izmeni ✎ · ×**,
+  radio-like: a square sign at each button's left edge, filled in the one in
+  effect, the words centred in the rest. Picking one collapses the change.
+  "(∅)" on a side that is nothing. Buttons share a minimum width; × is small
+  and square. The bar over a corrected letter has × too.
+- **His own wording is never cleared** by picking another; it stays, struck
+  out, one click away. Izmeni (or clicking his blue words while the bar is up)
+  edits it, starting from his wording if he has one, else from what is in
+  effect. Typing out exactly the old text or the proposal picks that one.
+- **Clicking a collapsed change opens it.** The bar shows only over an open
+  change, never over a collapsed one stepped to.
+- **"Prikaži tekst kakav će biti"** (was "Prikaži samo novi tekst") sets how
+  the changes he has *not* touched are shown: ticked collapsed, unticked open.
+  A change he opened or collapsed himself keeps what he last did.
+- **Choosing is animated**: the others fade, then a copy of the chosen box
+  glides to where its words land and cross-fades into the green word. Words on
+  several lines, and his own typing, just fade in. None of it under "reduce
+  motion". A step with Sledeća during the fade is not undone.
+- **Look:** green for collapsed (accepted is a fair thing to imply; red stays
+  the teacher's pen for letters). His own wording is a fixed blue box, not the
+  accent. The current change has a black dotted line (square dots) under it and
+  a **black arrow in the margin** beside its first line; the paragraph bar and
+  frame are gone. Under the pointer, a dotted line in the colour of what it is
+  under, no darkening; collapsed changes and single letters have wider targets
+  (a letter keeps to itself towards another corrected letter within one
+  character). The stepper lost its icon.
+- **Legend** above the text, in the small interface type, upright, each mark
+  drawn on the sample word "reč": *tvoj stari tekst · AI predlog · tvoja
+  izmena · biće uneto · sitne popravke*, with the counts on the line under it.
+  `src/ui/diff-legend.ts`.
+- **Ranije verzije** now uses the same view, read-only (no bar): red struck is
+  what the copy had that his text has lost, green what his text has now, with
+  its own legend (*bilo u ovoj verziji · sada u tekstu · sitne razlike*). The
+  stepper there still shows only over a copy too long to see whole. The old
+  paragraph-by-paragraph view (labelled blocks, shortened paragraphs) is gone.
+
+Decided against: splitting long changes; making the letter bar heavier; any
+change to line thickness (fine as is).
 
 Small things known:
-- The prototype's own "Sitne popravke: N" line counts before merging; the app counts after.
+- The prototype counts small fixes before merging, as the app does now.
 - On a narrow window the first bar can sit under the title line, when it doesn't fit beside the stepper.
+- Not yet looked at on his screen sizes (`/his-screens`) or at the warmest Night Light.
 
 ## Where things live
 
@@ -184,6 +206,8 @@ Small things known:
 | Wording | `src/language/lektor-wording.ts` |
 | The diff | `src/notes/text-diff.ts`, `text-review.ts` |
 | The review view, its state, the bar | `src/ui/diff-view.ts`, `diff-review.ts`, `diff-change-bar.ts` |
+| The legend above a comparison | `src/ui/diff-legend.ts` |
+| Ranije verzije | `src/ui/versions/versions-dialog.ts` |
 | Styles | `src/ui/interface.css` (review), `src/ui/lektor/lektor.css` (panel) |
-| Tests | `test/` (unit), `test-gui/lektor.spec.ts` (browser) |
+| Tests | `test/` (unit), `test-gui/lektor.spec.ts` and `versions.spec.ts` (browser) |
 | His screens, scaled | `localhost:5173/his-screens#asus` |
