@@ -330,21 +330,27 @@ function movingSpacesOutOf(change: HTMLElement): void {
 }
 
 /**
- * A change he has dealt with: just its text, in quiet colour. With none left, an
- * empty dotted box, so it can be found again; a single character, heavier, because
- * a lone green comma is otherwise lost.
+ * A change collapsed to the wording chosen: just its text, in quiet colour, with the
+ * spaces at its ends left outside, as an open one's are, so that what marks it as
+ * current stops at its last letter. With no text, the drawn ∅, so it can be found
+ * again; a single character, heavier, because a lone green comma is otherwise lost.
  */
-function resolvedPart(text: string): HTMLElement {
+function resolvedPart(text: string): (HTMLElement | string)[] {
   const part = document.createElement('span');
   part.className = 'diff-resolved';
-  part.textContent = text;
-  if (text === '') part.classList.add('diff-resolved-empty');
-  else if ([...text.trim()].length === 1) part.classList.add('diff-resolved-small');
-  return part;
+  if (text === '') {
+    part.classList.add('diff-resolved-empty');
+    return [part];
+  }
+  const words = text.trim();
+  const start = text.indexOf(words);
+  part.textContent = words;
+  if ([...words].length === 1) part.classList.add('diff-resolved-small');
+  return [text.slice(0, start), part, text.slice(start + words.length)].filter((node) => node !== '');
 }
 
 function markedPart(drawn: DiffPart): (HTMLElement | string)[] {
-  if (drawn.kind === 'resolved') return [resolvedPart(drawn.text)];
+  if (drawn.kind === 'resolved') return resolvedPart(drawn.text);
   return /\S/.test(drawn.text) ? wordsPart(drawn) : [spacingPart(drawn)];
 }
 
