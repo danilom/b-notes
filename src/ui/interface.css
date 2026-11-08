@@ -95,10 +95,11 @@
 
      The three at one lightness and one chroma in OKLCH, differing only in hue, as in
      the dark mode. Set in HSL, the green was darker and duller than the other two, and
-     looked heavy beside them and hardly lit up on the bar. */
+     looked heavy beside them and hardly lit up on the bar. The red a little more
+     colourful than the others: at their chroma it looked dull. */
   --diff-new-fill: oklch(0.46 0.13 150);
   --diff-new-ink: hsl(0 0% 100%);
-  --diff-gone-fill: oklch(0.46 0.13 29);
+  --diff-gone-fill: oklch(0.46 0.155 29);
   --diff-gone-ink: hsl(0 0% 100%);
   /* His own wording: a deep blue, which held its own beside the red and the green on a
      warm screen when tried. Fixed, and not the accent: that is his to change, and this
@@ -2916,6 +2917,14 @@ dialog::backdrop {
 .diff-bar .diff-bar-choice:hover,
 .diff-bar .diff-bar-chosen {
   --choice-shown: var(--choice-fill);
+}
+
+/* Lighting up is the whole of what the pointer does here. The grey wash and border every
+   other button takes under the pointer muddied the colour lit, and on the choice already
+   in effect, with nothing left to light up, were all that changed. */
+.diff-bar .diff-bar-choice:hover:not(:disabled) {
+  border-color: var(--choice-shown);
+  background-image: none;
 }
 
 /* After Izmeni: the one choice that also opens a place to type. In the button's own
