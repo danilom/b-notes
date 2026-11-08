@@ -91,15 +91,19 @@
      find, one comma in a long paragraph, and he is an old man on a warm screen.
      A pale fill disappears there. Dark against the page does not, whatever the
      hue arrives as, and this is a screen he visits rather than works on, so
-     nothing here is trying to be restful. */
-  --diff-new-fill: hsl(142 80% 18%);
+     nothing here is trying to be restful.
+
+     The three at one lightness and one chroma in OKLCH, differing only in hue, as in
+     the dark mode. Set in HSL, the green was darker and duller than the other two, and
+     looked heavy beside them and hardly lit up on the bar. */
+  --diff-new-fill: oklch(0.46 0.13 150);
   --diff-new-ink: hsl(0 0% 100%);
-  --diff-gone-fill: hsl(4 75% 36%);
+  --diff-gone-fill: oklch(0.46 0.13 29);
   --diff-gone-ink: hsl(0 0% 100%);
   /* His own wording: a deep blue, which held its own beside the red and the green on a
      warm screen when tried. Fixed, and not the accent: that is his to change, and this
      has to stay what it is beside the other two. */
-  --diff-own-fill: hsl(215 80% 38%);
+  --diff-own-fill: oklch(0.46 0.13 258);
   --diff-own-ink: hsl(0 0% 100%);
   /* A small correction: the red of a teacher's pen, which also keeps its colour
      on a warm screen, where a blue or a green turns as dark as the text. It does
