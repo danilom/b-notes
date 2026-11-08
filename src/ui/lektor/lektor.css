@@ -701,14 +701,6 @@ body.lektor-open #lektor-side {
 .lektor-about-row > .review-note-aside {
   flex: 1 1 20rem;
 }
-
-/* Flush with the box's edge, as the line naming the service above them is and the
-   checkbox is on the right. Indented, they lined up with nothing: the text inside the
-   box starts further in, past the margin the current change's mark sits in. */
-.lektor-body .review-note-aside {
-  padding-left: 0;
-}
-
 .lektor-only-new {
   display: inline-flex;
   align-items: center;

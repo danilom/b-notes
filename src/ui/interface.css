@@ -3267,11 +3267,13 @@ dialog::backdrop {
   font-weight: 600;
 }
 
-/* Indented to where the writing starts, not to the edge of the box it
-   sits over: it is a line about the text, so it lines up with the text. */
 /*
   The quiet lines above a box: what it is, when it was taken, what is not
   in it.
+
+  Flush with the box's edge. They were once indented to where the writing
+  starts, but the writing has since moved further in, past the margin the
+  current change's mark sits in, and the indent lined up with nothing.
 
   They name a font because they sit inside .review-body, which is set in
   his writing face — and these are the app talking, not him. The face is
@@ -3279,7 +3281,6 @@ dialog::backdrop {
 */
 .review-note-aside {
   margin: 0 0 0.45rem;
-  padding-left: 1.5rem;
   color: var(--quiet);
   font-family: var(--ui-font);
   font-size: calc(var(--ui-size) * 0.85);
