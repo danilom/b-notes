@@ -300,7 +300,7 @@ test('shows a Dubinska prerada as the new text alone, opens a change on a click,
   await page.getByLabel('Dubinska prerada').check();
   await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
   const dialog = page.locator('#lektor-dialog');
-  const onlyNew = dialog.getByLabel('Prikaži samo novi tekst');
+  const onlyNew = dialog.getByLabel('Prikaži tekst kakav će biti');
   await expect(onlyNew).toBeChecked({ timeout: 15_000 });
   await expect(dialog.locator('.lektor-service-line')).toContainText(/^Dubinska prerada · /);
   await expect(dialog.locator('.review-text .diff-resolved').first()).toBeVisible();
