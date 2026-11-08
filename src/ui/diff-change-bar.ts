@@ -34,15 +34,8 @@ export interface ChangeSettling {
   startedAt?: ScreenPoint;
 }
 
-/** What the three choices are called on the bar. */
-export interface ChoiceWords {
-  old: string;
-  proposed: string;
-  own: string;
-}
-
 /** Said as what each does, which is how every other button he knows speaks. */
-const CHOICE_WORDS: ChoiceWords = { old: 'Vrati staro', proposed: 'Prihvati', own: 'Izmeni' };
+const CHOICE_WORDS = { old: 'Vrati staro', proposed: 'Prihvati', own: 'Izmeni' } as const;
 
 /** What the reviewer of a proposal can do to it, from the bar above each change. */
 export interface DiffEditing {
@@ -63,8 +56,6 @@ export interface DiffEditing {
   onOpen: (changeAt: number) => void;
   /** The wording an edit of this change starts from. */
   wordingOf: (changeAt: number) => string;
-  /** What the choices are called, where something other than the usual is being tried. */
-  choiceWords?: ChoiceWords;
   onEdit: (changeAt: number, text: string) => void;
   /** Called when an edit is backed out of, so that what it disturbed can be drawn again. */
   onCancelEdit: () => void;
@@ -246,7 +237,7 @@ export function createDiffChangeBar(
 
   function fillForChange(change: HTMLElement): void {
     const at = changes.indexOf(change);
-    const words = editing.choiceWords ?? CHOICE_WORDS;
+    const words = CHOICE_WORDS;
     const { chosen, hasOld, hasProposed } = editing.choiceOf(at);
     // The side that is nothing says so, in the sign he writes it with.
     const nothing = (has: boolean): string => (has ? '' : ' (∅)');
@@ -341,6 +332,8 @@ export function createDiffChangeBar(
           ),
         ];
       }),
+      // As the bar over a change has: a click anywhere else does the same, but this one is seen.
+      closeButton(),
     );
   }
 

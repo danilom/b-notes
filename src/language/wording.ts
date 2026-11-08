@@ -326,6 +326,8 @@ const TEXT = {
       pane's own Prethodni/Sledeci are counting something else.
     */
     changeAt: (at: number, total: number) => `Razlika ${at} od ${total}`,
+    /** The word each mark is shown on, above a comparison, so that it looks as in the text. */
+    legendSample: 'reč',
     changePrevious: 'Prethodna',
     changeNext: 'Sledeća',
     versionRestore: 'Vrati tekst na ovu verziju',
@@ -558,6 +560,7 @@ const TEXT = {
     versionsAllSame: 'Every copy kept is the same as the active text.',
     versionsUnreadable: 'The earlier versions cannot be opened just now.',
     changeAt: (at: number, total: number) => `Difference ${at} of ${total}`,
+    legendSample: 'word',
     changePrevious: 'Previous',
     changeNext: 'Next',
     versionRestore: 'Take the text back to this version',

@@ -5,6 +5,7 @@ import { titleOf } from '../dialogs/dialog-heading.ts';
 import { showAsModal } from '../dialogs/modal.ts';
 import { icon } from '../icons.ts';
 import { burstFrom } from './lektor-confetti.ts';
+import { createDiffLegend } from '../diff-legend.ts';
 import { createDiffReview } from '../diff-review.ts';
 import { createTextDiffView } from '../diff-view.ts';
 
@@ -113,19 +114,35 @@ export function openLektorDialog(
     return [...made];
   }
 
+  /** What each mark below means, drawn as it is there. */
+  function legend(): HTMLElement {
+    const { old, proposed, own, goesIn, small: smallFixes } = said.legend;
+    return createDiffLegend(
+      [
+        { sample: 'old', said: old },
+        { sample: 'proposed', said: proposed },
+        { sample: 'own', said: own },
+        { sample: 'goes-in', said: goesIn },
+        { sample: 'small', said: smallFixes },
+      ],
+      words.legendSample,
+    );
+  }
+
   function viewOfDiff(): HTMLElement {
     const column = document.createElement('div');
     column.className = 'review-body lektor-body';
 
     const about = document.createElement('p');
-    about.className = 'review-note-aside';
-    about.textContent = review.showsOnlyNew() ? said.countsOnlyNew(large, small) : said.counts(large, small);
+    about.className = 'review-note-aside diff-legend-counts';
+    about.textContent = said.counts(large, small);
 
     const aboutRow = document.createElement('div');
     aboutRow.className = 'lektor-about-row';
     aboutRow.append(about, ...(large > 0 ? [onlyNewChoice()] : []));
 
     column.append(
+      legend(),
       aboutRow,
       createTextDiffView(
         review.piecesNow(),

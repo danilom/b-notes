@@ -125,8 +125,6 @@
      not read as a removal, which is a white word struck through on a red block. */
   --diff-tidied-ink: hsl(4 85% 42%);
   --diff-resolved-ink: hsl(142 75% 25%);
-  --diff-current-fill: rgb(0 0 0 / 0.035);
-  --diff-current-seen: rgb(0 0 0 / 0.088);
   --l-thumb: 82%;
   --l-thumb-hover: 68%;
   --l-track-hover: 93%;
@@ -273,8 +271,6 @@
   --diff-own-ink: hsl(0 0% 5%);
   --diff-tidied-ink: hsl(4 90% 72%);
   --diff-resolved-ink: hsl(142 55% 66%);
-  --diff-current-fill: rgb(255 255 255 / 0.03);
-  --diff-current-seen: rgb(255 255 255 / 0.098);
   --l-thumb: 34%;
   --l-thumb-hover: 48%;
   --l-track-hover: 26%;
@@ -2683,19 +2679,145 @@ dialog::backdrop {
 }
 
 /* Each change answers a click, and says so under the pointer: a look, never a popup. */
-.lektor-body .review-text :is(.diff-change, .diff-change-carried, .diff-tidied-letter) {
+.diff-framed .review-text :is(.diff-change, .diff-change-carried, .diff-tidied-letter) {
   cursor: pointer;
 }
 
-.lektor-body .review-text :is(.diff-change, .diff-change-carried, .diff-tidied-letter):hover {
-  outline: 2px solid var(--quiet);
-  outline-offset: 1px;
+/* His own wording, while the bar is up over it, is clicked to type over: the pointer says so. */
+.diff-framed .review-text .diff-bar-over .diff-own {
+  cursor: text;
+}
+
+/*
+  A target wider than the words, for a hand that is not steady: grown into the space
+  around them, and taken back by a margin, so that no line moves. Collapsed changes
+  only, which have no box to grow; the current one keeps to its words, since its
+  dotted line runs its whole width. A single letter grows further, being so small a
+  thing to hit, except on a side where another corrected letter is within one
+  character, as in ščepao or šiša, where the two would grow into each other.
+*/
+.diff-framed :is(.diff-change, .diff-change-carried):has(.diff-resolved) {
+  padding-top: 0.18em;
+  padding-inline: 0.25em;
+  margin: 0 -0.25em;
+  border-radius: 3px;
+  box-decoration-break: clone;
+}
+
+.diff-framed :is(.diff-change, .diff-change-carried):has(.diff-resolved):not(.diff-current) {
+  padding-bottom: 0.18em;
+}
+
+.diff-framed :is(.diff-change, .diff-change-carried):has(.diff-resolved).diff-current {
+  padding-inline: 0;
+  margin-inline: 0;
+}
+
+.diff-framed .diff-tidied-letter {
+  --letter-reach: 0.3em;
+  padding: 0.18em var(--letter-reach);
+  margin: 0 calc(-1 * var(--letter-reach));
   border-radius: 2px;
 }
 
-/* His own wording, while the bar is up over it, is clicked to type over: the pointer says so. */
-.lektor-body .review-text .diff-bar-over .diff-own {
-  cursor: text;
+.diff-framed .diff-letter-close-before {
+  padding-left: 0;
+  margin-left: 0;
+}
+
+.diff-framed .diff-letter-close-after {
+  padding-right: 0;
+  margin-right: 0;
+}
+
+/* A letter has no dotted line under the pointer, its own underline being there always,
+   so a darker ground is how it answers. */
+.diff-framed .diff-tidied-letter:hover {
+  background-color: var(--wash-firm);
+}
+
+/*
+  The dotted line, under the current change in ink and under the one pointed at in the
+  colour of what it is under. Square dots as tall as the line. Declared on each element
+  that draws one, so that the colour in it is that element's own.
+*/
+.diff-framed :is(.diff-current, .diff-change, .diff-change-carried, .diff-new, .diff-gone, .diff-own) {
+  --line: linear-gradient(90deg, var(--line-colour) 0 50%, transparent 50%);
+  --line-tile: 6px;
+}
+
+/*
+  Under the pointer, the dotted line in the colour of what it is under: green under green
+  text, and under a replacement red under the red and green under the green. Not darker:
+  that was too faint to tell. Under a box the line is drawn by the box itself: its fill
+  is redrawn to stop short of the line, and the struck line through red is moved up by
+  what was added below, so it stays where it was. Not under the current change, which has
+  its own.
+*/
+.diff-framed {
+  --hover-gap: 2px;
+  --hover-line: 3px;
+  --hover-room: calc(var(--hover-gap) + var(--hover-line));
+}
+
+.diff-framed :is(.diff-change, .diff-change-carried):has(.diff-resolved):hover:not(.diff-current) {
+  --line-colour: var(--diff-resolved-ink);
+  padding-bottom: calc(0.05em + var(--hover-room));
+  background-image: var(--line);
+  background-position: left bottom;
+  background-repeat: round no-repeat;
+  background-size: var(--line-tile) var(--hover-line);
+}
+
+.diff-framed :is(.diff-change, .diff-change-carried):hover:not(.diff-current) :is(.diff-new, .diff-gone, .diff-own) {
+  --line-colour: var(--candidate-fill);
+  padding-bottom: calc(0.05em + var(--hover-room));
+  background-color: transparent;
+  background-image:
+    var(--line),
+    linear-gradient(var(--candidate-fill), var(--candidate-fill));
+  background-position: left bottom, left top;
+  background-repeat: round no-repeat, no-repeat;
+  background-size:
+    var(--line-tile) var(--hover-line),
+    100% calc(100% - var(--hover-room));
+}
+
+.diff-framed :is(.diff-change, .diff-change-carried):hover:not(.diff-current) .diff-struck {
+  background-image:
+    var(--line),
+    linear-gradient(var(--candidate-ink), var(--candidate-ink)),
+    linear-gradient(var(--candidate-fill), var(--candidate-fill));
+  /* The struck line at 58% of the box it had, which is now taller by the room below. */
+  background-position: left bottom, 50% calc(58% - 0.58 * var(--hover-room)), left top;
+  background-repeat: round no-repeat, no-repeat, no-repeat;
+  background-size:
+    var(--line-tile) var(--hover-line),
+    calc(100% - 4px) var(--strike),
+    100% calc(100% - var(--hover-room));
+}
+
+/*
+  Where the current change is, for finding it before reading anything: an arrow in the
+  margin beside its first line, its point a little short of the text. Placed by
+  `diff-view.ts`, in the box that scrolls, so that it moves with the text.
+*/
+.diff-framed .review-text {
+  position: relative;
+}
+
+.diff-current-mark {
+  position: absolute;
+  width: 0.95em;
+  height: 0.75em;
+  background: var(--ink);
+  clip-path: polygon(0 32%, 55% 32%, 55% 0, 100% 50%, 55% 100%, 55% 68%, 0 68%);
+  transform: translate(calc(-100% - var(--run-inset)), -50%);
+  pointer-events: none;
+}
+
+.diff-current-mark[hidden] {
+  display: none;
 }
 
 /* One paragraph of the whole-text diff. */
@@ -2705,24 +2827,6 @@ dialog::backdrop {
 
 .diff-paragraph:last-child {
   margin-bottom: 0;
-}
-
-/*
-  The bar in the margin, for finding where to look before reading anything.
-  Out by its own width and inset, so the paragraph's text stays on the same left
-  margin as the unmarked ones around it.
-*/
-.diff-paragraph-changed,
-.diff-paragraph-current {
-  --bar: 8px;
-  margin-left: calc(-1 * (var(--run-inset) + var(--bar)));
-  padding-left: var(--run-inset);
-}
-
-.diff-paragraph-changed {
-  border-left: var(--bar) solid var(--hint);
-  /* A click makes it the current one. */
-  cursor: pointer;
 }
 
 /* A change he has dealt with: still different, but no longer asking for anything. */
@@ -2877,8 +2981,18 @@ dialog::backdrop {
   white-space: nowrap;
 }
 
+/* Square, and smaller than the choices: a way out, not one more answer. */
 .diff-bar .stepper-close {
+  align-self: center;
+  justify-content: center;
   min-width: 0;
+  aspect-ratio: 1;
+  padding: 0.3rem;
+}
+
+.diff-bar .stepper-close svg {
+  width: 12px;
+  height: 12px;
 }
 
 /* Each choice in the colour of the wording it is for. A little faint until the
@@ -2886,10 +3000,23 @@ dialog::backdrop {
    too strong in colour to do it that way; the one in effect at full strength. */
 .diff-bar .diff-bar-choice {
   gap: 0.4em;
+  /* The sign at the left edge, as far from it as from the top and the bottom: the
+     button's padding above, and half of what the line has to spare beyond the sign. */
+  justify-content: flex-start;
+  padding-left: calc(0.25rem + (1lh - 1em) / 2);
   border-color: var(--choice-fill);
   background: var(--choice-fill);
   color: var(--choice-ink);
   opacity: 0.8;
+}
+
+/* The words centred in what is left beside the sign, between two equal free spaces: the
+   sign's right margin, and an empty ::after at the end that reaches back over the
+   button's right padding (::before is each stepper button's widened target, and taken). */
+.diff-bar .diff-bar-choice::after {
+  content: '';
+  margin-left: auto;
+  margin-right: -0.5rem;
 }
 
 .diff-bar .diff-bar-old {
@@ -2922,14 +3049,16 @@ dialog::backdrop {
   color: inherit;
 }
 
-/* A radio's dot, drawn: a ring, filled for the choice in effect. */
+/* A radio's sign, made square: a square ring, and for the choice in effect a solid
+   square in it, with a gap of the button's colour round it. */
 .diff-bar-dot {
   flex: none;
   box-sizing: border-box;
-  width: 0.85em;
-  height: 0.85em;
+  width: 1em;
+  height: 1em;
+  margin-right: auto;
   border: 2px solid currentColor;
-  border-radius: 50%;
+  border-radius: 3px;
 }
 
 .diff-bar-chosen .diff-bar-dot {
@@ -3001,24 +3130,24 @@ dialog::backdrop {
   font-family: var(--ui-font);
 }
 
-/* The change the stepper is on: one dashed line in the text's own ink under all
+/* The change the stepper is on: one dotted line in the text's own ink under all
    of it, not the accent, which clashes with the red and green and can be green
    itself. A small gap above, because it would otherwise read as one thicker mark.
    Painted in the padding of what holds the change; padding on
-   inline text moves no lines. Each tile is a dash and then its gap, and `round`
-   fits a whole number of them, so the line begins on a dash under the first
-   letter, where a gap there read as the line starting late; it ends a gap short
-   of the last. */
+   inline text moves no lines. Each tile is a dot and then its gap, and `round`
+   fits a whole number of them, so the line begins on a dot under the first
+   letter, where a gap there read as the line starting late. */
 .diff-current {
   --underline: 3px;
   --parting: 2px;
   /* Below the marks inside, which themselves reach a little below the text. */
   --marks-reach: 0.05em;
+  --line-colour: var(--ink);
   padding-bottom: calc(var(--marks-reach) + var(--parting) + var(--underline));
-  background-image: linear-gradient(90deg, var(--ink) 0 66.7%, transparent 66.7%);
+  background-image: var(--line, linear-gradient(90deg, var(--ink) 0 50%, transparent 50%));
   background-position: left bottom;
   background-repeat: round no-repeat;
-  background-size: 12px var(--underline);
+  background-size: var(--line-tile, 6px) var(--underline);
   box-decoration-break: clone;
 }
 
@@ -3032,41 +3161,26 @@ dialog::backdrop {
   --marks-reach: 0.09em;
 }
 
-/*
-  Framed rather than tinted, which a warm screen would take away. A border and
-  not an outline, so that the bar is one side of the frame and meets the other
-  two. Everything the frame adds is taken back out of the margins, so the lines
-  of his text do not move when the stepper arrives at them.
-*/
-.diff-paragraph-current {
-  --frame: 2px;
-  --frame-room: 0.3em;
-  margin-top: calc(-1 * (var(--frame) + var(--frame-room)));
-  margin-right: calc(-1 * (var(--frame) + var(--frame-room)));
-  margin-bottom: calc(1em - var(--frame) - var(--frame-room));
-  padding: var(--frame-room) var(--frame-room) var(--frame-room) var(--run-inset);
-  border: var(--frame) solid var(--ink);
-  border-left: var(--bar) solid var(--ink);
-  background: var(--diff-current-fill);
+/* What each mark means, each drawn as it is in the text: in the line's own small
+   interface type, upright, since it names things rather than remarks on them. */
+.review-note-aside.diff-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.4rem;
+  font-style: normal;
 }
 
-/* In the stepper: a small picture of what it is pointing at. */
-.stepper .diff-current-key {
-  flex: none;
-  width: 1.6em;
-  height: 1.6em;
-  margin-left: 0.2rem;
-  color: var(--quiet);
+/* The counts under it, set as it is. */
+.review-note-aside.diff-legend-counts {
+  font-style: normal;
 }
 
-/* The current paragraph's grey as it looks on the screen: its own shading over
-   the box's. The stepper has neither behind it, so it has to be stated whole. */
-.diff-current-key-page {
-  fill: var(--diff-current-seen);
-}
-
-.diff-paragraph-current:last-child {
-  margin-bottom: calc(-1 * (var(--frame) + var(--frame-room)));
+.diff-legend-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35em;
+  white-space: nowrap;
 }
 
 /* What the stepper is placed against: the box, not the column, which has

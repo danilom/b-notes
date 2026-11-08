@@ -143,7 +143,6 @@ function stepperOver(
   review?: {
     markCurrent: (change: HTMLElement, isCurrent: boolean, how: BecameCurrent) => void;
     changeAt: (clicked: Element) => HTMLElement | null;
-    key: SVGElement;
     /** Set where changes can be acted on: there is then always a current one, even the only one. */
     editing?: {
       startAt: number | undefined;
@@ -164,7 +163,6 @@ function stepperOver(
     { onPrevious: () => goTo(showing - 1), onNext: () => goTo(showing + 1) },
   );
   steps.root.classList.add('review-steps');
-  if (review !== undefined) steps.root.prepend(review.key);
   // Held back until it is known whether there is anywhere to go, which needs
   // the panel laid out. Hidden is the safe state to start in.
   steps.root.hidden = true;
@@ -479,33 +477,6 @@ function changeAt(clicked: Element): HTMLElement | null {
 }
 
 /**
- * A small picture of how the current change looks: the bar, the frame and the
- * dashed line under it. It ties the stepper's count to the thing it counts.
- *
- * Drawn here rather than taken from the app's icon set, which has no such thing,
- * because it has to look like this screen rather than like any other icon.
- */
-function currentChangeKey(): SVGElement {
-  const namespace = 'http://www.w3.org/2000/svg';
-  const shapes: [string, Record<string, string>][] = [
-    ['rect', { class: 'diff-current-key-page', x: '4', y: '5', width: '19', height: '14', stroke: 'currentColor', 'stroke-width': '1.2' }],
-    ['rect', { x: '1', y: '4.4', width: '5', height: '15.2', fill: 'currentColor' }],
-    ['path', { d: 'M8.5 15.5h12', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-dasharray': '3 1.5' }],
-  ];
-
-  const svg = document.createElementNS(namespace, 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('class', 'diff-current-key');
-  svg.setAttribute('aria-hidden', 'true');
-  for (const [name, attributes] of shapes) {
-    const shape = document.createElementNS(namespace, name);
-    for (const [attribute, value] of Object.entries(attributes)) shape.setAttribute(attribute, value);
-    svg.append(shape);
-  }
-  return svg;
-}
-
-/**
  * One paragraph, with what was removed and what replaced it held in one element.
  *
  * That element is what the stepper counts and what it outlines, so a replacement
@@ -607,9 +578,41 @@ function crossFadeFrom(framed: HTMLElement, change: HTMLElement, from: ChangeCan
   leaving.addEventListener('cancel', gone);
 }
 
+/** What is highlighted in a change: its boxes, or its text once collapsed. Not the room below for its dotted line. */
+const HIGHLIGHTED = '.diff-new, .diff-gone, .diff-own, .diff-resolved, .diff-edit';
+
+/** The first line the current change is on, as the top and bottom of what is highlighted on it. */
+function firstLineOfCurrent(box: HTMLElement): { top: number; bottom: number } | null {
+  const pieces = [...box.querySelectorAll('.diff-current')]
+    .flatMap((fragment) => [...fragment.querySelectorAll(HIGHLIGHTED)])
+    .flatMap((piece) => [...piece.getClientRects()])
+    .filter((piece) => piece.height > 0)
+    .sort((one, other) => one.top - other.top);
+  const [first] = pieces;
+  if (first === undefined) return null;
+  // Pieces side by side on that line are one line, whatever their heights.
+  const onIt = pieces.filter((piece) => piece.top < first.bottom);
+  return { top: Math.min(...onIt.map((piece) => piece.top)), bottom: Math.max(...onIt.map((piece) => piece.bottom)) };
+}
+
 /**
- * Two whole texts read as one, with each change marked where it falls and a bar
- * in the margin of each paragraph that has one.
+ * The arrow in the margin, moved beside the first line of the current change: in the
+ * box that scrolls, measured from its corner, so that it scrolls with the text.
+ */
+function placeCurrentMark(box: HTMLElement, mark: HTMLElement): void {
+  const line = firstLineOfCurrent(box);
+  const paragraph = box.querySelector('.diff-paragraph');
+  mark.hidden = line === null || paragraph === null;
+  if (line === null || paragraph === null) return;
+  const frame = box.getBoundingClientRect();
+  const [left, top] = [frame.left + box.clientLeft, frame.top + box.clientTop];
+  mark.style.left = `${paragraph.getBoundingClientRect().left - left + box.scrollLeft}px`;
+  mark.style.top = `${(line.top + line.bottom) / 2 - top + box.scrollTop}px`;
+}
+
+/**
+ * Two whole texts read as one, with each change marked where it falls, and an arrow
+ * in the margin beside the current one.
  *
  * Put it in the document in the same task it is made in, as with
  * {@link createDiffView}.
@@ -623,6 +626,14 @@ export function createTextDiffView(
   text.className = 'review-text';
   text.append(...paragraphsOf(pieces, { showTidied }).map(paragraphBlock));
 
+  // First, so that the last child is still a paragraph, whose bottom margin is taken off.
+  const mark = document.createElement('div');
+  mark.className = 'diff-current-mark';
+  mark.hidden = true;
+  text.prepend(mark);
+  // A window resized moves every line, the arrow's with them.
+  new ResizeObserver(() => placeCurrentMark(text, mark)).observe(text);
+
   const framed = document.createElement('div');
   framed.className = 'review-framed diff-framed';
 
@@ -633,6 +644,7 @@ export function createTextDiffView(
   const markCurrent = (change: HTMLElement, isCurrent: boolean, how: BecameCurrent): void => {
     markCurrentChange(change, isCurrent);
     if (!isCurrent) return;
+    placeCurrentMark(text, mark);
     bar?.setCurrent(change, how);
     editing?.onCurrent(changes.indexOf(change));
   };
@@ -642,7 +654,6 @@ export function createTextDiffView(
     stepperOver(text, '.diff-change', stepper, {
       markCurrent,
       changeAt,
-      key: currentChangeKey(),
       ...(bar === null || editing === undefined
         ? {}
         : {
