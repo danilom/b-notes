@@ -509,6 +509,24 @@
         border-radius: 3px;
       }
 
+      /* The radio's filled dot, made square: a square ring, and inside it a solid square
+         with a gap of the button's colour round it. */
+      #view[data-dots='square'] .diff-bar .diff-bar-dot {
+        width: 1em;
+        height: 1em;
+        border-radius: 3px;
+      }
+
+      #view[data-dots='square'] .diff-bar .diff-bar-chosen .diff-bar-dot {
+        border-radius: 3px;
+      }
+
+      /* At the left edge, as far from it as from the top and the bottom: the button's
+         padding above, and half of what the line has to spare beyond the square. */
+      #view[data-dots='square']:is([data-choice-look='radio-left'], [data-choice-look='radio-left-centred']) .diff-bar .diff-bar-choice {
+        padding-left: calc(0.25rem + (1lh - 1em) / 2);
+      }
+
       /*
         How the bar says which of the three is in effect, to choose from. The app's own
         is the radio's dot. The others leave the dot out. The check mark is an ::after
@@ -820,6 +838,7 @@
               <option value="filled-check">Pun krug s kvačicom</option>
               <option value="solid">Pun krug</option>
               <option value="checkbox">Kvadratić s kvačicom</option>
+              <option value="square">Kvadratić s punim kvadratom</option>
               <option value="none">Bez znaka</option>
             </select>
           </label>
@@ -828,9 +847,9 @@
           <label class="prototype-pick">
             <span>Izbor</span>
             <select id="choice-look">
-              <option value="radio" selected>Tačke kao radio</option>
+              <option value="radio">Tačke kao radio</option>
               <option value="radio-left">Tačke kao radio, levo poravnato</option>
-              <option value="radio-left-centred">Tačke levo, tekst u sredini</option>
+              <option value="radio-left-centred" selected>Tačke levo, tekst u sredini (izabrano)</option>
               <option value="segmented">Spojeno, izabrano puno</option>
               <option value="check">Kvačica na izabranom</option>
               <option value="pressed">Utisnuto dugme</option>
