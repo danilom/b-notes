@@ -1,12 +1,23 @@
 /* The AI Lektor: its sidebar, and the strip rearranged to make room for its button. See lektor-sidebar.ts. */
 
-/* The list of texts a little narrower, for the text and the strip beside it. */
+/*
+  The list of texts a little narrower, for the text and the strip beside it. Never more than
+  a third of the window, nor is the Lektor's panel, which takes the list's width: his text
+  keeps at least a third whatever the UI scale. The panels grow with that scale, and at
+  125 % on a 1280-wide screen took two thirds between them. His text size, set apart from
+  the UI's, does not come into it.
+
+  A share of the page, not of `vw`: under the browser build's CSS zoom the window's width is
+  zoomed again, and the third grew with the zoom.
+*/
 #side {
-  width: 19.8rem;
+  --list-width: min(19.8rem, 33.3%);
+  width: var(--list-width);
+  min-width: min(16rem, var(--list-width));
 }
 
 body.list-hidden #side {
-  margin-left: -19.8rem;
+  margin-left: calc(-1 * var(--list-width));
 }
 
 /*
