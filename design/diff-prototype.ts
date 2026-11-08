@@ -71,9 +71,9 @@ function legend(pieces: readonly TextPiece[]): HTMLElement[] {
   const items = [
     legendItem(markedSample('diff-gone diff-struck', '', 'reč'), 'tvoj stari tekst'),
     legendItem(markedSample('diff-new', '', 'reč'), 'AI predlog'),
-    legendItem(markedSample('diff-own', '', 'reč'), 'tvoja upisana izmena'),
+    legendItem(markedSample('diff-own', '', 'reč'), 'tvoja izmena'),
     legendItem(markedSample('diff-tidied', 're', 'č'), 'ispravljeno slovo'),
-    legendItem(markedSample('diff-resolved', '', 'reč'), 'izabrano'),
+    legendItem(markedSample('diff-resolved', '', 'reč'), 'biće uneto'),
   ];
   const line = document.createElement('p');
   line.className = 'review-note-aside prototype-legend';
