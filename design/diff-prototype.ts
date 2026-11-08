@@ -26,6 +26,7 @@ const choiceWords = element('choice-words', HTMLSelectElement);
 const dots = element('dots', HTMLInputElement);
 const pencil = element('pencil', HTMLSelectElement);
 const paragraphMarks = element('paragraph-marks', HTMLSelectElement);
+const markColour = element('mark-colour', HTMLSelectElement);
 const preamble = element('preamble', HTMLInputElement);
 const view = element('view', HTMLElement);
 
@@ -144,18 +145,38 @@ function barInset(box: HTMLElement): number {
   return inset;
 }
 
-/** The lines the current change is on, top to bottom, each as its top and bottom in the window. */
-function currentChangeLines(box: HTMLElement): DOMRect[] {
-  return [...box.querySelectorAll('.diff-current')]
-    .flatMap((fragment) => [...fragment.getClientRects()])
-    .filter((line) => line.height > 0)
+/** What is highlighted in a change: its boxes, or its text once collapsed. Not the room below for its dashed line. */
+const HIGHLIGHTED = '.diff-new, .diff-gone, .diff-own, .diff-resolved, .diff-edit';
+
+/**
+ * The lines the current change is on, top to bottom, each as the top and bottom of what
+ * is highlighted on it. Pieces side by side on one line are one line.
+ */
+function currentChangeLines(box: HTMLElement): { top: number; bottom: number }[] {
+  const pieces = [...box.querySelectorAll('.diff-current')]
+    .flatMap((fragment) => [...fragment.querySelectorAll(HIGHLIGHTED)])
+    .flatMap((piece) => [...piece.getClientRects()])
+    .filter((piece) => piece.height > 0)
     .sort((one, other) => one.top - other.top);
+  const lines: { top: number; bottom: number }[] = [];
+  for (const { top, bottom } of pieces) {
+    const line = lines.at(-1);
+    if (line !== undefined && top < line.bottom) {
+      line.top = Math.min(line.top, top);
+      line.bottom = Math.max(line.bottom, bottom);
+    } else {
+      lines.push({ top, bottom });
+    }
+  }
+  return lines;
 }
+
+const LINE_MARKS = new Set(['bar-start', 'bar-extent', 'triangle', 'circle', 'arrow']);
 
 /**
  * A mark in the margin beside the current change, tried in place of the paragraph's bar
- * and frame: beside its first line, or beside all of them. Drawn in the scrolling box,
- * so that it moves with the text.
+ * and frame: a bar as tall as the first highlighted line or all of them, or a shape
+ * centred on the first. Drawn in the scrolling box, so that it moves with the text.
  */
 function drawLineMarks(): void {
   const box = view.querySelector<HTMLElement>('.review-text');
@@ -165,15 +186,20 @@ function drawLineMarks(): void {
   const lines = currentChangeLines(box);
   const [first, last] = [lines.at(0), lines.at(-1)];
   const paragraph = box.querySelector('.diff-paragraph');
-  if ((mode !== 'line-start' && mode !== 'line-extent') || first === undefined || last === undefined || paragraph === null) return;
+  if (!LINE_MARKS.has(mode) || first === undefined || last === undefined || paragraph === null) return;
 
   const frame = box.getBoundingClientRect();
-  const bottom = mode === 'line-start' ? first.bottom : last.bottom;
+  const top = first.top - frame.top + box.scrollTop;
   const mark = document.createElement('div');
   mark.className = 'prototype-line-mark';
   mark.style.left = `${paragraph.getBoundingClientRect().left - frame.left + box.scrollLeft - barInset(box)}px`;
-  mark.style.top = `${first.top - frame.top + box.scrollTop}px`;
-  mark.style.height = `${bottom - first.top}px`;
+  if (mode === 'bar-start' || mode === 'bar-extent') {
+    mark.style.top = `${top}px`;
+    mark.style.height = `${(mode === 'bar-start' ? first.bottom : last.bottom) - first.top}px`;
+  } else {
+    mark.dataset['shape'] = mode;
+    mark.style.top = `${top + (first.bottom - first.top) / 2}px`;
+  }
   box.append(mark);
 }
 
@@ -203,9 +229,10 @@ const showLooks = (): void => {
   view.dataset['dots'] = dots.checked ? 'on' : 'off';
   view.dataset['pencil'] = pencil.value;
   view.dataset['paragraphMarks'] = paragraphMarks.value;
+  view.dataset['markColour'] = markColour.value;
   scheduleLineMarks();
 };
-for (const control of [hover, ownLook, chosenLook, dots, pencil, paragraphMarks]) control.addEventListener('change', showLooks);
+for (const control of [hover, ownLook, chosenLook, dots, pencil, paragraphMarks, markColour]) control.addEventListener('change', showLooks);
 showLooks();
 choiceWords.addEventListener('change', renderKeepingPlace);
 

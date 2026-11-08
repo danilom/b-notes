@@ -425,10 +425,47 @@
       }
 
       .prototype-line-mark {
+        --mark-colour: var(--ink);
         position: absolute;
         width: 8px;
-        background: var(--ink);
+        background: var(--mark-colour);
         pointer-events: none;
+      }
+
+      #view[data-mark-colour='accent'] .prototype-line-mark {
+        --mark-colour: var(--chosen);
+      }
+
+      #view[data-mark-colour='red'] .prototype-line-mark {
+        --mark-colour: var(--diff-gone-fill);
+      }
+
+      #view[data-mark-colour='blue'] .prototype-line-mark {
+        --mark-colour: var(--diff-own-fill);
+      }
+
+      /* A shape rather than a bar: centred on the first line, its right edge where the bar's was. */
+      .prototype-line-mark[data-shape='triangle'],
+      .prototype-line-mark[data-shape='circle'],
+      .prototype-line-mark[data-shape='arrow'] {
+        width: 0.75em;
+        height: 0.75em;
+        transform: translate(calc(8px - 100%), -50%);
+      }
+
+      .prototype-line-mark[data-shape='triangle'] {
+        clip-path: polygon(0 0, 100% 50%, 0 100%);
+      }
+
+      .prototype-line-mark[data-shape='circle'] {
+        width: 0.6em;
+        height: 0.6em;
+        border-radius: 50%;
+      }
+
+      .prototype-line-mark[data-shape='arrow'] {
+        width: 0.95em;
+        clip-path: polygon(0 32%, 55% 32%, 55% 0, 100% 50%, 55% 100%, 55% 68%, 0 68%);
       }
 
       /* Where the pencil goes. The app's own is after Izmeni on the bar. */
@@ -478,15 +515,6 @@
               <option value="full">Kao ostale izmene</option>
             </select>
           </label>
-          <label class="prototype-pick" title="Šta na levoj margini pokazuje gde je trenutna izmena">
-            <span>Oznake</span>
-            <select id="paragraph-marks">
-              <option value="paragraph" selected>Traka i okvir pasusa</option>
-              <option value="none">Bez oznaka</option>
-              <option value="line-start">Znak uz prvi red izmene</option>
-              <option value="line-extent">Traka uz redove izmene</option>
-            </select>
-          </label>
           <label>
             <input type="checkbox" id="merging" checked />
             Spoji bliske izmene
@@ -504,6 +532,29 @@
           <label title="Redovi koje aplikacija piše iznad teksta: šta je koja boja, koliko je izmena">
             <input type="checkbox" id="preamble" checked />
             Redovi iznad teksta
+          </label>
+        </div>
+        <div class="prototype-column">
+          <label class="prototype-pick" title="Šta na levoj margini pokazuje gde je trenutna izmena">
+            <span>Oznaka</span>
+            <select id="paragraph-marks">
+              <option value="paragraph" selected>Traka i okvir pasusa</option>
+              <option value="none">Bez oznaka</option>
+              <option value="bar-start">Crtica uz prvi red izmene</option>
+              <option value="bar-extent">Crtica uz sve redove izmene</option>
+              <option value="triangle">Trougao uz prvi red</option>
+              <option value="circle">Krug uz prvi red</option>
+              <option value="arrow">Strelica uz prvi red</option>
+            </select>
+          </label>
+          <label class="prototype-pick" title="Boja oznake na margini">
+            <span>Boja oznake</span>
+            <select id="mark-colour">
+              <option value="ink" selected>Crna</option>
+              <option value="accent">Boja isticanja</option>
+              <option value="red">Crvena</option>
+              <option value="blue">Plava</option>
+            </select>
           </label>
         </div>
       </div>
