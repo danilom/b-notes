@@ -75,9 +75,16 @@ export const withoutDiacritics = (text: string): string =>
  * two. Lined up as different things they push everything around them out of step,
  * and `staru kucu` against `novu kuću` comes back as `kucu` becoming `novu kuću`.
  * Whether they count as changed is decided afterwards.
+ *
+ * Breaks are kept apart from spaces, and a line break from a blank line: lined up as
+ * any whitespace, a line put in under a title had the blank line after the title pair
+ * with the new line's own break, and came back as the blank line turning into a break.
  */
-const linedUpBy = (token: string): string =>
-  /\S/.test(token) ? withoutDiacritics(token).replace(/dj/gi, (digraph) => digraph.charAt(0)) : ' ';
+const linedUpBy = (token: string): string => {
+  if (/\S/.test(token)) return withoutDiacritics(token).replace(/dj/gi, (digraph) => digraph.charAt(0));
+  const breaks = token.split('\n').length - 1;
+  return breaks === 0 ? ' ' : breaks === 1 ? '\n' : '\n\n';
+};
 
 /**
  * @param before The text as it stands.

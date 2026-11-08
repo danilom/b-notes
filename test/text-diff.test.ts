@@ -64,6 +64,14 @@ describe('comparing two texts', () => {
     assert.deepEqual(changesIn(diffTexts('Prvi dio. Drugi dio.', 'Prvi dio.\n\nDrugi dio.')), [[' ', '\n\n']]);
   });
 
+  it('reports a line put in under the title as that line, leaving the blank line after it alone', () => {
+    // Lined up as any whitespace, the blank line paired with the new line's own break,
+    // and the review drew a blank line becoming a break, and the line arriving as its own
+    // change with the blank line behind it, on the title's line.
+    const pieces = mergeCloseChanges(separateTidying(diffTexts('Naslov\n\nPrvi pasus.', 'Naslov\nNova linija\n\nPrvi pasus.')));
+    assert.deepEqual(changesIn(pieces), [['', '\nNova linija']]);
+  });
+
   it('holds what was removed and what was added at one place as one change', () => {
     assert.deepEqual(changesIn(diffTexts('Stara kuća stoji.', 'Nova zgrada stoji.')), [['Stara', 'Nova'], ['kuća', 'zgrada']]);
     assert.deepEqual(changesIn(diffTexts('a b', 'a,b')), [[' ', ',']]);
