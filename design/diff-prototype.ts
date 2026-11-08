@@ -28,6 +28,7 @@ const pencil = element('pencil', HTMLSelectElement);
 const paragraphMarks = element('paragraph-marks', HTMLSelectElement);
 const markColour = element('mark-colour', HTMLSelectElement);
 const lineStyle = element('line-style', HTMLSelectElement);
+const choiceLook = element('choice-look', HTMLSelectElement);
 const preamble = element('preamble', HTMLSelectElement);
 const view = element('view', HTMLElement);
 
@@ -299,9 +300,10 @@ const showLooks = (): void => {
   view.dataset['paragraphMarks'] = paragraphMarks.value;
   view.dataset['markColour'] = markColour.value;
   view.dataset['line'] = lineStyle.value;
+  view.dataset['choiceLook'] = choiceLook.value;
   scheduleLineMarks();
 };
-for (const control of [hover, ownLook, chosenLook, dots, pencil, paragraphMarks, markColour, lineStyle]) {
+for (const control of [hover, ownLook, chosenLook, dots, pencil, paragraphMarks, markColour, lineStyle, choiceLook]) {
   control.addEventListener('change', showLooks);
 }
 showLooks();

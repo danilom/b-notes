@@ -474,6 +474,58 @@
         display: none;
       }
 
+      /*
+        How the bar says which of the three is in effect, to choose from. The app's own
+        is the radio's dot. The others leave the dot out. The check mark is an ::after
+        put first, since ::before is each stepper button's widened target.
+      */
+      #view:not([data-choice-look='radio']) .diff-bar-dot {
+        display: none;
+      }
+
+      #view:is([data-choice-look='segmented'], [data-choice-look='check']) .diff-bar .diff-bar-chosen::after {
+        content: '✓';
+        order: -1;
+        font-weight: 700;
+      }
+
+      /* Spojeno: one bar of three, the one in effect solid, the others only outlined. */
+      #view[data-choice-look='segmented'] .diff-bar .diff-bar-choice {
+        border-width: 2px;
+        border-radius: 0;
+        background: var(--page);
+        color: var(--choice-fill);
+        opacity: 1;
+      }
+
+      #view[data-choice-look='segmented'] .diff-bar .diff-bar-choice + .diff-bar-choice {
+        margin-left: calc(-0.3rem - 2px);
+      }
+
+      #view[data-choice-look='segmented'] .diff-bar .diff-bar-old {
+        border-radius: 6px 0 0 6px;
+      }
+
+      #view[data-choice-look='segmented'] .diff-bar .diff-bar-own {
+        border-radius: 0 6px 6px 0;
+      }
+
+      #view[data-choice-look='segmented'] .diff-bar .diff-bar-chosen {
+        background: var(--choice-fill);
+        color: var(--choice-ink);
+      }
+
+      /* Utisnuto: the one in effect pushed in and darker, the others standing out. */
+      #view[data-choice-look='pressed'] .diff-bar .diff-bar-choice {
+        box-shadow: 0 3px 0 rgb(0 0 0 / 0.35);
+      }
+
+      #view[data-choice-look='pressed'] .diff-bar .diff-bar-chosen {
+        box-shadow: inset 0 3px 5px rgb(0 0 0 / 0.55);
+        filter: brightness(0.8);
+        transform: translateY(3px);
+      }
+
       /* Without the bar beside a changed paragraph and the frame round the current one:
          every paragraph as an unmarked one is, so the text stays where it was. */
       #view:not([data-paragraph-marks='paragraph']) :is(.diff-paragraph-changed, .diff-paragraph-current) {
@@ -710,6 +762,15 @@
           </label>
         </div>
         <div class="prototype-column">
+          <label class="prototype-pick">
+            <span>Izbor</span>
+            <select id="choice-look">
+              <option value="radio" selected>Tačke kao radio</option>
+              <option value="segmented">Spojeno, izabrano puno</option>
+              <option value="check">Kvačica na izabranom</option>
+              <option value="pressed">Utisnuto dugme</option>
+            </select>
+          </label>
           <label class="prototype-pick">
             <span>Linija</span>
             <select id="line-style">
