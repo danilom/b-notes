@@ -391,13 +391,54 @@
         --diff-own-ink: hsl(0 0% 5%);
       }
 
-      /* A collapsed change, whichever wording it went in as. */
+      /*
+        A collapsed change, whichever wording it went in as, and a letter he has chosen,
+        which share the colour. Each dark enough on the light page to stand off the text
+        by brightness, since a warm screen takes the hue first.
+      */
       #view[data-chosen='blue'] {
         --diff-resolved-ink: hsl(215 80% 38%);
       }
 
       :root[data-mode='dark'] #view[data-chosen='blue'] {
         --diff-resolved-ink: hsl(215 80% 75%);
+      }
+
+      #view[data-chosen='orange'] {
+        --diff-resolved-ink: hsl(28 95% 40%);
+      }
+
+      :root[data-mode='dark'] #view[data-chosen='orange'] {
+        --diff-resolved-ink: hsl(30 90% 62%);
+      }
+
+      #view[data-chosen='brown'] {
+        --diff-resolved-ink: hsl(25 80% 30%);
+      }
+
+      :root[data-mode='dark'] #view[data-chosen='brown'] {
+        --diff-resolved-ink: hsl(30 70% 65%);
+      }
+
+      #view[data-chosen='purple'] {
+        --diff-resolved-ink: hsl(275 55% 38%);
+      }
+
+      :root[data-mode='dark'] #view[data-chosen='purple'] {
+        --diff-resolved-ink: hsl(275 60% 75%);
+      }
+
+      #view[data-chosen='teal'] {
+        --diff-resolved-ink: hsl(180 70% 26%);
+      }
+
+      :root[data-mode='dark'] #view[data-chosen='teal'] {
+        --diff-resolved-ink: hsl(180 55% 60%);
+      }
+
+      /* No colour: told from the text around it by its weight alone. */
+      #view[data-chosen='black'] {
+        --diff-resolved-ink: var(--ink);
       }
 
       #view[data-dots='off'] .diff-bar-dot {
@@ -585,6 +626,11 @@
             <select id="chosen-look">
               <option value="green" selected>Zeleno</option>
               <option value="blue">Plavo</option>
+              <option value="orange">Narandžasto</option>
+              <option value="brown">Braon</option>
+              <option value="purple">Ljubičasto</option>
+              <option value="teal">Tirkizno</option>
+              <option value="black">Crno</option>
             </select>
           </label>
         </div>
