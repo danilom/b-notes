@@ -2880,8 +2880,9 @@ dialog::backdrop {
 }
 
 /* After Izmeni: the one choice that also opens a place to type. In the button's own
-   ink, not the faint grey other buttons' icons have: on blue, grey all but vanished. */
-.diff-bar .diff-bar-pencil {
+   ink, not the faint grey other buttons' icons have, nor the grey they turn under the
+   pointer: on blue, grey all but vanished. */
+.diff-bar .diff-bar-choice .diff-bar-pencil {
   flex: none;
   width: 1em;
   height: 1em;
