@@ -48,7 +48,6 @@ const tidyingNote = (pieces: readonly TextPiece[]): string =>
 /** A sample word drawn with the marks the text itself uses, so that it looks exactly as there. */
 function markedSample(classes: string, before: string, marked: string, after = ''): HTMLElement {
   const word = document.createElement('span');
-  word.className = 'prototype-legend-sample';
   const mark = document.createElement('span');
   mark.className = classes;
   mark.textContent = marked;
@@ -70,7 +69,7 @@ function legendItem(shown: HTMLElement, said: string): HTMLElement {
 function legend(pieces: readonly TextPiece[]): HTMLElement {
   const count = (kind: TextPiece['kind']): number => pieces.filter((piece) => piece.kind === kind).length;
   const line = document.createElement('p');
-  line.className = 'prototype-legend';
+  line.className = 'review-note-aside prototype-legend';
   const counts = document.createElement('span');
   counts.textContent = `Veće promene: ${count('change')}, sitne popravke: ${count('tidy')}.`;
   line.append(

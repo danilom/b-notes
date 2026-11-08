@@ -488,28 +488,21 @@
         margin-bottom: 0;
       }
 
-      /* What each mark means, each drawn as it is in the text, on one line above it. */
-      .prototype-legend {
+      /* What each mark means, each drawn as it is in the text, in the lines' own small
+         interface type: it describes the box, and is set as the line that did. */
+      #view .prototype-legend {
         display: flex;
         flex-wrap: wrap;
         align-items: baseline;
-        gap: 0.3rem 1.1rem;
-        margin: 0 0 0.6rem;
-        color: var(--quiet);
-        font-size: 0.95em;
+        gap: 0.2rem 0.9rem;
+        padding-right: 0;
       }
 
       .prototype-legend-item {
         display: inline-flex;
         align-items: baseline;
-        gap: 0.4em;
+        gap: 0.35em;
         white-space: nowrap;
-      }
-
-      .prototype-legend-sample {
-        font-family: var(--writing-font);
-        font-size: 1.05em;
-        color: var(--ink);
       }
 
       /* Instead, a mark in the margin beside the lines of the current change: the first
