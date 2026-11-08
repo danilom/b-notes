@@ -132,7 +132,11 @@ current.addEventListener('input', startOver);
 proposed.addEventListener('input', startOver);
 merging.addEventListener('change', startOver);
 tidying.addEventListener('change', startOver);
-onlyNew.addEventListener('change', startOver);
+// A view and not a new comparison, as in the app: what he chose and opened stays.
+onlyNew.addEventListener('change', () => {
+  if (review === null) render();
+  else review.setShowsOnlyNew(onlyNew.checked);
+});
 readOnly.addEventListener('change', startOver);
 
 /** How far left of the text the paragraph bar stood, which is where the line marks go. */

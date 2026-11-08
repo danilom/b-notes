@@ -12,16 +12,23 @@ export interface DiffReview {
   editing: () => DiffEditing;
   /** Whether he has chosen anything but the proposal, or written anything, that closing would lose. */
   hasDecisions: () => boolean;
-  /** Whether the changes were last all collapsed to their chosen wording, by the checkbox. */
+  /** Whether the changes he hasn't opened or collapsed himself are shown collapsed. */
   showsOnlyNew: () => boolean;
-  /** Collapses every change to its chosen wording, or opens every one. Chooses nothing. */
+  /** Collapses or opens the changes he hasn't opened or collapsed himself. Chooses nothing. */
   setShowsOnlyNew: (only: boolean) => void;
 }
+
+/** What he last did to how a change is shown, which outranks the checkbox. */
+type Shown = 'opened' | 'collapsed';
 
 /**
  * Every change always has a wording chosen, the proposal until he picks another, so
  * nothing here is ever undecided. What a change can be besides is open, showing each
- * wording side by side, or collapsed to the chosen one; choosing collapses it.
+ * wording side by side, or collapsed to the chosen one.
+ *
+ * Whether it is open is his to say, a change at a time: clicking one opens it, and
+ * choosing a wording collapses it. A change he has done neither to follows "Prikaži samo
+ * novi tekst", which is so only ever a statement about those, and never undoes his own.
  *
  * @param pieces The proposal as compared, tidied and merged; choices go by place in this list.
  * @param redraw Called after anything he does, for the view to be drawn again.
@@ -29,22 +36,23 @@ export interface DiffReview {
  */
 export function createDiffReview(pieces: readonly TextPiece[], redraw: () => void, showsOnlyNew = false): DiffReview {
   const changePieces = pieces.flatMap((piece) => (piece.kind === 'change' ? [piece] : []));
-  const everyChange = (): Set<number> => new Set(changePieces.map((_, at) => at));
 
   const choices = new Map<number, ChangeChoice>();
   const letters = new Map<number, string[]>();
-  let collapsed = showsOnlyNew ? everyChange() : new Set<number>();
+  const shownByHim = new Map<number, Shown>();
   let isOnlyNew = showsOnlyNew;
   let currentChange: number | undefined;
   let barState: BarState = 'shown';
 
   const choiceAt = (at: number): ChangeChoice => choices.get(at) ?? { chosen: 'proposed' };
-  const piecesNow = (): TextPiece[] => piecesAfter(pieces, { changes: choices, letters, collapsed });
+  const isCollapsed = (at: number): boolean => (shownByHim.get(at) ?? (isOnlyNew ? 'collapsed' : 'opened')) === 'collapsed';
+  const collapsedNow = (): Set<number> => new Set(changePieces.flatMap((_, at) => (isCollapsed(at) ? [at] : [])));
+  const piecesNow = (): TextPiece[] => piecesAfter(pieces, { changes: choices, letters, collapsed: collapsedNow() });
 
   /** Chosen, it collapses, and the bar goes quiet until he moves on. */
   const settle = (at: number, choice: ChangeChoice): void => {
     choices.set(at, choice);
-    collapsed.add(at);
+    shownByHim.set(at, 'collapsed');
     currentChange = at;
     barState = 'quiet';
     redraw();
@@ -75,7 +83,6 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
     showsOnlyNew: () => isOnlyNew,
     setShowsOnlyNew: (only) => {
       isOnlyNew = only;
-      collapsed = only ? everyChange() : new Set();
       redraw();
     },
     editing: () => ({
@@ -89,7 +96,7 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
         const { chosen, own } = choiceAt(at);
         return {
           chosen,
-          isOpen: !collapsed.has(at),
+          isOpen: !isCollapsed(at),
           hasOld: /\S/.test(change?.removed ?? ''),
           hasProposed: /\S/.test(change?.added ?? ''),
           hasOwn: own !== undefined,
@@ -97,7 +104,7 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
       },
       onChoose: choose,
       onOpen: (at) => {
-        collapsed.delete(at);
+        shownByHim.set(at, 'opened');
         currentChange = at;
         barState = 'shown';
         redraw();

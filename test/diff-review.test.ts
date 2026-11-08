@@ -83,14 +83,24 @@ describe('showing only the new text', () => {
     assert.equal(review.textNow(), createDiffReview(pieces, nothing, false).textNow());
   });
 
-  it('opens every change when switched off, and keeps what he chose either way', () => {
+  it('opens and collapses only the changes he has not opened or collapsed himself', () => {
+    assert.ok(changeCount >= 3);
     const review = createDiffReview(pieces, nothing, true);
     review.editing().onOpen(0);
     review.editing().onChoose(1, 'old');
     review.setShowsOnlyNew(false);
-    assert.equal(collapsedCount(review), 0);
+    const isOpen = (at: number): boolean => review.editing().choiceOf(at).isOpen;
+    assert.deepEqual([isOpen(0), isOpen(1), isOpen(2)], [true, false, true]);
     review.setShowsOnlyNew(true);
-    assert.equal(collapsedCount(review), changeCount);
+    assert.deepEqual([isOpen(0), isOpen(1), isOpen(2)], [true, false, false]);
     assert.equal(review.editing().choiceOf(1).chosen, 'old');
+  });
+
+  it('keeps open a change he opened again after choosing for it, whichever way the box is set', () => {
+    const review = createDiffReview(pieces, nothing, false);
+    review.editing().onChoose(0, 'old');
+    review.editing().onOpen(0);
+    review.setShowsOnlyNew(true);
+    assert.equal(review.editing().choiceOf(0).isOpen, true);
   });
 });
