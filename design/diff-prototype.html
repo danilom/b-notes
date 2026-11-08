@@ -479,8 +479,18 @@
         is the radio's dot. The others leave the dot out. The check mark is an ::after
         put first, since ::before is each stepper button's widened target.
       */
-      #view:not([data-choice-look='radio']) .diff-bar-dot {
+      #view:not([data-choice-look='radio'], [data-choice-look='radio-right']) .diff-bar-dot {
         display: none;
+      }
+
+      /* Desno: the words at the left of each button, the circle at its right edge. */
+      #view[data-choice-look='radio-right'] .diff-bar .diff-bar-choice {
+        justify-content: flex-start;
+      }
+
+      #view[data-choice-look='radio-right'] .diff-bar .diff-bar-dot {
+        order: 1;
+        margin-left: auto;
       }
 
       #view:is([data-choice-look='segmented'], [data-choice-look='check']) .diff-bar .diff-bar-chosen::after {
@@ -766,6 +776,7 @@
             <span>Izbor</span>
             <select id="choice-look">
               <option value="radio" selected>Tačke kao radio</option>
+              <option value="radio-right">Tačke kao radio, desno</option>
               <option value="segmented">Spojeno, izabrano puno</option>
               <option value="check">Kvačica na izabranom</option>
               <option value="pressed">Utisnuto dugme</option>
