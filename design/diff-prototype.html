@@ -345,7 +345,7 @@
       }
 
       /*
-        His own wording, to choose from. The app's own is the dark grey box. Its button
+        His own wording, to choose from. The app's own is the blue box. Its button
         on the bar follows, being in the colour of the wording it is for.
       */
       #view[data-own='outline'] {
@@ -362,13 +362,13 @@
         border-color: var(--ink);
       }
 
-      #view[data-own='blue'] {
-        --diff-own-fill: hsl(215 80% 38%);
+      #view[data-own='charcoal'] {
+        --diff-own-fill: hsl(220 15% 28%);
         --diff-own-ink: hsl(0 0% 100%);
       }
 
-      :root[data-mode='dark'] #view[data-own='blue'] {
-        --diff-own-fill: hsl(215 80% 75%);
+      :root[data-mode='dark'] #view[data-own='charcoal'] {
+        --diff-own-fill: hsl(220 12% 82%);
         --diff-own-ink: hsl(0 0% 5%);
       }
 
@@ -452,9 +452,9 @@
           <label class="prototype-pick">
             <span>Njegov tekst</span>
             <select id="own-look">
-              <option value="charcoal" selected>Tamnosivo polje</option>
+              <option value="blue" selected>Plavo polje (izabrano)</option>
+              <option value="charcoal">Tamnosivo polje</option>
               <option value="outline">Belo, s okvirom</option>
-              <option value="blue">Plavo polje</option>
             </select>
           </label>
           <label class="prototype-pick">

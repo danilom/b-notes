@@ -311,13 +311,17 @@ function wordsPart(drawn: DiffPart): (HTMLElement | string)[] {
 
 /**
  * Moves the spaces at either end of a change out of it, so that what marks the
- * change as current goes around its words. Spaces between what was removed and
- * what was added stay: those are inside it.
+ * change as current goes around its words, and drops those between one wording and
+ * the next. Each wording keeps the spaces at its own ends, which put next to each
+ * other made one gap wider than another; the boxes have their own gap.
  */
 function movingSpacesOutOf(change: HTMLElement): void {
   const { firstChild: first, lastChild: last } = change;
   if (first instanceof Text) change.before(first);
   if (last instanceof Text && last !== first) change.after(last);
+  for (const node of [...change.childNodes]) {
+    if (node instanceof Text && node.previousSibling instanceof HTMLElement && node.nextSibling instanceof HTMLElement) node.remove();
+  }
 }
 
 /**

@@ -115,8 +115,10 @@
   --diff-new-ink: hsl(0 0% 100%);
   --diff-gone-fill: hsl(4 75% 36%);
   --diff-gone-ink: hsl(0 0% 100%);
-  /* His own wording: no hue at all, which is the one difference a warm screen keeps. */
-  --diff-own-fill: hsl(220 15% 28%);
+  /* His own wording: a deep blue, which held its own beside the red and the green on a
+     warm screen when tried. Fixed, and not the accent: that is his to change, and this
+     has to stay what it is beside the other two. */
+  --diff-own-fill: hsl(215 80% 38%);
   --diff-own-ink: hsl(0 0% 100%);
   /* A small correction: the red of a teacher's pen, which also keeps its colour
      on a warm screen, where a blue or a green turns as dark as the text. It does
@@ -267,7 +269,7 @@
   --diff-new-ink: hsl(0 0% 5%);
   --diff-gone-fill: hsl(4 75% 72%);
   --diff-gone-ink: hsl(0 0% 5%);
-  --diff-own-fill: hsl(220 12% 82%);
+  --diff-own-fill: hsl(215 80% 75%);
   --diff-own-ink: hsl(0 0% 5%);
   --diff-tidied-ink: hsl(4 90% 72%);
   --diff-resolved-ink: hsl(142 55% 66%);
