@@ -533,6 +533,19 @@ function paragraphBlock({ parts, changed }: DiffParagraph): HTMLElement {
 }
 
 /**
+ * The change just chosen, on every fragment of it, with which wording it went in as: it
+ * starts in that wording's box and settles into the colour of what goes in.
+ */
+function markSettling(changes: readonly HTMLElement[], settling: DiffEditing['settling']): void {
+  const change = settling === undefined ? undefined : changes[settling.at];
+  if (change === undefined || settling === undefined) return;
+  for (const fragment of fragmentsOf(change)) {
+    fragment.classList.add('diff-settling');
+    fragment.dataset['settlingFrom'] = settling.from;
+  }
+}
+
+/**
  * Two whole texts read as one, with each change marked where it falls and a bar
  * in the margin of each paragraph that has one.
  *
@@ -552,6 +565,7 @@ export function createTextDiffView(
   framed.className = 'review-framed diff-framed';
 
   const changes = [...text.querySelectorAll<HTMLElement>('.diff-change')];
+  markSettling(changes, editing?.settling);
   const bar: DiffChangeBar | null = editing === undefined ? null : createDiffChangeBar(framed, text, changes, editing);
 
   const markCurrent = (change: HTMLElement, isCurrent: boolean, how: BecameCurrent): void => {

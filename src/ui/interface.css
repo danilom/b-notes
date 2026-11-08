@@ -2807,6 +2807,44 @@ dialog::backdrop {
   background-repeat: no-repeat;
 }
 
+/*
+  Choosing, shown happening rather than snapped to: the wordings not chosen fade, and once
+  the change is drawn collapsed, what was chosen starts in its own box and settles into the
+  colour of what goes in. Only for those who have not asked their computer for less movement.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  .diff-leaving {
+    opacity: 0;
+    transition: opacity 180ms ease-in;
+  }
+
+  .diff-settling .diff-resolved {
+    animation: diff-settle 450ms ease-out;
+  }
+
+  .diff-settling[data-settling-from='old'] {
+    --settle-fill: var(--diff-gone-fill);
+    --settle-ink: var(--diff-gone-ink);
+  }
+
+  .diff-settling[data-settling-from='proposed'] {
+    --settle-fill: var(--diff-new-fill);
+    --settle-ink: var(--diff-new-ink);
+  }
+
+  .diff-settling[data-settling-from='own'] {
+    --settle-fill: var(--diff-own-fill);
+    --settle-ink: var(--diff-own-ink);
+  }
+}
+
+@keyframes diff-settle {
+  from {
+    background-color: var(--settle-fill);
+    color: var(--settle-ink);
+  }
+}
+
 /* One gap between the wordings of a change, whatever their sizes. */
 :is(.diff-gone, .diff-new, .diff-own) + :is(.diff-new, .diff-own, .diff-edit) {
   margin-left: 3px;

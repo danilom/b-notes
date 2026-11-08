@@ -1,4 +1,4 @@
-import { type TextPiece, chosenText } from '../notes/text-diff.ts';
+import { type ChangeCandidate, type TextPiece, chosenText } from '../notes/text-diff.ts';
 import { type ChangeChoice, piecesAfter, textAfter } from '../notes/text-review.ts';
 import type { BarState, DiffEditing } from './diff-change-bar.ts';
 
@@ -43,18 +43,27 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
   let isOnlyNew = showsOnlyNew;
   let currentChange: number | undefined;
   let barState: BarState = 'shown';
+  /** The change just chosen, and as which wording, for the next drawing alone to settle it from its box. */
+  let settling: { at: number; from: ChangeCandidate } | null = null;
 
   const choiceAt = (at: number): ChangeChoice => choices.get(at) ?? { chosen: 'proposed' };
   const isCollapsed = (at: number): boolean => (shownByHim.get(at) ?? (isOnlyNew ? 'collapsed' : 'opened')) === 'collapsed';
   const collapsedNow = (): Set<number> => new Set(changePieces.flatMap((_, at) => (isCollapsed(at) ? [at] : [])));
   const piecesNow = (): TextPiece[] => piecesAfter(pieces, { changes: choices, letters, collapsed: collapsedNow() });
 
-  /** Chosen, it collapses, and the bar goes quiet until he moves on. */
+  /**
+   * Chosen, it collapses, and the bar goes quiet until he moves on. A choice lands a moment
+   * after the click, once the others have faded; if he has stepped on meanwhile, he stays
+   * where he went, with the bar as it is there.
+   */
   const settle = (at: number, choice: ChangeChoice): void => {
     choices.set(at, choice);
     shownByHim.set(at, 'collapsed');
-    currentChange = at;
-    barState = 'quiet';
+    settling = { at, from: choice.chosen };
+    if (currentChange === undefined || currentChange === at) {
+      currentChange = at;
+      barState = 'quiet';
+    }
     redraw();
   };
 
@@ -73,6 +82,13 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
     else settle(at, { chosen: 'own', own: text });
   };
 
+  /** Once only: any later drawing, by a step or another choice, shows it settled already. */
+  const takeSettling = (): { settling?: { at: number; from: ChangeCandidate } } => {
+    const taken = settling;
+    settling = null;
+    return taken === null ? {} : { settling: taken };
+  };
+
   const hasDecisions = (): boolean =>
     letters.size > 0 || [...choices.values()].some(({ chosen, own }) => chosen !== 'proposed' || own !== undefined);
 
@@ -87,6 +103,7 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
     },
     editing: () => ({
       ...(currentChange === undefined ? {} : { startAt: currentChange }),
+      ...takeSettling(),
       barStarts: barState,
       onBarState: (state) => {
         barState = state;

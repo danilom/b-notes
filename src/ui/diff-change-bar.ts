@@ -37,6 +37,8 @@ export interface DiffEditing {
   startAt?: number;
   /** How the bar was left before this drawing of the view. */
   barStarts?: BarState;
+  /** A change chosen just before this drawing, to be shown settling from the box of the wording chosen. */
+  settling?: { at: number; from: ChangeCandidate };
   onBarState: (state: BarState) => void;
   choiceOf: (changeAt: number) => ChangeStanding;
   /** Picks the old text or the proposal, which collapses the change to it. */
@@ -57,6 +59,13 @@ export interface DiffEditing {
 }
 
 const GAP_ABOVE_PX = 3;
+
+/**
+ * How long to wait for the wordings not chosen to fade before the change is drawn
+ * collapsed: the stylesheet's 180ms, and a little over, since the fade starts a frame or
+ * two after the click and was cut off half done without it.
+ */
+const LEAVING_MS = 230;
 
 export interface DiffChangeBar {
   /** The change now current, and how it got to be, which decides whether its bar shows. */
@@ -182,6 +191,8 @@ export function createDiffChangeBar(
   let current: HTMLElement | null = null;
   let shownOver: Element | null = null;
   let isEditing = false;
+  /** Between a choice and the drawing it leads to: a second click then would choose twice. */
+  let isLeaving = false;
   /** Kept by the caller, across redraws. */
   let state: BarState = editing.barStarts ?? 'shown';
 
@@ -224,11 +235,31 @@ export function createDiffChangeBar(
     // The side that is nothing says so, in the sign he writes it with.
     const nothing = (has: boolean): string => (has ? '' : ' (∅)');
     bar.replaceChildren(
-      choiceButton(words.old + nothing(hasOld), 'diff-bar-old', chosen === 'old', () => editing.onChoose(at, 'old')),
-      choiceButton(words.proposed + nothing(hasProposed), 'diff-bar-new', chosen === 'proposed', () => editing.onChoose(at, 'proposed')),
+      choiceButton(words.old + nothing(hasOld), 'diff-bar-old', chosen === 'old', () => choose(change, 'old')),
+      choiceButton(words.proposed + nothing(hasProposed), 'diff-bar-new', chosen === 'proposed', () => choose(change, 'proposed')),
       withPencil(choiceButton(words.own, 'diff-bar-own', chosen === 'own', () => beginEditing(change))),
       closeButton(),
     );
+  }
+
+  /**
+   * The bar goes at once, the wordings not chosen fade, and then the change is drawn
+   * collapsed, where what was chosen settles from its box into the colour of what goes
+   * in. Straight to the choice where he has asked his computer for less movement.
+   */
+  function choose(change: HTMLElement, chosen: 'old' | 'proposed'): void {
+    if (isLeaving) return;
+    const at = changes.indexOf(change);
+    hide();
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      editing.onChoose(at, chosen);
+      return;
+    }
+    isLeaving = true;
+    const kept = chosen === 'old' ? '.diff-gone' : '.diff-new';
+    const wordings = fragmentsOf(change).flatMap((fragment) => [...fragment.querySelectorAll('.diff-gone, .diff-new, .diff-own')]);
+    for (const wording of wordings) if (!wording.matches(kept)) wording.classList.add('diff-leaving');
+    setTimeout(() => editing.onChoose(at, chosen), LEAVING_MS);
   }
 
   /** The one choice that also opens something to type in, and says so. */

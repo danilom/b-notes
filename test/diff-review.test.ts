@@ -65,6 +65,36 @@ describe('choosing a wording', () => {
     assert.equal(review.hasDecisions(), false);
   });
 
+  it('hands the next drawing alone the change just chosen and its wording, for it to settle from', () => {
+    const review = createDiffReview(pieces, nothing);
+    review.editing().onChoose(1, 'old');
+    assert.deepEqual(review.editing().settling, { at: 1, from: 'old' });
+    assert.equal(review.editing().settling, undefined);
+    review.editing().onEdit(0, ' drveni');
+    assert.deepEqual(review.editing().settling, { at: 0, from: 'own' });
+  });
+
+  it('leaves him where he stepped to, bar and all, when a choice lands after he has moved on', () => {
+    const review = createDiffReview(pieces, nothing);
+    const editing = review.editing();
+    editing.onCurrent(0);
+    editing.onCurrent(1);
+    editing.onBarState('shown');
+    editing.onChoose(0, 'old');
+    assert.equal(review.editing().startAt, 1);
+    assert.equal(review.editing().barStarts, 'shown');
+    assert.equal(review.editing().choiceOf(0).chosen, 'old');
+  });
+
+  it('quiets the bar over the change he chose, when he is still on it', () => {
+    const review = createDiffReview(pieces, nothing);
+    const editing = review.editing();
+    editing.onCurrent(0);
+    editing.onChoose(0, 'old');
+    assert.equal(review.editing().startAt, 0);
+    assert.equal(review.editing().barStarts, 'quiet');
+  });
+
   it('opens a collapsed change again without changing what goes in', () => {
     const review = createDiffReview(pieces, nothing);
     review.editing().onChoose(0, 'old');
