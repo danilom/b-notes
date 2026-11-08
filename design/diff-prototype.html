@@ -406,7 +406,7 @@
 
       /* Without the bar beside a changed paragraph and the frame round the current one:
          every paragraph as an unmarked one is, so the text stays where it was. */
-      #view[data-paragraph-marks='off'] :is(.diff-paragraph-changed, .diff-paragraph-current) {
+      #view:not([data-paragraph-marks='paragraph']) :is(.diff-paragraph-changed, .diff-paragraph-current) {
         margin: 0 0 1em;
         padding: 0;
         border: 0;
@@ -414,8 +414,21 @@
         cursor: auto;
       }
 
-      #view[data-paragraph-marks='off'] :is(.diff-paragraph-changed, .diff-paragraph-current):last-child {
+      #view:not([data-paragraph-marks='paragraph']) :is(.diff-paragraph-changed, .diff-paragraph-current):last-child {
         margin-bottom: 0;
+      }
+
+      /* Instead, a mark in the margin beside the lines of the current change: the first
+         of them, or all. As wide as the paragraph bar was and where it stood, in ink. */
+      #view .review-text {
+        position: relative;
+      }
+
+      .prototype-line-mark {
+        position: absolute;
+        width: 8px;
+        background: var(--ink);
+        pointer-events: none;
       }
 
       /* Where the pencil goes. The app's own is after Izmeni on the bar. */
@@ -463,6 +476,15 @@
               <option value="coloured">Obojena slova</option>
               <option value="hidden">Skrivene</option>
               <option value="full">Kao ostale izmene</option>
+            </select>
+          </label>
+          <label class="prototype-pick" title="Šta na levoj margini pokazuje gde je trenutna izmena">
+            <span>Oznake</span>
+            <select id="paragraph-marks">
+              <option value="paragraph" selected>Traka i okvir pasusa</option>
+              <option value="none">Bez oznaka</option>
+              <option value="line-start">Znak uz prvi red izmene</option>
+              <option value="line-extent">Traka uz redove izmene</option>
             </select>
           </label>
           <label>
@@ -540,10 +562,6 @@
           <label>
             <input type="checkbox" id="dark" />
             Tamno
-          </label>
-          <label title="Traka na levoj ivici izmenjenog pasusa, i okvir oko pasusa trenutne izmene">
-            <input type="checkbox" id="paragraph-marks" checked />
-            Oznake pasusa
           </label>
         </div>
       </div>

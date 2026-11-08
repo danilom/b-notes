@@ -25,7 +25,7 @@ const chosenLook = element('chosen-look', HTMLSelectElement);
 const choiceWords = element('choice-words', HTMLSelectElement);
 const dots = element('dots', HTMLInputElement);
 const pencil = element('pencil', HTMLSelectElement);
-const paragraphMarks = element('paragraph-marks', HTMLInputElement);
+const paragraphMarks = element('paragraph-marks', HTMLSelectElement);
 const preamble = element('preamble', HTMLInputElement);
 const view = element('view', HTMLElement);
 
@@ -134,6 +134,67 @@ tidying.addEventListener('change', startOver);
 onlyNew.addEventListener('change', startOver);
 readOnly.addEventListener('change', startOver);
 
+/** How far left of the text the paragraph bar stood, which is where the line marks go. */
+function barInset(box: HTMLElement): number {
+  const probe = document.createElement('div');
+  probe.style.width = 'calc(var(--run-inset) + 8px)';
+  box.append(probe);
+  const inset = probe.getBoundingClientRect().width;
+  probe.remove();
+  return inset;
+}
+
+/** The lines the current change is on, top to bottom, each as its top and bottom in the window. */
+function currentChangeLines(box: HTMLElement): DOMRect[] {
+  return [...box.querySelectorAll('.diff-current')]
+    .flatMap((fragment) => [...fragment.getClientRects()])
+    .filter((line) => line.height > 0)
+    .sort((one, other) => one.top - other.top);
+}
+
+/**
+ * A mark in the margin beside the current change, tried in place of the paragraph's bar
+ * and frame: beside its first line, or beside all of them. Drawn in the scrolling box,
+ * so that it moves with the text.
+ */
+function drawLineMarks(): void {
+  const box = view.querySelector<HTMLElement>('.review-text');
+  if (box === null) return;
+  for (const old of box.querySelectorAll('.prototype-line-mark')) old.remove();
+  const mode = paragraphMarks.value;
+  const lines = currentChangeLines(box);
+  const [first, last] = [lines.at(0), lines.at(-1)];
+  const paragraph = box.querySelector('.diff-paragraph');
+  if ((mode !== 'line-start' && mode !== 'line-extent') || first === undefined || last === undefined || paragraph === null) return;
+
+  const frame = box.getBoundingClientRect();
+  const bottom = mode === 'line-start' ? first.bottom : last.bottom;
+  const mark = document.createElement('div');
+  mark.className = 'prototype-line-mark';
+  mark.style.left = `${paragraph.getBoundingClientRect().left - frame.left + box.scrollLeft - barInset(box)}px`;
+  mark.style.top = `${first.top - frame.top + box.scrollTop}px`;
+  mark.style.height = `${bottom - first.top}px`;
+  box.append(mark);
+}
+
+let lineMarksPending = false;
+
+/** Once per frame however many things moved the current change. */
+function scheduleLineMarks(): void {
+  if (lineMarksPending) return;
+  lineMarksPending = true;
+  requestAnimationFrame(() => {
+    lineMarksPending = false;
+    drawLineMarks();
+  });
+}
+
+// The current change moves by stepping, clicking and every redraw, all of which mark it
+// with a class. Classes only: watching elements come and go would see each mark drawn,
+// and draw it again, for ever.
+new MutationObserver(scheduleLineMarks).observe(view, { subtree: true, attributes: true, attributeFilter: ['class'] });
+addEventListener('resize', scheduleLineMarks);
+
 /** The looks being tried, which change no decision and need no redrawing. */
 const showLooks = (): void => {
   view.dataset['hover'] = hover.value;
@@ -141,7 +202,8 @@ const showLooks = (): void => {
   view.dataset['chosen'] = chosenLook.value;
   view.dataset['dots'] = dots.checked ? 'on' : 'off';
   view.dataset['pencil'] = pencil.value;
-  view.dataset['paragraphMarks'] = paragraphMarks.checked ? 'on' : 'off';
+  view.dataset['paragraphMarks'] = paragraphMarks.value;
+  scheduleLineMarks();
 };
 for (const control of [hover, ownLook, chosenLook, dots, pencil, paragraphMarks]) control.addEventListener('change', showLooks);
 showLooks();
