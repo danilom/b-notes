@@ -25,6 +25,7 @@ const chosenLook = element('chosen-look', HTMLSelectElement);
 const choiceWords = element('choice-words', HTMLSelectElement);
 const dots = element('dots', HTMLInputElement);
 const pencil = element('pencil', HTMLSelectElement);
+const paragraphMarks = element('paragraph-marks', HTMLInputElement);
 const preamble = element('preamble', HTMLInputElement);
 const view = element('view', HTMLElement);
 
@@ -140,8 +141,9 @@ const showLooks = (): void => {
   view.dataset['chosen'] = chosenLook.value;
   view.dataset['dots'] = dots.checked ? 'on' : 'off';
   view.dataset['pencil'] = pencil.value;
+  view.dataset['paragraphMarks'] = paragraphMarks.checked ? 'on' : 'off';
 };
-for (const control of [hover, ownLook, chosenLook, dots, pencil]) control.addEventListener('change', showLooks);
+for (const control of [hover, ownLook, chosenLook, dots, pencil, paragraphMarks]) control.addEventListener('change', showLooks);
 showLooks();
 choiceWords.addEventListener('change', renderKeepingPlace);
 

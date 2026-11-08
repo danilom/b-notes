@@ -405,6 +405,20 @@
         display: none;
       }
 
+      /* Without the bar beside a changed paragraph and the frame round the current one:
+         every paragraph as an unmarked one is, so the text stays where it was. */
+      #view[data-paragraph-marks='off'] :is(.diff-paragraph-changed, .diff-paragraph-current) {
+        margin: 0 0 1em;
+        padding: 0;
+        border: 0;
+        background: none;
+        cursor: auto;
+      }
+
+      #view[data-paragraph-marks='off'] :is(.diff-paragraph-changed, .diff-paragraph-current):last-child {
+        margin-bottom: 0;
+      }
+
       /* Where the pencil goes. The app's own is after Izmeni on the bar. */
       #view:is([data-pencil='none'], [data-pencil='box']) .diff-bar-pencil {
         display: none;
@@ -527,6 +541,10 @@
           <label>
             <input type="checkbox" id="dark" />
             Tamno
+          </label>
+          <label title="Traka na levoj ivici izmenjenog pasusa, i okvir oko pasusa trenutne izmene">
+            <input type="checkbox" id="paragraph-marks" checked />
+            Oznake pasusa
           </label>
         </div>
       </div>
