@@ -55,6 +55,19 @@ function markedSample(classes: string, before: string, marked: string, after = '
   return word;
 }
 
+/**
+ * Both marks a small correction leaves, on one word: the caret where something went that
+ * left nothing to show, here just before it, and a letter put right.
+ */
+function smallCorrectionsSample(): HTMLElement {
+  const word = markedSample('diff-tidied', 're', 'č');
+  const caret = document.createElement('span');
+  caret.className = 'diff-correction-mark';
+  caret.textContent = '‸';
+  word.prepend(caret);
+  return word;
+}
+
 function legendItem(shown: HTMLElement, said: string): HTMLElement {
   const item = document.createElement('span');
   item.className = 'prototype-legend-item';
@@ -72,8 +85,8 @@ function legend(pieces: readonly TextPiece[]): HTMLElement[] {
     legendItem(markedSample('diff-gone diff-struck', '', 'reč'), 'tvoj stari tekst'),
     legendItem(markedSample('diff-new', '', 'reč'), 'AI predlog'),
     legendItem(markedSample('diff-own', '', 'reč'), 'tvoja izmena'),
-    legendItem(markedSample('diff-tidied', 're', 'č'), 'ispravljeno slovo'),
     legendItem(markedSample('diff-resolved', '', 'reč'), 'biće uneto'),
+    legendItem(smallCorrectionsSample(), 'sitne popravke'),
   ];
   const line = document.createElement('p');
   line.className = 'review-note-aside prototype-legend';
