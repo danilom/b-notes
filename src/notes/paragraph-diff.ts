@@ -157,19 +157,3 @@ export function diffParagraphs(copy: string, active: string): ParagraphDiff {
   }
   return { pieces: joiningRewordings(pieces), unrelated: false };
 }
-
-/** Consecutive paragraphs of one kind, so a run of six is labelled once. */
-export interface DiffRun {
-  kind: DiffKind;
-  pieces: DiffPiece[];
-}
-
-export function runsOf(pieces: readonly DiffPiece[]): DiffRun[] {
-  const runs: DiffRun[] = [];
-  for (const piece of pieces) {
-    const open = runs.at(-1);
-    if (open?.kind === piece.kind) open.pieces.push(piece);
-    else runs.push({ kind: piece.kind, pieces: [piece] });
-  }
-  return runs;
-}

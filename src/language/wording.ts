@@ -337,18 +337,9 @@ const TEXT = {
     // have to press it to find out where.
     versionRestoreNote: 'Ova verzija postaje aktivni tekst.',
     versionRestoreKept: 'Ono što je sada u njemu čuva se kao nova verzija.',
-    // Each block says which way round it is, rather than sending him back to a
-    // sentence at the top of the page to work it out. Both halves are spelt
-    // out because "dodato" alone begs the question added to what.
-    versionAddedTag: '(+) Dodato',
-    versionAddedWhy: '(nije u aktivnom tekstu, postoji u ovoj verziji)',
-    versionMissingTag: '(−) Nedostaje',
-    versionMissingWhy: '(nije u ovoj verziji, postoji u aktivnom tekstu)',
-    // The third case: one paragraph that is in both and is not the same in
-    // both. Its parenthetical has a second job the other two do not — saying
-    // which way round the marks inside it run.
-    versionChangedTag: '(±) Izmenjeno',
-    versionChangedWhy: '(postoji u oba teksta; precrtano je staro, zeleno je novo)',
+    // What each mark means, beside a sample drawn as it is in the text: which way
+    // round the two texts are, said once above them rather than worked out.
+    versionLegend: { was: 'bilo u ovoj verziji', now: 'sada u tekstu', small: 'sitne razlike' },
     versionUnrelated: 'Ovo je sasvim drugi tekst — nijedan pasus se ne poklapa s aktivnim.',
     noteDeleted: 'Tekst je obrisan',
     /*
@@ -566,12 +557,7 @@ const TEXT = {
     versionRestore: 'Take the text back to this version',
     versionRestoreNote: 'This version becomes the active text.',
     versionRestoreKept: 'What is in it now is kept as a new version.',
-    versionAddedTag: '(+) Extra',
-    versionAddedWhy: '(not in the active text, present in this copy)',
-    versionMissingTag: '(−) Missing',
-    versionMissingWhy: '(not in this copy, present in the active text)',
-    versionChangedTag: '(±) Changed',
-    versionChangedWhy: '(in both; struck through is the old wording, green the new)',
+    versionLegend: { was: 'in this version', now: 'in your text now', small: 'small differences' },
     versionUnrelated: 'This is a different text altogether — not one paragraph matches the active one.',
     noteDeleted: 'Text deleted',
     lostTitle: 'I cannot find your texts',

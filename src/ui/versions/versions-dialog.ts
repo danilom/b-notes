@@ -2,7 +2,9 @@ import { type Shown, showAsModal } from '../dialogs/modal.ts';
 import { type Language, describeWhen, strings } from '../../language/wording.ts';
 import type { NoteVersion } from '../../notes/note.ts';
 import { diffParagraphs } from '../../notes/paragraph-diff.ts';
-import { type DiffViewOptions, createDiffView } from '../diff-view.ts';
+import { type TextPiece, diffTexts, mergeCloseChanges, separateTidying } from '../../notes/text-diff.ts';
+import { createDiffLegend } from '../diff-legend.ts';
+import { createTextDiffView } from '../diff-view.ts';
 import { icon } from '../icons.ts';
 import { type Titled, titleOf } from '../dialogs/dialog-heading.ts';
 import { countWords } from '../../notes/word-count.ts';
@@ -131,24 +133,27 @@ function rowFor(
 }
 
 /**
- * A copy read against his text.
- *
- * What the copy holds is shown in full: it is the only place he can read it.
- * What the active text holds is shortened to its two ends, because he can read
- * that by closing this dialog. The copy is the older of the two, so inside a
- * changed paragraph the active text's words are the new ones.
+ * A copy read against his text, as the AI Lektor's corrections are read against it:
+ * one text, with each place the two differ marked where it falls, word by word. The
+ * copy is the older of the two, so what it had that his text has lost is struck out in
+ * red, and what his text has now is green. Only to read: there is nothing to choose
+ * here, and bringing a copy back is the button below.
  */
-function diffViewOptions(words: ReturnType<typeof strings>): DiffViewOptions {
-  return {
-    tags: {
-      added: { tag: words.versionAddedTag, why: words.versionAddedWhy },
-      missing: { tag: words.versionMissingTag, why: words.versionMissingWhy },
-      changed: { tag: words.versionChangedTag, why: words.versionChangedWhy },
-    },
-    stepper: { previous: words.changePrevious, next: words.changeNext, at: words.changeAt },
-    newWords: 'missing',
-    shortenMissing: true,
-  };
+function copyAgainstText(copy: string, current: string): TextPiece[] {
+  return mergeCloseChanges(separateTidying(diffTexts(copy, current)));
+}
+
+/** What each mark means in this panel, drawn as it is in the text. */
+function versionLegend(words: ReturnType<typeof strings>): HTMLElement {
+  const { was, now, small } = words.versionLegend;
+  return createDiffLegend(
+    [
+      { sample: 'old', said: was },
+      { sample: 'proposed', said: now },
+      { sample: 'small', said: small },
+    ],
+    words.legendSample,
+  );
 }
 
 /**
@@ -291,7 +296,8 @@ export function openVersionsDialog(
    */
   /** @param version The copy to show, or null for his text as it stands. */
   function fillPreview(version: NoteVersion | null): void {
-    const { pieces, unrelated } = diffParagraphs(version?.text ?? current, current);
+    // Paragraph by paragraph only to tell a copy of some other text from one of this one.
+    const { unrelated } = diffParagraphs(version?.text ?? current, current);
 
     const aside = document.createElement('p');
     aside.className = 'review-note-aside';
@@ -308,9 +314,17 @@ export function openVersionsDialog(
         ? words.activeTextNow
         : words.versionWhen(describeWhen(version.takenAt, language));
 
+    const compared = copyAgainstText(version?.text ?? current, current);
+    const differs = compared.some((piece) => piece.kind !== 'same');
+
     const column = document.createElement('div');
     column.className = 'review-body';
-    column.append(aside, about, createDiffView(pieces, diffViewOptions(words)));
+    column.append(
+      aside,
+      about,
+      ...(differs ? [versionLegend(words)] : []),
+      createTextDiffView(compared, { previous: words.changePrevious, next: words.changeNext, at: words.changeAt }, { showTidied: true }),
+    );
 
     preview.replaceChildren(column);
   }

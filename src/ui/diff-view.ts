@@ -1,4 +1,3 @@
-import { type DiffPiece, type DiffRun, LINE_BREAK, type WordPiece, runsOf } from '../notes/paragraph-diff.ts';
 import {
   type ChangeCandidate,
   type DiffParagraph,
@@ -15,132 +14,20 @@ import {
   type ScreenPoint,
   createDiffChangeBar,
 } from './diff-change-bar.ts';
-import { beginningAndEnd } from './deleted-and-archived/text-snippet.ts';
 import { createStepper } from './stepper.ts';
 
-/** What a marked block calls itself, and which way round it is. */
-export interface DiffTag {
-  tag: string;
-  why: string;
-}
-
-export interface DiffViewOptions {
-  tags: Record<'added' | 'missing' | 'changed', DiffTag>;
-  stepper: {
-    previous: string;
-    next: string;
-    at: (at: number, total: number) => string;
-  };
-  /**
-   * Which side's words read as the new wording inside a changed paragraph, the
-   * other side's being struck through.
-   *
-   * It has to be said because blocks and words answer different questions. A
-   * green block is what the first text has that the second lacks. Inside a
-   * changed paragraph, green is whatever replaces the old wording — and when the
-   * first text is the older one, that is the second text's words.
-   */
-  newWords: 'added' | 'missing';
-  /**
-   * Shorten `missing` paragraphs to their two ends.
-   *
-   * For a caller whose second text he can read by closing the view, where
-   * printing it whole would bury what he came for under what he already has.
-   */
-  shortenMissing: boolean;
-}
-
-/** How much of a paragraph he can read elsewhere is worth repeating here. */
-const REMINDER = 150;
-
-function paragraphOf(text: string): HTMLParagraphElement {
-  const paragraph = document.createElement('p');
-  paragraph.textContent = text;
-  return paragraph;
-}
-
-/** One paragraph shown once, with only the words that changed marked. */
-function rewordedOf(words: readonly WordPiece[], newWords: DiffViewOptions['newWords']): HTMLParagraphElement {
-  const paragraph = document.createElement('p');
-
-  for (const word of words) {
-    // A break he made inside the paragraph, drawn as one. A break only one
-    // side has is drawn too: a line cannot be struck through.
-    if (word.text === LINE_BREAK) {
-      paragraph.append(document.createElement('br'));
-      continue;
-    }
-    if (word.kind === 'same') {
-      paragraph.append(`${word.text} `);
-      continue;
-    }
-    const marked = document.createElement('span');
-    marked.className = word.kind === newWords ? 'word-new' : 'word-gone';
-    marked.textContent = word.text;
-    paragraph.append(marked, ' ');
-  }
-  return paragraph;
-}
-
-/**
- * A paragraph with its middle dropped, and something in the gap that he cannot
- * have typed.
- *
- * Not an ellipsis: he uses those, and one of ours sitting in a paragraph of his
- * would read as his own trailing off rather than as the app having cut
- * something out. Three middle dots in the colour of the block instead, which
- * belong to nothing on his keyboard.
- */
-function shortenedOf(text: string): HTMLParagraphElement {
-  const { head, tail } = beginningAndEnd(text, REMINDER);
-  const paragraph = paragraphOf(head);
-  if (tail === null) return paragraph;
-
-  const cut = document.createElement('span');
-  cut.className = 'review-cut';
-  cut.textContent = '···';
-
-  paragraph.append(' ', cut, ` ${tail}`);
-  return paragraph;
-}
-
-function paragraphFor(piece: DiffPiece, options: DiffViewOptions): HTMLParagraphElement {
-  if (piece.kind === 'changed') return rewordedOf(piece.words, options.newWords);
-  if (piece.kind === 'missing' && options.shortenMissing) return shortenedOf(piece.text);
-  return paragraphOf(piece.text);
-}
-
-function tagFor({ tag, why }: DiffTag): HTMLElement {
-  const label = document.createElement('span');
-  label.className = 'review-tag';
-
-  const reason = document.createElement('span');
-  reason.className = 'review-tag-why';
-  reason.textContent = why;
-
-  label.append(`${tag} `, reason);
-  return label;
-}
-
-/** One run of paragraphs, tagged once. */
-function blockFor(run: DiffRun, options: DiffViewOptions): HTMLElement {
-  if (run.kind === 'same') {
-    const plain = document.createElement('div');
-    plain.append(...run.pieces.map((piece) => paragraphOf(piece.text)));
-    return plain;
-  }
-
-  const block = document.createElement('div');
-  block.className = `review-run review-run-${run.kind}`;
-  block.append(tagFor(options.tags[run.kind]), ...run.pieces.map((piece) => paragraphFor(piece, options)));
-  return block;
+/** What the stepper over a comparison says. */
+export interface StepperWords {
+  previous: string;
+  next: string;
+  at: (at: number, total: number) => string;
 }
 
 function stepperOver(
   box: HTMLElement,
   marked: string,
-  words: DiffViewOptions['stepper'],
-  review?: {
+  words: StepperWords,
+  review: {
     markCurrent: (change: HTMLElement, isCurrent: boolean, how: BecameCurrent) => void;
     changeAt: (clicked: Element) => HTMLElement | null;
     /** Set where changes can be acted on: there is then always a current one, even the only one. */
@@ -169,7 +56,7 @@ function stepperOver(
 
   function select(which: number, how: BecameCurrent): HTMLElement | undefined {
     const was = changes[showing];
-    if (was !== undefined) review?.markCurrent(was, false, how);
+    if (was !== undefined) review.markCurrent(was, false, how);
 
     showing = Math.max(0, Math.min(which, changes.length - 1));
     steps.showing(words.at(showing + 1, changes.length), {
@@ -178,7 +65,7 @@ function stepperOver(
     });
 
     const change = changes[showing];
-    if (change !== undefined) review?.markCurrent(change, true, how);
+    if (change !== undefined) review.markCurrent(change, true, how);
     return change;
   }
 
@@ -197,7 +84,7 @@ function stepperOver(
    */
   function selectClicked(event: MouseEvent): void {
     if (!(event.target instanceof Element) || getSelection()?.isCollapsed === false) return;
-    const clicked = review?.changeAt(event.target);
+    const clicked = review.changeAt(event.target);
     const which = clicked === null || clicked === undefined ? -1 : changes.indexOf(clicked);
     if (which >= 0) select(which, 'clicked');
   }
@@ -209,7 +96,7 @@ function stepperOver(
    * empty place left to click; except a paragraph whose only change is the break that
    * opens it, which has nothing else to click.
    */
-  function actOnClick(event: MouseEvent, editing: NonNullable<NonNullable<typeof review>['editing']>): void {
+  function actOnClick(event: MouseEvent, editing: NonNullable<(typeof review)['editing']>): void {
     if (!(event.target instanceof Element) || getSelection()?.isCollapsed === false) return;
     if (event.target.closest('.diff-edit') !== null) return;
     // With the bar up over it, his own wording clicked is his to type over, as Izmeni does.
@@ -223,55 +110,33 @@ function stepperOver(
     const paragraph = event.target.closest('.diff-paragraph');
     const isOnChange = event.target.closest(CHANGE_FRAGMENT) !== null;
     const isBreakOnly = paragraph?.classList.contains('diff-paragraph-changed') === true && paragraph.querySelector(CHANGE_FRAGMENT) === null;
-    const clicked = isOnChange || isBreakOnly ? review?.changeAt(event.target) : null;
+    const clicked = isOnChange || isBreakOnly ? review.changeAt(event.target) : null;
     const which = clicked === null || clicked === undefined ? -1 : changes.indexOf(clicked);
     if (which >= 0) select(which, 'clicked');
     else editing.onNothing();
   }
 
-  // After the view is in the document, or every measurement here is zero.
+  // After the view is in the document, or every measurement here is zero. There is always
+  // a current change, even the only one, so that the arrow says where it is; the stepper
+  // only once there is somewhere to step to.
   queueMicrotask(() => {
-    const editing = review?.editing;
-    if (editing !== undefined) {
-      if (changes.length === 0) return;
-      steps.root.hidden = changes.length < 2;
-      box.addEventListener('click', (event) => actOnClick(event, editing));
-      const { startAt } = editing;
-      if (startAt === undefined) goTo(0, 'restored');
-      else select(startAt, 'restored');
+    if (changes.length === 0) return;
+    steps.root.hidden = changes.length < 2;
+    const { editing } = review;
+    if (editing === undefined) {
+      // Only reading: a text short enough to see whole has nothing to steer through,
+      // and a stepper over it is chrome. Reviewing, going through the changes one by one
+      // is the work, and how much fits in the window has nothing to do with it.
+      if (box.scrollHeight <= box.clientHeight) steps.root.hidden = true;
+      box.addEventListener('click', selectClicked);
+      goTo(0, 'restored');
       return;
     }
-    // A text short enough to read without scrolling has nothing to steer
-    // through: he can see all of it, and a stepper over it is chrome. Unless he
-    // is reviewing, where going through the changes one by one is the work, and
-    // how much fits in the window has nothing to do with it.
-    const worthShowing = review !== undefined ? changes.length > 1 : box.scrollHeight > box.clientHeight;
-    if (changes.length === 0 || !worthShowing) return;
-    steps.root.hidden = false;
-    if (review !== undefined) box.addEventListener('click', selectClicked);
-    goTo(0, 'restored');
+    box.addEventListener('click', (event) => actOnClick(event, editing));
+    if (editing.startAt === undefined) goTo(0, 'restored');
+    else select(editing.startAt, 'restored');
   });
   return steps.root;
-}
-
-/**
- * Two texts read as one, with where they differ marked in place.
- *
- * Put it in the document in the same task it is made in: the stepper measures
- * itself in a microtask.
- */
-export function createDiffView(pieces: readonly DiffPiece[], options: DiffViewOptions): HTMLElement {
-  const text = document.createElement('div');
-  text.className = 'review-text';
-  text.append(...runsOf(pieces).map((run) => blockFor(run, options)));
-
-  // The stepper floats over the box, so the box is what it is placed against.
-  // Hung on the column instead, it lands on whatever lines are above the box —
-  // and how many of those there are varies.
-  const framed = document.createElement('div');
-  framed.className = 'review-framed';
-  framed.append(text, stepperOver(text, '.review-run', options.stepper));
-  return framed;
 }
 
 /** The box a wording is drawn in, by whose it is, and struck through where it is not the one going in. */
@@ -614,12 +479,15 @@ function placeCurrentMark(box: HTMLElement, mark: HTMLElement): void {
  * Two whole texts read as one, with each change marked where it falls, and an arrow
  * in the margin beside the current one.
  *
- * Put it in the document in the same task it is made in, as with
- * {@link createDiffView}.
+ * Put it in the document in the same task it is made in: the stepper measures itself,
+ * and makes the first change current, in a microtask.
+ *
+ * Without `editing` it only shows, as Ranije verzije does: no bar and nothing chosen, and
+ * a click only makes a change current.
  */
 export function createTextDiffView(
   pieces: readonly TextPiece[],
-  stepper: DiffViewOptions['stepper'],
+  stepper: StepperWords,
   { showTidied = false, editing }: { showTidied?: boolean; editing?: DiffEditing } = {},
 ): HTMLElement {
   const text = document.createElement('div');

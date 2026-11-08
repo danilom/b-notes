@@ -86,6 +86,27 @@ test('stops at the last difference rather than going round again', async ({ page
   await expect(back).toBeEnabled();
 });
 
+test('says what each mark means, and points at the difference he is on from the margin', async ({ page }) => {
+  await openCopyOf(page, LONG);
+  const panel = page.locator('#versions');
+  await expect(panel.locator('.diff-legend')).toContainText('bilo u ovoj verziji');
+
+  /** How far the arrow's middle is from the middle of the first line of the current difference. */
+  const arrowOffLine = (): Promise<number> =>
+    panel.locator('.review-text').first().evaluate((box) => {
+      const arrow = box.querySelector('.diff-current-mark')?.getBoundingClientRect();
+      const line = box.querySelector('.diff-current :is(.diff-new, .diff-gone)')?.getClientRects()[0];
+      if (arrow === undefined || line === undefined) return Number.POSITIVE_INFINITY;
+      return Math.abs(arrow.top + arrow.height / 2 - (line.top + line.bottom) / 2);
+    });
+
+  await expect(panel.locator('.diff-current-mark')).toBeVisible();
+  expect(await arrowOffLine()).toBeLessThan(4);
+  await panel.getByRole('button', { name: NEXT }).click();
+  await expect(panel.locator('.stepper-at')).toHaveText(/^Razlika 2 od/);
+  expect(await arrowOffLine()).toBeLessThan(4);
+});
+
 test('offers no stepper over a copy he can see all of at once', async ({ page }) => {
   /*
     Deliberate, and the kind of thing that quietly comes back. A copy that fits

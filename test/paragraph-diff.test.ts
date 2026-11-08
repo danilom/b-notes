@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { diffParagraphs, runsOf } from '../src/notes/paragraph-diff.ts';
+import { diffParagraphs } from '../src/notes/paragraph-diff.ts';
 
 const joined = (...paragraphs: string[]) => paragraphs.join('\n\n');
 const shown = (copy: string, active: string) =>
@@ -250,29 +250,5 @@ describe('finding the alignment', () => {
     );
 
     assert.deepEqual(kinds, ['same', 'added', 'missing']);
-  });
-});
-
-describe('grouping the paragraphs a label covers', () => {
-  it('labels a run of six once rather than six times', () => {
-    const runs = runsOf([
-      { kind: 'same', text: 'A' },
-      { kind: 'added', text: 'B' },
-      { kind: 'added', text: 'C' },
-      { kind: 'missing', text: 'D' },
-    ]);
-
-    assert.deepEqual(
-      runs.map((run) => [run.kind, run.pieces.map((piece) => piece.text)]),
-      [
-        ['same', ['A']],
-        ['added', ['B', 'C']],
-        ['missing', ['D']],
-      ],
-    );
-  });
-
-  it('gives nothing back for nothing', () => {
-    assert.deepEqual(runsOf([]), []);
   });
 });
