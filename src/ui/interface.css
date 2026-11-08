@@ -2679,7 +2679,9 @@ dialog::backdrop {
   height: 1em;
   background: var(--ink);
   clip-path: polygon(0 0, 100% 50%, 0 100%);
-  transform: translate(calc(-100% - var(--run-inset) + 0.2rem), -50%);
+  /* A touch below the line's middle: centred exactly, it read as pointing high, since
+     the letters' bulk sits below their box's middle. */
+  transform: translate(calc(-100% - var(--run-inset) + 0.2rem), calc(-50% + 0.08em));
   pointer-events: none;
 }
 
