@@ -676,7 +676,6 @@ body.lektor-open #lektor-side {
 .lektor-panel > .lektor-service-line {
   flex: none;
   margin: 0.6rem 0 0;
-  padding-left: 1.5rem;
 }
 
 /* Words that wrap like a sentence, the mark among them, so a long name takes a second line rather than splitting into columns. */
@@ -701,6 +700,13 @@ body.lektor-open #lektor-side {
 
 .lektor-about-row > .review-note-aside {
   flex: 1 1 20rem;
+}
+
+/* Flush with the box's edge, as the line naming the service above them is and the
+   checkbox is on the right. Indented, they lined up with nothing: the text inside the
+   box starts further in, past the margin the current change's mark sits in. */
+.lektor-body .review-note-aside {
+  padding-left: 0;
 }
 
 .lektor-only-new {
