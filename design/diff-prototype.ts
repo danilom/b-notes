@@ -162,6 +162,36 @@ dark.addEventListener('change', () => {
   document.documentElement.dataset['mode'] = dark.checked ? 'dark' : 'light';
 });
 
+const TAB_KEY = 'diff-prototype:tab';
+
+/** One panel of controls open at a time, or none, which leaves the page to the diff. */
+function openTab(name: string | null): void {
+  for (const tab of document.querySelectorAll<HTMLButtonElement>('.prototype-tabs [data-tab]')) {
+    const isOpen = tab.dataset['tab'] === name;
+    tab.setAttribute('aria-selected', String(isOpen));
+    element(`tab-${tab.dataset['tab'] ?? ''}`, HTMLElement).hidden = !isOpen;
+  }
+  try {
+    localStorage.setItem(TAB_KEY, name ?? '');
+  } catch (error) {
+    console.warn('The open tab could not be remembered', error);
+  }
+}
+
+function rememberedTab(): string | null {
+  try {
+    return localStorage.getItem(TAB_KEY) || null;
+  } catch (error) {
+    console.warn('The open tab could not be read back', error);
+    return null;
+  }
+}
+
+for (const tab of document.querySelectorAll<HTMLButtonElement>('.prototype-tabs [data-tab]')) {
+  tab.addEventListener('click', () => openTab(tab.getAttribute('aria-selected') === 'true' ? null : (tab.dataset['tab'] ?? null)));
+}
+openTab(rememberedTab());
+
 // Opens on the one with every kind of change in it, for judging how each is drawn.
 const opening = Math.max(0, samples.findIndex(({ name }) => name.startsWith('Svi slučajevi')));
 listSamples(opening);

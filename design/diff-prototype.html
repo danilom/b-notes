@@ -30,6 +30,66 @@
         gap: 0.5rem 1rem;
       }
 
+      .prototype-header {
+        flex: none;
+      }
+
+      .prototype-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        gap: 0.5rem 1.5rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .prototype-sample {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        min-width: 0;
+        padding-bottom: 0.4rem;
+      }
+
+      /* Long names cut short when closed; the open list still shows them whole. */
+      .prototype-sample select {
+        max-width: min(24rem, 60vw);
+      }
+
+      .prototype-controls select {
+        max-width: 14rem;
+      }
+
+      .prototype-tabs {
+        display: flex;
+        gap: 0.2rem;
+      }
+
+      /* A tab: the open one joined to its panel below, and clicked again it folds away. */
+      .prototype-tabs button {
+        margin-bottom: -1px;
+        padding: 0.35rem 0.9rem;
+        border: 1px solid transparent;
+        border-radius: 6px 6px 0 0;
+        background: none;
+        color: var(--quiet);
+      }
+
+      .prototype-tabs button[aria-selected='true'] {
+        border-color: var(--line);
+        border-bottom-color: var(--page);
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      .prototype-tab-panel {
+        padding: 0.4rem 0 0.6rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .prototype-tab-panel[hidden] {
+        display: none;
+      }
+
       .prototype-controls button {
         padding: 0.25rem 0.7rem;
       }
@@ -60,7 +120,13 @@
       .prototype-boxes {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
-        gap: 0.8rem;
+        gap: 0.4rem 0.8rem;
+      }
+
+      .prototype-boxes #swap {
+        grid-column: 1 / -1;
+        justify-self: start;
+        padding: 0.25rem 0.7rem;
       }
 
       .prototype-boxes label {
@@ -73,7 +139,7 @@
       .prototype-boxes textarea {
         box-sizing: border-box;
         width: 100%;
-        height: 16vh;
+        height: 30vh;
         padding: 0.5rem 0.7rem;
         resize: vertical;
         border: 1px solid var(--line);
@@ -290,12 +356,19 @@
     </style>
   </head>
   <body>
-    <div class="prototype-controls">
-      <label>
+    <div class="prototype-header">
+    <div class="prototype-bar">
+      <label class="prototype-sample">
         Primer
         <select id="sample"></select>
       </label>
-      <button type="button" id="swap">Zameni polja</button>
+      <div class="prototype-tabs" role="tablist" aria-label="Podešavanja prototipa">
+        <button type="button" role="tab" aria-selected="false" aria-controls="tab-showing" data-tab="showing">Prikaz</button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="tab-looks" data-tab="looks">Izgled</button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="tab-texts" data-tab="texts">Tekstovi</button>
+      </div>
+    </div>
+    <div class="prototype-controls prototype-tab-panel" id="tab-showing" role="tabpanel" hidden>
       <label>
         <input type="checkbox" id="merging" checked />
         Spoji bliske izmene
@@ -316,6 +389,8 @@
         <input type="checkbox" id="read-only" />
         Samo za čitanje
       </label>
+    </div>
+    <div class="prototype-controls prototype-tab-panel" id="tab-looks" role="tabpanel" hidden>
       <label>
         Isticanje pod mišem
         <select id="hover">
@@ -332,8 +407,6 @@
         <input type="checkbox" id="dark" />
         Tamno
       </label>
-    </div>
-    <div class="prototype-controls">
       <label>
         Njegov tekst
         <select id="own-look">
@@ -361,7 +434,8 @@
         Tačke na dugmadi
       </label>
     </div>
-    <div class="prototype-boxes">
+    <div class="prototype-boxes prototype-tab-panel" id="tab-texts" role="tabpanel" hidden>
+      <button type="button" id="swap">Zameni polja</button>
       <label>
         Trenutno
         <textarea id="current" spellcheck="false"></textarea>
@@ -374,6 +448,7 @@
         Rezultat
         <textarea id="result" spellcheck="false" readonly></textarea>
       </label>
+    </div>
     </div>
     <div id="view"></div>
     <div class="panel prototype-panel">
