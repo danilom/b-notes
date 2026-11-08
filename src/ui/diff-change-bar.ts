@@ -337,9 +337,14 @@ export function createDiffChangeBar(
     for (const marked of box.querySelectorAll(`.${BAR_OVER}`)) marked.classList.remove(BAR_OVER);
   }
 
-  /** Over the current change, decided or not, unless he has put it away or has just decided it. */
+  /**
+   * Over the current change while it is open, unless he has put the bar away or has just
+   * chosen. Never over a collapsed one, stepped to or not: its wordings are not showing,
+   * and the choices would be about something he cannot see. A click opens it, bar and all.
+   */
   const showCurrent = (): void => {
-    if (current === null || isEditing || state !== 'shown') hide();
+    const isOpen = current !== null && editing.choiceOf(changes.indexOf(current)).isOpen;
+    if (current === null || !isOpen || isEditing || state !== 'shown') hide();
     else showOver(current);
   };
 
