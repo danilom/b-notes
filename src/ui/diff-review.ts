@@ -1,6 +1,6 @@
-import { type ChangeCandidate, type TextPiece, chosenText } from '../notes/text-diff.ts';
+import { type TextPiece, chosenText } from '../notes/text-diff.ts';
 import { type ChangeChoice, piecesAfter, textAfter } from '../notes/text-review.ts';
-import type { BarState, DiffEditing } from './diff-change-bar.ts';
+import type { BarState, ChangeSettling, DiffEditing, ScreenPoint } from './diff-change-bar.ts';
 
 /** One proposal being gone through: what he has chosen in it, and where he is in it. */
 export interface DiffReview {
@@ -44,7 +44,7 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
   let currentChange: number | undefined;
   let barState: BarState = 'shown';
   /** The change just chosen, and as which wording, for the next drawing alone to settle it from its box. */
-  let settling: { at: number; from: ChangeCandidate } | null = null;
+  let settling: ChangeSettling | null = null;
 
   const choiceAt = (at: number): ChangeChoice => choices.get(at) ?? { chosen: 'proposed' };
   const isCollapsed = (at: number): boolean => (shownByHim.get(at) ?? (isOnlyNew ? 'collapsed' : 'opened')) === 'collapsed';
@@ -56,10 +56,10 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
    * after the click, once the others have faded; if he has stepped on meanwhile, he stays
    * where he went, with the bar as it is there.
    */
-  const settle = (at: number, choice: ChangeChoice): void => {
+  const settle = (at: number, choice: ChangeChoice, startedAt?: ScreenPoint): void => {
     choices.set(at, choice);
     shownByHim.set(at, 'collapsed');
-    settling = { at, from: choice.chosen };
+    settling = { at, from: choice.chosen, ...(startedAt === undefined ? {} : { startedAt }) };
     if (currentChange === undefined || currentChange === at) {
       currentChange = at;
       barState = 'quiet';
@@ -67,9 +67,9 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
     redraw();
   };
 
-  const choose = (at: number, chosen: 'old' | 'proposed'): void => {
+  const choose = (at: number, chosen: 'old' | 'proposed', startedAt?: ScreenPoint): void => {
     const { own } = choiceAt(at);
-    settle(at, own === undefined ? { chosen } : { chosen, own });
+    settle(at, own === undefined ? { chosen } : { chosen, own }, startedAt);
   };
 
   /** Typed out the same as the old text or the proposal is choosing that one, not writing a third. */
@@ -83,7 +83,7 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
   };
 
   /** Once only: any later drawing, by a step or another choice, shows it settled already. */
-  const takeSettling = (): { settling?: { at: number; from: ChangeCandidate } } => {
+  const takeSettling = (): { settling?: ChangeSettling } => {
     const taken = settling;
     settling = null;
     return taken === null ? {} : { settling: taken };

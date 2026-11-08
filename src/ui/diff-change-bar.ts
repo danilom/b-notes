@@ -21,6 +21,19 @@ export interface ChangeStanding {
   hasOwn: boolean;
 }
 
+/** A place in the window, in its pixels. */
+export interface ScreenPoint {
+  left: number;
+  top: number;
+}
+
+/** A change just chosen: which, as which wording, and where that wording's words stood if they can slide. */
+export interface ChangeSettling {
+  at: number;
+  from: ChangeCandidate;
+  startedAt?: ScreenPoint;
+}
+
 /** What the three choices are called on the bar. */
 export interface ChoiceWords {
   old: string;
@@ -38,11 +51,14 @@ export interface DiffEditing {
   /** How the bar was left before this drawing of the view. */
   barStarts?: BarState;
   /** A change chosen just before this drawing, to be shown settling from the box of the wording chosen. */
-  settling?: { at: number; from: ChangeCandidate };
+  settling?: ChangeSettling;
   onBarState: (state: BarState) => void;
   choiceOf: (changeAt: number) => ChangeStanding;
-  /** Picks the old text or the proposal, which collapses the change to it. */
-  onChoose: (changeAt: number, chosen: 'old' | 'proposed') => void;
+  /**
+   * Picks the old text or the proposal, which collapses the change to it.
+   * @param startedAt Where the words chosen stood on the screen, for them to slide from.
+   */
+  onChoose: (changeAt: number, chosen: 'old' | 'proposed', startedAt?: ScreenPoint) => void;
   /** Shows every wording of a collapsed change, choosing nothing. */
   onOpen: (changeAt: number) => void;
   /** The wording an edit of this change starts from. */
@@ -259,7 +275,24 @@ export function createDiffChangeBar(
     const kept = chosen === 'old' ? '.diff-gone' : '.diff-new';
     const wordings = fragmentsOf(change).flatMap((fragment) => [...fragment.querySelectorAll('.diff-gone, .diff-new, .diff-own')]);
     for (const wording of wordings) if (!wording.matches(kept)) wording.classList.add('diff-leaving');
-    setTimeout(() => editing.onChoose(at, chosen), LEAVING_MS);
+    const keptBoxes = wordings.filter((wording) => wording.matches(kept));
+    setTimeout(() => {
+      const startedAt = wordsStart(keptBoxes);
+      editing.onChoose(at, chosen, ...(startedAt === undefined ? [] : [startedAt]));
+    }, LEAVING_MS);
+  }
+
+  /**
+   * Where the words in a box begin, inside its padding, if it is one box on one line:
+   * only such a one can slide to where it lands. Wrapped or in pieces, it does not move.
+   */
+  function wordsStart(boxes: readonly Element[]): ScreenPoint | undefined {
+    const [box, ...more] = boxes;
+    const lines = box?.getClientRects();
+    const line = lines?.[0];
+    if (box === undefined || more.length > 0 || lines?.length !== 1 || line === undefined) return undefined;
+    const style = getComputedStyle(box);
+    return { left: line.left + parseFloat(style.paddingLeft), top: line.top + parseFloat(style.paddingTop) };
   }
 
   /** The one choice that also opens something to type in, and says so. */

@@ -7,7 +7,13 @@ import {
 } from '../notes/text-diff.ts';
 import { letterSegmentsOf } from '../notes/text-review.ts';
 import { scrollShowing } from './change-in-view.ts';
-import { type BecameCurrent, type DiffChangeBar, type DiffEditing, createDiffChangeBar } from './diff-change-bar.ts';
+import {
+  type BecameCurrent,
+  type DiffChangeBar,
+  type DiffEditing,
+  type ScreenPoint,
+  createDiffChangeBar,
+} from './diff-change-bar.ts';
 import { beginningAndEnd } from './deleted-and-archived/text-snippet.ts';
 import { createStepper } from './stepper.ts';
 
@@ -543,6 +549,43 @@ function markSettling(changes: readonly HTMLElement[], settling: DiffEditing['se
     fragment.classList.add('diff-settling');
     fragment.dataset['settlingFrom'] = settling.from;
   }
+  const { startedAt } = settling;
+  // Once the view is in the document and scrolled back to where he was, which is a task away.
+  if (startedAt !== undefined) requestAnimationFrame(() => slideFrom(change, startedAt));
+}
+
+const SLIDE_MS = 350;
+
+/**
+ * The words chosen moved from where they stood, while the others faded, to where they
+ * now are: started where they were and let glide home, rather than jumping. Only words
+ * on one line: the shift is a transform, which wrapped text cannot take.
+ */
+function slideFrom(change: HTMLElement, startedAt: ScreenPoint): void {
+  const words = change.querySelector<HTMLElement>('.diff-resolved');
+  if (words === null || !words.isConnected) return;
+  // A transform moves only a box, and these words are inline text until they arrive.
+  words.style.display = 'inline-block';
+  const lines = words.getClientRects();
+  const landed = lines[0];
+  if (lines.length !== 1 || landed === undefined) {
+    words.style.display = '';
+    return;
+  }
+  const [shiftX, shiftY] = [startedAt.left - landed.left, startedAt.top - landed.top];
+  if (Math.abs(shiftX) < 1 && Math.abs(shiftY) < 1) {
+    words.style.display = '';
+    return;
+  }
+  const glide = words.animate([{ transform: `translate(${shiftX}px, ${shiftY}px)` }, { transform: 'none' }], {
+    duration: SLIDE_MS,
+    easing: 'ease-out',
+  });
+  const arrived = (): void => {
+    words.style.display = '';
+  };
+  glide.addEventListener('finish', arrived);
+  glide.addEventListener('cancel', arrived);
 }
 
 /**

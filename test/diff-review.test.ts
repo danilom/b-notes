@@ -74,6 +74,12 @@ describe('choosing a wording', () => {
     assert.deepEqual(review.editing().settling, { at: 0, from: 'own' });
   });
 
+  it('passes on where the chosen words stood, for them to slide from', () => {
+    const review = createDiffReview(pieces, nothing);
+    review.editing().onChoose(1, 'proposed', { left: 240, top: 80 });
+    assert.deepEqual(review.editing().settling, { at: 1, from: 'proposed', startedAt: { left: 240, top: 80 } });
+  });
+
   it('leaves him where he stepped to, bar and all, when a choice lands after he has moved on', () => {
     const review = createDiffReview(pieces, nothing);
     const editing = review.editing();
