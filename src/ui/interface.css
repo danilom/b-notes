@@ -231,14 +231,15 @@
   --l-chosen-soft: 31%;
   --l-found: 38%;
   --l-on-chosen: 10%;
-  /* The three at one lightness and much the same chroma, in OKLCH, where equal lightness
-     looks equally bright: set in HSL, the green stood out from the other two, then the red
-     sank below them, as no part of the meaning. */
-  --diff-new-fill: oklch(0.76 0.13 152);
+  /* The three at one lightness and one chroma in OKLCH, differing only in hue. Set in HSL,
+     the green stood out from the other two, then the red sank below them; and with a little
+     more chroma than the others, the green still looked the strongest, since the more
+     colourful of two equally light colours looks the brighter. */
+  --diff-new-fill: oklch(0.76 0.1 152);
   --diff-new-ink: hsl(0 0% 5%);
-  --diff-gone-fill: oklch(0.76 0.12 25);
+  --diff-gone-fill: oklch(0.76 0.1 25);
   --diff-gone-ink: hsl(0 0% 5%);
-  --diff-own-fill: oklch(0.76 0.11 255);
+  --diff-own-fill: oklch(0.76 0.1 255);
   --diff-own-ink: hsl(0 0% 5%);
   --diff-tidied-ink: hsl(4 90% 72%);
   --diff-resolved-ink: hsl(142 55% 66%);
