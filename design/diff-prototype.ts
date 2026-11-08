@@ -28,7 +28,7 @@ const pencil = element('pencil', HTMLSelectElement);
 const paragraphMarks = element('paragraph-marks', HTMLSelectElement);
 const markColour = element('mark-colour', HTMLSelectElement);
 const lineStyle = element('line-style', HTMLSelectElement);
-const preamble = element('preamble', HTMLInputElement);
+const preamble = element('preamble', HTMLSelectElement);
 const view = element('view', HTMLElement);
 
 /** The bar's choices named for what each one is, rather than for what it does. */
@@ -44,6 +44,45 @@ function aside(text: string): HTMLParagraphElement {
 /** How many small corrections there are, so that they are never a secret. */
 const tidyingNote = (pieces: readonly TextPiece[]): string =>
   `Sitne popravke: ${pieces.filter((piece) => piece.kind === 'tidy').length}.`;
+
+/** A sample word drawn with the marks the text itself uses, so that it looks exactly as there. */
+function markedSample(classes: string, before: string, marked: string, after = ''): HTMLElement {
+  const word = document.createElement('span');
+  word.className = 'prototype-legend-sample';
+  const mark = document.createElement('span');
+  mark.className = classes;
+  mark.textContent = marked;
+  word.append(before, mark, after);
+  return word;
+}
+
+function legendItem(shown: HTMLElement, said: string): HTMLElement {
+  const item = document.createElement('span');
+  item.className = 'prototype-legend-item';
+  item.append(shown, said);
+  return item;
+}
+
+/**
+ * What each mark in the text means, each beside a sample drawn as it is there, with the
+ * counts after. A draft of the wording, for trying.
+ */
+function legend(pieces: readonly TextPiece[]): HTMLElement {
+  const count = (kind: TextPiece['kind']): number => pieces.filter((piece) => piece.kind === kind).length;
+  const line = document.createElement('p');
+  line.className = 'prototype-legend';
+  const counts = document.createElement('span');
+  counts.textContent = `Veće promene: ${count('change')}, sitne popravke: ${count('tidy')}.`;
+  line.append(
+    legendItem(markedSample('diff-gone diff-struck', '', 'reč'), 'tvoj stari tekst'),
+    legendItem(markedSample('diff-new', '', 'reč'), 'predlog'),
+    legendItem(markedSample('diff-own', '', 'reč'), 'tvoja izmena'),
+    legendItem(markedSample('diff-tidied', 're', 'č'), 'ispravljeno slovo'),
+    legendItem(markedSample('diff-resolved', '', 'reč'), 'izabrano'),
+    counts,
+  );
+  return line;
+}
 
 /** The proposal in front of him, which starts over whenever what is compared changes. */
 let review: DiffReview | null = null;
@@ -64,9 +103,11 @@ function render(): void {
   const column = document.createElement('div');
   // The Lektor's own, so that its rules for the review apply here as there.
   column.className = 'review-body lektor-body';
-  if (preamble.checked) {
+  if (preamble.value === 'lines') {
     column.append(aside('Precrtano je trenutni tekst, zeleno je predlog.'));
     if (hasTidying && tidying.value !== 'full') column.append(aside(tidyingNote(pieces)));
+  } else if (preamble.value === 'legend') {
+    column.append(legend(merging.checked ? mergeCloseChanges(shown) : shown));
   }
   column.append(
     createTextDiffView(
@@ -244,15 +285,17 @@ for (const control of [hover, ownLook, chosenLook, dots, pencil, paragraphMarks,
 showLooks();
 choiceWords.addEventListener('change', renderKeepingPlace);
 
-const PREAMBLE_KEY = 'diff-prototype:preamble';
+// Its own key: the one before held "on" and "off", which mean nothing to this list.
+const PREAMBLE_KEY = 'diff-prototype:above-text';
 try {
-  preamble.checked = localStorage.getItem(PREAMBLE_KEY) !== 'off';
+  const remembered = localStorage.getItem(PREAMBLE_KEY);
+  if (remembered !== null && [...preamble.options].some((option) => option.value === remembered)) preamble.value = remembered;
 } catch (error) {
   console.warn('Whether to show the lines above the text could not be read back', error);
 }
 preamble.addEventListener('change', () => {
   try {
-    localStorage.setItem(PREAMBLE_KEY, preamble.checked ? 'on' : 'off');
+    localStorage.setItem(PREAMBLE_KEY, preamble.value);
   } catch (error) {
     console.warn('Whether to show the lines above the text could not be remembered', error);
   }

@@ -488,6 +488,30 @@
         margin-bottom: 0;
       }
 
+      /* What each mark means, each drawn as it is in the text, on one line above it. */
+      .prototype-legend {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.3rem 1.1rem;
+        margin: 0 0 0.6rem;
+        color: var(--quiet);
+        font-size: 0.95em;
+      }
+
+      .prototype-legend-item {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 0.4em;
+        white-space: nowrap;
+      }
+
+      .prototype-legend-sample {
+        font-family: var(--writing-font);
+        font-size: 1.05em;
+        color: var(--ink);
+      }
+
       /* Instead, a mark in the margin beside the lines of the current change: the first
          of them, or all. As wide as the paragraph bar was and where it stood, in ink. */
       #view .review-text {
@@ -599,9 +623,13 @@
             <input type="checkbox" id="read-only" />
             Samo za čitanje
           </label>
-          <label title="Redovi koje aplikacija piše iznad teksta: šta je koja boja, koliko je izmena">
-            <input type="checkbox" id="preamble" checked />
-            Redovi iznad teksta
+          <label class="prototype-pick" title="Šta aplikacija piše iznad teksta: šta je koja boja, koliko je izmena">
+            <span>Iznad teksta</span>
+            <select id="preamble">
+              <option value="legend" selected>Legenda s primerima</option>
+              <option value="lines">Redovi kao sada</option>
+              <option value="none">Ništa</option>
+            </select>
           </label>
         </div>
         <div class="prototype-column">
