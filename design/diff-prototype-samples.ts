@@ -105,13 +105,24 @@ function untidyPair(): Pick<DiffSample, 'current' | 'proposed'> {
  * Each pair is one kind of edit a proofreader makes, rather than a realistic
  * essay, so that when one reads badly it is plain which kind that was.
  */
+const QUIET_BETWEEN = 'Selo ju je brzo zaboravilo.';
+
+/**
+ * A long paragraph, and the same told again in other words, as a Dubinska prerada does.
+ * Sharing no phrase longer than a word or two, so that it is one change and not several.
+ */
+const LONG_BEFORE =
+  'Godinama kasnije, kad je već i Marko bio pokojni, a djeca iz sela odrasla i razišla se po svijetu, neko je u kuću ponovo unio namještaj. Ljudi su govorili da je to njen unuk, koji je došao iz grada da vidi gdje je baka provela onu jednu zimu, ali niko to nije znao pouzdano, jer nije razgovarao ni sa kim i izlazio je samo uveče, kad su sokaci bili prazni. Jedne noći u prozoru se opet upalilo svjetlo, i stari ljudi su se prekrstili.';
+const LONG_AFTER =
+  'Prošlo je mnogo godina. Marko je umro, djeca su odrasla i otišla, a u napuštenu kuću jednog dana neko je donio stolove, krevete i ormar. Po selu se pričalo da je stigao njen unuk sa strane, željan da upozna mjesto na kojem je njegova baka prezimila, ali to niko nije mogao potvrditi: ni sa kim nije progovorio, a napolje je izlazio tek po mraku, kad bi se ulice ispraznile. Kad je jedne noći u prozoru ponovo zasvijetlilo, starci su se krstili.';
+
 /**
  * Every kind of change the review has to draw, each once and far enough from the others
  * not to be merged with them, for judging how each one looks and answers: some are rare
  * in a real reply and easy to miss there.
  */
 const EVERY_CASE: DiffSample = {
-  name: 'Svi slučajevi: naslov, dodato, obrisano, prepisano, slova, zarezi, spojeni i podeljeni pasusi',
+  name: 'Svi slučajevi: naslov, dodato, obrisano, prepisano, slova, zarezi, spojeni i podeljeni pasusi, dugačka izmena',
   current: [
     'Kuća na kraju sela',
     // A missing mark, a missing comma, and a word replaced.
@@ -131,6 +142,10 @@ const EVERY_CASE: DiffSample = {
     'Tog proljeća rijeka je nabujala kao nikad prije.',
     // One short word for another.
     'Kad je otišla, kuća je opet ostala prazna i tiha.',
+    // Unchanged, so that the paragraph put in above stays apart from the one below.
+    QUIET_BETWEEN,
+    // A long paragraph written anew from start to end: one change, and a long one.
+    LONG_BEFORE,
   ].join('\n\n'),
   proposed: [
     // Only added, on the title line, where the bar has least room.
@@ -145,6 +160,8 @@ const EVERY_CASE: DiffSample = {
     'Kad je otišla, kuća je opet ostala prazna a tiha.',
     // A whole paragraph put in.
     'Ali prozori su i dalje bili čisti.',
+    QUIET_BETWEEN,
+    LONG_AFTER,
   ].join('\n\n'),
 };
 

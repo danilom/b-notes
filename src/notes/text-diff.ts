@@ -13,9 +13,10 @@ import { alignSequences } from './sequence-alignment.ts';
  * `tidy` is a change like any other in what it holds, and only ever made by
  * {@link separateTidying}, for a change nobody needs to read.
  *
- * `resolved`, `undone`, `proposed` and `letters` are what a review leaves on a piece: see
- * `text-review.ts`. A resolved change is one he has dealt with, and `undone` says
- * it went back to what was there.
+ * `chosen`, `own`, `collapsed`, `proposed` and `letters` are what a review leaves on a
+ * piece: see `text-review.ts`. A change offers up to three wordings, its old text, the
+ * proposal and his own, and goes in as the one `chosen`, the proposal unless he picks
+ * another. `collapsed` draws it as that one alone.
  */
 export type TextPiece =
   | { kind: 'same'; text: string }
@@ -23,11 +24,22 @@ export type TextPiece =
       kind: 'change' | 'tidy';
       removed: string;
       added: string;
-      resolved?: boolean;
-      undone?: boolean;
+      chosen?: ChangeCandidate;
+      own?: string;
+      collapsed?: boolean;
       proposed?: string;
       letters?: readonly string[];
     };
+
+/** The wordings a change can go in as: what was there, what was proposed, what he wrote. */
+export type ChangeCandidate = 'old' | 'proposed' | 'own';
+
+/** What a change puts in the text: the wording chosen, or the proposal if none is. */
+export function chosenText(piece: { removed: string; added: string; chosen?: ChangeCandidate; own?: string }): string {
+  if (piece.chosen === 'old') return piece.removed;
+  if (piece.chosen === 'own') return piece.own ?? piece.added;
+  return piece.added;
+}
 
 /**
  * A word, a run of spaces and breaks, or one mark of punctuation.
@@ -184,9 +196,14 @@ export function tidiedLettersOf({ removed, added }: Pick<Change, 'removed' | 'ad
 
 /** A run of text in one paragraph as drawn, and whose it is. */
 export interface DiffPart {
-  /** `tidied-away` holds no text: it says something was corrected at this spot and left nothing to show. */
-  kind: 'same' | 'removed' | 'added' | 'resolved' | 'tidied' | 'tidied-away';
+  /**
+   * `tidied-away` holds no text: it says something was corrected at this spot and left nothing to show.
+   * `removed`, `added` and `own` are a change's old text, the proposal and his wording, side by side.
+   */
+  kind: 'same' | 'removed' | 'added' | 'own' | 'resolved' | 'tidied' | 'tidied-away';
   text: string;
+  /** A wording of a change that is not the one going in. */
+  struck?: true;
   /** The first part of a change, where a change is carried across paragraphs. */
   opensChange: boolean;
   /** What `tidied` or `tidied-away` text was before, so what was done there can be told. */
@@ -206,7 +223,7 @@ export interface DiffParagraph {
 }
 
 /** Whether a part earns its paragraph a mark in the margin. What he has resolved does not: that paragraph is done. */
-const isMarkedChange = ({ kind }: DiffPart): boolean => kind === 'removed' || kind === 'added';
+const isMarkedChange = ({ kind }: DiffPart): boolean => kind === 'removed' || kind === 'added' || kind === 'own';
 
 /**
  * The pieces laid out as paragraphs, for drawing: which ones get a mark in the
@@ -236,14 +253,27 @@ export function paragraphsOf(pieces: readonly TextPiece[], { showTidied = false 
     open.changed ||= isMarkedChange(part);
   };
 
-  const addSplit = (kind: DiffPart['kind'], text: string, opensChange: boolean): void => {
+  const addSplit = (kind: DiffPart['kind'], text: string, opensChange: boolean, struck = false): void => {
     let opening = opensChange;
     text.split(BLANK_LINES).forEach((chunk, at) => {
       if (at > 0) startParagraph(false);
       if (chunk.length === 0) return;
-      addPart({ kind, text: chunk, opensChange: opening });
+      addPart({ kind, text: chunk, opensChange: opening, ...(struck ? { struck: true as const } : {}) });
       opening = false;
     });
+  };
+
+  /**
+   * One wording of an open change. Spacing alone is not split, having no text either side
+   * of the break; one that puts a break in still starts a paragraph, as it would in the text.
+   */
+  const addCandidate = (kind: 'removed' | 'added' | 'own', text: string, opensChange: boolean, struck: boolean): void => {
+    if (/\S/.test(text)) {
+      addSplit(kind, text, opensChange, struck);
+      return;
+    }
+    addPart({ kind, text, opensChange, ...(struck ? { struck: true as const } : {}) });
+    if (kind !== 'removed' && BLANK_LINES.test(text)) startParagraph(true);
   };
 
   let tidyAt = 0;
@@ -273,9 +303,8 @@ export function paragraphsOf(pieces: readonly TextPiece[], { showTidied = false 
       addSplit('same', piece.added, false);
       continue;
     }
-    const { removed, added } = piece;
-    if (piece.resolved === true) {
-      const text = piece.undone === true ? removed : added;
+    if (piece.collapsed === true) {
+      const text = chosenText(piece);
       if (/\S/.test(text)) {
         addSplit('resolved', text, true);
       } else {
@@ -286,18 +315,19 @@ export function paragraphsOf(pieces: readonly TextPiece[], { showTidied = false 
       }
       continue;
     }
-    if (removed.length > 0) {
-      if (/\S/.test(removed)) addSplit('removed', removed, true);
-      else addPart({ kind: 'removed', text: removed, opensChange: true });
-    }
-    if (added.length > 0) {
-      const opensChange = removed.length === 0;
-      if (/\S/.test(added)) {
-        addSplit('added', added, opensChange);
-      } else {
-        addPart({ kind: 'added', text: added, opensChange });
-        if (BLANK_LINES.test(added)) startParagraph(true);
-      }
+    // Open: every wording there is, in the order they came about, each but the chosen one
+    // struck out. One that is nothing is left out; the others struck say as much.
+    const chosen = piece.chosen ?? 'proposed';
+    const candidates: ['removed' | 'added' | 'own', string, boolean][] = [
+      ['removed', piece.removed, chosen === 'old'],
+      ['added', piece.added, chosen === 'proposed'],
+      ...(piece.own === undefined ? [] : [['own', piece.own, chosen === 'own'] as ['own', string, boolean]]),
+    ];
+    let opening = true;
+    for (const [kind, text, isChosen] of candidates) {
+      if (text.length === 0) continue;
+      addCandidate(kind, text, opening, !isChosen);
+      opening = false;
     }
   }
   return paragraphs.filter((paragraph) => paragraph.parts.length > 0).flatMap(stanzasOf);

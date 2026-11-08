@@ -115,6 +115,9 @@
   --diff-new-ink: hsl(0 0% 100%);
   --diff-gone-fill: hsl(4 75% 36%);
   --diff-gone-ink: hsl(0 0% 100%);
+  /* His own wording: no hue at all, which is the one difference a warm screen keeps. */
+  --diff-own-fill: hsl(220 15% 28%);
+  --diff-own-ink: hsl(0 0% 100%);
   /* A small correction: the red of a teacher's pen, which also keeps its colour
      on a warm screen, where a blue or a green turns as dark as the text. It does
      not read as a removal, which is a white word struck through on a red block. */
@@ -264,6 +267,8 @@
   --diff-new-ink: hsl(0 0% 5%);
   --diff-gone-fill: hsl(4 75% 72%);
   --diff-gone-ink: hsl(0 0% 5%);
+  --diff-own-fill: hsl(220 12% 82%);
+  --diff-own-ink: hsl(0 0% 5%);
   --diff-tidied-ink: hsl(4 90% 72%);
   --diff-resolved-ink: hsl(142 55% 66%);
   --diff-current-fill: rgb(255 255 255 / 0.03);
@@ -2758,27 +2763,45 @@ dialog::backdrop {
   color: var(--diff-resolved-ink);
 }
 
+/* The wordings of an open change, each in a box of its own colour. The colour says
+   whose words they are; the line through them says they are not the ones going in. */
 .diff-new,
-.diff-gone {
+.diff-gone,
+.diff-own {
   padding: 0.05em 3px;
+  background-color: var(--candidate-fill);
+  color: var(--candidate-ink);
   box-decoration-break: clone;
 }
 
 .diff-new {
-  background: var(--diff-new-fill);
-  color: var(--diff-new-ink);
+  --candidate-fill: var(--diff-new-fill);
+  --candidate-ink: var(--diff-new-ink);
+}
+
+.diff-gone {
+  --candidate-fill: var(--diff-gone-fill);
+  --candidate-ink: var(--diff-gone-ink);
+}
+
+.diff-own {
+  --candidate-fill: var(--diff-own-fill);
+  --candidate-ink: var(--diff-own-ink);
 }
 
 /* Struck through by a line drawn across the mark rather than by text-decoration,
-   which stops at the letters and looks stubby on a short word. */
-.diff-gone {
-  background: linear-gradient(var(--diff-gone-ink), var(--diff-gone-ink)) 50% 58% / calc(100% - 4px) 1px no-repeat
-    var(--diff-gone-fill);
-  color: var(--diff-gone-ink);
+   which stops at the letters and looks stubby on a short word. Two pixels, so that
+   it reads at a glance which of two or three boxes is struck. */
+.diff-struck {
+  --strike: 2px;
+  background-image: linear-gradient(var(--candidate-ink), var(--candidate-ink));
+  background-position: 50% 58%;
+  background-size: calc(100% - 4px) var(--strike);
+  background-repeat: no-repeat;
 }
 
-/* One gap between what went and what replaced it, whatever their sizes. */
-.diff-gone + .diff-new {
+/* One gap between the wordings of a change, whatever their sizes. */
+:is(.diff-gone, .diff-new, .diff-own) + :is(.diff-new, .diff-own, .diff-edit) {
   margin-left: 3px;
 }
 
@@ -2816,31 +2839,50 @@ dialog::backdrop {
   min-width: 0;
 }
 
-/* Wider than the words alone, because of the arrow, and not in either colour:
-   those are for the decisions, and this goes back on one. */
-.diff-bar .diff-bar-reopen {
-  min-width: 8.6em;
+/* Each choice in the colour of the wording it is for. A little faint until the
+   pointer is on it, which is what the plain buttons say by lighting up, and these are
+   too strong in colour to do it that way; the one in effect at full strength. */
+.diff-bar .diff-bar-choice {
+  gap: 0.4em;
+  border-color: var(--choice-fill);
+  background: var(--choice-fill);
+  color: var(--choice-ink);
+  opacity: 0.8;
 }
 
-/* A little faint until the pointer is on them, which is what the plain buttons say
-   by lighting up, and these are too strong in colour to do it that way. */
 .diff-bar .diff-bar-old {
-  border-color: var(--diff-gone-fill);
-  background: var(--diff-gone-fill);
-  color: var(--diff-gone-ink);
-  opacity: 0.8;
+  --choice-fill: var(--diff-gone-fill);
+  --choice-ink: var(--diff-gone-ink);
 }
 
 .diff-bar .diff-bar-new {
-  border-color: var(--diff-new-fill);
-  background: var(--diff-new-fill);
-  color: var(--diff-new-ink);
-  opacity: 0.8;
+  --choice-fill: var(--diff-new-fill);
+  --choice-ink: var(--diff-new-ink);
 }
 
-.diff-bar .diff-bar-old:hover,
-.diff-bar .diff-bar-new:hover {
+.diff-bar .diff-bar-own {
+  --choice-fill: var(--diff-own-fill);
+  --choice-ink: var(--diff-own-ink);
+}
+
+.diff-bar .diff-bar-choice:hover,
+.diff-bar .diff-bar-chosen {
   opacity: 1;
+}
+
+/* A radio's dot, drawn: a ring, filled for the choice in effect. */
+.diff-bar-dot {
+  flex: none;
+  box-sizing: border-box;
+  width: 0.85em;
+  height: 0.85em;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.diff-bar-chosen .diff-bar-dot {
+  background: currentColor;
+  box-shadow: inset 0 0 0 2px var(--choice-fill);
 }
 
 .diff-bar .diff-bar-letter {

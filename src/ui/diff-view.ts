@@ -264,17 +264,21 @@ export function createDiffView(pieces: readonly DiffPiece[], options: DiffViewOp
   return framed;
 }
 
-const markClass = (kind: DiffPart['kind']): string => (kind === 'removed' ? 'diff-gone' : 'diff-new');
+/** The box a wording is drawn in, by whose it is, and struck through where it is not the one going in. */
+function markClass({ kind, struck }: Pick<DiffPart, 'kind' | 'struck'>): string {
+  const whose = kind === 'removed' ? 'diff-gone' : kind === 'own' ? 'diff-own' : 'diff-new';
+  return struck === true ? `${whose} diff-struck` : whose;
+}
 
 /**
  * Spacing made visible, where it is a change he has to read: almost always a
  * paragraph split or joined, the mark on his Enter key. The rest is the spaces
  * that open his first line, which a struck-out space could not show.
  */
-function spacingPart(kind: DiffPart['kind'], text: string): HTMLElement {
+function spacingPart(drawn: DiffPart): HTMLElement {
   const part = document.createElement('span');
-  part.className = `${markClass(kind)} diff-small diff-spacing`;
-  part.textContent = text.includes('\n') ? '↵' : text.replace(/\s/g, '␣');
+  part.className = `${markClass(drawn)} diff-small diff-spacing`;
+  part.textContent = drawn.text.includes('\n') ? '↵' : drawn.text.replace(/\s/g, '␣');
   return part;
 }
 
@@ -291,12 +295,13 @@ const isSpaceBesideBreak = (part: DiffPart, other: DiffPart | undefined): boolea
  * on past the end of its word reads as a slip of the marker rather than as
  * information.
  */
-function wordsPart(kind: DiffPart['kind'], text: string): (HTMLElement | string)[] {
+function wordsPart(drawn: DiffPart): (HTMLElement | string)[] {
+  const { text } = drawn;
   const words = text.trim();
   const start = text.indexOf(words);
 
   const part = document.createElement('span');
-  part.className = markClass(kind);
+  part.className = markClass(drawn);
   // A single character is the one size of change that is easy to miss.
   if ([...words].length === 1) part.classList.add('diff-small');
   part.textContent = words;
@@ -329,9 +334,9 @@ function resolvedPart(text: string): HTMLElement {
   return part;
 }
 
-function markedPart({ kind, text }: DiffPart): (HTMLElement | string)[] {
-  if (kind === 'resolved') return [resolvedPart(text)];
-  return /\S/.test(text) ? wordsPart(kind, text) : [spacingPart(kind, text)];
+function markedPart(drawn: DiffPart): (HTMLElement | string)[] {
+  if (drawn.kind === 'resolved') return [resolvedPart(drawn.text)];
+  return /\S/.test(drawn.text) ? wordsPart(drawn) : [spacingPart(drawn)];
 }
 
 /**

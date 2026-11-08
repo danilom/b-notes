@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import { diffTexts, mergeCloseChanges, paragraphsOf, separateTidying } from '../src/notes/text-diff.ts';
 import {
-  type ChangeDecision,
+  type ChangeChoice,
   letterSegmentsOf,
   noDecisions,
   piecesAfter,
@@ -16,7 +16,7 @@ const reviewed = (before: string, after: string) => mergeCloseChanges(separateTi
 const after = (
   before: string,
   proposed: string,
-  changes: [number, ChangeDecision][] = [],
+  changes: [number, ChangeChoice][] = [],
   letters: [number, string[]][] = [],
 ): string => textAfter(piecesAfter(reviewed(before, proposed), { changes: new Map(changes), letters: new Map(letters) }));
 
@@ -29,36 +29,36 @@ describe('what he has decided comes to', () => {
   });
 
   it('puts back only the change he undid', () => {
-    assert.equal(after(BEFORE, PROPOSED, [[0, { kind: 'undone' }]]), 'Stara kuća je tu.\n\nDrugi pasus stari.\n\nNovi kraj.');
-    assert.equal(after(BEFORE, PROPOSED, [[1, { kind: 'undone' }]]), 'Nova kuća je tu.\n\nDrugi pasus stari.\n\nKraj.');
+    assert.equal(after(BEFORE, PROPOSED, [[0, { chosen: 'old' }]]), 'Stara kuća je tu.\n\nDrugi pasus stari.\n\nNovi kraj.');
+    assert.equal(after(BEFORE, PROPOSED, [[1, { chosen: 'old' }]]), 'Nova kuća je tu.\n\nDrugi pasus stari.\n\nKraj.');
   });
 
   it('takes his wording for a change he edited', () => {
     assert.equal(
-      after(BEFORE, PROPOSED, [[0, { kind: 'edited', text: 'Moja' }]]),
+      after(BEFORE, PROPOSED, [[0, { chosen: 'own', own: 'Moja' }]]),
       'Moja kuća je tu.\n\nDrugi pasus stari.\n\nNovi kraj.',
     );
   });
 
   it('lets an edit leave nothing where the change was', () => {
-    assert.equal(after('Stara kuća.', 'Nova kuća.', [[0, { kind: 'edited', text: '' }]]), ' kuća.');
+    assert.equal(after('Stara kuća.', 'Nova kuća.', [[0, { chosen: 'own', own: '' }]]), ' kuća.');
   });
 
   it('counts undoing a removal as putting the text back', () => {
-    assert.equal(after('Prvi.\n\nStari.\n\nKraj.', 'Prvi.\n\nKraj.', [[0, { kind: 'undone' }]]), 'Prvi.\n\nStari.\n\nKraj.');
+    assert.equal(after('Prvi.\n\nStari.\n\nKraj.', 'Prvi.\n\nKraj.', [[0, { chosen: 'old' }]]), 'Prvi.\n\nStari.\n\nKraj.');
   });
 
   it('counts undoing an addition as taking it away', () => {
-    assert.equal(after('Prvi.\n\nKraj.', 'Prvi.\n\nNovi.\n\nKraj.', [[0, { kind: 'undone' }]]), 'Prvi.\n\nKraj.');
+    assert.equal(after('Prvi.\n\nKraj.', 'Prvi.\n\nNovi.\n\nKraj.', [[0, { chosen: 'old' }]]), 'Prvi.\n\nKraj.');
   });
 
   it('counts undoing a paragraph split as joining it back', () => {
-    assert.equal(after('Prvi. Drugi.', 'Prvi.\n\nDrugi.', [[0, { kind: 'undone' }]]), 'Prvi. Drugi.');
+    assert.equal(after('Prvi. Drugi.', 'Prvi.\n\nDrugi.', [[0, { chosen: 'old' }]]), 'Prvi. Drugi.');
   });
 
   it('gives back exactly his text when he undoes every change and every letter', () => {
     const pieces = reviewed('Kuca stara.', 'Kuća nova.');
-    assert.equal(textAfter(piecesAfter(pieces, { changes: new Map([[0, { kind: 'undone' }]]), letters: new Map([[0, ['c']]]) })), 'Kuca stara.');
+    assert.equal(textAfter(piecesAfter(pieces, { changes: new Map([[0, { chosen: 'old' }]]), letters: new Map([[0, ['c']]]) })), 'Kuca stara.');
   });
 
   it('applies a chosen letter to the word it was chosen for', () => {
@@ -67,13 +67,13 @@ describe('what he has decided comes to', () => {
 
   it('applies many decisions together without one disturbing another', () => {
     assert.equal(
-      after(BEFORE, PROPOSED, [[0, { kind: 'edited', text: 'Moja' }], [1, { kind: 'undone' }]], [[0, ['c']]]),
+      after(BEFORE, PROPOSED, [[0, { chosen: 'own', own: 'Moja' }], [1, { chosen: 'old' }]], [[0, ['c']]]),
       'Moja kuca je tu.\n\nDrugi pasus stari.\n\nKraj.',
     );
   });
 
   it('keeps the line endings he has, whatever he decides', () => {
-    assert.equal(after('Stari red\r\nDrugi', 'Novi red\nDrugi', [[0, { kind: 'undone' }]]), 'Stari red\r\nDrugi');
+    assert.equal(after('Stari red\r\nDrugi', 'Novi red\nDrugi', [[0, { chosen: 'old' }]]), 'Stari red\r\nDrugi');
   });
 });
 
@@ -135,12 +135,48 @@ describe('the letters offered for a corrected word', () => {
   });
 });
 
-describe('drawing what he has decided', () => {
-  const drawn = (before: string, proposed: string, changes: [number, ChangeDecision][]) =>
-    paragraphsOf(piecesAfter(reviewed(before, proposed), { changes: new Map(changes), letters: new Map() }), { showTidied: true });
+describe('drawing a change open, with every wording it has', () => {
+  const openParts = (choice: ChangeChoice) => {
+    const pieces = piecesAfter(reviewed('Stara kuća.', 'Nova kuća.'), { changes: new Map([[0, choice]]), letters: new Map() });
+    return paragraphsOf(pieces)[0]?.parts.filter((part) => part.kind !== 'same');
+  };
+
+  it('strikes out the old text and not the proposal, when nothing else is chosen', () => {
+    assert.deepEqual(paragraphsOf(reviewed('Stara kuća.', 'Nova kuća.'))[0]?.parts.filter((part) => part.kind !== 'same'), [
+      { kind: 'removed', text: 'Stara', opensChange: true, struck: true },
+      { kind: 'added', text: 'Nova', opensChange: false },
+    ]);
+  });
+
+  it('shows his wording after the other two, and strikes out all but the chosen one', () => {
+    assert.deepEqual(openParts({ chosen: 'old', own: 'Moja' }), [
+      { kind: 'removed', text: 'Stara', opensChange: true },
+      { kind: 'added', text: 'Nova', opensChange: false, struck: true },
+      { kind: 'own', text: 'Moja', opensChange: false, struck: true },
+    ]);
+  });
+
+  it('keeps his wording when he picks another, while putting in the one he picked', () => {
+    assert.equal(after('Stara kuća.', 'Nova kuća.', [[0, { chosen: 'proposed', own: 'Moja' }]]), 'Nova kuća.');
+    assert.equal(openParts({ chosen: 'proposed', own: 'Moja' })?.at(-1)?.text, 'Moja');
+  });
+
+  it('leaves out a wording that is nothing, where the others struck out say as much', () => {
+    const pieces = piecesAfter(reviewed('Prvi kraj.', 'Prvi novi kraj.'), { changes: new Map([[0, { chosen: 'old' }]]), letters: new Map() });
+    const parts = paragraphsOf(pieces)[0]?.parts.filter((part) => part.kind !== 'same');
+    assert.deepEqual(parts?.map((part) => [part.kind, part.struck]), [['added', true]]);
+  });
+});
+
+describe('drawing a change collapsed to what he chose', () => {
+  const drawn = (before: string, proposed: string, changes: [number, ChangeChoice][]) =>
+    paragraphsOf(
+      piecesAfter(reviewed(before, proposed), { changes: new Map(changes), letters: new Map(), collapsed: new Set(changes.map(([at]) => at)) }),
+      { showTidied: true },
+    );
 
   /** The one resolved part of a paragraph, and whether the paragraph still wants a mark in the margin. */
-  const resolvedIn = (before: string, proposed: string, decision: ChangeDecision) => {
+  const resolvedIn = (before: string, proposed: string, decision: ChangeChoice) => {
     const [paragraph] = drawn(before, proposed, [[0, decision]]);
     return {
       part: paragraph?.parts.find((part) => part.kind === 'resolved'),
@@ -149,24 +185,24 @@ describe('drawing what he has decided', () => {
     };
   };
 
-  it('draws what he undid as resolved, showing his old text', () => {
-    assert.deepEqual(resolvedIn('Stara kuća.', 'Nova kuća.', { kind: 'undone' }), {
+  it('draws his old text alone, when he chose it', () => {
+    assert.deepEqual(resolvedIn('Stara kuća.', 'Nova kuća.', { chosen: 'old' }), {
       part: { kind: 'resolved', text: 'Stara', opensChange: true },
       stillOpen: false,
       marked: false,
     });
   });
 
-  it('draws what he accepted as resolved, showing the new text', () => {
-    assert.deepEqual(resolvedIn('Stara kuća.', 'Nova kuća.', { kind: 'accepted' }), {
+  it('draws the proposal alone, when he chose it', () => {
+    assert.deepEqual(resolvedIn('Stara kuća.', 'Nova kuća.', { chosen: 'proposed' }), {
       part: { kind: 'resolved', text: 'Nova', opensChange: true },
       stillOpen: false,
       marked: false,
     });
   });
 
-  it('draws what he edited as resolved, with his wording and no sign of the old', () => {
-    assert.deepEqual(resolvedIn('Stara kuća.', 'Nova kuća.', { kind: 'edited', text: 'Moja' }), {
+  it('draws his own wording alone, with no sign of the others', () => {
+    assert.deepEqual(resolvedIn('Stara kuća.', 'Nova kuća.', { chosen: 'own', own: 'Moja' }), {
       part: { kind: 'resolved', text: 'Moja', opensChange: true },
       stillOpen: false,
       marked: false,
@@ -176,27 +212,27 @@ describe('drawing what he has decided', () => {
   it('keeps a part for what left nothing to show, so that it can be found again', () => {
     const empty = { kind: 'resolved', text: '', opensChange: true };
 
-    assert.deepEqual(resolvedIn('Prvi kraj.', 'Prvi novi kraj.', { kind: 'undone' }).part, empty);
-    assert.deepEqual(resolvedIn('Prvi stari kraj.', 'Prvi kraj.', { kind: 'accepted' }).part, empty);
-    assert.deepEqual(resolvedIn('Stara kuća.', 'Nova kuća.', { kind: 'edited', text: '' }).part, empty);
+    assert.deepEqual(resolvedIn('Prvi kraj.', 'Prvi novi kraj.', { chosen: 'old' }).part, empty);
+    assert.deepEqual(resolvedIn('Prvi stari kraj.', 'Prvi kraj.', { chosen: 'proposed' }).part, empty);
+    assert.deepEqual(resolvedIn('Stara kuća.', 'Nova kuća.', { chosen: 'own', own: '' }).part, empty);
   });
 
   it('keeps marking a paragraph with another change still open', () => {
-    const [paragraph] = drawn('Stara kuća i dugo pričamo o tome i pala je.', 'Nova kuća i dugo pričamo o tome i stoji.', [[0, { kind: 'accepted' }]]);
+    const [paragraph] = drawn('Stara kuća i dugo pričamo o tome i pala je.', 'Nova kuća i dugo pričamo o tome i stoji.', [[0, { chosen: 'proposed' }]]);
 
     assert.equal(paragraph?.changed, true);
   });
 
-  it('breaks the paragraph where he accepted a split, and joins it where he undid one', () => {
-    const texts = (decision: ChangeDecision) =>
+  it('breaks the paragraph where he chose a split, and joins it where he chose the old text', () => {
+    const texts = (decision: ChangeChoice) =>
       drawn('Prvi. Drugi.', 'Prvi.\n\nDrugi.', [[0, decision]]).map((paragraph) => paragraph.parts.map((part) => part.text).join(''));
 
-    assert.deepEqual(texts({ kind: 'accepted' }), ['Prvi.', 'Drugi.']);
-    assert.deepEqual(texts({ kind: 'undone' }), ['Prvi. Drugi.']);
+    assert.deepEqual(texts({ chosen: 'proposed' }), ['Prvi.', 'Drugi.']);
+    assert.deepEqual(texts({ chosen: 'old' }), ['Prvi. Drugi.']);
   });
 
   it('leaves no way for accepting to change the text', () => {
-    assert.equal(after(BEFORE, PROPOSED, [[0, { kind: 'accepted' }], [1, { kind: 'accepted' }]]), PROPOSED);
+    assert.equal(after(BEFORE, PROPOSED, [[0, { chosen: 'proposed' }], [1, { chosen: 'proposed' }]]), PROPOSED);
   });
 
   it('keeps a word whose letter he put back as a part, so that it can be changed again', () => {

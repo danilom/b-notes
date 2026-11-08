@@ -1,3 +1,4 @@
+import type { ChangeCandidate } from '../notes/text-diff.ts';
 import { icon } from './icons.ts';
 
 /**
@@ -10,6 +11,26 @@ export type BarState = 'shown' | 'quiet' | 'closed';
 /** How a change came to be the current one, which decides whether its bar shows. */
 export type BecameCurrent = 'restored' | 'stepped' | 'clicked';
 
+/** Where a change stands: which wording goes in, whether all of them are showing, and which there are. */
+export interface ChangeStanding {
+  chosen: ChangeCandidate;
+  isOpen: boolean;
+  /** Whether there are old words to bring back, and proposed words to take; either may be nothing. */
+  hasOld: boolean;
+  hasProposed: boolean;
+  hasOwn: boolean;
+}
+
+/** What the three choices are called on the bar. */
+export interface ChoiceWords {
+  old: string;
+  proposed: string;
+  own: string;
+}
+
+/** Said as what each does, which is how every other button he knows speaks. */
+const CHOICE_WORDS: ChoiceWords = { old: 'Vrati staro', proposed: 'Prihvati', own: 'Izmeni' };
+
 /** What the reviewer of a proposal can do to it, from the bar above each change. */
 export interface DiffEditing {
   /** The change to start on, by its place among the changes. */
@@ -17,19 +38,15 @@ export interface DiffEditing {
   /** How the bar was left before this drawing of the view. */
   barStarts?: BarState;
   onBarState: (state: BarState) => void;
-  isResolved: (changeAt: number) => boolean;
-  /** Whether the change has old words to bring back and new words to take, each of which may be nothing. */
-  sidesOf: (changeAt: number) => { hasOld: boolean; hasNew: boolean };
-  /** The wording an edit of this change starts from: whatever it is now showing. */
+  choiceOf: (changeAt: number) => ChangeStanding;
+  /** Picks the old text or the proposal, which collapses the change to it. */
+  onChoose: (changeAt: number, chosen: 'old' | 'proposed') => void;
+  /** Shows every wording of a collapsed change, choosing nothing. */
+  onOpen: (changeAt: number) => void;
+  /** The wording an edit of this change starts from. */
   wordingOf: (changeAt: number) => string;
-  onUndo: (changeAt: number) => void;
-  onAccept: (changeAt: number) => void;
-  /** Back to the proposal, red and green, from where any of it can be chosen again. */
-  onReopen: (changeAt: number) => void;
-  /** Whether this change is undecided and only drawn as its new text; absent where nothing is. */
-  isShownAsNew?: (changeAt: number) => boolean;
-  /** Opens a change shown as new into red and green, deciding nothing. */
-  onOpen?: (changeAt: number) => void;
+  /** What the choices are called, where something other than the usual is being tried. */
+  choiceWords?: ChoiceWords;
   onEdit: (changeAt: number, text: string) => void;
   /** Called when an edit is backed out of, so that what it disturbed can be drawn again. */
   onCancelEdit: () => void;
@@ -71,6 +88,26 @@ function changeOfFragment(fragment: Element, changes: readonly HTMLElement[], al
 }
 
 /**
+ * Where his typing goes. Collapsed, in place of the one wording showing. Open, where his
+ * own wording stands, or after the others if he has none yet; and those others are struck
+ * out meanwhile, since what he is typing is what will go in.
+ */
+function placeField(field: HTMLElement, change: HTMLElement, fragments: readonly Element[]): void {
+  const inChange = (selector: string): Element[] => fragments.flatMap((fragment) => [...fragment.querySelectorAll(selector)]);
+  const [shown, ...restShown] = [...inChange('.diff-resolved'), ...inChange('.diff-own')];
+  for (const other of inChange('.diff-gone, .diff-new')) other.classList.add('diff-struck');
+
+  if (shown !== undefined) {
+    shown.replaceWith(field);
+    for (const other of restShown) other.remove();
+    return;
+  }
+  const last = inChange('.diff-gone, .diff-new').at(-1);
+  if (last === undefined) change.append(field);
+  else last.after(field);
+}
+
+/**
  * Turns the wording of a change into a place to type, right there in the sentence.
  * Enter confirms, and so does clicking anywhere else, so that what was typed is not
  * lost; Escape backs out. Shift+Enter makes a new line for whoever knows of it.
@@ -87,11 +124,7 @@ function startEditing(change: HTMLElement, fragments: readonly Element[], at: nu
   field.spellcheck = false;
   field.textContent = words;
 
-  const place = fragments.flatMap((fragment) => [...fragment.querySelectorAll('.diff-new, .diff-resolved')]);
-  const [first, ...rest] = place;
-  if (first === undefined) change.append(field);
-  else first.replaceWith(field);
-  for (const other of rest) other.remove();
+  placeField(field, change, fragments);
 
   let leaving: 'confirming' | 'backing out' | null = null;
   field.addEventListener('keydown', (event) => {
@@ -161,33 +194,35 @@ export function createDiffChangeBar(
     return found;
   }
 
+  /**
+   * Three choices, one of which is always in effect, as on a radio: the dot says which, for
+   * when he comes back to a change. Each wears the colour of the wording it is for.
+   */
+  function choiceButton(said: string, className: string, isChosen: boolean, onClick: () => void): HTMLButtonElement {
+    const button = barButton(said, `${className} diff-bar-choice`, onClick);
+    const dot = document.createElement('span');
+    dot.className = 'diff-bar-dot';
+    dot.setAttribute('aria-hidden', 'true');
+    button.prepend(dot);
+    button.setAttribute('aria-pressed', String(isChosen));
+    if (isChosen) button.classList.add('diff-bar-chosen');
+    return button;
+  }
+
   function fillForChange(change: HTMLElement): void {
     const at = changes.indexOf(change);
-    const edit = barButton('Izmeni', 'diff-bar-edit', () => {
-      isEditing = true;
-      hide();
-      startEditing(change, fragmentsOf(change), at, editing);
-    });
-
-    const { onOpen } = editing;
-    if (onOpen !== undefined && editing.isShownAsNew?.(at) === true) {
-      // A look and not an undo: nothing of his is on it to lose, unlike Vrati predlog.
-      bar.replaceChildren(edit, barButton('Vidi predlog', 'diff-bar-open', () => onOpen(at)), closeButton());
-      return;
-    }
-    if (editing.isResolved(at)) {
-      // Plain, unlike the choices: this is a step back, and not one more decision.
-      const reopen = barButton('Vrati predlog', 'diff-bar-reopen', () => editing.onReopen(at));
-      reopen.prepend(icon('undo'));
-      bar.replaceChildren(edit, reopen, closeButton());
-      return;
-    }
-    // The side that is nothing says so, in the sign he writes it with: the same two choices, one of them empty.
-    const { hasOld, hasNew } = editing.sidesOf(at);
+    const words = editing.choiceWords ?? CHOICE_WORDS;
+    const { chosen, hasOld, hasProposed } = editing.choiceOf(at);
+    // The side that is nothing says so, in the sign he writes it with.
+    const nothing = (has: boolean): string => (has ? '' : ' (∅)');
     bar.replaceChildren(
-      barButton(hasOld ? 'Vrati staro' : 'Vrati staro (∅)', 'diff-bar-old', () => editing.onUndo(at)),
-      barButton(hasNew ? 'Prihvati' : 'Prihvati (∅)', 'diff-bar-new', () => editing.onAccept(at)),
-      edit,
+      choiceButton(words.old + nothing(hasOld), 'diff-bar-old', chosen === 'old', () => editing.onChoose(at, 'old')),
+      choiceButton(words.proposed + nothing(hasProposed), 'diff-bar-new', chosen === 'proposed', () => editing.onChoose(at, 'proposed')),
+      choiceButton(words.own, 'diff-bar-own', chosen === 'own', () => {
+        isEditing = true;
+        hide();
+        startEditing(change, fragmentsOf(change), at, editing);
+      }),
       closeButton(),
     );
   }
@@ -300,6 +335,12 @@ export function createDiffChangeBar(
   return {
     setCurrent(change, how) {
       current = change;
+      // A collapsed change clicked opens, which draws the view again with this one current.
+      const at = change === null ? -1 : changes.indexOf(change);
+      if (how === 'clicked' && at >= 0 && !editing.choiceOf(at).isOpen) {
+        editing.onOpen(at);
+        return;
+      }
       // Clicking a change always shows its bar; stepping does unless he put it away; a redraw keeps what was.
       if (how === 'clicked' || (how === 'stepped' && state === 'quiet')) setState('shown');
       showCurrent();

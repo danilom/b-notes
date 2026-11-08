@@ -10,68 +10,87 @@ const pieces = mergeCloseChanges(separateTidying(diffTexts(BEFORE, AFTER)));
 const changeCount = pieces.filter((piece) => piece.kind === 'change').length;
 const nothing = (): void => undefined;
 
-/** How many changes the drawing shows as dealt with, the way an accepted one is drawn. */
-const drawnAsNew = (review: ReturnType<typeof createDiffReview>): number =>
-  review.piecesNow().filter((piece) => piece.kind === 'change' && piece.resolved === true).length;
+/** How many changes the drawing shows collapsed to one wording. */
+const collapsedCount = (review: ReturnType<typeof createDiffReview>): number =>
+  review.piecesNow().filter((piece) => piece.kind === 'change' && piece.collapsed === true).length;
 
 describe('the sides of a change', () => {
   it('says which side is nothing, so the bar can say so on its button', () => {
     const changed = mergeCloseChanges(separateTidying(diffTexts('Most stoji nad rekom. Ljudi prelaze preko njega svaki dan i gledaju vodu dugo.', 'Most stoji nad širokom rekom. Ljudi prelaze preko njega svaki dan i gledaju vodu.')));
     const editing = createDiffReview(changed, nothing).editing();
-    const sides = changed.flatMap((piece, at) => (piece.kind === 'change' ? [at] : [])).map((_, at) => editing.sidesOf(at));
+    const sides = [0, 1].map((at) => {
+      const { hasOld, hasProposed } = editing.choiceOf(at);
+      return { hasOld, hasProposed };
+    });
     assert.deepEqual(sides, [
-      { hasOld: false, hasNew: true },
-      { hasOld: true, hasNew: false },
+      { hasOld: false, hasProposed: true },
+      { hasOld: true, hasProposed: false },
     ]);
   });
 });
 
-describe('showing only the new text', () => {
-  it('draws every undecided change as its new text, without deciding any of them', () => {
+describe('choosing a wording', () => {
+  it('starts every change on the proposal, open, with nothing to lose by closing', () => {
     assert.ok(changeCount >= 2);
-    const review = createDiffReview(pieces, nothing, true);
-    assert.equal(drawnAsNew(review), changeCount);
+    const review = createDiffReview(pieces, nothing);
+    assert.deepEqual(review.editing().choiceOf(0), { chosen: 'proposed', isOpen: true, hasOld: false, hasProposed: true, hasOwn: false });
+    assert.equal(review.textNow(), AFTER);
     assert.equal(review.hasDecisions(), false);
   });
 
-  it('puts in the same text as the red-and-green view does', () => {
-    assert.equal(createDiffReview(pieces, nothing, true).textNow(), createDiffReview(pieces, nothing, false).textNow());
-  });
-
-  it('keeps what he decided, drawn as he decided it, when the view is switched either way', () => {
-    const review = createDiffReview(pieces, nothing, true);
-    review.editing().onUndo(0);
-    review.setShowsOnlyNew(false);
-    review.setShowsOnlyNew(true);
-    assert.equal(review.hasDecisions(), true);
-    const first = review.piecesNow().find((piece) => piece.kind === 'change');
-    assert.equal(first?.kind === 'change' && first.undone, true);
+  it('collapses a change to the wording chosen, and puts that one in', () => {
+    const review = createDiffReview(pieces, nothing);
+    review.editing().onChoose(0, 'old');
+    assert.equal(review.editing().choiceOf(0).isOpen, false);
+    assert.equal(collapsedCount(review), 1);
     assert.ok(!review.textNow().includes('kameni'));
+    assert.equal(review.hasDecisions(), true);
   });
 
-  it('opens one change into red and green to look at, deciding nothing and leaving the rest as they were', () => {
-    const review = createDiffReview(pieces, nothing, true);
+  it('keeps his own wording when he picks another, and goes on from it on the next edit', () => {
+    const review = createDiffReview(pieces, nothing);
+    review.editing().onEdit(0, ' drveni');
+    review.editing().onChoose(0, 'proposed');
     const editing = review.editing();
-    assert.equal(editing.isShownAsNew?.(0), true);
-    editing.onOpen?.(0);
-    assert.equal(review.editing().isShownAsNew?.(0), false);
-    assert.equal(review.editing().isResolved(0), false);
-    assert.equal(drawnAsNew(review), changeCount - 1);
+    assert.deepEqual(editing.choiceOf(0), { chosen: 'proposed', isOpen: false, hasOld: false, hasProposed: true, hasOwn: true });
+    assert.equal(editing.wordingOf(0), ' drveni');
+    assert.equal(review.textNow(), AFTER);
+    assert.equal(review.hasDecisions(), true);
+  });
+
+  it('counts typing out the proposal again as choosing it, not as a wording of his own', () => {
+    const review = createDiffReview(pieces, nothing);
+    review.editing().onEdit(0, review.editing().wordingOf(0));
+    assert.deepEqual(review.editing().choiceOf(0), { chosen: 'proposed', isOpen: false, hasOld: false, hasProposed: true, hasOwn: false });
     assert.equal(review.hasDecisions(), false);
   });
 
-  it('offers nothing but the usual choices in the red-and-green view, so Vidi predlog never appears there', () => {
-    const editing = createDiffReview(pieces, nothing, false).editing();
-    assert.equal(editing.isShownAsNew?.(0), false);
-    assert.equal(editing.isResolved(0), false);
+  it('opens a collapsed change again without changing what goes in', () => {
+    const review = createDiffReview(pieces, nothing);
+    review.editing().onChoose(0, 'old');
+    const text = review.textNow();
+    review.editing().onOpen(0);
+    assert.deepEqual(review.editing().choiceOf(0), { chosen: 'old', isOpen: true, hasOld: false, hasProposed: true, hasOwn: false });
+    assert.equal(review.textNow(), text);
+  });
+});
+
+describe('showing only the new text', () => {
+  it('collapses every change to the proposal, choosing nothing', () => {
+    const review = createDiffReview(pieces, nothing, true);
+    assert.equal(collapsedCount(review), changeCount);
+    assert.equal(review.hasDecisions(), false);
+    assert.equal(review.textNow(), createDiffReview(pieces, nothing, false).textNow());
   });
 
-  it('folds an opened change back when the view is switched off and on again', () => {
+  it('opens every change when switched off, and keeps what he chose either way', () => {
     const review = createDiffReview(pieces, nothing, true);
-    review.editing().onOpen?.(0);
+    review.editing().onOpen(0);
+    review.editing().onChoose(1, 'old');
     review.setShowsOnlyNew(false);
-    assert.equal(drawnAsNew(review), 0);
+    assert.equal(collapsedCount(review), 0);
     review.setShowsOnlyNew(true);
-    assert.equal(drawnAsNew(review), changeCount);
+    assert.equal(collapsedCount(review), changeCount);
+    assert.equal(review.editing().choiceOf(1).chosen, 'old');
   });
 });

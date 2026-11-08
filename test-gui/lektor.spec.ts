@@ -290,7 +290,7 @@ test('offers no retry once the daily tries are gone, and passes on what the serv
   await expect(page.getByRole('button', { name: 'Pokušaj ponovo' })).toHaveCount(0);
 });
 
-test('shows a Dubinska prerada as the new text alone, opens one change to look at, and shows the other kinds in red and green', async ({ page }) => {
+test('shows a Dubinska prerada as the new text alone, opens a change on a click, and shows the other kinds in red and green', async ({ page }) => {
   await withTestLektor(page, 'ok');
   await writeNewText(page);
   await page.locator('#lektor-open').click();
@@ -305,9 +305,10 @@ test('shows a Dubinska prerada as the new text alone, opens one change to look a
   await expect(dialog.locator('.lektor-service-line')).toContainText(/^Dubinska prerada · /);
   await expect(dialog.locator('.review-text .diff-resolved').first()).toBeVisible();
 
+  const collapsed = await dialog.locator('.review-text .diff-resolved').count();
   await dialog.locator('.review-text .diff-change').first().click();
-  await dialog.locator('.diff-bar').getByRole('button', { name: 'Vidi predlog' }).click();
-  await expect(dialog.locator('.diff-bar').getByRole('button', { name: 'Prihvati' })).toBeVisible();
+  await expect(dialog.locator('.review-text .diff-resolved')).toHaveCount(collapsed - 1);
+  await expect(dialog.locator('.diff-bar').getByRole('button', { name: 'Prihvati' })).toHaveAttribute('aria-pressed', 'true');
 
   await onlyNew.uncheck();
   await expect(dialog.locator('.review-text .diff-resolved')).toHaveCount(0);

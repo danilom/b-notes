@@ -1,5 +1,5 @@
 import { alignSequences } from './sequence-alignment.ts';
-import { type TextPiece, withoutDiacritics } from './text-diff.ts';
+import { type ChangeCandidate, type TextPiece, chosenText, withoutDiacritics } from './text-diff.ts';
 
 /**
  * What he has done to a proposal. Everything starts accepted: the proposal is what
@@ -7,12 +7,21 @@ import { type TextPiece, withoutDiacritics } from './text-diff.ts';
  */
 export interface ReviewDecisions {
   /** By a change's place among the changes. */
-  changes: ReadonlyMap<number, ChangeDecision>;
+  changes: ReadonlyMap<number, ChangeChoice>;
   /** By a tidied piece's place among the tidied, the letter chosen for each slot. */
   letters: ReadonlyMap<number, readonly string[]>;
+  /** The changes drawn as their chosen wording alone. How they look, not what goes in. */
+  collapsed?: ReadonlySet<number>;
 }
 
-export type ChangeDecision = { kind: 'accepted' } | { kind: 'undone' } | { kind: 'edited'; text: string };
+/**
+ * Which wording a change goes in as. His own wording is kept when he picks another,
+ * so that what he wrote is never lost to a click.
+ */
+export interface ChangeChoice {
+  chosen: ChangeCandidate;
+  own?: string;
+}
 
 export const noDecisions = (): ReviewDecisions => ({ changes: new Map(), letters: new Map() });
 
@@ -95,17 +104,20 @@ export function wordWithLetters(segments: readonly LetterSegment[], chosen: read
 }
 
 /** The pieces as his decisions leave them. What was proposed stays known, so that it can be gone back to. */
-export function piecesAfter(pieces: readonly TextPiece[], { changes, letters }: ReviewDecisions): TextPiece[] {
+export function piecesAfter(pieces: readonly TextPiece[], { changes, letters, collapsed = new Set() }: ReviewDecisions): TextPiece[] {
   let [changeAt, tidyAt] = [0, 0];
 
   return pieces.map((piece): TextPiece => {
     if (piece.kind === 'change') {
-      const decision = changes.get(changeAt);
+      const choice = changes.get(changeAt);
+      const isCollapsed = collapsed.has(changeAt);
       changeAt += 1;
-      if (decision?.kind === 'accepted') return { ...piece, resolved: true };
-      if (decision?.kind === 'undone') return { ...piece, resolved: true, undone: true };
-      if (decision?.kind === 'edited') return { ...piece, resolved: true, added: decision.text };
-      return piece;
+      return {
+        ...piece,
+        ...(choice === undefined ? {} : { chosen: choice.chosen }),
+        ...(choice?.own === undefined ? {} : { own: choice.own }),
+        ...(isCollapsed ? { collapsed: true } : {}),
+      };
     }
     if (piece.kind === 'tidy') {
       const chosen = letters.get(tidyAt);
@@ -123,6 +135,6 @@ export const textAfter = (pieces: readonly TextPiece[]): string =>
   pieces
     .map((piece) => {
       if (piece.kind === 'same') return piece.text;
-      return piece.undone === true ? piece.removed : piece.added;
+      return chosenText(piece);
     })
     .join('');

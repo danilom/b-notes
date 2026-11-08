@@ -20,7 +20,14 @@ const dark = element('dark', HTMLInputElement);
 const onlyNew = element('only-new', HTMLInputElement);
 const readOnly = element('read-only', HTMLInputElement);
 const hover = element('hover', HTMLSelectElement);
+const ownLook = element('own-look', HTMLSelectElement);
+const chosenLook = element('chosen-look', HTMLSelectElement);
+const choiceWords = element('choice-words', HTMLSelectElement);
+const dots = element('dots', HTMLInputElement);
 const view = element('view', HTMLElement);
+
+/** The bar's choices named for what each one is, rather than for what it does. */
+const NOUNS = { old: 'Staro', proposed: 'Predlog', own: 'Tvoje' };
 
 function aside(text: string): HTMLParagraphElement {
   const line = document.createElement('p');
@@ -59,7 +66,12 @@ function render(): void {
       review.piecesNow(),
       { previous: words.changePrevious, next: words.changeNext, at: words.changeAt },
       // Without the editing, the view only shows: no bar, nothing decided, a click only makes a change current.
-      readOnly.checked ? { showTidied: tidying.value === 'coloured' } : { showTidied: tidying.value === 'coloured', editing: review.editing() },
+      readOnly.checked
+        ? { showTidied: tidying.value === 'coloured' }
+        : {
+            showTidied: tidying.value === 'coloured',
+            editing: { ...review.editing(), ...(choiceWords.value === 'nouns' ? { choiceWords: NOUNS } : {}) },
+          },
     ),
   );
   view.replaceChildren(column);
@@ -117,11 +129,16 @@ tidying.addEventListener('change', startOver);
 onlyNew.addEventListener('change', startOver);
 readOnly.addEventListener('change', startOver);
 
-const showHover = (): void => {
+/** The looks being tried, which change no decision and need no redrawing. */
+const showLooks = (): void => {
   view.dataset['hover'] = hover.value;
+  view.dataset['own'] = ownLook.value;
+  view.dataset['chosen'] = chosenLook.value;
+  view.dataset['dots'] = dots.checked ? 'on' : 'off';
 };
-hover.addEventListener('change', showHover);
-showHover();
+for (const control of [hover, ownLook, chosenLook, dots]) control.addEventListener('change', showLooks);
+showLooks();
+choiceWords.addEventListener('change', renderKeepingPlace);
 
 element('swap', HTMLButtonElement).addEventListener('click', () => {
   [current.value, proposed.value] = [proposed.value, current.value];
