@@ -1,5 +1,6 @@
 import { type DiffPiece, type DiffRun, LINE_BREAK, type WordPiece, runsOf } from '../notes/paragraph-diff.ts';
 import {
+  type ChangeCandidate,
   type DiffParagraph,
   type DiffPart,
   type TextPiece,
@@ -542,50 +543,68 @@ function paragraphBlock({ parts, changed }: DiffParagraph): HTMLElement {
  * The change just chosen, on every fragment of it, with which wording it went in as: it
  * starts in that wording's box and settles into the colour of what goes in.
  */
-function markSettling(changes: readonly HTMLElement[], settling: DiffEditing['settling']): void {
+function markSettling(framed: HTMLElement, changes: readonly HTMLElement[], settling: DiffEditing['settling']): void {
   const change = settling === undefined ? undefined : changes[settling.at];
   if (change === undefined || settling === undefined) return;
-  for (const fragment of fragmentsOf(change)) {
-    fragment.classList.add('diff-settling');
-    fragment.dataset['settlingFrom'] = settling.from;
+  const { startedAt, from } = settling;
+  if (startedAt === undefined) {
+    for (const fragment of fragmentsOf(change)) fragment.classList.add('diff-settling');
+    return;
   }
-  const { startedAt } = settling;
   // Once the view is in the document and scrolled back to where he was, which is a task away.
-  if (startedAt !== undefined) requestAnimationFrame(() => slideFrom(change, startedAt));
+  requestAnimationFrame(() => crossFadeFrom(framed, change, from, startedAt));
 }
 
-const SLIDE_MS = 350;
+/** The box each wording is drawn in, open. */
+const BOX_OF: Record<ChangeCandidate, string> = { old: 'diff-gone', proposed: 'diff-new', own: 'diff-own' };
+
+/** The whole of a choice settling: the box gliding to where the words land, then giving way to them. */
+const SETTLE_MS = 650;
+/** How much of that is the glide, before the box starts to give way. */
+const GLIDE_SHARE = 0.55;
 
 /**
- * The words chosen moved from where they stood, while the others faded, to where they
- * now are: started where they were and let glide home, rather than jumping. Only words
- * on one line: the shift is a transform, which wrapped text cannot take.
+ * The box he chose, drawn again as it was, glides from where it stood to where its words
+ * now are, and then fades as they appear in the green of what goes in, so that each frame
+ * is the one or the other, or both: never a half-way colour, nor a weight or a padding
+ * changing in a jump. Only words on one line, which a box can be drawn round; the rest
+ * simply appear.
  */
-function slideFrom(change: HTMLElement, startedAt: ScreenPoint): void {
+function crossFadeFrom(framed: HTMLElement, change: HTMLElement, from: ChangeCandidate, startedAt: ScreenPoint): void {
   const words = change.querySelector<HTMLElement>('.diff-resolved');
   if (words === null || !words.isConnected) return;
-  // A transform moves only a box, and these words are inline text until they arrive.
-  words.style.display = 'inline-block';
   const lines = words.getClientRects();
   const landed = lines[0];
   if (lines.length !== 1 || landed === undefined) {
-    words.style.display = '';
+    for (const fragment of fragmentsOf(change)) fragment.classList.add('diff-settling');
     return;
   }
-  const [shiftX, shiftY] = [startedAt.left - landed.left, startedAt.top - landed.top];
-  if (Math.abs(shiftX) < 1 && Math.abs(shiftY) < 1) {
-    words.style.display = '';
-    return;
-  }
-  const glide = words.animate([{ transform: `translate(${shiftX}px, ${shiftY}px)` }, { transform: 'none' }], {
-    duration: SLIDE_MS,
-    easing: 'ease-out',
-  });
-  const arrived = (): void => {
-    words.style.display = '';
-  };
-  glide.addEventListener('finish', arrived);
-  glide.addEventListener('cancel', arrived);
+
+  const box = document.createElement('span');
+  box.className = `${BOX_OF[from]} diff-settling-box`;
+  box.textContent = words.textContent;
+  box.style.font = getComputedStyle(words).font;
+  box.style.fontWeight = 'normal';
+  framed.append(box);
+
+  const [frame, padding] = [framed.getBoundingClientRect(), getComputedStyle(box)];
+  const landedLeft = landed.left - parseFloat(padding.paddingLeft) - frame.left;
+  const landedTop = landed.top - parseFloat(padding.paddingTop) - frame.top;
+  box.style.left = `${landedLeft}px`;
+  box.style.top = `${landedTop}px`;
+  const shift = `translate(${startedAt.left - frame.left - landedLeft}px, ${startedAt.top - frame.top - landedTop}px)`;
+
+  const timing = { duration: SETTLE_MS, easing: 'ease-out' };
+  // Held at its last frame: the box is taken away a moment after the end, and came back
+  // whole for that moment without it, a flash.
+  const leaving = box.animate(
+    [{ transform: shift, opacity: 1 }, { transform: 'none', opacity: 1, offset: GLIDE_SHARE }, { transform: 'none', opacity: 0 }],
+    { ...timing, fill: 'forwards' },
+  );
+  words.animate([{ opacity: 0 }, { opacity: 0, offset: GLIDE_SHARE }, { opacity: 1 }], timing);
+  const gone = (): void => box.remove();
+  leaving.addEventListener('finish', gone);
+  leaving.addEventListener('cancel', gone);
 }
 
 /**
@@ -608,7 +627,7 @@ export function createTextDiffView(
   framed.className = 'review-framed diff-framed';
 
   const changes = [...text.querySelectorAll<HTMLElement>('.diff-change')];
-  markSettling(changes, editing?.settling);
+  markSettling(framed, changes, editing?.settling);
   const bar: DiffChangeBar | null = editing === undefined ? null : createDiffChangeBar(framed, text, changes, editing);
 
   const markCurrent = (change: HTMLElement, isCurrent: boolean, how: BecameCurrent): void => {

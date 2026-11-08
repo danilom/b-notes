@@ -27,7 +27,7 @@ export interface ScreenPoint {
   top: number;
 }
 
-/** A change just chosen: which, as which wording, and where that wording's words stood if they can slide. */
+/** A change just chosen: which, as which wording, and where that wording's box stood if it can slide. */
 export interface ChangeSettling {
   at: number;
   from: ChangeCandidate;
@@ -56,7 +56,7 @@ export interface DiffEditing {
   choiceOf: (changeAt: number) => ChangeStanding;
   /**
    * Picks the old text or the proposal, which collapses the change to it.
-   * @param startedAt Where the words chosen stood on the screen, for them to slide from.
+   * @param startedAt Where the box of the words chosen stood on the screen, for it to slide from.
    */
   onChoose: (changeAt: number, chosen: 'old' | 'proposed', startedAt?: ScreenPoint) => void;
   /** Shows every wording of a collapsed change, choosing nothing. */
@@ -277,22 +277,21 @@ export function createDiffChangeBar(
     for (const wording of wordings) if (!wording.matches(kept)) wording.classList.add('diff-leaving');
     const keptBoxes = wordings.filter((wording) => wording.matches(kept));
     setTimeout(() => {
-      const startedAt = wordsStart(keptBoxes);
+      const startedAt = boxStart(keptBoxes);
       editing.onChoose(at, chosen, ...(startedAt === undefined ? [] : [startedAt]));
     }, LEAVING_MS);
   }
 
   /**
-   * Where the words in a box begin, inside its padding, if it is one box on one line:
-   * only such a one can slide to where it lands. Wrapped or in pieces, it does not move.
+   * Where the box of the words chosen stands, its outer corner, if it is one box on one
+   * line: only such a one can be drawn again to slide to where they land.
    */
-  function wordsStart(boxes: readonly Element[]): ScreenPoint | undefined {
+  function boxStart(boxes: readonly Element[]): ScreenPoint | undefined {
     const [box, ...more] = boxes;
     const lines = box?.getClientRects();
     const line = lines?.[0];
     if (box === undefined || more.length > 0 || lines?.length !== 1 || line === undefined) return undefined;
-    const style = getComputedStyle(box);
-    return { left: line.left + parseFloat(style.paddingLeft), top: line.top + parseFloat(style.paddingTop) };
+    return { left: line.left, top: line.top };
   }
 
   /** The one choice that also opens something to type in, and says so. */

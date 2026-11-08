@@ -2809,8 +2809,10 @@ dialog::backdrop {
 
 /*
   Choosing, shown happening rather than snapped to: the wordings not chosen fade, and once
-  the change is drawn collapsed, what was chosen starts in its own box and settles into the
-  colour of what goes in. Only for those who have not asked their computer for less movement.
+  the change is drawn collapsed, the box chosen glides to its place and gives way to the
+  green of what goes in (`crossFadeFrom` in diff-view.ts). What has no box to glide, his
+  own typing or words over several lines, simply appears. Only for those who have not
+  asked their computer for less movement.
 */
 @media (prefers-reduced-motion: no-preference) {
   .diff-leaving {
@@ -2819,30 +2821,23 @@ dialog::backdrop {
   }
 
   .diff-settling .diff-resolved {
-    animation: diff-settle 450ms ease-out;
-  }
-
-  .diff-settling[data-settling-from='old'] {
-    --settle-fill: var(--diff-gone-fill);
-    --settle-ink: var(--diff-gone-ink);
-  }
-
-  .diff-settling[data-settling-from='proposed'] {
-    --settle-fill: var(--diff-new-fill);
-    --settle-ink: var(--diff-new-ink);
-  }
-
-  .diff-settling[data-settling-from='own'] {
-    --settle-fill: var(--diff-own-fill);
-    --settle-ink: var(--diff-own-ink);
+    animation: diff-appear 300ms ease-out;
   }
 }
 
-@keyframes diff-settle {
+@keyframes diff-appear {
   from {
-    background-color: var(--settle-fill);
-    color: var(--settle-ink);
+    opacity: 0;
   }
+}
+
+/* The box he chose, drawn again over the text for as long as it takes to glide and fade. */
+.diff-settling-box {
+  position: absolute;
+  z-index: 2;
+  margin: 0;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 /* One gap between the wordings of a change, whatever their sizes. */
