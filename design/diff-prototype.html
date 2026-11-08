@@ -300,7 +300,7 @@
       #view[data-hover='underline'] :is(.diff-change, .diff-change-carried):hover:not(.diff-current) {
         --marks-reach: 0.05em;
         padding-bottom: calc(var(--marks-reach) + 2px + 3px);
-        background-image: linear-gradient(90deg, transparent 2px, color-mix(in srgb, var(--quiet) 50%, var(--line)) 2px 10px, transparent 10px);
+        background-image: linear-gradient(90deg, color-mix(in srgb, var(--quiet) 50%, var(--line)) 0 66.7%, transparent 66.7%);
         background-position: left bottom;
         background-repeat: round no-repeat;
         background-size: 12px 3px;
@@ -326,7 +326,7 @@
 
       #view[data-hover='colour'] :is(.diff-change, .diff-change-carried):has(.diff-resolved):hover:not(.diff-current) {
         padding-bottom: calc(0.05em + var(--hover-room));
-        background-image: linear-gradient(90deg, transparent 2px, var(--diff-resolved-ink) 2px 10px, transparent 10px);
+        background-image: linear-gradient(90deg, var(--diff-resolved-ink) 0 66.7%, transparent 66.7%);
         background-position: left bottom;
         background-repeat: round no-repeat;
         background-size: 12px var(--hover-line);
@@ -337,7 +337,7 @@
         box-shadow: none;
         background-color: transparent;
         background-image:
-          linear-gradient(90deg, transparent 2px, var(--candidate-fill) 2px 10px, transparent 10px),
+          linear-gradient(90deg, var(--candidate-fill) 0 66.7%, transparent 66.7%),
           linear-gradient(var(--wash-firm), var(--wash-firm)),
           linear-gradient(var(--candidate-fill), var(--candidate-fill));
         background-position: left bottom, left top, left top;
@@ -350,7 +350,7 @@
 
       #view[data-hover='colour'] :is(.diff-change, .diff-change-carried):hover:not(.diff-current) .diff-struck {
         background-image:
-          linear-gradient(90deg, transparent 2px, var(--candidate-fill) 2px 10px, transparent 10px),
+          linear-gradient(90deg, var(--candidate-fill) 0 66.7%, transparent 66.7%),
           linear-gradient(var(--candidate-ink), var(--candidate-ink)),
           linear-gradient(var(--wash-firm), var(--wash-firm)),
           linear-gradient(var(--candidate-fill), var(--candidate-fill));

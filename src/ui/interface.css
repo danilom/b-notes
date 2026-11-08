@@ -2972,17 +2972,17 @@ dialog::backdrop {
    of it, not the accent, which clashes with the red and green and can be green
    itself. A small gap above, because it would otherwise read as one thicker mark.
    Painted in the padding of what holds the change; padding on
-   inline text moves no lines. Each tile is a gap with half a dash either side,
-   and `round` fits a whole number of them, so the line begins and ends on a dash,
-   flush with the first and last letter; a gap at either end read as the line
-   starting late. The two at the ends are half dashes. */
+   inline text moves no lines. Each tile is a dash and then its gap, and `round`
+   fits a whole number of them, so the line begins on a dash under the first
+   letter, where a gap there read as the line starting late; it ends a gap short
+   of the last. */
 .diff-current {
   --underline: 3px;
   --parting: 2px;
   /* Below the marks inside, which themselves reach a little below the text. */
   --marks-reach: 0.05em;
   padding-bottom: calc(var(--marks-reach) + var(--parting) + var(--underline));
-  background-image: linear-gradient(90deg, var(--ink) 0 33.3%, transparent 33.3% 66.7%, var(--ink) 66.7%);
+  background-image: linear-gradient(90deg, var(--ink) 0 66.7%, transparent 66.7%);
   background-position: left bottom;
   background-repeat: round no-repeat;
   background-size: 12px var(--underline);
