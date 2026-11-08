@@ -23,7 +23,7 @@ const hover = element('hover', HTMLSelectElement);
 const ownLook = element('own-look', HTMLSelectElement);
 const chosenLook = element('chosen-look', HTMLSelectElement);
 const choiceWords = element('choice-words', HTMLSelectElement);
-const dots = element('dots', HTMLInputElement);
+const dots = element('dots', HTMLSelectElement);
 const pencil = element('pencil', HTMLSelectElement);
 const paragraphMarks = element('paragraph-marks', HTMLSelectElement);
 const markColour = element('mark-colour', HTMLSelectElement);
@@ -295,7 +295,7 @@ const showLooks = (): void => {
   view.dataset['hover'] = hover.value;
   view.dataset['own'] = ownLook.value;
   view.dataset['chosen'] = chosenLook.value;
-  view.dataset['dots'] = dots.checked ? 'on' : 'off';
+  view.dataset['dots'] = dots.value;
   view.dataset['pencil'] = pencil.value;
   view.dataset['paragraphMarks'] = paragraphMarks.value;
   view.dataset['markColour'] = markColour.value;

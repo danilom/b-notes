@@ -470,8 +470,43 @@
         --diff-resolved-ink: var(--ink);
       }
 
-      #view[data-dots='off'] .diff-bar-dot {
+      /*
+        The sign in a choice that says "this one", to choose from. The app's own is a
+        ring with a dot in it. Unchosen, every one of them is the empty ring, or square.
+      */
+      #view[data-dots='none'] .diff-bar-dot {
         display: none;
+      }
+
+      #view:is([data-dots='check-circle'], [data-dots='filled-check'], [data-dots='solid'], [data-dots='checkbox']) .diff-bar .diff-bar-dot {
+        display: grid;
+        place-items: center;
+        width: 1em;
+        height: 1em;
+      }
+
+      #view:is([data-dots='check-circle'], [data-dots='filled-check'], [data-dots='solid'], [data-dots='checkbox']) .diff-bar-chosen .diff-bar-dot {
+        background: none;
+        box-shadow: none;
+      }
+
+      #view:is([data-dots='check-circle'], [data-dots='filled-check'], [data-dots='checkbox']) .diff-bar-chosen .diff-bar-dot::after {
+        content: '✓';
+        font-size: 0.75em;
+        font-weight: 700;
+        line-height: 1;
+      }
+
+      #view:is([data-dots='filled-check'], [data-dots='solid']) .diff-bar-chosen .diff-bar-dot {
+        background: currentColor;
+      }
+
+      #view[data-dots='filled-check'] .diff-bar-chosen .diff-bar-dot::after {
+        color: var(--choice-fill);
+      }
+
+      #view[data-dots='checkbox'] .diff-bar .diff-bar-dot {
+        border-radius: 3px;
       }
 
       /*
@@ -479,14 +514,29 @@
         is the radio's dot. The others leave the dot out. The check mark is an ::after
         put first, since ::before is each stepper button's widened target.
       */
-      #view:not([data-choice-look='radio'], [data-choice-look='radio-left']) .diff-bar-dot {
+      #view:not([data-choice-look='radio'], [data-choice-look='radio-left'], [data-choice-look='radio-left-centred']) .diff-bar-dot {
         display: none;
       }
 
       /* Levo: the circle at the left edge of each button and the words after it, not
          centred, so that the three circles stand at the same place in their buttons. */
-      #view[data-choice-look='radio-left'] .diff-bar .diff-bar-choice {
+      #view:is([data-choice-look='radio-left'], [data-choice-look='radio-left-centred']) .diff-bar .diff-bar-choice {
         justify-content: flex-start;
+      }
+
+      /* Tekst u sredini: the circle as in Levo, and the words centred in what is left,
+         between two equal free spaces: the circle's right margin, and an empty ::after
+         at the end (::before is the button's widened target, and taken). */
+      #view[data-choice-look='radio-left-centred'] .diff-bar .diff-bar-dot {
+        margin-right: auto;
+      }
+
+      /* Reaching back over the button's own padding on the right, so that the words are
+         centred between the circle and the button's edge, and not its padding. */
+      #view[data-choice-look='radio-left-centred'] .diff-bar .diff-bar-choice::after {
+        content: '';
+        margin-left: auto;
+        margin-right: -0.5rem;
       }
 
       #view:is([data-choice-look='segmented'], [data-choice-look='check']) .diff-bar .diff-bar-chosen::after {
@@ -762,9 +812,16 @@
               <option value="none">Bez olovke</option>
             </select>
           </label>
-          <label>
-            <input type="checkbox" id="dots" checked />
-            Tačke na dugmadi
+          <label class="prototype-pick">
+            <span>Znak izbora</span>
+            <select id="dots">
+              <option value="dot" selected>Krug s tačkom</option>
+              <option value="check-circle">Krug s kvačicom</option>
+              <option value="filled-check">Pun krug s kvačicom</option>
+              <option value="solid">Pun krug</option>
+              <option value="checkbox">Kvadratić s kvačicom</option>
+              <option value="none">Bez znaka</option>
+            </select>
           </label>
         </div>
         <div class="prototype-column">
@@ -773,6 +830,7 @@
             <select id="choice-look">
               <option value="radio" selected>Tačke kao radio</option>
               <option value="radio-left">Tačke kao radio, levo poravnato</option>
+              <option value="radio-left-centred">Tačke levo, tekst u sredini</option>
               <option value="segmented">Spojeno, izabrano puno</option>
               <option value="check">Kvačica na izabranom</option>
               <option value="pressed">Utisnuto dugme</option>
