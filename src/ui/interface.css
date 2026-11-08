@@ -231,13 +231,14 @@
   --l-chosen-soft: 31%;
   --l-found: 38%;
   --l-on-chosen: 10%;
-  /* As bright as the blue beside it: at 68% green's luminance was half again the red's,
-     and it stood out from the other two as no part of the meaning. */
-  --diff-new-fill: hsl(142 50% 58%);
+  /* The three at one lightness and much the same chroma, in OKLCH, where equal lightness
+     looks equally bright: set in HSL, the green stood out from the other two, then the red
+     sank below them, as no part of the meaning. */
+  --diff-new-fill: oklch(0.76 0.13 152);
   --diff-new-ink: hsl(0 0% 5%);
-  --diff-gone-fill: hsl(4 75% 72%);
+  --diff-gone-fill: oklch(0.76 0.12 25);
   --diff-gone-ink: hsl(0 0% 5%);
-  --diff-own-fill: hsl(215 80% 75%);
+  --diff-own-fill: oklch(0.76 0.11 255);
   --diff-own-ink: hsl(0 0% 5%);
   --diff-tidied-ink: hsl(4 90% 72%);
   --diff-resolved-ink: hsl(142 55% 66%);
@@ -2875,10 +2876,12 @@ dialog::backdrop {
      button's padding above, and half of what the line has to spare beyond the sign. */
   justify-content: flex-start;
   padding-left: calc(0.25rem + (1lh - 1em) / 2);
-  border-color: var(--choice-fill);
-  background: var(--choice-fill);
+  /* Dimmed by mixing toward the bar in OKLCH, not by opacity: opacity blends in sRGB,
+     where a lighter colour gives up more than a darker one, and the three dimmed unevenly. */
+  --choice-shown: color-mix(in oklch, var(--choice-fill) 80%, var(--panel));
+  border-color: var(--choice-shown);
+  background: var(--choice-shown);
   color: var(--choice-ink);
-  opacity: 0.8;
 }
 
 /* The words centred in what is left beside the sign, between two equal free spaces: the
@@ -2907,7 +2910,7 @@ dialog::backdrop {
 
 .diff-bar .diff-bar-choice:hover,
 .diff-bar .diff-bar-chosen {
-  opacity: 1;
+  --choice-shown: var(--choice-fill);
 }
 
 /* After Izmeni: the one choice that also opens a place to type. In the button's own
@@ -2934,7 +2937,7 @@ dialog::backdrop {
 
 .diff-bar-chosen .diff-bar-dot {
   background: currentColor;
-  box-shadow: inset 0 0 0 2px var(--choice-fill);
+  box-shadow: inset 0 0 0 2px var(--choice-shown);
 }
 
 .diff-bar .diff-bar-letter {
