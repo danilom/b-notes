@@ -56,7 +56,7 @@
       }
 
       .prototype-controls select {
-        max-width: 14rem;
+        max-width: 12rem;
       }
 
       .prototype-tabs {
@@ -92,7 +92,7 @@
 
       .prototype-controls.prototype-tab-panel {
         align-items: start;
-        gap: 0.5rem 3rem;
+        gap: 0.5rem 2rem;
       }
 
       /* A column of controls: the names of the lists in one column and the lists
@@ -385,6 +385,23 @@
         display: none;
       }
 
+      /* Where the pencil goes. The app's own is after Izmeni on the bar. */
+      #view:is([data-pencil='none'], [data-pencil='box']) .diff-bar-pencil {
+        display: none;
+      }
+
+      /* In his blue box, only while the bar is up over it: that is when a click there edits. */
+      #view[data-pencil='box'] .diff-bar-over .diff-own::after {
+        content: '';
+        display: inline-block;
+        width: 0.8em;
+        height: 0.8em;
+        margin-left: 0.3em;
+        background: currentColor;
+        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z'/%3E%3Cpath d='m15 5 4 4'/%3E%3C/svg%3E") center / contain no-repeat;
+        vertical-align: -0.05em;
+      }
+
       /* 3. One yellow highlighter for any change, filled or not, as on paper. */
       #view[data-hover='marker'] :is(.diff-change, .diff-change-carried, .diff-tidied-letter):hover {
         background: hsl(52 100% 66%);
@@ -473,10 +490,20 @@
               <option value="nouns">Staro · Predlog · Tvoje</option>
             </select>
           </label>
+          <label class="prototype-pick">
+            <span>Olovka</span>
+            <select id="pencil">
+              <option value="button" selected>Na dugmetu Izmeni</option>
+              <option value="box">U plavom polju</option>
+              <option value="none">Bez olovke</option>
+            </select>
+          </label>
           <label>
             <input type="checkbox" id="dots" checked />
             Tačke na dugmadi
           </label>
+        </div>
+        <div class="prototype-column">
           <label>
             <input type="checkbox" id="dark" />
             Tamno

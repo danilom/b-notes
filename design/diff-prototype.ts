@@ -24,6 +24,7 @@ const ownLook = element('own-look', HTMLSelectElement);
 const chosenLook = element('chosen-look', HTMLSelectElement);
 const choiceWords = element('choice-words', HTMLSelectElement);
 const dots = element('dots', HTMLInputElement);
+const pencil = element('pencil', HTMLSelectElement);
 const preamble = element('preamble', HTMLInputElement);
 const view = element('view', HTMLElement);
 
@@ -138,8 +139,9 @@ const showLooks = (): void => {
   view.dataset['own'] = ownLook.value;
   view.dataset['chosen'] = chosenLook.value;
   view.dataset['dots'] = dots.checked ? 'on' : 'off';
+  view.dataset['pencil'] = pencil.value;
 };
-for (const control of [hover, ownLook, chosenLook, dots]) control.addEventListener('change', showLooks);
+for (const control of [hover, ownLook, chosenLook, dots, pencil]) control.addEventListener('change', showLooks);
 showLooks();
 choiceWords.addEventListener('change', renderKeepingPlace);
 

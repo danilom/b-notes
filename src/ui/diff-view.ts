@@ -144,6 +144,8 @@ function stepperOver(
       onLetter: (letter: HTMLElement) => void;
       /** Somewhere that is no change was clicked, which puts the bar away. */
       onNothing: () => void;
+      /** His own wording was clicked; true if that began an edit of it. */
+      onOwn: (own: Element) => boolean;
     };
   },
 ): HTMLElement {
@@ -205,6 +207,9 @@ function stepperOver(
   function actOnClick(event: MouseEvent, editing: NonNullable<NonNullable<typeof review>['editing']>): void {
     if (!(event.target instanceof Element) || getSelection()?.isCollapsed === false) return;
     if (event.target.closest('.diff-edit') !== null) return;
+    // With the bar up over it, his own wording clicked is his to type over, as Izmeni does.
+    const own = event.target.closest('.diff-own');
+    if (own !== null && editing.onOwn(own)) return;
     const letter = event.target.closest<HTMLElement>('.diff-tidied-letter');
     if (letter !== null) {
       editing.onLetter(letter);
@@ -533,7 +538,14 @@ export function createTextDiffView(
       key: currentChangeKey(),
       ...(bar === null || editing === undefined
         ? {}
-        : { editing: { startAt: editing.startAt, onLetter: (letter: HTMLElement) => bar.showLetter(letter), onNothing: () => bar.close() } }),
+        : {
+            editing: {
+              startAt: editing.startAt,
+              onLetter: (letter: HTMLElement) => bar.showLetter(letter),
+              onNothing: () => bar.close(),
+              onOwn: (own: Element) => bar.editOwn(own),
+            },
+          }),
     }),
   );
   return framed;

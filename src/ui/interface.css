@@ -2693,6 +2693,11 @@ dialog::backdrop {
   border-radius: 2px;
 }
 
+/* His own wording, while the bar is up over it, is clicked to type over: the pointer says so. */
+.lektor-body .review-text .diff-bar-over .diff-own {
+  cursor: text;
+}
+
 /* One paragraph of the whole-text diff. */
 .diff-paragraph {
   margin: 0 0 1em;
@@ -2833,8 +2838,10 @@ dialog::backdrop {
 
 /* All one width, so that none of them looks like the preferred answer. */
 .diff-bar button {
+  flex: none;
   justify-content: center;
   min-width: 7.2em;
+  white-space: nowrap;
 }
 
 .diff-bar .stepper-close {
@@ -2870,6 +2877,15 @@ dialog::backdrop {
 .diff-bar .diff-bar-choice:hover,
 .diff-bar .diff-bar-chosen {
   opacity: 1;
+}
+
+/* After Izmeni: the one choice that also opens a place to type. In the button's own
+   ink, not the faint grey other buttons' icons have: on blue, grey all but vanished. */
+.diff-bar .diff-bar-pencil {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  color: inherit;
 }
 
 /* A radio's dot, drawn: a ring, filled for the choice in effect. */

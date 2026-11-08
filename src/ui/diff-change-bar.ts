@@ -65,7 +65,15 @@ export interface DiffChangeBar {
   showLetter: (letter: HTMLElement) => void;
   /** Put away, as X does: a click on nothing in particular. */
   close: () => void;
+  /**
+   * His own wording clicked: edited, as Izmeni does, if the bar is up over its change.
+   * Returns whether it was; otherwise the click is an ordinary one.
+   */
+  editOwn: (own: Element) => boolean;
 }
+
+/** On a change while the bar is up over it, which is when its own wording can be clicked to edit. */
+const BAR_OVER = 'diff-bar-over';
 
 function barButton(said: string, className: string, onClick: () => void): HTMLButtonElement {
   const button = document.createElement('button');
@@ -218,13 +226,23 @@ export function createDiffChangeBar(
     bar.replaceChildren(
       choiceButton(words.old + nothing(hasOld), 'diff-bar-old', chosen === 'old', () => editing.onChoose(at, 'old')),
       choiceButton(words.proposed + nothing(hasProposed), 'diff-bar-new', chosen === 'proposed', () => editing.onChoose(at, 'proposed')),
-      choiceButton(words.own, 'diff-bar-own', chosen === 'own', () => {
-        isEditing = true;
-        hide();
-        startEditing(change, fragmentsOf(change), at, editing);
-      }),
+      withPencil(choiceButton(words.own, 'diff-bar-own', chosen === 'own', () => beginEditing(change))),
       closeButton(),
     );
+  }
+
+  /** The one choice that also opens something to type in, and says so. */
+  function withPencil(button: HTMLButtonElement): HTMLButtonElement {
+    const pencil = icon('edit');
+    pencil.classList.add('diff-bar-pencil');
+    button.append(pencil);
+    return button;
+  }
+
+  function beginEditing(change: HTMLElement): void {
+    isEditing = true;
+    hide();
+    startEditing(change, fragmentsOf(change), changes.indexOf(change), editing);
   }
 
   /**
@@ -301,12 +319,14 @@ export function createDiffChangeBar(
   function showOver(over: Element): void {
     if (isEditing) return;
     shownOver = over;
+    for (const marked of box.querySelectorAll(`.${BAR_OVER}`)) marked.classList.remove(BAR_OVER);
     if (over.classList.contains('diff-tidied-letter') && over instanceof HTMLElement) {
       fillForLetter(over);
     } else {
       const change = changeOfFragment(over, changes, fragmentsAll());
       if (change === null) return;
       fillForChange(change);
+      for (const fragment of fragmentsOf(change)) fragment.classList.add(BAR_OVER);
     }
     place(over);
   }
@@ -314,6 +334,7 @@ export function createDiffChangeBar(
   function hide(): void {
     bar.hidden = true;
     shownOver = null;
+    for (const marked of box.querySelectorAll(`.${BAR_OVER}`)) marked.classList.remove(BAR_OVER);
   }
 
   /** Over the current change, decided or not, unless he has put it away or has just decided it. */
@@ -350,5 +371,12 @@ export function createDiffChangeBar(
       showOver(letter);
     },
     close: putAway,
+    editOwn(own) {
+      const fragment = own.closest(`.${BAR_OVER}`);
+      if (fragment === null || isEditing || current === null) return false;
+      if (changeOfFragment(fragment, changes, fragmentsAll()) !== current) return false;
+      beginEditing(current);
+      return true;
+    },
   };
 }
