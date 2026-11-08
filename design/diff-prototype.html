@@ -240,7 +240,7 @@
         a background laid over it would hide it. Not the button's pixel drop when pressed:
         one word jumping among words that stay still read as a glitch, not a press.
       */
-      #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) :is(.diff-change, .diff-change-carried):hover :is(.diff-new, .diff-gone, .diff-own) {
+      #view:is([data-hover='buttons'], [data-hover='underline']) :is(.diff-change, .diff-change-carried):hover :is(.diff-new, .diff-gone, .diff-own) {
         box-shadow: inset 0 0 0 100vmax var(--wash-firm);
       }
 
@@ -286,7 +286,9 @@
         margin-right: 0;
       }
 
-      #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) :is(.diff-change, .diff-change-carried):has(.diff-resolved):hover,
+      /* In 6 only on a single letter, which has no dashed line under the pointer: its
+         own underline is always there, so the darker ground is all it has to answer with. */
+      #view:is([data-hover='buttons'], [data-hover='underline']) :is(.diff-change, .diff-change-carried):has(.diff-resolved):hover,
       #view:is([data-hover='buttons'], [data-hover='underline'], [data-hover='colour']) .diff-tidied-letter:hover {
         /* The colour alone: the current change's dashed line is a background image, and the shorthand wiped it. */
         background-color: var(--wash-firm);
@@ -312,11 +314,12 @@
       }
 
       /*
-        6. As 4, with the dashed line in the colour of what it is under: green under green
-        text, and under a replacement red under the red and green under the green. Under a
-        box the line is drawn by the box itself: its fill is redrawn to stop short of the
-        line, the wash goes inside the fill and not over the gap, and the struck line
-        through red is moved up by what was added below, so it stays where it was.
+        6. The bigger targets of 4, without its darkening, which was too faint to tell, and
+        a dashed line under the change pointed at, in the colour of what it is under: green
+        under green text, and under a replacement red under the red and green under the
+        green. Under a box the line is drawn by the box itself: its fill is redrawn to stop
+        short of the line, and the struck line through red is moved up by what was added
+        below, so it stays where it was.
       */
       #view[data-hover='colour'] {
         --hover-gap: 2px;
@@ -338,13 +341,11 @@
         background-color: transparent;
         background-image:
           linear-gradient(90deg, var(--candidate-fill) 0 66.7%, transparent 66.7%),
-          linear-gradient(var(--wash-firm), var(--wash-firm)),
           linear-gradient(var(--candidate-fill), var(--candidate-fill));
-        background-position: left bottom, left top, left top;
-        background-repeat: round no-repeat, no-repeat, no-repeat;
+        background-position: left bottom, left top;
+        background-repeat: round no-repeat, no-repeat;
         background-size:
           12px var(--hover-line),
-          100% calc(100% - var(--hover-room)),
           100% calc(100% - var(--hover-room));
       }
 
@@ -352,15 +353,13 @@
         background-image:
           linear-gradient(90deg, var(--candidate-fill) 0 66.7%, transparent 66.7%),
           linear-gradient(var(--candidate-ink), var(--candidate-ink)),
-          linear-gradient(var(--wash-firm), var(--wash-firm)),
           linear-gradient(var(--candidate-fill), var(--candidate-fill));
         /* The struck line at 58% of the box it had, which is now taller by the room below. */
-        background-position: left bottom, 50% calc(58% - 0.58 * var(--hover-room)), left top, left top;
-        background-repeat: round no-repeat, no-repeat, no-repeat, no-repeat;
+        background-position: left bottom, 50% calc(58% - 0.58 * var(--hover-room)), left top;
+        background-repeat: round no-repeat, no-repeat, no-repeat;
         background-size:
           12px var(--hover-line),
           calc(100% - 4px) var(--strike),
-          100% calc(100% - var(--hover-room)),
           100% calc(100% - var(--hover-room));
       }
 
