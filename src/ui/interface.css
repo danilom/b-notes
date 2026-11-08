@@ -2875,7 +2875,9 @@ dialog::backdrop {
 
 /* Each choice in the colour of the wording it is for. A little faint until the
    pointer is on it, which is what the plain buttons say by lighting up, and these are
-   too strong in colour to do it that way; the one in effect at full strength. */
+   too strong in colour to do it that way. The one in effect is told by its sign alone:
+   shown at full strength as well, it had nothing to light up to under the pointer, and
+   the strength said nothing the sign did not. */
 .diff-bar .diff-bar-choice {
   gap: 0.4em;
   /* The sign at the left edge, as far from it as from the top and the bottom: the
@@ -2914,14 +2916,12 @@ dialog::backdrop {
   --choice-ink: var(--diff-own-ink);
 }
 
-.diff-bar .diff-bar-choice:hover,
-.diff-bar .diff-bar-chosen {
+.diff-bar .diff-bar-choice:hover {
   --choice-shown: var(--choice-fill);
 }
 
-/* Lighting up is the whole of what the pointer does here. The grey wash and border every
-   other button takes under the pointer muddied the colour lit, and on the choice already
-   in effect, with nothing left to light up, were all that changed. */
+/* Lighting up is the whole of what the pointer does here: the grey wash and border every
+   other button takes under the pointer muddied the colour lit. */
 .diff-bar .diff-bar-choice:hover:not(:disabled) {
   border-color: var(--choice-shown);
   background-image: none;
