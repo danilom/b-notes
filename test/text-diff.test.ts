@@ -341,6 +341,33 @@ describe('setting apart the changes nobody needs to read', () => {
     assert.ok(!isMinor('Kuc je tu.', 'Kuca je tu.'));
   });
 
+  describe('with diacritics counted either way, as between two copies of his own text', () => {
+    const isMinorEitherWay = (before: string, after: string): boolean =>
+      changesIn(separateTidying(diffTexts(before, after), { diacriticsEitherWay: true })).length === 0;
+
+    it('sets apart a letter losing its diacritic', () => {
+      assert.ok(isMinorEitherWay('Čuvala je kuću i ženu.', 'Cuvala je kucu i zenu.'));
+    });
+
+    it('sets apart đ going back to dj, the way he types it', () => {
+      assert.ok(isMinorEitherWay('Đorđe je među njima.', 'Djordje je medju njima.'));
+    });
+
+    it('sets apart one diacritic becoming another', () => {
+      assert.ok(isMinorEitherWay('Kuča je tu.', 'Kuća je tu.'));
+    });
+
+    it('still sets apart a letter gaining one', () => {
+      assert.ok(isMinorEitherWay('Cuvala je kucu.', 'Čuvala je kuću.'));
+    });
+
+    it('keeps a different letter in front of him, whichever way the diacritics go', () => {
+      assert.ok(!isMinorEitherWay('Žane je tu.', 'Zena je tu.'));
+      assert.ok(!isMinorEitherWay('Šaj je tu.', 'Sjaj je tu.'));
+      assert.ok(!isMinorEitherWay('Odjeća je tu.', 'Odeća je tu.'));
+    });
+  });
+
   it('sets apart any spacing', () => {
     assert.ok(isMinor('Pao  je   snijeg.', 'Pao je snijeg.'));
     assert.ok(isMinor('Prvi.  \n\n\nDrugi.', 'Prvi.\n\nDrugi.'));

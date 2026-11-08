@@ -138,9 +138,13 @@ function rowFor(
  * copy is the older of the two, so what it had that his text has lost is struck out in
  * red, and what his text has now is green. Only to read: there is nothing to choose
  * here, and bringing a copy back is the button below.
+ *
+ * A diacritic counts as a small difference whichever text has it. This is for seeing
+ * roughly what changed, and copies get pasted and taken back, so neither side is the
+ * one whose diacritics are right.
  */
 function copyAgainstText(copy: string, current: string): TextPiece[] {
-  return mergeCloseChanges(separateTidying(diffTexts(copy, current)));
+  return mergeCloseChanges(separateTidying(diffTexts(copy, current), { diacriticsEitherWay: true }));
 }
 
 /** What each mark means in this panel, drawn as it is in the text. */

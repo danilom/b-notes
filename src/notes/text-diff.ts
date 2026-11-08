@@ -154,10 +154,14 @@ function isWithDiacriticsRestored(was: string, now: string): boolean {
  *
  * Not a paragraph split or joined either, which is his structure.
  */
-function isTidying({ removed, added }: Pick<Change, 'removed' | 'added'>): boolean {
+function isTidying({ removed, added }: Pick<Change, 'removed' | 'added'>, diacriticsEitherWay: boolean): boolean {
   if (BLANK_LINES.test(removed) !== BLANK_LINES.test(added)) return false;
-  return isWithDiacriticsRestored(lettersOf(removed), lettersOf(added));
+  const [was, now] = [lettersOf(removed), lettersOf(added)];
+  return diacriticsEitherWay ? underDiacritics(was) === underDiacritics(now) : isWithDiacriticsRestored(was, now);
 }
+
+/** The letters with every diacritic off, `đ` spelled `dj` as he types it, so `đ` and `dj` meet but `d` and `dj` do not. */
+const underDiacritics = (letters: string): string => withoutDiacritics(letters.replaceAll('đ', 'dj').replaceAll('Đ', 'Dj'));
 
 /**
  * The same pieces, with the changes nobody needs to read set apart as `tidy`.
@@ -168,10 +172,15 @@ function isTidying({ removed, added }: Pick<Change, 'removed' | 'added'>): boole
  *
  * Spaces at the very start of a text stay in front of him: that is his first line,
  * where more spaces rank a text higher in his list.
+ *
+ * @param options.diacriticsEitherWay A diacritic lost or swapped counts as tidying too.
+ *   For two copies of his own text, where neither is a proposal to be judged and which
+ *   came first says little, copies being pasted and taken back. Not for the Lektor,
+ *   where a diacritic taken from him is a decision about the word.
  */
-export const separateTidying = (pieces: readonly TextPiece[]): TextPiece[] =>
+export const separateTidying = (pieces: readonly TextPiece[], { diacriticsEitherWay = false } = {}): TextPiece[] =>
   pieces.map((piece, at) => {
-    if (piece.kind !== 'change' || !isTidying(piece)) return piece;
+    if (piece.kind !== 'change' || !isTidying(piece, diacriticsEitherWay)) return piece;
     const isHisRanking = at === 0 && !/\S/.test(piece.removed + piece.added);
     return isHisRanking ? piece : { ...piece, kind: 'tidy' };
   });
