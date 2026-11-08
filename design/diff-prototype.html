@@ -490,12 +490,16 @@
 
       /* What each mark means, each drawn as it is in the text, in the lines' own small
          interface type: it describes the box, and is set as the line that did. */
+      #view :is(.prototype-legend, .prototype-legend-counts) {
+        padding-right: 0;
+        font-style: normal;
+      }
+
       #view .prototype-legend {
         display: flex;
         flex-wrap: wrap;
         align-items: baseline;
-        gap: 0.2rem 0.9rem;
-        padding-right: 0;
+        gap: 0.2rem 0.6rem;
       }
 
       .prototype-legend-item {

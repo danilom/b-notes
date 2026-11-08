@@ -63,24 +63,34 @@ function legendItem(shown: HTMLElement, said: string): HTMLElement {
 }
 
 /**
- * What each mark in the text means, each beside a sample drawn as it is there, with the
- * counts after. A draft of the wording, for trying.
+ * What each mark in the text means, each beside a sample drawn as it is there, parted by
+ * middle dots; and the counts on a line of their own under it. A draft of the wording.
  */
-function legend(pieces: readonly TextPiece[]): HTMLElement {
+function legend(pieces: readonly TextPiece[]): HTMLElement[] {
   const count = (kind: TextPiece['kind']): number => pieces.filter((piece) => piece.kind === kind).length;
-  const line = document.createElement('p');
-  line.className = 'review-note-aside prototype-legend';
-  const counts = document.createElement('span');
-  counts.textContent = `Veće promene: ${count('change')}, sitne popravke: ${count('tidy')}.`;
-  line.append(
+  const items = [
     legendItem(markedSample('diff-gone diff-struck', '', 'reč'), 'tvoj stari tekst'),
     legendItem(markedSample('diff-new', '', 'reč'), 'predlog'),
     legendItem(markedSample('diff-own', '', 'reč'), 'tvoja izmena'),
     legendItem(markedSample('diff-tidied', 're', 'č'), 'ispravljeno slovo'),
     legendItem(markedSample('diff-resolved', '', 'reč'), 'izabrano'),
-    counts,
-  );
-  return line;
+  ];
+  const line = document.createElement('p');
+  line.className = 'review-note-aside prototype-legend';
+  items.forEach((item, at) => {
+    if (at > 0) {
+      const dot = document.createElement('span');
+      dot.className = 'prototype-legend-dot';
+      dot.textContent = '·';
+      line.append(dot);
+    }
+    line.append(item);
+  });
+
+  const counts = document.createElement('p');
+  counts.className = 'review-note-aside prototype-legend-counts';
+  counts.textContent = `Veće promene: ${count('change')}, sitne popravke: ${count('tidy')}.`;
+  return [line, counts];
 }
 
 /** The proposal in front of him, which starts over whenever what is compared changes. */
@@ -106,7 +116,7 @@ function render(): void {
     column.append(aside('Precrtano je trenutni tekst, zeleno je predlog.'));
     if (hasTidying && tidying.value !== 'full') column.append(aside(tidyingNote(pieces)));
   } else if (preamble.value === 'legend') {
-    column.append(legend(merging.checked ? mergeCloseChanges(shown) : shown));
+    column.append(...legend(merging.checked ? mergeCloseChanges(shown) : shown));
   }
   column.append(
     createTextDiffView(
