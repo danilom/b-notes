@@ -786,8 +786,12 @@ function reviewPanel(preset: Preset): HTMLElement {
   );
   const panes = el('div', 'review-panes');
   panes.append(body);
-  const buttons = [button(said.apply, close, 'keep'), button('Nazad na izbor', () => show('choosing')), button('Zatvori', close)];
-  return framed(header(said.guide), panes, footer(buttons, said.goesIn));
+  const bottom = footer([button(said.apply, close, 'keep'), button('Zatvori', close)], said.goesIn);
+  // A step back, at the footer's left, apart from the two that finish or leave: as Nazad on the keys screen.
+  const back = button('', () => show('choosing'), 'lektor-footer-back');
+  back.append(icon('back'), el('span', '', 'Nazad'));
+  bottom.prepend(back);
+  return framed(header(said.guide), panes, bottom);
 }
 
 function framed(top: HTMLElement, middle: HTMLElement, bottom: HTMLElement): HTMLElement {

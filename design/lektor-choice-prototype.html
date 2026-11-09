@@ -234,16 +234,25 @@
       }
 
       /*
-        The review's header in the app's own font and the Lektor's sizes, not his text's: only the
-        text in the box below is his, and set as his.
+        The review's header: three lines in the dialog's own font and size (as its title's note and
+        buttons), with ordinary line spacing and the same room under each; only the text in the box
+        below is his, and set as his. Everything starts at one left edge; what is on the right (the
+        model, "Prikaži tekst kakav će biti") ends at one right edge.
       */
       .lektor-window .review-body > :not(.review-text) {
+        margin: 0 0 0.5rem;
         font-family: var(--ui-font);
+        font-size: calc(var(--ui-size) * 0.85);
+        line-height: 1.5;
       }
 
-      .lektor-window .review-body > .lektor-service-line,
+      .lektor-window .review-body > :not(.review-text) * {
+        font-size: inherit;
+        line-height: inherit;
+      }
+
       .lektor-window .review-body > .lektor-about-row {
-        font-size: var(--lektor-text);
+        margin-bottom: 0.7rem;
       }
 
       /* Who made it on the left, the model at the right of the same line, on its baseline. */
@@ -252,9 +261,6 @@
         align-items: baseline;
         justify-content: space-between;
         gap: 1rem;
-        margin-bottom: 0.4rem;
-        font-family: var(--ui-font);
-        font-size: var(--lektor-text);
       }
 
       .lektor-review-who > * {
@@ -262,7 +268,7 @@
       }
 
       .lektor-review-who > .lektor-where {
-        font-size: var(--lektor-small);
+        color: var(--quiet);
         white-space: nowrap;
       }
 
@@ -688,6 +694,20 @@
         margin-top: -0.35rem;
         font-size: var(--lektor-small);
         color: var(--quiet);
+      }
+
+      /* Back to the choices, at the footer's far left, the dialog's size like the others. */
+      .lektor-window footer .lektor-footer-back {
+        margin-right: auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.3em;
+      }
+
+      .lektor-footer-back svg {
+        width: 1.1em;
+        height: 1.1em;
       }
 
       .lektor-window .lektor-sends {
