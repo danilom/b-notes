@@ -82,8 +82,9 @@ function startScreen(): Step {
       ...saved,
       el('p', 'lektor-line', 'AI Lektor čita tvoj tekst, kaže šta misli i, ako želiš, predlaže ispravke.'),
       ...lektorChoice({ group: 'lektor-level', choose, openKeys }),
-      // Small: it explains the choice, it isn't what he came for.
-      el('p', 'lektor-where', 'Za slova, zareze i gramatiku oba su ista. Plaćeni je bolji za stil i dubinsku preradu, a radi i kad besplatni ne može.'),
+      // Placeholder: what paid gives for the comment, once measured. The old note was about the corrections,
+      // which now choose their own Lektor in the window; whether Opus writes a better comment was never measured.
+      el('p', 'lektor-where', '[Ovde: šta plaćeni donosi za utisak — čeka merenje.]'),
       // Last above the strip, so it is next to the button it is about. In the app's foot block, as in the
       // app, whose rules for the warning's own spacing apply only there.
       privacyFoot(),
