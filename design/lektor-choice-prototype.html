@@ -33,10 +33,34 @@
 
       .prototype-app {
         --side-width: min(22rem, 33.3vw);
-        flex: 1;
+        height: 100vh;
         display: grid;
         grid-template-columns: var(--side-width) minmax(0, 1fr) var(--side-width);
+        grid-template-rows: minmax(0, 1fr) auto;
         min-height: 0;
+      }
+
+      .prototype-list {
+        grid-row: 1 / -1;
+      }
+
+      /*
+        A stand-in for the app's bottom bar, which with the Lektor open runs under the text and the
+        panel but not the list, and takes their height: 48 px on his Asus, measured in the app. Without
+        it the panel here had 48 px more room than his.
+      */
+      .prototype-status {
+        grid-column: 2 / -1;
+        grid-row: 2;
+        height: 48px;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.4rem;
+        padding: 0 1rem;
+        border-top: 1px solid var(--line);
+        background: var(--panel);
       }
 
       body.lektor-open .prototype-app #lektor-side {
@@ -546,6 +570,12 @@
       </div>
       <div class="prototype-text" id="prototype-text"></div>
       <aside id="lektor-side"></aside>
+      <!-- Stand-in for the app's bottom bar: its height, its place, its buttons' names; nothing behind them. -->
+      <div class="prototype-status">
+        <button type="button" class="status-action" disabled>Kopiraj ceo tekst</button>
+        <button type="button" class="status-action" disabled>Ranije verzije</button>
+        <button type="button" class="status-action" disabled>AI Lektor</button>
+      </div>
     </div>
 
     <!-- The app's own: the window all of the corrections happen in, modal, so the text can't be edited under it. -->
