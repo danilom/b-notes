@@ -130,6 +130,17 @@ const COMMENT = [
 /** Whether "AI može da pogreši" is opened to say what that means, as in the app. */
 let isAboutAiOpen = false;
 
+/** Whether his text has changed enough since the comment for the app to say so above it. */
+let isCommentStale = false;
+
+/** The app's note above an outdated comment, with the way to a new one under it. */
+function staleNote(): HTMLElement[] {
+  if (!isCommentStale) return [];
+  const note = el('p', 'lektor-stale');
+  note.append(icon('info'), el('span', '', 'Utisak je napisan pre tvojih poslednjih izmena (oko 120 reči).'));
+  return [note];
+}
+
 /** "AI može da pogreši", which opens to a few plain sentences on what an AI is; the app's own. */
 function aboutAi(): HTMLElement[] {
   const toggle = el('button', 'lektor-fallible');
@@ -155,7 +166,7 @@ function responseScreen(): Step {
   }, 'lektor-again');
   ask.append(icon('back'), el('span', '', 'Traži novi utisak'));
   again.append(ask);
-  head.append(again);
+  head.append(...staleNote(), again);
   const comment = el('div', 'lektor-response', COMMENT);
   comment.append(el('span', 'lektor-response-end'));
   const signed = serviceLine();
@@ -227,6 +238,7 @@ const CONTROLS: readonly PrototypeControl[] = [
     ],
     value: 'start',
   },
+  { id: 'stale', label: 'Tekst promenjen posle utiska', value: false },
   { id: 'free-key', label: 'Ključ za besplatni sačuvan', value: true },
   { id: 'paid-key', label: 'Ključ za plaćeni sačuvan', value: true },
   {
@@ -257,6 +269,7 @@ const CONTROLS: readonly PrototypeControl[] = [
 
 function setControl(id: string, value: string | boolean): void {
   if (id === 'screen') screen = value === 'response' || value === 'keys' ? value : 'start';
+  if (id === 'stale') isCommentStale = value === true;
   if (id === 'free-key') keys.saved.free = value === true;
   if (id === 'paid-key') keys.saved.paid = value === true;
   if (id === 'key-check') keys.check = value === 'refused' || value === 'offline' ? value : ('works' satisfies KeyCheck);
