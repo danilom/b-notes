@@ -94,6 +94,8 @@ function privacyWarning(): HTMLElement {
 interface Step {
   content: HTMLElement[];
   main: HTMLButtonElement;
+  /** A step back, at the strip's left, where there is one: the keys screen's Nazad. */
+  back?: HTMLButtonElement;
 }
 
 function startScreen(): Step {
@@ -202,11 +204,11 @@ function render(): void {
   close.append(icon('fold-down'));
   const title = el('div', 'lektor-side-title');
   title.append(icon('lektor'), el('span', '', TITLES[screen]), close);
-  const { content, main } = screenNow();
+  const { content, main, back } = screenNow();
   const body = el('div', 'lektor-side-body');
   body.append(...content);
   const buttons = el('div', 'lektor-side-buttons');
-  buttons.append(main);
+  buttons.append(...(back === undefined ? [] : [back]), main);
   const dock = el('div', 'lektor-side-dock');
   dock.append(buttons);
   side.replaceChildren(title, body, dock);

@@ -92,23 +92,30 @@ export function saveKeys(redraw: () => void, backToStart: () => void, savedAndBa
 }
 
 /** @param savedAndBack Back to the first step after a key was saved and works, which the first step then says. */
-/** What scrolls, and "Sačuvaj" for the strip at the panel's foot, as every step of the panel has its main button. */
-export function keysScreen(redraw: () => void, backToStart: () => void, savedAndBack: () => void): { content: HTMLElement[]; main: HTMLButtonElement } {
+/**
+ * What scrolls, and for the strip at the panel's foot "Sačuvaj" on the right, as every step has
+ * its main button, and "Nazad" on the left: a step back, so read left to right like the steps.
+ * Not the order of the app's windows, Sačuvaj then Otkaži, since this closes nothing.
+ */
+export function keysScreen(
+  redraw: () => void,
+  backToStart: () => void,
+  savedAndBack: () => void,
+): { content: HTMLElement[]; main: HTMLButtonElement; back: HTMLButtonElement } {
   const isChecking = keys.notes.free === 'checking' || keys.notes.paid === 'checking';
   const save = (): void => saveKeys(redraw, backToStart, savedAndBack);
-  const back = el('div', 'lektor-back-row');
+  // The small grey button with its arrow, as it was at the top: the way out, not competing with Sačuvaj.
   const leave = button('', backToStart, 'lektor-again');
   leave.append(icon('back'), el('span', '', 'Nazad'));
-  back.append(leave);
   const saveButton = button('Sačuvaj', save, 'status-action lektor-main-action');
   saveButton.disabled = isChecking;
   return {
     content: [
-      back,
       el('p', 'lektor-line', 'Za rad AI Lektora potreban je API ključ. Ako ti ga je neko poslao, zalepi ga ovde. Dovoljan je jedan.'),
       ...keyField('free', isChecking, save),
       ...keyField('paid', isChecking, save),
     ],
     main: saveButton,
+    back: leave,
   };
 }
