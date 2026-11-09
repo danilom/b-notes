@@ -175,8 +175,9 @@ function responseScreen(): Step {
   signed.append(el('span', 'lektor-comment-when', ' · upravo sad'));
   const signature = el('div', 'lektor-comment-notes');
   signature.append(signed, ...aboutAi());
-  // No arrow: like every button in the app that opens a window.
-  const toCorrections = button('Pređi na ispravke', () => openCorrectionsWindow(() => choose('free')), 'status-action lektor-main-action');
+  // No arrow: like every button in the app that opens a window. The ellipsis is Windows' own sign, as on
+  // "Print…", that a window will ask more before anything happens: the window is a step, not a send.
+  const toCorrections = button('Pređi na ispravke…', () => openCorrectionsWindow(() => choose('free')), 'status-action lektor-main-action');
   return { content: [head, comment, signature], main: toCorrections };
 }
 
