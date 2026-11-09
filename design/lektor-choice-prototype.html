@@ -259,6 +259,15 @@
         line-height: normal;
       }
 
+      /* The box with equal space above and below it, so it sits balanced between its lines and the footer's. */
+      .lektor-window .review-body > :not(.review-text):has(+ .review-text) {
+        margin-bottom: 0.75rem;
+      }
+
+      .lektor-window:has(.review-text) > footer {
+        margin-top: 0.75rem;
+      }
+
       .lektor-window .review-body > :not(.review-text) * {
         font-size: inherit;
         line-height: inherit;
