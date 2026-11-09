@@ -251,6 +251,11 @@
         border-left: 1px solid var(--line);
       }
 
+      /* No gap between the columns: the kind picked runs right up to the dividing line, as a tab into what it opens. */
+      .lektor-window .review-panes:has(> .lektor-window-detail) {
+        gap: 0;
+      }
+
       /* No weight of its own (:where), so a piece shared with the panel, as the balance's indent, keeps its own margins. */
       :where(.lektor-window-side > *, .lektor-window-detail > *, .lektor-kind > *) {
         margin: 0;
