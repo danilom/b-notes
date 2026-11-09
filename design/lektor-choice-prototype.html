@@ -386,11 +386,15 @@
       }
 
       /* New: a thin line before Dubinska prerada, a pause rather than a box: it replaces his text where the others fix it. */
+      /*
+        Short of the line between the columns, so it reads as a pause in the list and not as part of the
+        window's frame; drawn as the panel's line over its main button, so the Lektor has one such line.
+      */
       .lektor-kind-divider {
-        width: 100%;
-        margin: 0.45rem 0;
+        align-self: stretch;
+        margin: 0.45rem 1rem 0.45rem 0;
         border: none;
-        border-top: 1px solid var(--line);
+        border-top: 1.5px solid color-mix(in srgb, var(--quiet) 45%, var(--line));
       }
 
       /* New: "preporučeno" after the choice that is better for this kind. */
