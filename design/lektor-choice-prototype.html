@@ -105,8 +105,14 @@
       */
       .lektor-choice-options,
       .lektor-kind-list {
-        margin-top: -0.45rem;
+        /* Less at the top: tall rows under a heading need a little air below it. */
+        margin-top: -0.25rem;
         margin-bottom: -0.45rem;
+      }
+
+      /* A little more before the warning than between the lines above it: it is the last thing before sending. */
+      .lektor-side-body > .lektor-side-foot {
+        margin-top: 0.4rem;
       }
 
       /* More room above a heading than under it, so each heading reads as starting what follows. */
