@@ -174,8 +174,20 @@
       }
 
       /* The tick box's sentence wraps in its place, beside the box and the coin, rather than dropping below them. */
+      /* The box and the coin with its name, the first line, not halfway down its grey explanation. */
       .lektor-choice-options .lektor-check {
         flex-wrap: nowrap;
+        align-items: flex-start;
+      }
+
+      /* Centred on that first line (20px at his size): the box is 13px, the coin about 17px. */
+      .lektor-choice-options .lektor-check > input {
+        margin-top: 0.2rem;
+        margin-bottom: 0;
+      }
+
+      .lektor-choice-options .lektor-check > .lektor-choice-mark {
+        margin-top: 0.08rem;
       }
 
       .lektor-choice-options .lektor-check > span {
