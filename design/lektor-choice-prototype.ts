@@ -151,7 +151,7 @@ function responseScreen(): Step {
   signature.append(signed, ...aboutAi());
   // No arrow: like every button in the app that opens a window. The ellipsis is Windows' own sign, as on
   // "Print…", that a window will ask more before anything happens: the window is a step, not a send.
-  const toCorrections = button('Pređi na ispravke…', () => openCorrectionsWindow(choose), 'status-action lektor-main-action');
+  const toCorrections = button('Pređi na ispravke…', () => openCorrectionsWindow(), 'status-action lektor-main-action');
   return { content: [head, comment, signature], main: toCorrections };
 }
 
@@ -250,7 +250,16 @@ const CONTROLS: readonly PrototypeControl[] = [
     ],
     value: 'none',
   },
-  { id: 'busy', label: 'Besplatni je zauzet', value: false },
+  {
+    id: 'busy',
+    label: 'Besplatni',
+    options: [
+      { value: 'no', label: 'radi' },
+      { value: 'busy', label: 'zauzet (brži model radi)' },
+      { value: 'both', label: 'zauzet, i brži model' },
+    ],
+    value: 'no',
+  },
   { id: 'money-out', label: 'Plaćeni nema novca', value: false },
   { id: 'dark', label: 'Tamna pozadina', value: false },
 ];
@@ -280,7 +289,7 @@ function setScreen(value: string | boolean): void {
   screen = value === 'response' || value === 'window' ? 'response' : value === 'keys' ? 'keys' : 'start';
   if (value === 'window') {
     render();
-    openCorrectionsWindow(choose);
+    openCorrectionsWindow();
   }
 }
 
@@ -291,9 +300,13 @@ function setControl(id: string, value: string | boolean): void {
   if (id === 'paid-key') keys.saved.paid = value === true;
   if (id === 'key-check') keys.check = value === 'refused' || value === 'offline' ? value : ('works' satisfies KeyCheck);
   if (id === 'balance') state.balance = value === 'unknown' ? null : Number(value);
-  if (id === 'busy') state.isFreeBusy = value === true;
+  if (id === 'busy') {
+    state.isFreeBusy = value !== 'no';
+    state.isFallbackBusy = value === 'both';
+  }
   if (id === 'money-out') state.isMoneyOut = value === true;
-  if (id === 'letters-kept') setKept(value);  // The app's own switch, as the diff prototype sets it.
+  if (id === 'letters-kept') setKept(value);
+  // The app's own switch, as the diff prototype sets it.
   if (id === 'dark') document.documentElement.dataset['mode'] = value === true ? 'dark' : 'light';
   render();
   redrawWindowIfOpen();

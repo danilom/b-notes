@@ -144,7 +144,7 @@
       }
 
       /* Under the words or mark, a column with them; the radio stays on the first line. */
-      .lektor-preset > :is(.lektor-balance, .lektor-kind-state) {
+      .lektor-preset > :is(.lektor-balance, .lektor-kind-about) {
         flex-basis: 100%;
         margin: 0 0 0 var(--lektor-after-radio);
       }
@@ -260,32 +260,41 @@
         font-weight: 600;
       }
 
-      /* New: in the row of a kind with corrections ready, under its name as the balance is under Plaćeni. */
-      .lektor-kind-state {
-        display: flex;
-        align-items: center;
-        gap: 0.3em;
+      /* New: under a kind's name, how far it goes: small and quiet, part of the row's target. */
+      .lektor-kind-about {
+        font-size: 0.85rem;
+        line-height: 1.35;
+        color: var(--quiet);
+      }
+
+      /* New: "preporučeno" after the choice that is better for this kind. */
+      .lektor-recommended {
         font-size: 0.85rem;
         color: var(--quiet);
       }
 
-      /*
-        New: the way straight to ready corrections, at the right end of their line: a real button,
-        bordered, so it reads as its own target inside the row's.
-      */
-      .lektor-kind-state > span {
-        white-space: nowrap;
+      /* New: corrections ready for the kind picked, one card each: whose, from when, what it cost, and the way in. */
+      .lektor-ready-card {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.55rem 0.7rem;
+        border: 1px solid var(--line);
+        border-radius: 6px;
       }
 
-      .lektor-kind-open {
+      .lektor-ready-words {
+        color: var(--quiet);
+      }
+
+      .lektor-ready-card .status-action {
         margin-left: auto;
-        padding: 0.15rem 0.7rem;
-        font-size: var(--lektor-small);
       }
 
-      /* Under the pointer the button is what will be clicked, not the row, so the row's wash steps aside. */
-      .lektor-kind .lektor-preset:has(.lektor-kind-open:hover) {
-        background-image: none;
+      /* Asking again past ready corrections: quiet, the way past rather than the way on. */
+      .lektor-ask-again {
+        align-self: flex-start;
+        margin-top: 0.4rem;
       }
 
       /* New: sending, at the foot of the right column, at its right, as a window's main button stands. */
@@ -293,22 +302,29 @@
         margin-top: auto;
         padding-bottom: 0.2rem;
         display: flex;
+        align-items: center;
         justify-content: flex-end;
+        gap: 0.6rem;
       }
 
-      .lektor-window-actions .status-action,
-      .lektor-window-big .status-action {
+      .lektor-window-actions .lektor-again {
+        margin-right: auto;
+      }
+
+      .lektor-window-detail .status-action {
         min-height: 2.1rem;
         padding-inline: 0.8rem;
       }
 
-      .lektor-window-big .status-action {
+      .lektor-window-ways {
+        display: flex;
+        gap: 0.5rem;
         margin-top: 0.8rem;
       }
 
-      .lektor-kind-state .lektor-choice-mark {
-        width: 0.95em;
-        height: 0.95em;
+      /* Nothing chosen yet: the right side only points left. */
+      .lektor-window-empty {
+        color: var(--quiet);
       }
 
       /* New: the wait and a failure fill the right column, centred and large: while either lasts it is all there is. */

@@ -51,11 +51,13 @@ export interface PrototypeState {
   balance: number | null;
   /** Google answers "busy" to the free Lektor. */
   isFreeBusy: boolean;
+  /** …and to its quicker model too, so even Slova i zarezi and Pravopis fail on free. */
+  isFallbackBusy: boolean;
   /** The paid Lektor is refused for want of money. */
   isMoneyOut: boolean;
 }
 
-export const state: PrototypeState = { choice: 'paid', balance: 7.47, isFreeBusy: false, isMoneyOut: false };
+export const state: PrototypeState = { choice: 'paid', balance: 7.47, isFreeBusy: false, isFallbackBusy: false, isMoneyOut: false };
 
 export function element<T extends HTMLElement>(id: string, kind: new () => T): T {
   const found = document.getElementById(id);

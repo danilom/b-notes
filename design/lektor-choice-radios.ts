@@ -13,6 +13,10 @@ export interface LektorChoiceActions {
   openKeys?: () => void;
   /** While a request runs nothing here can change. */
   isLocked?: boolean;
+  /** Which is chosen, where it isn't the panel's choice: in the window each kind has its own. */
+  chosen?: Choice;
+  /** A choice marked "preporučeno" after its name, where one is better for what is being done. */
+  recommended?: Choice;
 }
 
 /**
@@ -26,7 +30,8 @@ function paidBalance(): HTMLElement[] {
 
 /** A choice whose key hasn't been entered is greyed, with the reason on hovering, as in the app. */
 function levelOption(choice: Choice, name: string, actions: LektorChoiceActions): HTMLElement {
-  const option = radio(actions.group, name, state.choice === choice, () => actions.choose(choice), choice);
+  const option = radio(actions.group, name, (actions.chosen ?? state.choice) === choice, () => actions.choose(choice), choice);
+  if (actions.recommended === choice) option.append(el('span', 'lektor-recommended', 'preporučeno'));
   if (choice === 'paid') option.append(...paidBalance());
   const input = option.querySelector('input');
   if (input !== null) input.disabled = actions.isLocked === true || !keys.saved[choice];
