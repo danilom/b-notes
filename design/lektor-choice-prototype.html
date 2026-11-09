@@ -372,9 +372,26 @@
         width: 0.8em;
       }
 
-      /* Pulled up to the line that opened it, as its contents rather than the next thing. */
-      .lektor-prompt-toggle[aria-expanded='true'] + .lektor-prompt {
-        margin-top: -0.3rem;
+      /* New: what the fold opens, one whole: a line down its side from under the arrow, close under the line that opened it. */
+      .lektor-prompt-group {
+        margin: -0.3rem 0 0 0.3rem;
+        padding-left: 0.85rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        border-left: 2px solid var(--line);
+      }
+
+      /* Its parts' labels, at the heading's own quiet level, so neither reads as a heading of the column. */
+      .lektor-prompt-sub {
+        margin: 0;
+        font-size: var(--lektor-small);
+        color: var(--quiet);
+      }
+
+      /* A little apart from the instruction above it; no more, or with Plaćeni's tick box the column would scroll on his Asus. */
+      .lektor-prompt-group .lektor-prompt-sub:not(:first-child) {
+        margin-top: 0.2rem;
       }
 
       /* New: the tick box's short name, and what it means in grey under it, both part of the target. */

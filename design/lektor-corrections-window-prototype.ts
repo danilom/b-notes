@@ -308,7 +308,7 @@ function paidIfSlowBox(): HTMLElement {
   // the paid one runs the same model as the free one, not the dearer one rework uses.
   const words = el('span', 'lektor-check-words');
   words.append(
-    el('span', '', 'Ako besplatni ne krene, pošalji plaćenom'),
+    el('span', '', 'Ako besplatni ne krene, pošalji plaćenom lektoru'),
     el('span', 'lektor-check-why', `Besplatni lektor je često spor. Ako ne krene za ${FREE_LIMIT_WORDS}, zahtev ide jeftinom plaćenom lektoru, da ne čekaš.`),
   );
   box.append(input, choiceMark('paid'), words);
@@ -358,8 +358,9 @@ function lastCost(preset: Preset): HTMLElement[] {
   return [el('p', 'lektor-where', `Prošli put za ovaj tekst: ${dollars(paid.cost)}`)];
 }
 
+/** His own, under the fold's heading: "uputstva" is said there, so here only whose they are. */
 function noteField(): HTMLElement[] {
-  const label = el('label', 'lektor-label', 'Tvoja dodatna uputstva ');
+  const label = el('label', 'lektor-prompt-sub', 'Tvoja, dodatna ');
   label.append(el('span', 'lektor-label-aside', '(nije obavezno)'));
   const box = el('textarea', 'lektor-note');
   // Three lines: room to say something, and the column still fits on his Asus with the Lektor choice in it.
@@ -403,12 +404,17 @@ function promptPart(preset: Preset): HTMLElement[] {
   const toggle = el('button', 'lektor-prompt-toggle');
   toggle.type = 'button';
   toggle.setAttribute('aria-expanded', String(isPromptOpen));
-  toggle.append(el('span', 'lektor-prompt-arrow', isPromptOpen ? '▾' : '▸'), el('span', '', 'Uputstvo za AI'));
+  toggle.append(el('span', 'lektor-prompt-arrow', isPromptOpen ? '▾' : '▸'), el('span', '', 'Uputstva za AI'));
   toggle.addEventListener('click', () => {
     isPromptOpen = !isPromptOpen;
     draw();
   });
-  return isPromptOpen ? [toggle, el('p', 'lektor-prompt', PRESET_PROMPTS[preset]), ...noteField()] : [toggle];
+  if (!isPromptOpen) return [toggle];
+  // One heading for both, and what it opens held together by a line down its side, so the two
+  // small labels inside read as parts of it rather than as headings of the column.
+  const group = el('div', 'lektor-prompt-group');
+  group.append(el('p', 'lektor-prompt-sub', 'Za ovu vrstu ispravke'), el('p', 'lektor-prompt', PRESET_PROMPTS[preset]), ...noteField());
+  return [toggle, group];
 }
 
 function requestDetail(preset: Preset): HTMLElement[] {
