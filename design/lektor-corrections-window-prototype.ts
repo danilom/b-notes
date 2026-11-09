@@ -265,7 +265,8 @@ function paidIfSlowBox(): HTMLElement {
   input.addEventListener('change', () => {
     corrections.isPaidIfSlow = input.checked;
   });
-  box.append(input, choiceMark('paid'), el('span', '', 'Ako besplatni ne stigne brzo, pošalji plaćenom'));
+  // The limit named, as the wait names it: a busy Google is covered too, as one that won't start in time.
+  box.append(input, choiceMark('paid'), el('span', '', `Ako besplatni ne krene za ${QUEUE_LIMIT_WORDS}, pošalji plaćenom`));
   // In a row of the choices' own make, so it is as big a target, with the same hover.
   const row = el('div', 'lektor-choice-options');
   row.append(box);
