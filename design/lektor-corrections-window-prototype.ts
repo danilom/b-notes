@@ -487,7 +487,8 @@ function waitingDetail(preset: Preset): HTMLElement[] {
   big.append(column);
   // Where the send button was, apart from what he is watching: the hand that sent it finds the way to stop it.
   const stop = el('div', 'lektor-window-actions');
-  stop.append(button('Prekini', () => {
+  // Giving up on it, which is what it is, even though paid may already be charging for the work begun.
+  stop.append(button('Odustani od zahteva', () => {
     stopTimers();
     show('choosing');
   }, ''));
@@ -729,7 +730,7 @@ export function openCorrectionsWindow(): void {
 /** A state of the window the harness can open straight away, without sending and waiting for it. */
 export type WindowCase = 'waiting' | 'queued' | 'busy' | 'no-credit';
 
-/** A wait held still at one stage, until Prekini, so it can be looked at. */
+/** A wait held still at one stage, until "Odustani od zahteva", so it can be looked at. */
 function holdWait(preset: Preset, to: Choice, phase: Phase): void {
   const now = Date.now();
   const model = modelFor(preset, to);
@@ -746,7 +747,7 @@ function holdWait(preset: Preset, to: Choice, phase: Phase): void {
 
 /**
  * For the harness: the paid one writing Stilska dorada, or Slova i zarezi waiting in Google's free
- * queue, each held there until Prekini; Google busy on Slova i zarezi; the paid account empty on
+ * queue, each held there until "Odustani od zahteva"; Google busy on Slova i zarezi; the paid account empty on
  * Dubinska prerada.
  */
 export function openCorrectionsWindowAt(windowCase: WindowCase): void {
