@@ -25,6 +25,8 @@
 */
 import { titleOf } from '../src/ui/dialogs/dialog-heading.ts';
 import { type Shown, showAsModal } from '../src/ui/dialogs/modal.ts';
+import { strings } from '../src/language/wording.ts';
+import { createDiffLegend } from '../src/ui/diff-legend.ts';
 import { icon } from '../src/ui/icons.ts';
 import { keys } from './lektor-keys-prototype.ts';
 import {
@@ -36,6 +38,7 @@ import {
   PRESETS,
   type Pace,
   type Preset,
+  TEXT_PARAGRAPHS,
   TEXT_TITLE,
   button,
   choiceMark,
@@ -680,22 +683,64 @@ function choosingPanel(): HTMLElement {
  * A stand-in for the app's review. New: under the kind and the Lektor, the model that wrote it and,
  * on paid, what it cost, as OpenRouter's reply stated it: known only now, after the run.
  */
+/** The line above the review: the kind, then who made it and when, as the app's review has it. */
+function reviewWhoLine(preset: Preset, by: Choice, at: string): HTMLElement {
+  const line = el('p', 'lektor-service-line');
+  line.append(el('span', 'lektor-review-kind', PRESET_NAMES[preset]), ' · ', choiceMark(by), el('span', '', `${lektorName(by)} lektor · ${at}`));
+  return line;
+}
+
+/** The counts and "only new", as the app's review has them over its box; the numbers made up. */
+function reviewAboutRow(): HTMLElement {
+  const said = strings('sr').lektor.review;
+  const only = el('label', 'lektor-only-new');
+  const box = el('input');
+  box.type = 'checkbox';
+  only.append(box, said.onlyNew);
+  const row = el('div', 'lektor-about-row');
+  row.append(el('p', 'review-note-aside diff-legend-counts', said.counts(12, 31)), only);
+  return row;
+}
+
+/** His text in the review's own read-only box, without the marks: the real review draws the changes here. */
+function reviewTextBox(): HTMLElement {
+  const box = el('div', 'review-text');
+  box.append(el('p', '', TEXT_TITLE), ...TEXT_PARAGRAPHS.map((paragraph) => el('p', '', paragraph)));
+  return box;
+}
+
+/**
+ * A stand-in for the app's review, drawn with its own pieces: who made it, the legend, the counts,
+ * and the text in its read-only box, without the changes marked. New: the model that wrote it and,
+ * on paid, what it cost, as OpenRouter's reply stated it, known only now, after the run.
+ */
 function reviewPanel(preset: Preset): HTMLElement {
   const by = corrections.reviewBy;
   const kept = corrections.kept[preset]?.[by];
   const cost = kept?.cost == null ? 'besplatno' : `koštalo ${dollars(kept.cost)}`;
-  const ran = el('div', 'lektor-review-ran');
-  const line = el('p', 'lektor-service-line');
-  line.append(el('span', 'lektor-review-kind', PRESET_NAMES[preset]), ' · ', choiceMark(by), el('span', '', `${lektorName(by)} · ${kept?.at ?? JUST_NOW}`));
-  ran.append(line, el('p', 'lektor-where', `Model: ${MODELS[by][preset]} · ${cost}`));
-  const stand = el('div', 'review-text review-text-empty');
-  stand.textContent = '(Ovde je pregled ispravki, kao sada.)';
+  const said = strings('sr').lektor.review;
+  const legend = createDiffLegend(
+    [
+      { sample: 'old', said: said.legend.old },
+      { sample: 'proposed', said: said.legend.proposed },
+      { sample: 'own', said: said.legend.own },
+      { sample: 'goes-in', said: said.legend.goesIn },
+      { sample: 'small', said: said.legend.small },
+    ],
+    strings('sr').legendSample,
+  );
   const body = el('div', 'review-body lektor-body');
-  body.append(ran, stand);
+  body.append(
+    reviewWhoLine(preset, by, kept?.at ?? JUST_NOW),
+    el('p', 'lektor-where', `${MODELS[by][preset]} · ${cost}`),
+    legend,
+    reviewAboutRow(),
+    reviewTextBox(),
+  );
   const panes = el('div', 'review-panes');
   panes.append(body);
-  const buttons = [button('Unesi sve izmene u tekst', close, 'keep'), button('Nazad na izbor', () => show('choosing')), button('Zatvori', close)];
-  return framed(header('Pregledaj predloge ispravki u tekstu ispod. Ako ti nešto ne odgovara, klikni na to i promeni.'), panes, footer(buttons, 'Izmene ulaze u tvoj tekst.'));
+  const buttons = [button(said.apply, close, 'keep'), button('Nazad na izbor', () => show('choosing')), button('Zatvori', close)];
+  return framed(header(said.guide), panes, footer(buttons, said.goesIn));
 }
 
 function framed(top: HTMLElement, middle: HTMLElement, bottom: HTMLElement): HTMLElement {

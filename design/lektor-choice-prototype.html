@@ -233,15 +233,21 @@
         color: inherit;
       }
 
-      /* The stand-in for the review: who wrote it, the model and the cost, then where the review would be. */
-      .lektor-review-ran {
-        display: flex;
-        flex-direction: column;
-        gap: 0.4rem;
+      /*
+        The review's header in the app's own font and the Lektor's sizes, not his text's: only the
+        text in the box below is his, and set as his.
+      */
+      .lektor-window .review-body > :not(.review-text) {
+        font-family: var(--ui-font);
       }
 
-      .lektor-review-ran p {
-        margin: 0;
+      .lektor-window .review-body > .lektor-service-line,
+      .lektor-window .review-body > .lektor-about-row {
+        font-size: var(--lektor-text);
+      }
+
+      .lektor-window .review-body > .lektor-where {
+        font-size: var(--lektor-small);
       }
 
       /*
