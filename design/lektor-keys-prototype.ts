@@ -31,11 +31,11 @@ const KEY_NAMES: Readonly<Record<Choice, string>> = { free: 'Besplatni (Google)'
 /** Long enough to see the check, short enough not to wait for. */
 const PRETEND_CHECK_MS = 1200;
 
-/** One saved key's line: in words, and for paid with the balance that proves it. */
+/** Under a saved key, that it works, and for paid the balance that proves it; "Sačuvan" is in the box. */
 function savedLine(which: Choice): HTMLElement[] {
   if (!keys.saved[which] || keys.notes[which] !== null) return [];
   const balance = which === 'paid' && state.balance !== null ? ` · na računu ${dollars(state.balance)}` : '';
-  return [el('p', 'lektor-key-state', `✓ Sačuvan, radi${balance}`)];
+  return [el('p', 'lektor-key-state', `✓ Radi${balance}`)];
 }
 
 function noteLine(which: Choice): HTMLElement[] {
@@ -55,8 +55,8 @@ function keyField(which: Choice, isChecking: boolean, save: () => void): HTMLEle
   box.spellcheck = false;
   box.value = keys.drafts[which];
   box.disabled = isChecking;
-  // The key itself is never shown again: pasting over the box replaces it.
-  box.placeholder = keys.saved[which] ? 'Zalepi novi da zameniš sačuvani' : 'Zalepi ključ ovde';
+  // The key itself is never shown again: the box says only whether there is one, and pasting over it replaces it.
+  box.placeholder = keys.saved[which] ? 'Sačuvan' : 'Zalepi ključ ovde';
   box.addEventListener('input', () => {
     keys.drafts[which] = box.value;
   });
