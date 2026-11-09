@@ -11,7 +11,7 @@ import { icon } from '../src/ui/icons.ts';
 import { type WindowCase, corrections, openCorrectionsWindow, openCorrectionsWindowAt, redrawWindowIfOpen } from './lektor-corrections-window-prototype.ts';
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
-import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, button, dollars, el, element, recipient, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
+import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, button, dollars, el, element, recipient, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
 
 type Screen = 'start' | 'response' | 'keys';
 
@@ -137,6 +137,42 @@ function aboutAi(): HTMLElement[] {
   return isAboutAiOpen ? [toggle, el('p', 'lektor-about-ai', about)] : [toggle];
 }
 
+/**
+ * The text's title as he gave it, for the comment's opening line; a His screens switch sets an odd one,
+ * since his titles are whatever he typed or pasted (see the memory on hostile names).
+ */
+let commentTextTitle = TEXT_TITLE;
+
+/** Past this, the name is cut at a word: a pasted paragraph as a title would otherwise bury the comment. */
+const LONGEST_NAME_IN_HEADING = 60;
+
+/** Quote marks he may have put round his own title, which the heading's own „…” would double. */
+const OUTER_QUOTES = /^["'„“”«»‚‘’]+|["'„“”«»‚‘’]+$/g;
+
+/**
+ * His title made fit to quote in one line: control characters and runs of spaces, tabs or line breaks
+ * become one space, the ends are trimmed, his own outer quotes come off, and a long one is cut at a
+ * word with "…". Null when nothing is left, so the line can say "bez naslova" in words.
+ */
+export function nameForHeading(title: string): string | null {
+  // \p{Cc} rather than spelling out the ranges: a pasted tab, line break or stray control character alike.
+  const flat = title.replace(/[\p{Cc}\s]+/gu, ' ').trim().replace(OUTER_QUOTES, '').trim();
+  if (flat === '') return null;
+  if (flat.length <= LONGEST_NAME_IN_HEADING) return flat;
+  const cut = flat.slice(0, LONGEST_NAME_IN_HEADING);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${(lastSpace > LONGEST_NAME_IN_HEADING / 2 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
+}
+
+/**
+ * What the comment is and what about, before its first word, so it doesn't start mid-thought; and it
+ * travels with the comment when he copies it out. Part of the comment's own block, not the panel's.
+ */
+function commentHeading(): HTMLElement {
+  const name = nameForHeading(commentTextTitle);
+  return el('p', 'lektor-heading lektor-comment-about', name === null ? 'Utisak AI Lektora o tekstu bez naslova:' : `Utisak AI Lektora o tekstu „${name}”:`);
+}
+
 /** The comment as the app draws it: the way to a new one above, the comment with its end mark, and a signature under it. */
 function responseScreen(): Step {
   const head = el('div', 'lektor-comment-head');
@@ -163,10 +199,10 @@ function responseScreen(): Step {
   // No arrow: like every button in the app that opens a window. The ellipsis is Windows' own sign, as on
   // "Print…", that a window will ask more before anything happens: the window is a step, not a send.
   const toCorrections = button('Pređi na ispravke…', () => openCorrectionsWindow(), 'status-action lektor-main-action');
-  return { content: [head, comment, signature], main: toCorrections };
+  return { content: [head, commentHeading(), comment, signature], main: toCorrections };
 }
 
-const TITLES: Readonly<Record<Screen, string>> = { start: 'AI Lektor: slanje teksta', response: 'AI utisak', keys: 'AI Lektor: podešavanje' };
+const TITLES: Readonly<Record<Screen, string>> = { start: 'AI Lektor: slanje teksta', response: 'AI Lektor: utisak', keys: 'AI Lektor: podešavanje' };
 
 function backToStart(): void {
   screen = 'start';
@@ -241,6 +277,19 @@ const CONTROLS: readonly PrototypeControl[] = [
     value: 'window',
   },
   { id: 'stale', label: 'Tekst promenjen posle utiska', value: false },
+  {
+    id: 'comment-title',
+    label: 'Naslov teksta (uvod utiska)',
+    options: [
+      { value: 'plain', label: 'Probni tekst' },
+      { value: 'empty', label: 'prazan' },
+      { value: 'spaces', label: 'razmaci, tab i prelom' },
+      { value: 'quoted', label: 'sa svojim navodnicima' },
+      { value: 'long', label: 'predugačak (nalepljen pasus)' },
+      { value: 'control', label: 'sa kontrolnim znakom' },
+    ],
+    value: 'plain',
+  },
   { id: 'free-key', label: 'Ključ za besplatni sačuvan', value: true },
   { id: 'paid-key', label: 'Ključ za plaćeni sačuvan', value: true },
   {
@@ -353,9 +402,20 @@ function setScreen(value: string | boolean): void {
 
 const googleDayOf = (value: string | boolean): GoogleDay => (value === 'slow' || value === 'busy' ? value : 'ok');
 
+/** Titles he could have, typed or pasted, for the comment's opening line to cope with. */
+const ODD_TITLES: Readonly<Record<string, string>> = {
+  plain: TEXT_TITLE,
+  empty: '   ',
+  spaces: '  Jutro\tna   obali\n',
+  quoted: '„Jutro na obali”',
+  long: 'Ujutru sam sisao do obale, gdje ribari vec slazu mreze, i mirisalo je na so i na kafu iz obliznje kafane',
+  control: 'Jutro\u0007 na obali',
+};
+
 function setControl(id: string, value: string | boolean): void {
   if (id === 'screen') setScreen(value);
-  if (id === 'stale') isCommentStale = value === true;  if (id === 'free-key') keys.saved.free = value === true;
+  if (id === 'stale') isCommentStale = value === true;
+  if (id === 'comment-title' && typeof value === 'string') commentTextTitle = ODD_TITLES[value] ?? TEXT_TITLE;  if (id === 'free-key') keys.saved.free = value === true;
   if (id === 'paid-key') keys.saved.paid = value === true;
   if (id === 'key-check') keys.check = value === 'refused' || value === 'offline' ? value : ('works' satisfies KeyCheck);
   if (id === 'balance') state.balance = value === 'unknown' ? null : Number(value);
