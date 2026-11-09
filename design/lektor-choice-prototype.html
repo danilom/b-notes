@@ -342,15 +342,22 @@
         column has to spare, so as much of the instruction shows as fits, and scrolls past that;
         never more than its words, so no empty grey under them.
       */
+      /*
+        Four lines, whatever the kind, scrolling past them: the same every time, so nothing below
+        moves with it, and the column fits on his Asus even with the Lektor choice above it. None at
+        the foot, as in the panel: a sliver of a fifth line would read as text cut off.
+      */
       .lektor-window-detail .lektor-prompt {
-        flex: 0 1 auto;
-        min-height: 6em;
+        flex: none;
+        box-sizing: content-box;
+        height: calc(4 * 1.4em);
+        padding-bottom: 0;
         overflow-y: auto;
         border-color: transparent;
         background: var(--panel);
       }
 
-      /* His own box keeps its four lines: where room is short, the instruction scrolls, not what he writes. */
+      /* His own box keeps its three lines: where room is short, the instruction scrolls, not what he writes. */
       .lektor-window-detail .lektor-note {
         flex: none;
       }
