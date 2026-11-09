@@ -430,9 +430,13 @@ function requestDetail(preset: Preset): HTMLElement[] {
 
 /* The right column, running and failed. */
 
-/** His whole wait so far, from when he sent it, in minutes once it passes one. */
+/**
+ * His whole wait so far, from when he sent it, in minutes once it passes one. Timed by performance.now()
+ * throughout, never Date.now(): the wall clock can step back (Danilo's machine's does), which showed
+ * "Prošlo je -1 s". The app should do the same.
+ */
 function waitedWords(): string {
-  const seconds = Math.floor((Date.now() - corrections.runStartedAt) / 1000);
+  const seconds = Math.floor((performance.now() - corrections.runStartedAt) / 1000);
   return seconds < 60 ? `Prošlo je ${seconds} s` : `Prošlo je ${Math.floor(seconds / 60)} min ${seconds % 60} s`;
 }
 
@@ -648,12 +652,12 @@ const FREE_STAND_IN: FreeModel = 'gemini-3.6-flash';
 
 function endStage(): void {
   const current = corrections.stages.at(-1);
-  if (current !== undefined && current.endedAt === null) current.endedAt = Date.now();
+  if (current !== undefined && current.endedAt === null) current.endedAt = performance.now();
 }
 
 function startStage(phase: Phase, by: Choice, model: string): void {
   endStage();
-  corrections.stages.push({ phase, by, model, startedAt: Date.now(), endedAt: null, isGivenUp: false });
+  corrections.stages.push({ phase, by, model, startedAt: performance.now(), endedAt: null, isGivenUp: false });
 }
 
 
@@ -721,7 +725,7 @@ function mayMoveOn(preset: Preset, model: FreeModel): boolean {
 /** Refused outright, without a turn in the queue: noted, and on to the next. */
 function refusedBy(preset: Preset, model: FreeModel): void {
   endStage();
-  const now = Date.now();
+  const now = performance.now();
   corrections.stages.push({ phase: 'refused', by: 'free', model, startedAt: now, endedAt: now, isGivenUp: true });
   nextAfter(preset, model);
 }
@@ -767,7 +771,7 @@ function run(to: Choice): void {
   corrections.failure = null;
   corrections.stages = [];
   corrections.progress = 0;
-  corrections.runStartedAt = Date.now();
+  corrections.runStartedAt = performance.now();
   startClock();
   if (to === 'paid') askPaid(preset);
   else askFree(preset, FREE_FIRST);
@@ -876,8 +880,15 @@ function reviewPanel(preset: Preset): HTMLElement {
   const back = button('', () => show('choosing'), 'lektor-footer-back');
   back.append(icon('back'), el('span', '', 'Nazad'));
   bottom.prepend(back);
-  return framed(header(said.guide), panes, bottom);
+  return framed(header(REVIEW_GUIDE), panes, bottom);
 }
+
+/**
+ * Shorter than the app's said.guide ("Pregledaj predloge ispravki u tekstu ispod…"): that he is to
+ * look them over, and that they are in the text below, is plain from the screen. To become the app's
+ * wording when the window is built.
+ */
+const REVIEW_GUIDE = 'Ako ti neka izmena ne odgovara, klikni na nju i promeni je.';
 
 function framed(top: HTMLElement, middle: HTMLElement, bottom: HTMLElement): HTMLElement {
   const panel = el('div', 'panel review-panel lektor-panel lektor-window');
@@ -923,7 +934,7 @@ export type WindowCase = 'waiting' | 'queued' | 'busy' | 'no-credit' | 'offline'
 
 /** A wait held still at one stage, until "Odustani od zahteva", so it can be looked at. */
 function holdWait(preset: Preset, to: Choice, phase: Phase): void {
-  const now = Date.now();
+  const now = performance.now();
   const model = MODELS[to][preset];
   corrections.preset = preset;
   corrections.sentTo = to;
