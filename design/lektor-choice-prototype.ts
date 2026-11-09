@@ -170,7 +170,8 @@ export function nameForHeading(title: string): string | null {
  */
 function commentHeading(): HTMLElement {
   const name = nameForHeading(commentTextTitle);
-  return el('p', 'lektor-heading lektor-comment-about', name === null ? 'Utisak AI Lektora o tekstu bez naslova:' : `Utisak AI Lektora o tekstu „${name}”:`);
+  // Plain, in the panel's words (Danilo, 2026-11-10): context for what follows, not a heading; the panel's title is that.
+  return el('p', 'lektor-line lektor-comment-about', name === null ? 'Utisak AI Lektora o tekstu bez naslova:' : `Utisak AI Lektora o tekstu „${name}”:`);
 }
 
 /** The comment as the app draws it: the way to a new one above, the comment with its end mark, and a signature under it. */
