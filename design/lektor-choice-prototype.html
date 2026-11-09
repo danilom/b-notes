@@ -575,7 +575,11 @@
 
       /* On the send line, not taking the free space above as it does when it heads the open instructions. */
       .lektor-window-detail .lektor-send-line .lektor-prompt-toggle {
-        margin-top: 0;
+        /*
+          Its padding taken back in margin: the line lines up the button's edge, not its words, so the
+          padding put them 2.6px under the note's. The target keeps its size.
+        */
+        margin-block: -0.15rem;
       }
 
       .lektor-window-actions button {
