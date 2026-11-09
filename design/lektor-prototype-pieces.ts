@@ -140,7 +140,7 @@ export function radio(name: string, label: string, checked: boolean, onChange: (
  * so a warning built on a guess would cry wolf or stay quiet. Nothing is blocked either: if the
  * money runs out, OpenRouter refuses and the window says so, with the way to the free one.
  */
-const LOW_BALANCE_USD = 1;
+export const LOW_BALANCE_USD = 1;
 
 /**
  * Under Plaćeni, in the panel and in the window alike. Nothing when the balance can't be read:

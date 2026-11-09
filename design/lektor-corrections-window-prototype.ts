@@ -35,6 +35,7 @@ import {
   MODELS,
   PRESET_NAMES,
   PRESET_PROMPTS,
+  LOW_BALANCE_USD,
   PRESETS,
   type Pace,
   type FreeModel,
@@ -90,7 +91,7 @@ interface WindowState {
   sentTo: Choice;
   /**
    * Slova i zarezi and Pravopis: his tick for "if the free one is slow, send it to the paid one",
-   * so it can go ahead without asking him minutes in. Off each time the window opens.
+   * so it can go ahead without asking him minutes in. Set afresh each time the window opens (paidIfSlowByDefault).
    */
   isPaidIfSlow: boolean;
   /** The stages of the request running, as the services' streams tell them, the last one the current one. */
@@ -291,7 +292,7 @@ function readyDetail(preset: Preset): HTMLElement[] {
 /**
  * Asked before sending, so a slow or busy free one can be handed to the paid one without a question
  * minutes in. Ticking it is his own choice to pay, which is what makes acting on it later fair; and
- * it is off each time the window opens, like every choice to pay.
+ * it is set afresh each time the window opens: ticked only with a paid key and $1 or more.
  */
 function paidIfSlowBox(): HTMLElement {
   const box = el('label', 'lektor-preset lektor-check');
@@ -307,6 +308,16 @@ function paidIfSlowBox(): HTMLElement {
   const row = el('div', 'lektor-choice-options');
   row.append(box);
   return row;
+}
+
+/**
+ * Ticked when the window opens if there is a paid key and the account holds at least $1 (Danilo,
+ * 2026-11-10): a courtesy on days Google's free queue is long, for about 10 cents a request. The
+ * one exception to every choice starting on Besplatni, and a fair one since he sees it ticked before
+ * he sends. Not with under $1, and not when the balance can't be read, since then it isn't known to be safe.
+ */
+function paidIfSlowByDefault(): boolean {
+  return keys.saved.paid && state.balance !== null && state.balance >= LOW_BALANCE_USD;
 }
 
 /** Whether a free request of this kind may be handed to the paid one, as he ticked. */
@@ -837,7 +848,7 @@ export function openCorrectionsWindow(): void {
   corrections.failure = null;
   corrections.isAskingAgain = false;
   corrections.reworkChoice = 'free';
-  corrections.isPaidIfSlow = false;
+  corrections.isPaidIfSlow = paidIfSlowByDefault();
   draw();
 }
 
