@@ -138,6 +138,9 @@ function responseScreen(): Step {
   const again = el('div', 'lektor-back-row');
   const ask = button('', () => {
     screen = 'start';
+    // A new start of the step, so Besplatni again, whatever wrote the comment: nothing is chosen for him
+    // from how he left it. Coming back from the keys is the same visit, and keeps what he had picked.
+    state.choice = 'free';
     render();
   }, 'lektor-again');
   ask.append(icon('back'), el('span', '', 'Traži novi utisak'));
@@ -301,6 +304,8 @@ function isWindowCase(value: string | boolean): value is WindowCase {
 function setScreen(value: string | boolean): void {
   const isWindow = value === 'window' || isWindowCase(value);
   screen = value === 'response' || isWindow ? 'response' : value === 'keys' ? 'keys' : 'start';
+  // Opening the first step afresh, as he would: on Besplatni.
+  if (value === 'start') state.choice = 'free';
   if (!isWindow) return;
   render();
   if (isWindowCase(value)) openCorrectionsWindowAt(value);

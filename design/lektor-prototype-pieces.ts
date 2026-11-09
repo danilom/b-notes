@@ -53,7 +53,7 @@ export interface PrototypeState {
   isMoneyOut: boolean;
 }
 
-export const state: PrototypeState = { choice: 'paid', balance: 7.47, isFreeBusy: false, isFallbackBusy: false, isMoneyOut: false };
+export const state: PrototypeState = { choice: 'free', balance: 7.47, isFreeBusy: false, isFallbackBusy: false, isMoneyOut: false };
 
 export function element<T extends HTMLElement>(id: string, kind: new () => T): T {
   const found = document.getElementById(id);

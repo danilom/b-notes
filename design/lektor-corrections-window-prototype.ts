@@ -13,9 +13,12 @@
   Which Lektor follows from the kind. For Slova i zarezi and Pravopis i gramatika both run the same
   model, so paying buys only being answered when Google is busy, which he can't judge in advance:
   no choice, the free one, and the paid one offered when the free one fails. For Stilska dorada and
-  Dubinska prerada the paid one is clearly better: both offered, it saying why, starting on what
-  he chose for the comment in the panel. So the panel's choice is the comment's; this is no longer
-  one setting shared with the panel.
+  Dubinska prerada the paid one is clearly better: both offered, it saying why. The panel's choice is
+  the comment's, not shared with this one.
+
+  Every opening starts on Besplatni. Plaćeni only when he picks it, and then for both rework kinds
+  until the window closes, never longer: what a window opens on must not depend on how he left it,
+  and nothing should spend his money for a choice he made earlier and has forgotten.
 
   His text is not shown: read-only beside the choices it looked like the review, as if his
   corrections were already there.
@@ -74,7 +77,7 @@ interface WindowState {
   reviewBy: Choice;
   /** Asking again where corrections are already there: he opened the form past them. */
   isAskingAgain: boolean;
-  /** The Lektor for Stilska and Dubinska, starting on the panel's choice each time the window opens. */
+  /** The Lektor for Stilska and Dubinska: Besplatni each time the window opens, Plaćeni only once he picks it. */
   reworkChoice: Choice;
   /** Who the request running or failed went to. */
   sentTo: Choice;
@@ -88,7 +91,7 @@ export const corrections: WindowState = {
   kept: {},
   reviewBy: 'free',
   isAskingAgain: false,
-  reworkChoice: 'paid',
+  reworkChoice: 'free',
   sentTo: 'free',
 };
 
@@ -463,15 +466,15 @@ export function redrawWindowIfOpen(): void {
 }
 
 /**
- * Opens the window as the app would from the panel's "Pređi na ispravke": no kind chosen, the
- * rework kinds' Lektor starting on the one he chose for the comment.
+ * Opens the window as the app would from the panel's "Pređi na ispravke": no kind chosen, and the
+ * rework kinds' Lektor on Besplatni, whatever he picked last time.
  */
 export function openCorrectionsWindow(): void {
   corrections.view = 'choosing';
   corrections.preset = null;
   corrections.failure = null;
   corrections.isAskingAgain = false;
-  corrections.reworkChoice = state.choice;
+  corrections.reworkChoice = 'free';
   draw();
 }
 
