@@ -476,7 +476,8 @@ function waitingDetail(preset: Preset): HTMLElement[] {
   // One column with one left edge, in the middle of the right side, read top to bottom like a list.
   const column = el('div', 'lektor-wait-column');
   column.append(
-    el('p', 'lektor-heading', TEXT_TITLE),
+    // The text's name in the colour the window's title gives it, as everywhere it names his text.
+    el('p', 'lektor-heading lektor-wait-name', TEXT_TITLE),
     el('p', '', `Vrsta ispravke: ${PRESET_NAMES[preset]}`),
     stagesList(preset),
     el('p', 'lektor-window-clock', waitedWords()),

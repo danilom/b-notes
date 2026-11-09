@@ -468,6 +468,17 @@
 
       .lektor-wait-column .lektor-stages {
         width: 100%;
+        /* No room of its own below: the clock's spacing alone decides it, the same whatever the last stage shows. */
+        margin-bottom: 0;
+      }
+
+      .lektor-wait-name {
+        color: var(--chosen-ink);
+      }
+
+      /* As much room above the clock as below it, whatever comes before: the queue's note, the bar, a stage. */
+      .lektor-wait-column .lektor-window-clock {
+        margin: 0.7rem 0;
       }
 
       .lektor-window-clock {
