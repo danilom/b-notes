@@ -77,7 +77,8 @@ export function button(label: string, onClick: () => void, className = ''): HTML
   return made;
 }
 
-export const dollars = (amount: number): string => `${amount.toFixed(2).replace('.', ',')} $`;
+/** The sign first, as dollars are written; the decimal comma, as everything else in the app. */
+export const dollars = (amount: number): string => `$${amount.toFixed(2).replace('.', ',')}`;
 export const lektorName = (choice: Choice = state.choice): string => (choice === 'free' ? 'Besplatni' : 'Plaćeni');
 
 /**

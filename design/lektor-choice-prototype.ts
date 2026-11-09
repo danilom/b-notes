@@ -233,8 +233,8 @@ const CONTROLS: readonly PrototypeControl[] = [
     id: 'balance',
     label: 'Stanje računa',
     options: [
-      { value: '7.47', label: '7,47 $' },
-      { value: '0.9', label: '0,90 $ (ispod 1 $: malo)' },
+      { value: '7.47', label: '$7,47' },
+      { value: '0.9', label: '$0,90 (ispod $1: malo)' },
       { value: 'unknown', label: 'ne može da se pročita' },
     ],
     value: '7.47',
@@ -249,15 +249,6 @@ const CONTROLS: readonly PrototypeControl[] = [
       { value: 'all', label: 'sve četiri vrste, od oba' },
     ],
     value: 'none',
-  },
-  {
-    id: 'ready-wording',
-    label: 'Red sa predlozima',
-    options: [
-      { value: 'name', label: 'Plaćeni · juče u 18:40' },
-      { value: 'predlozi', label: 'Predlozi · od juče u 18:40' },
-    ],
-    value: 'name',
   },
   { id: 'busy', label: 'Besplatni je zauzet', value: false },
   { id: 'money-out', label: 'Plaćeni nema novca', value: false },
@@ -302,9 +293,7 @@ function setControl(id: string, value: string | boolean): void {
   if (id === 'balance') state.balance = value === 'unknown' ? null : Number(value);
   if (id === 'busy') state.isFreeBusy = value === true;
   if (id === 'money-out') state.isMoneyOut = value === true;
-  if (id === 'letters-kept') setKept(value);
-  if (id === 'ready-wording') corrections.readyWording = value === 'predlozi' ? 'predlozi' : 'name';
-  // The app's own switch, as the diff prototype sets it.
+  if (id === 'letters-kept') setKept(value);  // The app's own switch, as the diff prototype sets it.
   if (id === 'dark') document.documentElement.dataset['mode'] = value === true ? 'dark' : 'light';
   render();
   redrawWindowIfOpen();

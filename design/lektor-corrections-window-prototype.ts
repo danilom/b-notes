@@ -64,11 +64,9 @@ interface WindowState {
   kept: KeptByKind;
   /** Whose corrections the review open shows. */
   reviewBy: Choice;
-  /** How a line of ready corrections begins, set by the harness to compare: the Lektor's name, or "Predlozi". */
-  readyWording: 'name' | 'predlozi';
 }
 
-export const corrections: WindowState = { view: 'choosing', preset: 'letters', note: '', failure: null, kept: {}, reviewBy: 'free', readyWording: 'name' };
+export const corrections: WindowState = { view: 'choosing', preset: 'letters', note: '', failure: null, kept: {}, reviewBy: 'free' };
 
 /** When corrections just made were made: reads after "od" as well as on its own, which "upravo sad" doesn't. */
 const JUST_NOW = 'maločas';
@@ -122,15 +120,12 @@ function openReview(preset: Preset, by: Choice): void {
 }
 
 /**
- * Who made them and when: "[mark] Plaćeni · juče u 18:40", or "Predlozi · [mark] od juče u 18:40",
- * the app's own word for them, which also says nothing has happened to his text yet.
+ * "[mark] Predlozi od juče u 18:40 · $0,09": "Predlozi" is the app's own word for them, and says
+ * nothing has happened to his text yet; the mark says whose they are, so it comes first.
  */
 function readyWords(by: Choice, kept: Kept): (Node | string)[] {
   const cost = kept.cost === null ? '' : ` · ${dollars(kept.cost)}`;
-  if (corrections.readyWording === 'predlozi') {
-    return [el('span', 'lektor-kind-ready', 'Predlozi'), ' · ', choiceMark(by), el('span', '', `od ${kept.at}${cost}`)];
-  }
-  return [choiceMark(by), el('span', '', `${lektorName(by)} · ${kept.at}${cost}`)];
+  return [choiceMark(by), el('span', '', `Predlozi od ${kept.at}${cost}`)];
 }
 
 /** Corrections ready: who made them, when, on paid what they cost, and the way straight to them. */
