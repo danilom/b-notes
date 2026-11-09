@@ -106,7 +106,8 @@ export function commentWaiting(): HTMLElement {
   const waiting = el('div', 'lektor-waiting');
   const expect = commentRun.sentTo === 'free' ? 'Besplatni lektor često čeka na red, pa može da potraje nekoliko minuta.' : 'Obično traje pola minuta.';
   waiting.append(
-    el('p', 'lektor-reading', 'Čita tekst…'),
+    // Who, then what (Danilo, 2026-11-10): "Čita tekst…" alone left the subject for him to supply.
+    el('p', 'lektor-reading', 'AI Lektor čita tekst…'),
     el('p', '', expect),
     el('p', 'lektor-comment-clock', waitedWords()),
   );
