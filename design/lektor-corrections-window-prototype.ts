@@ -244,7 +244,8 @@ function noteField(): HTMLElement[] {
   const label = el('label', 'lektor-label', 'Tvoja dodatna uputstva ');
   label.append(el('span', 'lektor-label-aside', '(nije obavezno)'));
   const box = el('textarea', 'lektor-note');
-  box.rows = 2;
+  // Four lines: room to say something, now the window has it.
+  box.rows = 4;
   box.placeholder = 'Example: simplify overly long sentences';
   box.value = corrections.note;
   box.addEventListener('input', () => {

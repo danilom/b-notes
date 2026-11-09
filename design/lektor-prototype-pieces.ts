@@ -19,12 +19,8 @@ export const PRESET_NAMES: Readonly<Record<Preset, string>> = {
   rewrite: 'Dubinska prerada',
 };
 
-export const PRESET_PROMPTS: Readonly<Record<Preset, string>> = {
-  letters: 'Fix only plain slips: letters missing their diacritics, typos, spaces and line breaks. Add or remove commas wherever Serbian grammar requires it…',
-  grammar: 'Fix letters, commas and spaces, and the grammar: endings, agreement, missing words…',
-  wording: 'Fix mistakes and grammar, then edit the text as a good editor would…',
-  rewrite: 'Rewrite this text boldly, as a writer retelling it in their own hand…',
-};
+/** The app's own instructions, whole, so the window shows what would really be sent. */
+export { PRESET_PROMPTS } from '../src/ui/lektor/lektor-presets.ts';
 
 /** What each choice runs, for the tooltips and the review's line. */
 export const MODELS: Readonly<Record<Choice, Readonly<Record<Preset | 'comment', string>>>> = {

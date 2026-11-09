@@ -272,9 +272,24 @@
         padding-left: var(--lektor-radio-indent);
       }
 
+      /*
+        Read-only, and looking it beside his white note box. In the panel that is done by no fill, the
+        panel being grey; in the white window it is the other way round, the panel's grey as its fill
+        and no frame, so it reads as something shown, not a box to type in. It takes the room the
+        column has to spare, so as much of the instruction shows as fits, and scrolls past that;
+        never more than its words, so no empty grey under them.
+      */
       .lektor-window-detail .lektor-prompt {
-        max-height: 7em;
+        flex: 0 1 auto;
+        min-height: 6em;
         overflow-y: auto;
+        border-color: transparent;
+        background: var(--panel);
+      }
+
+      /* His own box keeps its four lines: where room is short, the instruction scrolls, not what he writes. */
+      .lektor-window-detail .lektor-note {
+        flex: none;
       }
 
       /*
