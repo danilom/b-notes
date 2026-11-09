@@ -235,25 +235,21 @@
 
       /*
         The review's header: two lines, what came back and how the text below is shown, in the
-        dialog's own font and size (as its title's note and buttons), with ordinary line spacing; only
+        dialog's own font and size (as its title's note and buttons), spaced as Ranije verzije; only
         the text in the box below is his, and set as his. Everything starts at one left edge; what is
         on the right (the model, "Prikaži tekst kakav će biti") ends at one right edge.
       */
+      /* As tight as Ranije verzije's lines over its box, measured there: the same size, spacing and gaps. */
       .lektor-window .review-body > :not(.review-text) {
-        margin: 0 0 0.5rem;
+        margin: 0 0 0.45rem;
         font-family: var(--ui-font);
         font-size: calc(var(--ui-size) * 0.85);
-        line-height: 1.5;
+        line-height: normal;
       }
 
       .lektor-window .review-body > :not(.review-text) * {
         font-size: inherit;
         line-height: inherit;
-      }
-
-      /* A little more room before the box than between the two lines. */
-      .lektor-window .review-body > .lektor-review-row + .lektor-review-row {
-        margin-bottom: 0.7rem;
       }
 
       /* Each line: what is said on the left, its companion at the right, on one baseline. */
