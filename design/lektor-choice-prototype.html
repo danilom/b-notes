@@ -119,10 +119,10 @@
       */
       .lektor-choice-options .lektor-preset,
       .lektor-kind .lektor-preset {
-        /* A little room at the left, taken back by the margin, so the hover's tint doesn't cut into the radio. */
-        margin: 0 0 0 -0.35rem;
+        /* Out to the column's edge, under the heading's first letter, and padded back in, so the radio stays set in while the target and its tint reach the margin. */
+        margin: 0 0 0 calc(-1 * var(--lektor-radio-indent));
         /* Above and below, what a row of his list has, so the two are as tall. */
-        padding: 0.5rem 0.35rem;
+        padding: 0.5rem 0.35rem 0.5rem var(--lektor-radio-indent);
         border-radius: 4px;
       }
 
