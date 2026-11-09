@@ -858,7 +858,12 @@
         gap: 0.35em;
       }
 
-      .lektor-window .lektor-sends svg {
+      /*
+        Hovered too: lektor.css sizes these at 1.1em under :hover:not(:disabled), which outweighs this rule
+        alone, so the icons grew and the button widened by a pixel and a half under the pointer.
+      */
+      .lektor-window .lektor-sends svg,
+      .lektor-window .lektor-sends:hover:not(:disabled) svg {
         width: 1.05em;
         height: 1.05em;
       }
