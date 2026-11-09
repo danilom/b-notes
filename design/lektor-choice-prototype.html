@@ -99,10 +99,20 @@
         --lektor-after-radio: calc(var(--lektor-radio) + 0.4rem);
       }
 
-      /* Up into the first row's padding, so a list sits under its heading as close as before the rows grew. */
+      /*
+        Up into the first and last rows' padding, so a list sits as close to its heading and to what
+        follows as before the rows grew: the padding is for the hand, not more space for the eye.
+      */
       .lektor-choice-options,
       .lektor-kind-list {
         margin-top: -0.45rem;
+        margin-bottom: -0.45rem;
+      }
+
+      /* More room above a heading than under it, so each heading reads as starting what follows. */
+      .lektor-side-body > .lektor-choice-with-keys,
+      .lektor-window-side > .lektor-heading:not(:first-child) {
+        margin-top: 0.4rem;
       }
 
       .lektor-choice-options {
@@ -141,6 +151,8 @@
 
       .lektor-choice-with-keys .lektor-again {
         font-size: var(--lektor-small);
+        /* Taller than the heading's words: hanging below them, it would push the choices down here and not in the window. */
+        margin-bottom: -0.2rem;
       }
 
       /* New: the balance, small and quiet, in Plaćeni's row. */

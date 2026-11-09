@@ -50,6 +50,12 @@ function privacyWarning(): HTMLElement {
   return warning;
 }
 
+function privacyFoot(): HTMLElement {
+  const foot = el('div', 'lektor-side-foot');
+  foot.append(privacyWarning());
+  return foot;
+}
+
 /**
  * What a step shows: what scrolls, and the main button, which stays in a strip at the panel's foot.
  * New: in the app the button comes right after the content, so a long comment pushed it out of
@@ -78,8 +84,9 @@ function startScreen(): Step {
       ...lektorChoice({ group: 'lektor-level', choose, openKeys }),
       // Small: it explains the choice, it isn't what he came for.
       el('p', 'lektor-where', 'Za slova, zareze i gramatiku oba su ista. Plaćeni je bolji za stil i dubinsku preradu, a radi i kad besplatni ne može.'),
-      // Last above the strip, so it is next to the button it is about.
-      privacyWarning(),
+      // Last above the strip, so it is next to the button it is about. In the app's foot block, as in the
+      // app, whose rules for the warning's own spacing apply only there.
+      privacyFoot(),
     ],
     main: send,
   };
