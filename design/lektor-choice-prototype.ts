@@ -11,7 +11,7 @@ import { icon } from '../src/ui/icons.ts';
 import { type WindowCase, corrections, openCorrectionsWindow, openCorrectionsWindowAt, redrawWindowIfOpen } from './lektor-corrections-window-prototype.ts';
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
-import { type Choice, TEXT_PARAGRAPHS, button, el, element, recipient, sendButton, serviceLine, state } from './lektor-prototype-pieces.ts';
+import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, button, el, element, recipient, sendButton, serviceLine, state } from './lektor-prototype-pieces.ts';
 
 type Screen = 'start' | 'response' | 'keys';
 
@@ -260,23 +260,24 @@ const CONTROLS: readonly PrototypeControl[] = [
     value: 'none',
   },
   {
-    id: 'busy',
-    label: 'Besplatni',
+    id: 'google-38',
+    label: 'Gugl, 3.8',
     options: [
-      { value: 'no', label: 'radi' },
-      { value: 'busy', label: 'zauzet (brži model radi)' },
-      { value: 'both', label: 'zauzet, i brži model' },
+      { value: 'ok', label: 'radi' },
+      { value: 'slow', label: 'dug red (preko 1 min)' },
+      { value: 'busy', label: 'zauzet' },
     ],
-    value: 'no',
+    value: 'ok',
   },
   {
-    id: 'free-queue',
-    label: 'Red kod Gugla',
+    id: 'google-36',
+    label: 'Gugl, 3.6',
     options: [
-      { value: 'short', label: 'kratak' },
-      { value: 'long', label: 'dug (preko 2 min)' },
+      { value: 'ok', label: 'radi' },
+      { value: 'slow', label: 'dug red (preko 1 min)' },
+      { value: 'busy', label: 'zauzet' },
     ],
-    value: 'short',
+    value: 'ok',
   },
   {
     id: 'pace',
@@ -334,6 +335,8 @@ function setScreen(value: string | boolean): void {
   else openCorrectionsWindow();
 }
 
+const googleDayOf = (value: string | boolean): GoogleDay => (value === 'slow' || value === 'busy' ? value : 'ok');
+
 function setControl(id: string, value: string | boolean): void {
   if (id === 'screen') setScreen(value);
   if (id === 'stale') isCommentStale = value === true;
@@ -341,11 +344,8 @@ function setControl(id: string, value: string | boolean): void {
   if (id === 'paid-key') keys.saved.paid = value === true;
   if (id === 'key-check') keys.check = value === 'refused' || value === 'offline' ? value : ('works' satisfies KeyCheck);
   if (id === 'balance') state.balance = value === 'unknown' ? null : Number(value);
-  if (id === 'busy') {
-    state.isFreeBusy = value !== 'no';
-    state.isFallbackBusy = value === 'both';
-  }
-  if (id === 'free-queue') state.isFreeQueueLong = value === 'long';
+  if (id === 'google-38') state.google['gemini-3.8-flash'] = googleDayOf(value);
+  if (id === 'google-36') state.google['gemini-3.6-flash'] = googleDayOf(value);
   if (id === 'pace') state.pace = value === 'short' || value === 'quadruple' || value === 'real' ? value : 'double';
   if (id === 'money-out') state.isMoneyOut = value === true;
   if (id === 'letters-kept') setKept(value);

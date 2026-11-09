@@ -47,18 +47,25 @@ export interface PrototypeState {
   choice: Choice;
   /** Dollars on the account, or null when it couldn't be read. */
   balance: number | null;
-  /** Google answers "busy" to the free Lektor. */
-  isFreeBusy: boolean;
-  /** …and to its quicker model too, so even Slova i zarezi and Pravopis fail on free. */
-  isFallbackBusy: boolean;
-  /** Google's free queue is long today: longer than the wait after which a ticked request goes to the paid one. */
-  isFreeQueueLong: boolean;
+  /** How Google's free tier treats each model today: as normal, with a queue past the limit, or refusing it as busy. */
+  google: Record<FreeModel, GoogleDay>;
   /** How long the pretended waits take: shortened to watch, twice that to feel, or as measured. */
-  pace: Pace;  /** The paid Lektor is refused for want of money. */
+  pace: Pace;
+  /** The paid Lektor is refused for want of money. */
   isMoneyOut: boolean;
 }
 
-export const state: PrototypeState = { choice: 'free', balance: 7.47, isFreeBusy: false, isFallbackBusy: false, isFreeQueueLong: false, pace: 'double', isMoneyOut: false };
+/** The free tier's two models: 3.8 first, 3.6 standing in for it on Slova i zarezi and Pravopis. */
+export type FreeModel = 'gemini-3.8-flash' | 'gemini-3.6-flash';
+export type GoogleDay = 'ok' | 'slow' | 'busy';
+
+export const state: PrototypeState = {
+  choice: 'free',
+  balance: 7.47,
+  google: { 'gemini-3.8-flash': 'ok', 'gemini-3.6-flash': 'ok' },
+  pace: 'double',
+  isMoneyOut: false,
+};
 
 export function element<T extends HTMLElement>(id: string, kind: new () => T): T {
   const found = document.getElementById(id);
