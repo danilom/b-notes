@@ -518,6 +518,22 @@
         margin-left: calc(-1.4em - 0.5rem);
       }
 
+      /* A: the time follows its words after a middle dot, so the row is the mark and one run of words. */
+      .lektor-stages-dot .lektor-stage {
+        grid-template-columns: 1.4em minmax(0, 1fr);
+      }
+
+      /* B: the time at the right, a row of small dots leading the eye from the words to it. */
+      .lektor-stages-leader .lektor-stage {
+        grid-template-columns: 1.4em auto minmax(1.5rem, 1fr) auto;
+      }
+
+      .lektor-stage-leader {
+        align-self: stretch;
+        background: radial-gradient(circle, var(--quiet) 0.9px, transparent 1.3px) left 0.95em / 6px 4px repeat-x;
+        opacity: 0.7;
+      }
+
       .lektor-stage-mark {
         display: flex;
         justify-content: center;

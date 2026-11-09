@@ -448,13 +448,28 @@ function underStage(stage: Stage, preset: Preset): HTMLElement[] {
   return [];
 }
 
+/**
+ * A finished stage's words and how long it took, kept together, two ways to compare (the harness
+ * switches): A, the time right after the words, past a middle dot, as the panel's other lines join
+ * their parts; B, the time at the right, with a dotted leader carrying the eye to it.
+ */
+function stageText(words: string, took: string): HTMLElement[] {
+  if (took === '') return [el('span', 'lektor-stage-words', words)];
+  if (state.stageTimes === 'leader') {
+    return [el('span', 'lektor-stage-words', words), el('span', 'lektor-stage-leader'), el('span', 'lektor-stage-time', took)];
+  }
+  const joined = el('span', 'lektor-stage-words');
+  joined.append(words, el('span', 'lektor-stage-time', ` · ${took}`));
+  return [joined];
+}
+
 function stagesList(preset: Preset): HTMLElement {
-  const list = el('div', 'lektor-stages');
+  const list = el('div', `lektor-stages lektor-stages-${state.stageTimes}`);
   corrections.stages.forEach((stage, index) => {
     const isCurrent = stage.endedAt === null;
     const row = el('div', 'lektor-stage');
     const took = stage.endedAt === null || stage.phase === 'refused' ? '' : durationWords(stage.endedAt - stage.startedAt);
-    row.append(stageMark(stage, isCurrent), el('span', '', stageWords(stage, isCurrent, corrections.stages[index - 1])), el('span', 'lektor-stage-time', took));
+    row.append(stageMark(stage, isCurrent), ...stageText(stageWords(stage, isCurrent, corrections.stages[index - 1]), took));
     list.append(row, ...underStage(stage, preset));
   });
   return list;
@@ -707,10 +722,10 @@ function draw(): void {
 
 /**
  * For the harness's switches: a case set while the window is open shows at once, not only on
- * reopening. Not while it runs, where a redraw would start the clock again from nought.
+ * reopening, the wait included: its clock counts from when he sent it, so a redraw doesn't reset it.
  */
 export function redrawWindowIfOpen(): void {
-  if (shown !== null && corrections.view !== 'waiting') draw();
+  if (shown !== null) draw();
 }
 
 /**
