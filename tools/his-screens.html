@@ -18,8 +18,8 @@
       ?page=<name> puts one of the design prototypes in the frame instead of the
       app, at the same size, so its dialogs open as big as they would on his
       screen: a modal covers the page it is in, and here that page is his window.
-      A prototype that publishes window.prototypeControls gets them drawn in a
-      column beside the screen, out of the way of what he would see.
+      A prototype that publishes window.prototypeControls gets them drawn above
+      the screen, out of the way of what he would see.
     -->
     <style>
       :root {
@@ -80,6 +80,7 @@
       #middle {
         flex: 1;
         display: flex;
+        flex-direction: column;
         min-height: 0;
       }
 
@@ -88,16 +89,18 @@
         position: relative;
       }
 
-      /* A prototype's switches, beside the screen rather than on it. */
+      /*
+        A prototype's switches, above the screen rather than on it, in as many columns as the width
+        allows: beside it, they took width the screen needed and drew it smaller.
+      */
       #options {
         flex: none;
-        width: 230px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        padding: 12px;
-        overflow-y: auto;
-        border-right: 1px solid #2a2c30;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        align-items: center;
+        gap: 6px 18px;
+        padding: 4px 12px 10px;
+        border-bottom: 1px solid #2a2c30;
         font-size: 13px;
       }
 
@@ -107,17 +110,14 @@
 
       #options label {
         display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      #options label.tick {
-        flex-direction: row;
         align-items: center;
         gap: 6px;
+        min-width: 0;
       }
 
       #options select {
+        min-width: 0;
+        flex: 1;
         font: inherit;
       }
 
@@ -248,7 +248,6 @@
             select.addEventListener('change', () => view.prototypeSet?.(control.id, select.value));
             label.append(control.label, select);
           } else {
-            label.className = 'tick';
             const box = document.createElement('input');
             box.type = 'checkbox';
             box.checked = control.value === true;
