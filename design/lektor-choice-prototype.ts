@@ -11,9 +11,10 @@ import { icon } from '../src/ui/icons.ts';
 import { type WindowCase, corrections, openCorrectionsWindow, openCorrectionsWindowAt, redrawWindowIfOpen } from './lektor-corrections-window-prototype.ts';
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
+import { commentFailure, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
 import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, button, dollars, el, element, recipient, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
 
-type Screen = 'start' | 'response' | 'keys';
+type Screen = 'start' | 'waiting' | 'failed' | 'response' | 'keys';
 
 /** Said once on the first step after a key was saved and works, as the app does. */
 let isKeyJustSaved = false;
@@ -69,13 +70,7 @@ interface Step {
 }
 
 function startScreen(): Step {
-  const send = sendButton(`Pošalji ceo tekst ${state.choice === 'free' ? 'Guglu' : 'OpenRouteru'}`, 'comment', () => {
-    screen = 'response';
-    commentBy = state.choice;
-    if (commentBy === 'paid') spend(COMMENT_COST_USD);
-    isAboutAiOpen = false;
-    render();
-  }, 'status-action lektor-main-action');
+  const send = sendButton(`Pošalji ceo tekst ${state.choice === 'free' ? 'Guglu' : 'OpenRouteru'}`, 'comment', () => askForComment(state.choice), 'status-action lektor-main-action');
   const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', 'API ključ radi i sačuvan je.')] : [];
   isKeyJustSaved = false;
   return {
@@ -203,7 +198,61 @@ function responseScreen(): Step {
   return { content: [head, comment, signature], main: toCorrections };
 }
 
-const TITLES: Readonly<Record<Screen, string>> = { start: 'AI Lektor: slanje teksta', response: 'AI Lektor: utisak', keys: 'AI Lektor: podešavanje' };
+/** Sends the text for a comment and waits for it in the panel, as the switches set the day. */
+function askForComment(to: Choice): void {
+  screen = 'waiting';
+  render();
+  startCommentRun(to, {
+    done: (by) => {
+      screen = 'response';
+      commentBy = by;
+      if (by === 'paid') spend(COMMENT_COST_USD);
+      isAboutAiOpen = false;
+      render();
+    },
+    failed: () => {
+      screen = 'failed';
+      render();
+    },
+  });
+}
+
+/** Back to the first step as he left it: his Lektor, unchanged, where sending again is the retry. */
+function backFromComment(): void {
+  stopCommentRun();
+  screen = 'start';
+  render();
+}
+
+/** "← Nazad", at the strip's left, made as the keys screen's is. */
+function backButton(label: string): HTMLButtonElement {
+  const back = button('', backFromComment, 'status-action lektor-side-back');
+  back.append(icon('back'), el('span', '', label));
+  return back;
+}
+
+/**
+ * The wait: the app's "Čita tekst…" and nothing more, his text beside it to look at meanwhile.
+ * Giving up where the send button was, not solid blue: it isn't the next step of his work.
+ */
+function waitingScreen(): Step {
+  return { content: [commentWaiting()], main: button('Odustani od zahteva', backFromComment, 'status-action') };
+}
+
+/** A failure, as in the window: the problem, "← Nazad", and the other Lektor where it can help. */
+function failedScreen(): Step {
+  const shortcut = commentShortcut((to) => askForComment(to));
+  if (shortcut === null) return { content: [commentFailure()], main: backButton('Nazad') };
+  return { content: [commentFailure()], main: shortcut, back: backButton('Nazad') };
+}
+
+const TITLES: Readonly<Record<Screen, string>> = {
+  start: 'AI Lektor: slanje teksta',
+  waiting: 'AI Lektor: utisak',
+  failed: 'AI Lektor: utisak',
+  response: 'AI Lektor: utisak',
+  keys: 'AI Lektor: podešavanje',
+};
 
 function backToStart(): void {
   screen = 'start';
@@ -217,6 +266,8 @@ function savedAndBack(): void {
 
 function screenNow(): Step {
   if (screen === 'keys') return keysScreen(render, backToStart, savedAndBack);
+  if (screen === 'waiting') return waitingScreen();
+  if (screen === 'failed') return failedScreen();
   return screen === 'start' ? startScreen() : responseScreen();
 }
 
@@ -391,6 +442,7 @@ function isWindowCase(value: string | boolean): value is WindowCase {
  * ispravke…" does; 3a–3c open it straight on the wait or a failure.
  */
 function setScreen(value: string | boolean): void {
+  stopCommentRun();
   const isWindow = value === 'window' || isWindowCase(value);
   screen = value === 'response' || isWindow ? 'response' : value === 'keys' ? 'keys' : 'start';
   // Opening the first step afresh, as he would: on Besplatni.
@@ -416,7 +468,8 @@ const ODD_TITLES: Readonly<Record<string, string>> = {
 function setControl(id: string, value: string | boolean): void {
   if (id === 'screen') setScreen(value);
   if (id === 'stale') isCommentStale = value === true;
-  if (id === 'comment-title' && typeof value === 'string') commentTextTitle = ODD_TITLES[value] ?? TEXT_TITLE;  if (id === 'free-key') keys.saved.free = value === true;
+  if (id === 'comment-title' && typeof value === 'string') commentTextTitle = ODD_TITLES[value] ?? TEXT_TITLE;
+  if (id === 'free-key') keys.saved.free = value === true;
   if (id === 'paid-key') keys.saved.paid = value === true;
   if (id === 'key-check') keys.check = value === 'refused' || value === 'offline' ? value : ('works' satisfies KeyCheck);
   if (id === 'balance') state.balance = value === 'unknown' ? null : Number(value);

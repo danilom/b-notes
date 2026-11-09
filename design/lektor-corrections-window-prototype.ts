@@ -169,7 +169,8 @@ const WAIT_TIMES: Readonly<Record<Pace, WaitTimes>> = {
   real: { queueMs: 30_000, longQueueMs: 300_000, queueLimitMs: 60_000, thinkingMs: 3000, writingStepMs: 12_000 },
 };
 
-const times = (): WaitTimes => WAIT_TIMES[state.pace];
+/** The pretended waits at the harness's pace; the utisak's wait in the panel borrows them too. */
+export const times = (): WaitTimes => WAIT_TIMES[state.pace];
 /**
  * What the limits stand for in the app, said to him: a minute in the queue for each free model,
  * so two minutes in all before a ticked request goes to the paid one.
