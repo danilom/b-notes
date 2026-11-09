@@ -225,10 +225,23 @@
         font-size: 0.95rem;
       }
 
-      /* Wide enough for a ready line and its Pogledaj on one line; the right column has room to spare. */
       .lektor-window-side {
         flex: none;
-        width: 22rem;
+        width: 20rem;
+      }
+
+      /*
+        New: the kind picked marked as Ranije verzije marks the version open (.row-open), the stripe
+        and the soft blue, the radio kept since these are fixed choices; square, as those rows are,
+        since a stripe on a rounded corner looks broken.
+      */
+      .lektor-kind .lektor-preset {
+        border-radius: 0;
+      }
+
+      .lektor-kind .lektor-preset:has(input:checked) {
+        box-shadow: inset 3px 0 0 var(--chosen);
+        background-color: var(--chosen-soft);
       }
 
       .lektor-window-detail {
@@ -261,8 +274,9 @@
       }
 
       /* New: under a kind's name, how far it goes: small and quiet, part of the row's target. */
+      /* The Lektor's small print: there to read the first time, out of the way of the names by the twentieth. */
       .lektor-kind-about {
-        font-size: 0.85rem;
+        font-size: var(--lektor-small);
         line-height: 1.35;
         color: var(--quiet);
       }
