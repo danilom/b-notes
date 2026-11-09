@@ -173,6 +173,16 @@
         margin: 0 0 0 var(--lektor-after-radio);
       }
 
+      /* The tick box's sentence wraps in its place, beside the box and the coin, rather than dropping below them. */
+      .lektor-choice-options .lektor-check {
+        flex-wrap: nowrap;
+      }
+
+      .lektor-choice-options .lektor-check > span {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
       /* The app's own hover, the wash a row of his list gets, so the whole target shows; not on one that can't be chosen. */
       .lektor-choice-options .lektor-preset:has(input:enabled):hover,
       .lektor-kind .lektor-preset:has(input:enabled):hover {
@@ -510,22 +520,13 @@
         The marks hang out in the margin, so every line of text, the bar and the notes share one left
         edge, and the marks make a column of their own beside it.
       */
+      /* The mark, the words, a row of small dots leading the eye to the time at the right, the time. */
       .lektor-stage {
         display: grid;
-        grid-template-columns: 1.4em minmax(0, 1fr) auto;
+        grid-template-columns: 1.4em auto minmax(1.5rem, 1fr) auto;
         align-items: center;
         gap: 0.5rem;
         margin-left: calc(-1.4em - 0.5rem);
-      }
-
-      /* A: the time follows its words after a middle dot, so the row is the mark and one run of words. */
-      .lektor-stages-dot .lektor-stage {
-        grid-template-columns: 1.4em minmax(0, 1fr);
-      }
-
-      /* B: the time at the right, a row of small dots leading the eye from the words to it. */
-      .lektor-stages-leader .lektor-stage {
-        grid-template-columns: 1.4em auto minmax(1.5rem, 1fr) auto;
       }
 
       .lektor-stage-leader {

@@ -289,15 +289,6 @@ const CONTROLS: readonly PrototypeControl[] = [
     ],
     value: 'double',
   },
-  {
-    id: 'stage-times',
-    label: 'Vreme uz korak',
-    options: [
-      { value: 'dot', label: 'A: posle tačke' },
-      { value: 'leader', label: 'B: tačkice do desno' },
-    ],
-    value: 'dot',
-  },
   { id: 'money-out', label: 'Plaćeni nema novca', value: false },
   { id: 'dark', label: 'Tamna pozadina', value: false },
 ];
@@ -355,7 +346,6 @@ function setControl(id: string, value: string | boolean): void {
     state.isFallbackBusy = value === 'both';
   }
   if (id === 'free-queue') state.isFreeQueueLong = value === 'long';
-  if (id === 'stage-times') state.stageTimes = value === 'leader' ? 'leader' : 'dot';
   if (id === 'pace') state.pace = value === 'short' || value === 'quadruple' || value === 'real' ? value : 'double';
   if (id === 'money-out') state.isMoneyOut = value === true;
   if (id === 'letters-kept') setKept(value);

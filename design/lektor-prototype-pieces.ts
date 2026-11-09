@@ -54,14 +54,11 @@ export interface PrototypeState {
   /** Google's free queue is long today: longer than the wait after which a ticked request goes to the paid one. */
   isFreeQueueLong: boolean;
   /** How long the pretended waits take: shortened to watch, twice that to feel, or as measured. */
-  pace: Pace;
-  /** How a finished stage's time sits by its words, to compare: after a middle dot, or at the right with dots leading to it. */
-  stageTimes: 'dot' | 'leader';
-  /** The paid Lektor is refused for want of money. */
+  pace: Pace;  /** The paid Lektor is refused for want of money. */
   isMoneyOut: boolean;
 }
 
-export const state: PrototypeState = { choice: 'free', balance: 7.47, isFreeBusy: false, isFallbackBusy: false, isFreeQueueLong: false, pace: 'double', stageTimes: 'dot', isMoneyOut: false };
+export const state: PrototypeState = { choice: 'free', balance: 7.47, isFreeBusy: false, isFallbackBusy: false, isFreeQueueLong: false, pace: 'double', isMoneyOut: false };
 
 export function element<T extends HTMLElement>(id: string, kind: new () => T): T {
   const found = document.getElementById(id);

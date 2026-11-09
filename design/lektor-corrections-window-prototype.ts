@@ -284,7 +284,7 @@ function readyDetail(preset: Preset): HTMLElement[] {
  * it is off each time the window opens, like every choice to pay.
  */
 function paidIfSlowBox(): HTMLElement {
-  const box = el('label', 'lektor-preset');
+  const box = el('label', 'lektor-preset lektor-check');
   const input = el('input');
   input.type = 'checkbox';
   input.checked = corrections.isPaidIfSlow;
@@ -292,7 +292,7 @@ function paidIfSlowBox(): HTMLElement {
     corrections.isPaidIfSlow = input.checked;
   });
   // The limit named, as the wait names it: a busy Google is covered too, as one that won't start in time.
-  box.append(input, choiceMark('paid'), el('span', '', `Ako besplatni ne krene za ${QUEUE_LIMIT_WORDS}, pošalji plaćenom`));
+  box.append(input, choiceMark('paid'), el('span', '', `Ako besplatni ne krene za ${QUEUE_LIMIT_WORDS}, pošalji plaćenom lektoru`));
   // In a row of the choices' own make, so it is as big a target, with the same hover.
   const row = el('div', 'lektor-choice-options');
   row.append(box);
@@ -436,7 +436,7 @@ function progressRow(): HTMLElement {
 
 /** Under the queue while it lasts: that free requests wait (not that something is wrong), and what happens if he ticked for a long wait. */
 function queueNote(preset: Preset): HTMLElement {
-  const after = mayGoToPaid(preset) ? ` Ako ne krene za ${QUEUE_LIMIT_WORDS}, šalje se plaćenom.` : '';
+  const after = mayGoToPaid(preset) ? ` Ako ne krene za ${QUEUE_LIMIT_WORDS}, šalje se plaćenom lektoru.` : '';
   return el('p', 'lektor-wait-small lektor-stage-note', `Besplatni zahtevi čekaju na red, pa traju duže, obično nekoliko minuta.${after}`);
 }
 
@@ -449,22 +449,16 @@ function underStage(stage: Stage, preset: Preset): HTMLElement[] {
 }
 
 /**
- * A finished stage's words and how long it took, kept together, two ways to compare (the harness
- * switches): A, the time right after the words, past a middle dot, as the panel's other lines join
- * their parts; B, the time at the right, with a dotted leader carrying the eye to it.
+ * A finished stage's words and how long it took: the time at the right, in a column with the
+ * others, and a dotted leader carrying the eye from the words to it (Danilo's pick over a middle dot).
  */
 function stageText(words: string, took: string): HTMLElement[] {
   if (took === '') return [el('span', 'lektor-stage-words', words)];
-  if (state.stageTimes === 'leader') {
-    return [el('span', 'lektor-stage-words', words), el('span', 'lektor-stage-leader'), el('span', 'lektor-stage-time', took)];
-  }
-  const joined = el('span', 'lektor-stage-words');
-  joined.append(words, el('span', 'lektor-stage-time', ` · ${took}`));
-  return [joined];
+  return [el('span', 'lektor-stage-words', words), el('span', 'lektor-stage-leader'), el('span', 'lektor-stage-time', took)];
 }
 
 function stagesList(preset: Preset): HTMLElement {
-  const list = el('div', `lektor-stages lektor-stages-${state.stageTimes}`);
+  const list = el('div', 'lektor-stages');
   corrections.stages.forEach((stage, index) => {
     const isCurrent = stage.endedAt === null;
     const row = el('div', 'lektor-stage');
@@ -511,7 +505,7 @@ function waitingDetail(preset: Preset): HTMLElement[] {
 }
 
 function sendToButton(preset: Preset, to: Choice): HTMLButtonElement {
-  const made = button(to === 'free' ? 'Pošalji besplatnom' : 'Pošalji plaćenom', () => run(to), 'lektor-main-action lektor-sends');
+  const made = button(to === 'free' ? 'Pošalji besplatnom lektoru' : 'Pošalji plaćenom lektoru', () => run(to), 'lektor-main-action lektor-sends');
   made.append(choiceMark(to), icon('move-out'));
   made.title = `Model: ${MODELS[to][preset]}`;
   return made;
@@ -532,8 +526,8 @@ function failedDetail(preset: Preset): HTMLElement {
   const big = el('div', 'lektor-window-big');
   big.append(
     isNoCredit
-      ? problem('Plaćeni iznos je potrošen.', 'Možeš da pošalješ besplatnom, ili neka se uplati još. Tvoj izbor i uputstva su ostali.')
-      : problem('Gugl je sada zauzet.', keys.saved.paid ? 'Probaj malo kasnije, ili pošalji plaćenom.' : 'Probaj malo kasnije.'),
+      ? problem('Plaćeni iznos je potrošen.', 'Možeš da pošalješ besplatnom lektoru, ili neka se uplati još. Tvoj izbor i uputstva su ostali.')
+      : problem('Gugl je sada zauzet.', keys.saved.paid ? 'Probaj malo kasnije, ili pošalji plaćenom lektoru.' : 'Probaj malo kasnije.'),
     ways,
   );
   return big;
