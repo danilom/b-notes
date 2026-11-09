@@ -614,10 +614,21 @@ function startStage(phase: Phase, by: Choice, model: string): void {
   corrections.stages.push({ phase, by, model, startedAt: Date.now(), endedAt: null, isGivenUp: false });
 }
 
+/**
+ * What a paid run cost comes off the balance at once, as OpenRouter's reply states it, so "Na računu"
+ * is right the moment he is back; in the app a fresh read of the account follows to correct any lag.
+ */
+function spend(cost: number | null): void {
+  if (cost === null || state.balance === null) return;
+  state.balance = Math.max(0, Math.round((state.balance - cost) * 100) / 100);
+}
+
 function finishRun(preset: Preset, to: Choice): void {
   stopTimers();
   endStage();
-  corrections.kept[preset] = { ...corrections.kept[preset], [to]: { at: JUST_NOW, cost: pretendCost(preset, to), model: corrections.stages.at(-1)?.model ?? MODELS[to][preset] } };
+  const cost = pretendCost(preset, to);
+  spend(cost);
+  corrections.kept[preset] = { ...corrections.kept[preset], [to]: { at: JUST_NOW, cost, model: corrections.stages.at(-1)?.model ?? MODELS[to][preset] } };
   corrections.isAskingAgain = false;
   openReview(preset, to);
 }
