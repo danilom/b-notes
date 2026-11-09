@@ -50,12 +50,8 @@ function privacyWarning(): HTMLElement {
   return warning;
 }
 
-/** Where the first step's warning sits, for comparing first impressions: under the choice as now, in the free space's middle, or down by the button. */
-type WarningPlace = 'after' | 'middle' | 'bottom';
-let warningPlace: WarningPlace = 'after';
-
 function privacyFoot(): HTMLElement {
-  const foot = el('div', `lektor-side-foot lektor-warning-${warningPlace}`);
+  const foot = el('div', 'lektor-side-foot');
   foot.append(privacyWarning());
   return foot;
 }
@@ -90,8 +86,9 @@ function startScreen(): Step {
       // What paying gives for the comment, as measured (2026-11-09): a draw blind (Opus 3, Flash 2), but
       // about 18 s against 3–5 minutes. So speed, not quality. The corrections choose their own Lektor in the window.
       el('p', 'lektor-where', 'Oba pišu utisak sličnog kvaliteta; plaćeni je mnogo brži.'),
-      // Last above the strip, so it is next to the button it is about. In the app's foot block, as in the
-      // app, whose rules for the warning's own spacing apply only there.
+      // In the middle of the space left under the choice (Danilo, 2026-11-10, compared with right under
+      // it and down by the button): the first screen's one weighty thing, balanced rather than tucked
+      // away. In the app's foot block, whose rules for the warning's own spacing apply only there.
       privacyFoot(),
     ],
     main: send,
@@ -243,16 +240,6 @@ const CONTROLS: readonly PrototypeControl[] = [
     // Where the work is now: the corrections window, open on arriving.
     value: 'window',
   },
-  {
-    id: 'warning-place',
-    label: 'Upozorenje (korak 1)',
-    options: [
-      { value: 'after', label: 'odmah pod izborom (sada)' },
-      { value: 'middle', label: 'u sredini praznog prostora' },
-      { value: 'bottom', label: 'dole, uz dugme' },
-    ],
-    value: 'after',
-  },
   { id: 'stale', label: 'Tekst promenjen posle utiska', value: false },
   { id: 'free-key', label: 'Ključ za besplatni sačuvan', value: true },
   { id: 'paid-key', label: 'Ključ za plaćeni sačuvan', value: true },
@@ -368,9 +355,7 @@ const googleDayOf = (value: string | boolean): GoogleDay => (value === 'slow' ||
 
 function setControl(id: string, value: string | boolean): void {
   if (id === 'screen') setScreen(value);
-  if (id === 'stale') isCommentStale = value === true;
-  if (id === 'warning-place' && (value === 'after' || value === 'middle' || value === 'bottom')) warningPlace = value;
-  if (id === 'free-key') keys.saved.free = value === true;
+  if (id === 'stale') isCommentStale = value === true;  if (id === 'free-key') keys.saved.free = value === true;
   if (id === 'paid-key') keys.saved.paid = value === true;
   if (id === 'key-check') keys.check = value === 'refused' || value === 'offline' ? value : ('works' satisfies KeyCheck);
   if (id === 'balance') state.balance = value === 'unknown' ? null : Number(value);
