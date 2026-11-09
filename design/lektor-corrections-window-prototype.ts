@@ -202,7 +202,7 @@ function readyCard(preset: Preset, by: Choice, kept: Kept): HTMLElement {
   const cost = kept.cost === null ? '' : ` · ${dollars(kept.cost)}`;
   const words = el('span', 'lektor-ready-words', `Predlozi od ${kept.at}${cost}`);
   words.title = `Napravio ${lektorName(by)} Lektor.`;
-  card.append(choiceMark(by), words, button('Pogledaj', () => openReview(preset, by), 'keep'));
+  card.append(choiceMark(by), words, button('Pogledaj', () => openReview(preset, by), 'lektor-main-action'));
   return card;
 }
 
@@ -262,7 +262,7 @@ function sendRow(preset: Preset): HTMLElement {
     }, 'lektor-back-to-ready'));
   }
   const to = lektorFor(preset);
-  const send = sendButton('Pošalji zahtev za ispravke', preset, () => run(to), 'keep');
+  const send = sendButton('Pošalji zahtev za ispravke', preset, () => run(to), 'lektor-main-action');
   // Who it goes to is this kind's Lektor here, not the panel's choice that sendButton reads.
   send.querySelector('.lektor-choice-mark')?.replaceWith(choiceMark(to));
   send.title = [`Šalje se ${to === 'free' ? 'Guglu' : 'firmi OpenRouter'}`, `Model: ${MODELS[to][preset]}`].join('\n');
@@ -314,7 +314,7 @@ function waitingDetail(preset: Preset): HTMLElement {
 }
 
 function sendToButton(preset: Preset, to: Choice): HTMLButtonElement {
-  const made = button(to === 'free' ? 'Pošalji besplatnom' : 'Pošalji plaćenom', () => run(to), 'keep lektor-sends');
+  const made = button(to === 'free' ? 'Pošalji besplatnom' : 'Pošalji plaćenom', () => run(to), 'lektor-main-action lektor-sends');
   made.append(choiceMark(to), icon('move-out'));
   made.title = `Model: ${MODELS[to][preset]}`;
   return made;
