@@ -92,12 +92,15 @@ export const corrections: WindowState = {
   sentTo: 'free',
 };
 
-/** Placeholders, one line each on how far a kind goes, for Danilo to word. */
-const KIND_SUMMARIES: Readonly<Record<Preset, string>> = {
-  letters: 'Slova bez kvačica, greške u kucanju, razmaci i zarezi. Reči ostaju tvoje.',
-  grammar: 'Uz to i gramatika: padeži, slaganje, reč koja nedostaje.',
-  wording: 'Uz to i stil: rečenice koje teku bolje, manje ponavljanja.',
-  rewrite: 'Slobodna prerada celog teksta, kao da ga drugi pisac prepričava.',
+/**
+ * Danilo's wording: what a kind does, then what of his text stays his. Read down the list, the
+ * second lines are the scale he is choosing on, from his words kept to his words gone.
+ */
+const KIND_SUMMARIES: Readonly<Record<Preset, { does: string; keeps: string }>> = {
+  letters: { does: 'Dodaje kvačice (čćšžđ), ispravlja greške u kucanju, razmake i zareze.', keeps: 'Tvoje reči ostaju iste.' },
+  grammar: { does: 'Pored slova i zareza, ispravlja gramatiku: padeže, slaganje reči, reč koja nedostaje.', keeps: 'Rečenice ostaju tvoje.' },
+  wording: { does: 'Ispravlja greške i doteruje rečenice da teku glatko: skraćuje preduge, uklanja ponavljanja.', keeps: 'Smisao i redosled ostaju tvoji.' },
+  rewrite: { does: 'Piše tekst iznova, slobodno, kao što bi ga prepričao drugi pisac.', keeps: 'Ostaje smisao, ali ne i tvoje reči.' },
 };
 
 /** Long enough to see the wait, short enough not to wait for. */
@@ -164,7 +167,9 @@ function kindOption(preset: Preset, isLocked: boolean): HTMLElement {
   const input = option.querySelector('input');
   if (input !== null) input.disabled = isLocked;
   // Part of the row, so reading it and clicking it are the same target.
-  option.append(el('span', 'lektor-kind-about', KIND_SUMMARIES[preset]));
+  const about = el('span', 'lektor-kind-about');
+  about.append(el('span', '', KIND_SUMMARIES[preset].does), el('span', 'lektor-kind-keeps', KIND_SUMMARIES[preset].keeps));
+  option.append(about);
   const kind = el('div', 'lektor-kind');
   kind.append(option);
   return kind;
@@ -173,7 +178,11 @@ function kindOption(preset: Preset, isLocked: boolean): HTMLElement {
 function choicesColumn(): HTMLElement {
   const isLocked = corrections.view === 'waiting';
   const kinds = el('div', 'lektor-kind-list');
-  kinds.append(...PRESETS.map((preset) => kindOption(preset, isLocked)));
+  for (const preset of PRESETS) {
+    // The first three fix his text; Dubinska replaces it, so a line sets it apart rather than letting it read as the most of the same.
+    if (preset === 'rewrite') kinds.append(el('hr', 'lektor-kind-divider'));
+    kinds.append(kindOption(preset, isLocked));
+  }
   const column = el('div', 'lektor-window-side');
   column.append(el('p', 'lektor-heading', 'Izaberi vrstu ispravke:'), kinds);
   return column;

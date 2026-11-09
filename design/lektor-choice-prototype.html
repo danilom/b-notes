@@ -267,6 +267,20 @@
         color: var(--quiet);
       }
 
+      /* What of his text stays his, on a line of its own: down the list these lines are the scale he chooses on. */
+      .lektor-kind-keeps {
+        display: block;
+        font-style: italic;
+      }
+
+      /* New: a thin line before Dubinska prerada, a pause rather than a box: it replaces his text where the others fix it. */
+      .lektor-kind-divider {
+        width: 100%;
+        margin: 0.45rem 0;
+        border: none;
+        border-top: 1px solid var(--line);
+      }
+
       /* New: "preporučeno" after the choice that is better for this kind. */
       .lektor-recommended {
         font-size: 0.85rem;
