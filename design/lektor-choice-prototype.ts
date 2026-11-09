@@ -116,36 +116,68 @@ function render(): void {
   side.replaceChildren(title, body);
 }
 
-function wireSwitches(): void {
-  const step = element('screen', HTMLSelectElement);
-  const balance = element('balance', HTMLSelectElement);
-  const busy = element('busy', HTMLInputElement);
-  const moneyOut = element('money-out', HTMLInputElement);
-  const lettersKept = element('letters-kept', HTMLInputElement);
-  const dark = element('dark', HTMLInputElement);
-  step.addEventListener('change', () => {
-    screen = step.value === 'start' ? 'start' : 'response';
-    render();
-  });
-  balance.addEventListener('change', () => {
-    state.balance = balance.value === 'unknown' ? null : Number(balance.value);
-    render();
-  });
-  busy.addEventListener('change', () => {
-    state.isFreeBusy = busy.checked;
-  });
-  moneyOut.addEventListener('change', () => {
-    state.isMoneyOut = moneyOut.checked;
-  });
-  lettersKept.addEventListener('change', () => {
-    if (lettersKept.checked) corrections.kept.letters = { by: 'free', at: 'juče u 18:40' };
-    else delete corrections.kept.letters;
-  });
-  // The app's own switch, as the diff prototype sets it.
-  dark.addEventListener('change', () => {
-    document.documentElement.dataset['mode'] = dark.checked ? 'dark' : 'light';
-  });
+/*
+  The switches, for the harness to draw outside the screen: /his-screens?page=lektor-choice-prototype
+  reads prototypeControls from this page once it has loaded, draws them in its column beside the
+  screen, and calls prototypeSet when one changes. Kept out of the page, so the page is only what
+  he would see, at his window's size.
+*/
+
+interface PrototypeControl {
+  id: string;
+  label: string;
+  /** A list of choices, or one box to tick. */
+  options?: readonly { value: string; label: string }[];
+  value: string | boolean;
 }
 
-wireSwitches();
+const CONTROLS: readonly PrototypeControl[] = [
+  {
+    id: 'screen',
+    label: 'Panel',
+    options: [
+      { value: 'start', label: '1. Slanje teksta' },
+      { value: 'response', label: '2. Utisak (pa Pređi na ispravke)' },
+    ],
+    value: 'start',
+  },
+  {
+    id: 'balance',
+    label: 'Stanje računa',
+    options: [
+      { value: '7.47', label: '7,47 $' },
+      { value: '0.9', label: '0,90 $ (ispod 1 $: malo)' },
+      { value: 'unknown', label: 'ne može da se pročita' },
+    ],
+    value: '7.47',
+  },
+  { id: 'letters-kept', label: 'Slova i zarezi već sačuvani', value: false },
+  { id: 'busy', label: 'Besplatni je zauzet', value: false },
+  { id: 'money-out', label: 'Plaćeni nema novca', value: false },
+  { id: 'dark', label: 'Tamna pozadina', value: false },
+];
+
+function setControl(id: string, value: string | boolean): void {
+  if (id === 'screen') screen = value === 'response' ? 'response' : 'start';
+  if (id === 'balance') state.balance = value === 'unknown' ? null : Number(value);
+  if (id === 'busy') state.isFreeBusy = value === true;
+  if (id === 'money-out') state.isMoneyOut = value === true;
+  if (id === 'letters-kept' && value === true) corrections.kept.letters = { by: 'free', at: 'juče u 18:40' };
+  if (id === 'letters-kept' && value !== true) delete corrections.kept.letters;
+  // The app's own switch, as the diff prototype sets it.
+  if (id === 'dark') document.documentElement.dataset['mode'] = value === true ? 'dark' : 'light';
+  render();
+}
+
+declare global {
+  interface Window {
+    prototypeControls?: readonly PrototypeControl[];
+    prototypeSet?: (id: string, value: string | boolean) => void;
+  }
+}
+
+window.prototypeControls = CONTROLS;
+window.prototypeSet = setControl;
+
+element('prototype-text', HTMLElement).append(el('p', '', 'Probni tekst'), ...TEXT_PARAGRAPHS.map((paragraph) => el('p', '', paragraph)));
 render();

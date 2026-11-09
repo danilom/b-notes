@@ -14,6 +14,12 @@
       window does: the same rows fit, the same titles are cut short. What it
       cannot show is how sharp text is at his 150 %, or his screen's size in
       inches.
+
+      ?page=<name> puts one of the design prototypes in the frame instead of the
+      app, at the same size, so its dialogs open as big as they would on his
+      screen: a modal covers the page it is in, and here that page is his window.
+      A prototype that publishes window.prototypeControls gets them drawn in a
+      column beside the screen, out of the way of what he would see.
     -->
     <style>
       :root {
@@ -71,9 +77,48 @@
         opacity: 0.85;
       }
 
+      #middle {
+        flex: 1;
+        display: flex;
+        min-height: 0;
+      }
+
       #stage {
         flex: 1;
         position: relative;
+      }
+
+      /* A prototype's switches, beside the screen rather than on it. */
+      #options {
+        flex: none;
+        width: 230px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px;
+        overflow-y: auto;
+        border-right: 1px solid #2a2c30;
+        font-size: 13px;
+      }
+
+      #options[hidden] {
+        display: none;
+      }
+
+      #options label {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      #options label.tick {
+        flex-direction: row;
+        align-items: center;
+        gap: 6px;
+      }
+
+      #options select {
+        font: inherit;
       }
 
       /* The whole screen, at its size in CSS pixels, shrunk to fit if need be.
@@ -139,15 +184,18 @@
       <button id="reload" type="button" title="Load the app in the frame again">Reload</button>
       <span id="about"></span>
     </header>
-    <div id="stage">
-      <div id="screen">
-        <div id="title-bar">
-          <img src="/icon.svg" alt="" />
-          <span>b-notes</span>
-          <span class="controls"><span>─</span><span>☐</span><span>✕</span></span>
+    <div id="middle">
+      <aside id="options" hidden></aside>
+      <div id="stage">
+        <div id="screen">
+          <div id="title-bar">
+            <img src="/icon.svg" alt="" />
+            <span>b-notes</span>
+            <span class="controls"><span>─</span><span>☐</span><span>✕</span></span>
+          </div>
+          <iframe id="app" title="b-notes" src="/"></iframe>
+          <div id="taskbar">taskbar</div>
         </div>
-        <iframe id="app" title="b-notes" src="/"></iframe>
-        <div id="taskbar">taskbar</div>
       </div>
     </div>
     <script>
@@ -176,6 +224,41 @@
       const stage = document.getElementById('stage');
 
       let shown = SCREENS[0];
+
+      /** A prototype for the frame instead of the app, by its name under the server's tool pages. */
+      const page = new URLSearchParams(location.search).get('page');
+      const options = document.getElementById('options');
+      if (page !== null && /^[a-z0-9-]+$/.test(page)) {
+        frame.src = `/${page}`;
+        document.title = `His screens: ${page}`;
+      }
+
+      /** The prototype's switches, drawn here; each change is handed back to it. */
+      function drawOptions() {
+        const view = frame.contentWindow;
+        const controls = view?.prototypeControls;
+        options.replaceChildren();
+        options.hidden = !Array.isArray(controls);
+        if (!Array.isArray(controls)) return;
+        for (const control of controls) {
+          const label = document.createElement('label');
+          if (Array.isArray(control.options)) {
+            const select = document.createElement('select');
+            for (const option of control.options) select.append(new Option(option.label, option.value, false, option.value === control.value));
+            select.addEventListener('change', () => view.prototypeSet?.(control.id, select.value));
+            label.append(control.label, select);
+          } else {
+            label.className = 'tick';
+            const box = document.createElement('input');
+            box.type = 'checkbox';
+            box.checked = control.value === true;
+            box.addEventListener('change', () => view.prototypeSet?.(control.id, box.checked));
+            label.append(box, control.label);
+          }
+          options.append(label);
+        }
+        fit();
+      }
 
       function remembered() {
         const wanted = location.hash.slice(1);
@@ -233,6 +316,10 @@
 
       /** Once the app has drawn its buttons, which it does after reading the texts. */
       frame.addEventListener('load', () => {
+        // The frame starts on the app and is then pointed at the prototype, so the first load can be the
+        // wrong page: looked for again a moment later, once the prototype's script has run.
+        drawOptions();
+        if (page !== null && options.hidden) setTimeout(drawOptions, 300);
         const doc = frame.contentDocument;
         let tries = 0;
         const ready = () => {
