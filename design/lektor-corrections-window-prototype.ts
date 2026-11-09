@@ -175,8 +175,8 @@ const times = (): WaitTimes => WAIT_TIMES[state.pace];
 const STEP_LIMIT_WORDS = '1 minut';
 const FREE_LIMIT_WORDS = '2 minuta';
 
-/** When corrections just made were made: reads after "od" as well as on its own, which "upravo sad" doesn't. */
-const JUST_NOW = 'maločas';
+/** When corrections just made were made, Danilo's word; a card from just now says only "Predlozi", since "od upravo sad" reads badly. */
+const JUST_NOW = 'upravo sad';
 
 let shown: Shown | null = null;
 let timers: number[] = [];
@@ -270,7 +270,7 @@ function emptyDetail(): HTMLElement {
 function readyCard(preset: Preset, by: Choice, kept: Kept): HTMLElement {
   const card = el('div', 'lektor-ready-card');
   const cost = kept.cost === null ? '' : ` · ${dollars(kept.cost)}`;
-  const words = el('span', 'lektor-ready-words', `Predlozi od ${kept.at}${cost}`);
+  const words = el('span', 'lektor-ready-words', `Predlozi${kept.at === JUST_NOW ? '' : ` od ${kept.at}`}${cost}`);
   words.title = `Napravio ${lektorName(by)} Lektor.`;
   card.append(choiceMark(by), words, button('Pogledaj', () => openReview(preset, by), 'lektor-main-action'));
   return card;
@@ -725,13 +725,17 @@ function choosingPanel(): HTMLElement {
 }
 
 /**
- * A stand-in for the app's review. New: under the kind and the Lektor, the model that wrote it and,
- * on paid, what it cost, as OpenRouter's reply stated it: known only now, after the run.
+ * One line above the review: the kind, who made it, when, and on paid what it cost, as OpenRouter's
+ * reply stated it (known only now, after the run; "Besplatni" already says free cost nothing); the
+ * model at the line's right, in small grey, for whoever wants it.
  */
-/** The line above the review: the kind, then who made it and when, as the app's review has it. */
-function reviewWhoLine(preset: Preset, by: Choice, at: string): HTMLElement {
-  const line = el('p', 'lektor-service-line');
-  line.append(el('span', 'lektor-review-kind', PRESET_NAMES[preset]), ' · ', choiceMark(by), el('span', '', `${lektorName(by)} lektor · ${at}`));
+function reviewWhoLine(preset: Preset, by: Choice, kept: Kept | undefined): HTMLElement {
+  const cost = kept?.cost == null ? '' : ` · ${dollars(kept.cost)}`;
+  const model = kept?.model ?? MODELS[by][preset];
+  const who = el('p', 'lektor-service-line');
+  who.append(el('span', 'lektor-review-kind', PRESET_NAMES[preset]), ' · ', choiceMark(by), el('span', '', `${lektorName(by)} lektor · ${kept?.at ?? JUST_NOW}${cost}`));
+  const line = el('div', 'lektor-review-who');
+  line.append(who, el('span', 'lektor-where', `${model}${model === FREE_STAND_IN ? ' (stariji, rezervni)' : ''}`));
   return line;
 }
 
@@ -762,7 +766,6 @@ function reviewTextBox(): HTMLElement {
 function reviewPanel(preset: Preset): HTMLElement {
   const by = corrections.reviewBy;
   const kept = corrections.kept[preset]?.[by];
-  const cost = kept?.cost == null ? 'besplatno' : `koštalo ${dollars(kept.cost)}`;
   const said = strings('sr').lektor.review;
   const legend = createDiffLegend(
     [
@@ -776,8 +779,7 @@ function reviewPanel(preset: Preset): HTMLElement {
   );
   const body = el('div', 'review-body lektor-body');
   body.append(
-    reviewWhoLine(preset, by, kept?.at ?? JUST_NOW),
-    el('p', 'lektor-where', `${kept?.model ?? MODELS[by][preset]}${kept?.model === FREE_STAND_IN ? ' (stariji, rezervni)' : ''} · ${cost}`),
+    reviewWhoLine(preset, by, kept),
     legend,
     reviewAboutRow(),
     reviewTextBox(),

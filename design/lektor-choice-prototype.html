@@ -246,8 +246,24 @@
         font-size: var(--lektor-text);
       }
 
-      .lektor-window .review-body > .lektor-where {
+      /* Who made it on the left, the model at the right of the same line, on its baseline. */
+      .lektor-review-who {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.4rem;
+        font-family: var(--ui-font);
+        font-size: var(--lektor-text);
+      }
+
+      .lektor-review-who > * {
+        margin: 0;
+      }
+
+      .lektor-review-who > .lektor-where {
         font-size: var(--lektor-small);
+        white-space: nowrap;
       }
 
       /*
