@@ -163,13 +163,13 @@
 
       /* New: the balance, small and quiet, in Plaćeni's row. */
       .lektor-balance {
-        font-size: 0.85rem;
+        font-size: var(--lektor-small);
         color: var(--quiet);
       }
 
       /* New: where the text goes and, if shown, what it costs, beside the send button. */
       .lektor-where {
-        font-size: 0.85rem;
+        font-size: var(--lektor-small);
         color: var(--quiet);
       }
 
@@ -222,7 +222,11 @@
         flex-direction: column;
         gap: 0.6rem;
         overflow-y: auto;
-        font-size: 0.95rem;
+        /*
+          The Lektor's own three, and no others: its words at this size, headings the same size in
+          bold, and its small print in grey. Near-equal sizes side by side read as carelessness.
+        */
+        font-size: var(--lektor-text);
       }
 
       .lektor-window-side {
@@ -273,8 +277,8 @@
         overflow-y: auto;
       }
 
+      /* A heading like "Izaberi…": bold and at the top is enough, no size of its own. */
       .lektor-window-kind-title {
-        font-size: 1.1rem;
         font-weight: 600;
       }
 
@@ -286,10 +290,9 @@
         color: var(--quiet);
       }
 
-      /* What of his text stays his, on a line of its own: down the list these lines are the scale he chooses on. */
+      /* What of his text stays his, on a line of its own, which sets it apart enough: down the list these lines are the scale he chooses on. */
       .lektor-kind-keeps {
         display: block;
-        font-style: italic;
       }
 
       /* New: a thin line before Dubinska prerada, a pause rather than a box: it replaces his text where the others fix it. */
@@ -302,7 +305,7 @@
 
       /* New: "preporučeno" after the choice that is better for this kind. */
       .lektor-recommended {
-        font-size: 0.85rem;
+        font-size: var(--lektor-small);
         color: var(--quiet);
       }
 
@@ -316,8 +319,9 @@
         border-radius: 6px;
       }
 
+      /* In the colour of the kinds' names, not grey: it is what he came to open. */
       .lektor-ready-words {
-        color: var(--quiet);
+        color: inherit;
       }
 
       .lektor-ready-card .status-action {
@@ -356,8 +360,10 @@
       }
 
       /* Nothing chosen yet: the right side only points left. */
-      .lektor-window-empty {
+      /* Both classes: it borrows the big panel's centring, not its size. */
+      .lektor-window-big.lektor-window-empty {
         color: var(--quiet);
+        font-size: var(--lektor-small);
       }
 
       /* New: the wait and a failure fill the right column, centred and large: while either lasts it is all there is. */
@@ -461,7 +467,7 @@
 
       .lektor-key-state {
         margin-top: -0.35rem;
-        font-size: 0.85rem;
+        font-size: var(--lektor-small);
         color: var(--quiet);
       }
 
@@ -478,7 +484,7 @@
 
       /* New: the line under "Ispravlja tekst…" when the free one moved to its quicker model. */
       .lektor-fallback {
-        font-size: 0.85rem;
+        font-size: var(--lektor-small);
         color: var(--quiet);
       }
     </style>
