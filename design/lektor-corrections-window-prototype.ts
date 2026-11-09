@@ -745,7 +745,7 @@ function reviewWhoLine(preset: Preset, by: Choice, kept: Kept | undefined): HTML
     el('span', '', `${lektorName(by)} lektor · ${kept?.at ?? JUST_NOW}${cost} · ${said.counts(12, 31)}`),
   );
   const line = el('div', 'lektor-review-row');
-  line.append(who, el('span', 'lektor-where', `${model}${model === FREE_STAND_IN ? ' (stariji, rezervni)' : ''}`));
+  line.append(who, el('span', 'lektor-where', `Model: ${model}${model === FREE_STAND_IN ? ' (stariji, rezervni)' : ''}`));
   return line;
 }
 
@@ -794,7 +794,8 @@ function reviewPanel(preset: Preset): HTMLElement {
   );
   const panes = el('div', 'review-panes');
   panes.append(body);
-  const bottom = footer([button(said.apply, close, 'keep'), button('Zatvori', close)], said.goesIn);
+  // No note beside it: "Unesi sve izmene u tekst" says what it does.
+  const bottom = footer([button(said.apply, close, 'keep'), button('Zatvori', close)], '');
   // A step back, at the footer's left, apart from the two that finish or leave: as Nazad on the keys screen.
   const back = button('', () => show('choosing'), 'lektor-footer-back');
   back.append(icon('back'), el('span', '', 'Nazad'));
