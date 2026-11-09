@@ -13,7 +13,7 @@
   Which Lektor follows from the kind. For Slova i zarezi and Pravopis i gramatika both run the same
   model, so paying buys only being answered when Google is busy, which he can't judge in advance:
   no choice, the free one, and the paid one offered when the free one fails. For Stilska dorada and
-  Dubinska prerada the paid one is clearly better: both offered, it recommended, starting on what
+  Dubinska prerada the paid one is clearly better: both offered, it marked "pažljiviji", starting on what
   he chose for the comment in the panel. So the panel's choice is the comment's; this is no longer
   one setting shared with the panel.
 
@@ -218,13 +218,14 @@ function readyDetail(preset: Preset): HTMLElement[] {
   ];
 }
 
-/** For the first two kinds, said rather than asked; for rework, the choice, with paid recommended. */
+/** For the first two kinds, said rather than asked; for rework, the choice, with why paid is better. */
 function lektorPart(preset: Preset): HTMLElement[] {
   if (FALLS_BACK.has(preset)) return [serviceLine(lektorFor(preset))];
   return lektorChoice({
     group: 'lektor-window-level',
     chosen: lektorFor(preset),
-    recommended: 'paid',
+    // Careful, not thorough: on these kinds the free one changed several times more of his words, and lost in the blind picks.
+    better: { choice: 'paid', why: 'pažljiviji' },
     choose: (choice) => {
       corrections.reworkChoice = choice;
       draw();
