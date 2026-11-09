@@ -63,8 +63,6 @@ let shown: Shown | null = null;
 let timers: number[] = [];
 /** The panel's own way of choosing, so the panel and the window stay one choice. */
 let chooseInPanel: (choice: Choice) => void = () => undefined;
-let openKeysInPanel: () => void = () => undefined;
-
 function stopTimers(): void {
   for (const timer of timers) clearTimeout(timer);
   timers = [];
@@ -82,12 +80,6 @@ function chooseHere(choice: Choice): void {
   corrections.failure = null;
   corrections.view = 'choosing';
   draw();
-}
-
-/** The keys are entered in the panel, so the window closes for them. */
-function keysFromHere(): void {
-  close();
-  openKeysInPanel();
 }
 
 /** A kind, with "sačuvano" after it where corrections of it are kept, so trying another loses nothing. */
@@ -156,7 +148,7 @@ function choicesColumn(): HTMLElement {
   const column = el('div', 'lektor-window-side');
   const status = corrections.view === 'waiting' ? [waitingBlock()] : corrections.view === 'failed' ? [failureBlock()] : [];
   column.append(
-    ...lektorChoice({ group: 'lektor-window-level', choose: chooseHere, openKeys: keysFromHere, isLocked }),
+    ...lektorChoice({ group: 'lektor-window-level', choose: chooseHere, isLocked }),
     el('p', 'lektor-heading', 'Izaberi vrstu ispravke:'),
     ...PRESETS.map((preset) => kindOption(preset, isLocked)),
     el('p', 'lektor-prompt-label', 'Uputstvo za AI Lektora:'),
@@ -292,9 +284,8 @@ function draw(): void {
 }
 
 /** Opens the window on choosing, as the app would from the panel's "Pređi na ispravke". */
-export function openCorrectionsWindow(onChoose: (choice: Choice) => void, onOpenKeys: () => void): void {
+export function openCorrectionsWindow(onChoose: (choice: Choice) => void): void {
   chooseInPanel = onChoose;
-  openKeysInPanel = onOpenKeys;
   corrections.view = 'choosing';
   corrections.failure = null;
   draw();

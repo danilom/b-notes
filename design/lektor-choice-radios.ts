@@ -9,8 +9,8 @@ export interface LektorChoiceActions {
   /** The radios' group: the panel's copy stays in the page behind the window, and each needs its own. */
   group: string;
   choose: (choice: Choice) => void;
-  /** "API ključevi": where the keys are entered, which decide what can be chosen. */
-  openKeys: () => void;
+  /** "API ključevi", where the keys are entered: on the panel's first step only, not in the window. */
+  openKeys?: () => void;
   /** While a request runs nothing here can change. */
   isLocked?: boolean;
 }
@@ -26,13 +26,13 @@ function levelOption(choice: Choice, name: string, actions: LektorChoiceActions)
   return option;
 }
 
-/** The heading, the two choices with the way to the keys on Besplatni's line, and the balance under them. */
+/** The heading, the two choices with the way to the keys on Besplatni's line if wanted, and the balance under them. */
 export function lektorChoice(actions: LektorChoiceActions): HTMLElement[] {
   const options = el('div', 'lektor-choice-options');
   options.append(levelOption('free', 'Besplatni', actions), levelOption('paid', 'Plaćeni', actions));
-  const toKeys = button('API ključevi', actions.openKeys, 'lektor-again');
-  toKeys.disabled = actions.isLocked === true;
+  const heading = el('p', 'lektor-heading', 'Izaberi AI Lektora:');
+  if (actions.openKeys === undefined) return [heading, options, ...balanceLine()];
   const row = el('div', 'lektor-choice-with-keys');
-  row.append(options, toKeys);
-  return [el('p', 'lektor-heading', 'Izaberi AI Lektora:'), row, ...balanceLine()];
+  row.append(options, button('API ključevi', actions.openKeys, 'lektor-again'));
+  return [heading, row, ...balanceLine()];
 }
