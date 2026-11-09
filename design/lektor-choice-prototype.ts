@@ -86,35 +86,68 @@ function privacyWarning(): HTMLElement {
   return warning;
 }
 
-function footer(lines: HTMLElement[], main: HTMLButtonElement): HTMLElement {
-  const buttons = el('div', 'lektor-side-buttons');
-  buttons.append(main);
-  const made = el('div', 'lektor-side-foot');
-  made.append(...lines, buttons);
-  return made;
+/**
+ * What a step shows: what scrolls, and the main button, which stays in a strip at the panel's foot.
+ * New: in the app the button comes right after the content, so a long comment pushed it out of
+ * sight and he had to scroll to find the way on. Here it is always in the same place, in view.
+ */
+interface Step {
+  content: HTMLElement[];
+  main: HTMLButtonElement;
 }
 
-function startScreen(): HTMLElement[] {
+function startScreen(): Step {
   const send = sendButton(`Pošalji ceo tekst ${state.choice === 'free' ? 'Guglu' : 'OpenRouteru'}`, 'comment', () => {
     screen = 'response';
+    isAboutAiOpen = false;
     render();
   }, 'status-action lektor-main-action');
   const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', 'API ključ radi i sačuvan je.')] : [];
   isKeyJustSaved = false;
-  return [
-    ...saved,
-    el('p', 'lektor-line', 'AI Lektor čita tvoj tekst, kaže šta misli i, ako želiš, predlaže ispravke.'),
-    el('p', 'lektor-heading', 'Izaberi AI Lektora:'),
-    choicesWithKeys(),
-    ...balanceLine(),
-    // Small: it explains the choice, it isn't what he came for.
-    el('p', 'lektor-where', 'Za slova, zareze i gramatiku oba su ista. Plaćeni je bolji za stil i dubinsku preradu, a radi i kad besplatni ne može.'),
-    footer([privacyWarning()], send),
-  ];
+  return {
+    content: [
+      ...saved,
+      el('p', 'lektor-line', 'AI Lektor čita tvoj tekst, kaže šta misli i, ako želiš, predlaže ispravke.'),
+      el('p', 'lektor-heading', 'Izaberi AI Lektora:'),
+      choicesWithKeys(),
+      ...balanceLine(),
+      // Small: it explains the choice, it isn't what he came for.
+      el('p', 'lektor-where', 'Za slova, zareze i gramatiku oba su ista. Plaćeni je bolji za stil i dubinsku preradu, a radi i kad besplatni ne može.'),
+      // Last above the strip, so it is next to the button it is about.
+      privacyWarning(),
+    ],
+    main: send,
+  };
 }
 
-/** The comment, as a stand-in, and the way on into the window. No arrow: like every button in the app that opens a window. */
-function responseScreen(): HTMLElement[] {
+/** Made up, as the app's comment would read on the made-up text: three short paragraphs, to him, in his dialect. */
+const COMMENT = [
+  'Ostala mi je ona rečenica djeda Marka: „Vidi kako se bonaca smirila, a juče je jugo lomilo grane.” U njoj je cijela promjena vremena, a nijesi je morao opisivati: on je samo kaže, i čitalac vidi i jučerašnji vjetar i današnju tišinu. Tu tekst najbolje radi, kad prepusti riječ čovjeku koga opisuje.',
+  'Zastao sam kod „Dugo smo ćutali; ponekad je tišina bolja od priče.” Prva polovina je dovoljna. Druga objašnjava ono što je prizor već pokazao, i malo ga razvodnjava. Poželio sam i nešto više o pripovjedaču: ko je on djedu, i zašto ostaje na obali kad djed ode.',
+  'U cjelini, ovo je miran, tačan zapis jednog jutra, sa dobrim osjećajem za mjesto i za ljude koji u njemu žive. Kraj, sa vodom koja mijenja boju, lijepo zaokružuje ono što je počelo mirisom soli i kafe.',
+].join('\n\n');
+
+/** Whether "AI može da pogreši" is opened to say what that means, as in the app. */
+let isAboutAiOpen = false;
+
+/** "AI može da pogreši", which opens to a few plain sentences on what an AI is; the app's own. */
+function aboutAi(): HTMLElement[] {
+  const toggle = el('button', 'lektor-fallible');
+  toggle.type = 'button';
+  toggle.setAttribute('aria-expanded', String(isAboutAiOpen));
+  toggle.append(el('span', '', 'AI može da pogreši'), icon('info'));
+  toggle.addEventListener('click', () => {
+    isAboutAiOpen = !isAboutAiOpen;
+    render();
+  });
+  const about =
+    'AI je program koji je učio iz ogromne količine tekstova i piše ono što zvuči verovatno. Ne razume tekst kao čovek i nema sopstveno iskustvo. Zato ponekad sa sigurnošću kaže nešto netačno: navod, činjenicu, ime. Ovaj komentar je utisak AI programa, a ne stručna kritika.';
+  return isAboutAiOpen ? [toggle, el('p', 'lektor-about-ai', about)] : [toggle];
+}
+
+/** The comment as the app draws it: the way to a new one above, the comment with its end mark, and a signature under it. */
+function responseScreen(): Step {
+  const head = el('div', 'lektor-comment-head');
   const again = el('div', 'lektor-back-row');
   const ask = button('', () => {
     screen = 'start';
@@ -122,10 +155,16 @@ function responseScreen(): HTMLElement[] {
   }, 'lektor-again');
   ask.append(icon('back'), el('span', '', 'Traži novi utisak'));
   again.append(ask);
-  const comment = el('div', 'lektor-response');
-  comment.append(el('p', '', '(Ovde je AI utisak, kao sada.)'));
+  head.append(again);
+  const comment = el('div', 'lektor-response', COMMENT);
+  comment.append(el('span', 'lektor-response-end'));
+  const signed = serviceLine();
+  signed.append(el('span', 'lektor-comment-when', ' · upravo sad'));
+  const signature = el('div', 'lektor-comment-notes');
+  signature.append(signed, ...aboutAi());
+  // No arrow: like every button in the app that opens a window.
   const toCorrections = button('Pređi na ispravke', () => openCorrectionsWindow(() => choose('free')), 'status-action lektor-main-action');
-  return [again, comment, serviceLine(' · upravo sad'), footer([], toCorrections)];
+  return { content: [head, comment, signature], main: toCorrections };
 }
 
 const TITLES: Readonly<Record<Screen, string>> = { start: 'AI Lektor: slanje teksta', response: 'AI utisak', keys: 'AI Lektor: podešavanje' };
@@ -140,7 +179,7 @@ function savedAndBack(): void {
   backToStart();
 }
 
-function screenNow(): HTMLElement[] {
+function screenNow(): Step {
   if (screen === 'keys') return keysScreen(render, backToStart, savedAndBack);
   return screen === 'start' ? startScreen() : responseScreen();
 }
@@ -152,9 +191,14 @@ function render(): void {
   close.append(icon('fold-down'));
   const title = el('div', 'lektor-side-title');
   title.append(icon('lektor'), el('span', '', TITLES[screen]), close);
+  const { content, main } = screenNow();
   const body = el('div', 'lektor-side-body');
-  body.append(...screenNow());
-  side.replaceChildren(title, body);
+  body.append(...content);
+  const buttons = el('div', 'lektor-side-buttons');
+  buttons.append(main);
+  const dock = el('div', 'lektor-side-dock');
+  dock.append(buttons);
+  side.replaceChildren(title, body, dock);
 }
 
 /*
@@ -178,7 +222,7 @@ const CONTROLS: readonly PrototypeControl[] = [
     label: 'Panel',
     options: [
       { value: 'start', label: '1. Slanje teksta' },
-      { value: 'response', label: '2. Utisak (pa Pređi na ispravke)' },
+      { value: 'response', label: '2. AI utisak (pa Pređi na ispravke)' },
       { value: 'keys', label: 'API ključevi' },
     ],
     value: 'start',

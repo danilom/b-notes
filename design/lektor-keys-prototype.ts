@@ -92,7 +92,8 @@ export function saveKeys(redraw: () => void, backToStart: () => void, savedAndBa
 }
 
 /** @param savedAndBack Back to the first step after a key was saved and works, which the first step then says. */
-export function keysScreen(redraw: () => void, backToStart: () => void, savedAndBack: () => void): HTMLElement[] {
+/** What scrolls, and "Sačuvaj" for the strip at the panel's foot, as every step of the panel has its main button. */
+export function keysScreen(redraw: () => void, backToStart: () => void, savedAndBack: () => void): { content: HTMLElement[]; main: HTMLButtonElement } {
   const isChecking = keys.notes.free === 'checking' || keys.notes.paid === 'checking';
   const save = (): void => saveKeys(redraw, backToStart, savedAndBack);
   const back = el('div', 'lektor-back-row');
@@ -101,15 +102,13 @@ export function keysScreen(redraw: () => void, backToStart: () => void, savedAnd
   back.append(leave);
   const saveButton = button('Sačuvaj', save, 'status-action lektor-main-action');
   saveButton.disabled = isChecking;
-  const buttons = el('div', 'lektor-side-buttons');
-  buttons.append(saveButton);
-  const foot = el('div', 'lektor-side-foot');
-  foot.append(buttons);
-  return [
-    back,
-    el('p', 'lektor-line', 'Za rad AI Lektora potreban je API ključ. Ako ti ga je neko poslao, zalepi ga ovde. Dovoljan je jedan.'),
-    ...keyField('free', isChecking, save),
-    ...keyField('paid', isChecking, save),
-    foot,
-  ];
+  return {
+    content: [
+      back,
+      el('p', 'lektor-line', 'Za rad AI Lektora potreban je API ključ. Ako ti ga je neko poslao, zalepi ga ovde. Dovoljan je jedan.'),
+      ...keyField('free', isChecking, save),
+      ...keyField('paid', isChecking, save),
+    ],
+    main: saveButton,
+  };
 }

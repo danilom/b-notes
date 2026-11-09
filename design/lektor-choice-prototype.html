@@ -192,6 +192,23 @@
         font-weight: 600;
       }
 
+      /* New: the main button in a strip of its own at the panel's foot, always in view, with what scrolls above it. */
+      .lektor-side-dock {
+        flex: none;
+        padding: 0 1rem 0.8rem;
+      }
+
+      .lektor-side-dock .lektor-side-buttons {
+        margin-top: 0;
+      }
+
+      /* The gift and coin in the "AI Lektor:" line, spaced and set on the line as the app sets its service marks there. */
+      .lektor-service-line .lektor-choice-mark {
+        display: inline-block;
+        margin-right: 0.3em;
+        vertical-align: -0.17em;
+      }
+
       /* New on the keys screen: each key named after the choice it opens, with its mark, and a saved key said in words. */
       /* Room above each key's name, so each key reads as a group: its name, its box and its line. */
       .lektor-key-label {
