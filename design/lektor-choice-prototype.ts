@@ -216,7 +216,8 @@ const CONTROLS: readonly PrototypeControl[] = [
       { value: 'start', label: '1. Slanje teksta' },
       { value: 'response', label: '2. AI utisak (pa Pređi na ispravke)' },
       { value: 'window', label: '3. Prozor za ispravke' },
-      { value: 'waiting', label: '3a. Prozor: čeka (Stilska, plaćeni)' },
+      { value: 'waiting', label: '3a. Prozor: piše (Stilska, plaćeni)' },
+      { value: 'queued', label: '3a2. Prozor: u redu kod Gugla (Slova i zarezi)' },
       { value: 'busy', label: '3b. Prozor: Gugl zauzet (Slova i zarezi)' },
       { value: 'no-credit', label: '3c. Prozor: nema novca (Dubinska)' },
       { value: 'keys', label: 'API ključevi' },
@@ -267,6 +268,15 @@ const CONTROLS: readonly PrototypeControl[] = [
     ],
     value: 'no',
   },
+  {
+    id: 'free-queue',
+    label: 'Red kod Gugla',
+    options: [
+      { value: 'short', label: 'kratak' },
+      { value: 'long', label: 'dug (preko 2 min)' },
+    ],
+    value: 'short',
+  },
   { id: 'money-out', label: 'Plaćeni nema novca', value: false },
   { id: 'dark', label: 'Tamna pozadina', value: false },
 ];
@@ -291,7 +301,7 @@ function setKept(value: string | boolean): void {
   if (value === 'both') corrections.kept.letters = letters;
 }
 
-const WINDOW_CASES: readonly WindowCase[] = ['waiting', 'busy', 'no-credit'];
+const WINDOW_CASES: readonly WindowCase[] = ['waiting', 'queued', 'busy', 'no-credit'];
 
 function isWindowCase(value: string | boolean): value is WindowCase {
   return WINDOW_CASES.some((one) => one === value);
@@ -323,6 +333,7 @@ function setControl(id: string, value: string | boolean): void {
     state.isFreeBusy = value !== 'no';
     state.isFallbackBusy = value === 'both';
   }
+  if (id === 'free-queue') state.isFreeQueueLong = value === 'long';
   if (id === 'money-out') state.isMoneyOut = value === true;
   if (id === 'letters-kept') setKept(value);
   // The app's own switch, as the diff prototype sets it.

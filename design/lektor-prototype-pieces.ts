@@ -49,11 +49,13 @@ export interface PrototypeState {
   isFreeBusy: boolean;
   /** …and to its quicker model too, so even Slova i zarezi and Pravopis fail on free. */
   isFallbackBusy: boolean;
+  /** Google's free queue is long today: longer than the wait after which a ticked request goes to the paid one. */
+  isFreeQueueLong: boolean;
   /** The paid Lektor is refused for want of money. */
   isMoneyOut: boolean;
 }
 
-export const state: PrototypeState = { choice: 'free', balance: 7.47, isFreeBusy: false, isFallbackBusy: false, isMoneyOut: false };
+export const state: PrototypeState = { choice: 'free', balance: 7.47, isFreeBusy: false, isFallbackBusy: false, isFreeQueueLong: false, isMoneyOut: false };
 
 export function element<T extends HTMLElement>(id: string, kind: new () => T): T {
   const found = document.getElementById(id);

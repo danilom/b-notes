@@ -81,7 +81,22 @@ interface WindowState {
   reworkChoice: Choice;
   /** Who the request running or failed went to. */
   sentTo: Choice;
+  /**
+   * Slova i zarezi and Pravopis: his tick for "if the free one is slow, send it to the paid one",
+   * so it can go ahead without asking him minutes in. Off each time the window opens.
+   */
+  isPaidIfSlow: boolean;
+  /** Where the request running is, as the services' streams tell it: queued at Google, thinking, writing. */
+  phase: Phase;
+  /** How far the writing has got, by its length against his text's. */
+  progress: number;
+  /** When he sent it, so the clock counts his whole wait, across a switch to the paid one. */
+  runStartedAt: number;
+  /** Why the paid one took over, as he had ticked; null when it didn't. */
+  switchedBecause: 'queue' | 'busy' | null;
 }
+
+type Phase = 'queue' | 'thinking' | 'writing';
 
 export const corrections: WindowState = {
   view: 'choosing',
@@ -93,6 +108,11 @@ export const corrections: WindowState = {
   isAskingAgain: false,
   reworkChoice: 'free',
   sentTo: 'free',
+  isPaidIfSlow: false,
+  phase: 'queue',
+  progress: 0,
+  runStartedAt: 0,
+  switchedBecause: null,
 };
 
 /**
@@ -106,8 +126,18 @@ const KIND_SUMMARIES: Readonly<Record<Preset, { does: string; keeps: string }>> 
   rewrite: { does: 'Piše tekst iznova, slobodno, kao što bi ga prepričao drugi pisac.', keeps: 'Ostaje smisao, ali ne i tvoje reči.' },
 };
 
-/** Long enough to see the wait, short enough not to wait for. */
-const PRETEND_RUN_MS = 4000;
+/*
+  The wait, pretended, shortened so it can be watched: a short queue at Google, a long one (in the
+  app, longer than the limit below), thinking, then writing in ten steps. The limit stands for the
+  2 minutes in the queue after which a ticked request goes to the paid one.
+*/
+const PRETEND_QUEUE_MS = 2500;
+const PRETEND_LONG_QUEUE_MS = 20_000;
+const PRETEND_QUEUE_LIMIT_MS = 6000;
+const PRETEND_THINKING_MS = 1500;
+const PRETEND_WRITING_STEP_MS = 400;
+/** What the limit stands for in the app, said to him. */
+const QUEUE_LIMIT_WORDS = '2 minuta';
 
 /** When corrections just made were made: reads after "od" as well as on its own, which "upravo sad" doesn't. */
 const JUST_NOW = 'maločas';
@@ -118,6 +148,7 @@ let timers: number[] = [];
 function stopTimers(): void {
   for (const timer of timers) clearTimeout(timer);
   timers = [];
+  window.clearInterval(clockTimer);
 }
 
 /** Closing while it runs stops it: the wait is the window's, and nothing is kept from it. */
@@ -221,9 +252,37 @@ function readyDetail(preset: Preset): HTMLElement[] {
   ];
 }
 
-/** For the first two kinds, said rather than asked; for rework, the choice, with why paid is better. */
+/**
+ * Asked before sending, so a slow or busy free one can be handed to the paid one without a question
+ * minutes in. Ticking it is his own choice to pay, which is what makes acting on it later fair; and
+ * it is off each time the window opens, like every choice to pay.
+ */
+function paidIfSlowBox(): HTMLElement {
+  const box = el('label', 'lektor-preset');
+  const input = el('input');
+  input.type = 'checkbox';
+  input.checked = corrections.isPaidIfSlow;
+  input.addEventListener('change', () => {
+    corrections.isPaidIfSlow = input.checked;
+  });
+  box.append(input, choiceMark('paid'), el('span', '', 'Ako besplatni ne stigne brzo, pošalji plaćenom'));
+  // In a row of the choices' own make, so it is as big a target, with the same hover.
+  const row = el('div', 'lektor-choice-options');
+  row.append(box);
+  return row;
+}
+
+/** Whether a free request of this kind may be handed to the paid one, as he ticked. */
+function mayGoToPaid(preset: Preset): boolean {
+  return corrections.isPaidIfSlow && FALLS_BACK.has(preset) && keys.saved.paid;
+}
+
+/** For the first two kinds, said rather than asked, with the tick for a slow free one; for rework, the choice. */
 function lektorPart(preset: Preset): HTMLElement[] {
-  if (FALLS_BACK.has(preset)) return [serviceLine(lektorFor(preset))];
+  if (FALLS_BACK.has(preset)) {
+    const canSwitch = lektorFor(preset) === 'free' && keys.saved.paid;
+    return [serviceLine(lektorFor(preset)), ...(canSwitch ? [paidIfSlowBox()] : [])];
+  }
   return lektorChoice({
     group: 'lektor-window-level',
     chosen: lektorFor(preset),
@@ -288,27 +347,65 @@ function requestDetail(preset: Preset): HTMLElement[] {
 
 /* The right column, running and failed. */
 
-function runningClock(): HTMLElement {
-  const clock = el('p', 'lektor-window-clock', 'Radi već 0 s');
-  const started = Date.now();
-  const tick = (): void => {
-    clock.textContent = `Radi već ${Math.floor((Date.now() - started) / 1000)} s`;
-    timers.push(window.setTimeout(tick, 1000));
-  };
-  timers.push(window.setTimeout(tick, 1000));
-  return clock;
+/** His whole wait so far, from when he sent it, in minutes once it passes one. */
+function waitedWords(): string {
+  const seconds = Math.floor((Date.now() - corrections.runStartedAt) / 1000);
+  return seconds < 60 ? `Prošlo je ${seconds} s` : `Prošlo je ${Math.floor(seconds / 60)} min ${seconds % 60} s`;
+}
+
+let clockTimer: number | undefined;
+
+/** One clock for the whole wait, kept apart from the steps, so a redraw at each step doesn't restart it. */
+function startClock(): void {
+  window.clearInterval(clockTimer);
+  clockTimer = window.setInterval(() => {
+    const clock = document.querySelector('.lektor-window-clock');
+    if (clock !== null) clock.textContent = waitedWords();
+  }, 1000);
+}
+
+/**
+ * What it is doing, as the services' streams say: Google's free door sends only "still here" while
+ * the request waits its turn, then the thinking and the words; the paid one has no queue.
+ */
+const PHASE_WORDS: Readonly<Record<Phase, string>> = {
+  queue: 'Čeka u redu kod Gugla…',
+  thinking: 'Razmišlja…',
+  writing: 'Ispravlja tekst…',
+};
+
+/** How far the writing has got: the reply is about as long as his text, so its length says it. */
+function progressBlock(): HTMLElement[] {
+  if (corrections.phase !== 'writing') return [];
+  const bar = el('div', 'lektor-progress');
+  const filled = el('div', 'lektor-progress-done');
+  filled.style.width = `${corrections.progress}%`;
+  bar.append(filled);
+  return [bar, el('p', 'lektor-wait-note', `Ispravljeno oko ${corrections.progress}%`)];
+}
+
+/** What he should know about this wait: why it waits, what happens if it waits too long, or that the paid one took over. */
+function waitNotes(preset: Preset): HTMLElement[] {
+  if (corrections.switchedBecause !== null) {
+    const why = corrections.switchedBecause === 'queue' ? 'je predugo čekao u redu' : 'nije mogao, Gugl je zauzet';
+    return [el('p', 'lektor-fallback', `Besplatni ${why}, pa sada radi plaćeni, kako si izabrao.`)];
+  }
+  if (corrections.sentTo !== 'free') return [];
+  const notes: HTMLElement[] = [];
+  if (corrections.phase === 'queue') notes.push(el('p', 'lektor-wait-note', 'Besplatni čeka dok Gugl ne nađe mesta za njega.'));
+  if (corrections.phase === 'queue' && mayGoToPaid(preset)) notes.push(el('p', 'lektor-wait-note', `Ako ne krene za ${QUEUE_LIMIT_WORDS}, šalje se plaćenom.`));
+  if (state.isFreeBusy && corrections.phase !== 'queue') notes.push(el('p', 'lektor-fallback', 'Gugl je bio zauzet, pa ovo radi njegov brži model.'));
+  return notes;
 }
 
 function waitingDetail(preset: Preset): HTMLElement {
-  const isFree = corrections.sentTo === 'free';
-  const fellBack = isFree && state.isFreeBusy ? [el('p', 'lektor-fallback', 'Gugl je bio zauzet, pa ovo radi njegov brži model.')] : [];
   const big = el('div', 'lektor-window-big');
   big.append(
-    el('p', 'lektor-reading lektor-window-big-title', 'Ispravlja tekst…'),
+    el('p', 'lektor-reading lektor-window-big-title', PHASE_WORDS[corrections.phase]),
     el('p', 'lektor-window-big-kind', PRESET_NAMES[preset]),
-    runningClock(),
-    el('p', 'lektor-wait-note', isFree ? 'Obično traje oko minut.' : 'Može da potraje nekoliko minuta.'),
-    ...fellBack,
+    ...progressBlock(),
+    el('p', 'lektor-window-clock', waitedWords()),
+    ...waitNotes(preset),
     button('Prekini', () => {
       stopTimers();
       show('choosing');
@@ -373,23 +470,72 @@ function pretendFailure(preset: Preset, to: Choice): Failure | null {
 }
 
 function finishRun(preset: Preset, to: Choice): void {
+  stopTimers();
   corrections.kept[preset] = { ...corrections.kept[preset], [to]: { at: JUST_NOW, cost: pretendCost(preset, to) } };
   corrections.isAskingAgain = false;
   openReview(preset, to);
+}
+
+function writingStep(preset: Preset, to: Choice, step: number): void {
+  if (step > 10) {
+    finishRun(preset, to);
+    return;
+  }
+  corrections.phase = 'writing';
+  corrections.progress = step * 10;
+  show('waiting');
+  timers.push(window.setTimeout(() => writingStep(preset, to, step + 1), PRETEND_WRITING_STEP_MS));
+}
+
+function thinking(preset: Preset, to: Choice): void {
+  corrections.phase = 'thinking';
+  show('waiting');
+  timers.push(window.setTimeout(() => writingStep(preset, to, 0), PRETEND_THINKING_MS));
+}
+
+/** As he ticked: the same request to the paid one. Only from the queue, so no work is thrown away or paid twice. */
+function handToPaid(preset: Preset, because: 'queue' | 'busy'): void {
+  corrections.switchedBecause = because;
+  ask(preset, 'paid');
+}
+
+/** Free waits its turn at Google first; past the limit, a ticked request goes to the paid one instead. */
+function queued(preset: Preset): void {
+  corrections.phase = 'queue';
+  show('waiting');
+  const queueMs = state.isFreeQueueLong ? PRETEND_LONG_QUEUE_MS : PRETEND_QUEUE_MS;
+  if (mayGoToPaid(preset) && queueMs > PRETEND_QUEUE_LIMIT_MS) {
+    timers.push(window.setTimeout(() => handToPaid(preset, 'queue'), PRETEND_QUEUE_LIMIT_MS));
+    return;
+  }
+  timers.push(window.setTimeout(() => thinking(preset, 'free'), queueMs));
+}
+
+function ask(preset: Preset, to: Choice): void {
+  corrections.sentTo = to;
+  corrections.failure = pretendFailure(preset, to);
+  if (corrections.failure === 'busy' && to === 'free' && mayGoToPaid(preset)) {
+    handToPaid(preset, 'busy');
+    return;
+  }
+  if (corrections.failure !== null) {
+    stopTimers();
+    show('failed');
+    return;
+  }
+  if (to === 'free') queued(preset);
+  else thinking(preset, to);
 }
 
 function run(to: Choice): void {
   const preset = corrections.preset;
   if (preset === null) return;
   stopTimers();
-  corrections.sentTo = to;
-  corrections.failure = pretendFailure(preset, to);
-  if (corrections.failure !== null) {
-    show('failed');
-    return;
-  }
-  show('waiting');
-  timers.push(window.setTimeout(() => finishRun(preset, to), PRETEND_RUN_MS));
+  corrections.switchedBecause = null;
+  corrections.progress = 0;
+  corrections.runStartedAt = Date.now();
+  startClock();
+  ask(preset, to);
 }
 
 /* The window. */
@@ -475,23 +621,39 @@ export function openCorrectionsWindow(): void {
   corrections.failure = null;
   corrections.isAskingAgain = false;
   corrections.reworkChoice = 'free';
+  corrections.isPaidIfSlow = false;
   draw();
 }
 
 /** A state of the window the harness can open straight away, without sending and waiting for it. */
-export type WindowCase = 'waiting' | 'busy' | 'no-credit';
+export type WindowCase = 'waiting' | 'queued' | 'busy' | 'no-credit';
+
+/** A wait held still at one stage, until Prekini, so it can be looked at. */
+function holdWait(preset: Preset, to: Choice, phase: Phase): void {
+  corrections.preset = preset;
+  corrections.sentTo = to;
+  corrections.phase = phase;
+  corrections.progress = 40;
+  corrections.switchedBecause = null;
+  corrections.runStartedAt = Date.now();
+  startClock();
+  show('waiting');
+}
 
 /**
- * For the harness: the wait (Stilska dorada on paid, left running until Prekini), Google busy on
- * Slova i zarezi, or the paid account empty on Dubinska prerada.
+ * For the harness: the paid one writing Stilska dorada, or Slova i zarezi waiting in Google's free
+ * queue, each held there until Prekini; Google busy on Slova i zarezi; the paid account empty on
+ * Dubinska prerada.
  */
 export function openCorrectionsWindowAt(windowCase: WindowCase): void {
   openCorrectionsWindow();
   stopTimers();
   if (windowCase === 'waiting') {
-    corrections.preset = 'wording';
-    corrections.sentTo = 'paid';
-    show('waiting');
+    holdWait('wording', 'paid', 'writing');
+    return;
+  }
+  if (windowCase === 'queued') {
+    holdWait('letters', 'free', 'queue');
     return;
   }
   corrections.preset = windowCase === 'busy' ? 'letters' : 'rewrite';

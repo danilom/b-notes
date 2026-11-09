@@ -424,6 +424,21 @@
         font-variant-numeric: tabular-nums;
       }
 
+      /* New: how far the writing has got, a plain bar in the app's blue, as wide as a line of the notes. */
+      .lektor-progress {
+        width: min(18rem, 80%);
+        height: 0.5rem;
+        border-radius: 999px;
+        background: var(--line);
+        overflow: hidden;
+      }
+
+      .lektor-progress-done {
+        height: 100%;
+        background: var(--chosen);
+        transition: width 0.3s;
+      }
+
       .lektor-window-big .lektor-wait-note {
         color: var(--quiet);
       }
