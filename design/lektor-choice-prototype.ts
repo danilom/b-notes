@@ -11,7 +11,7 @@ import { icon } from '../src/ui/icons.ts';
 import { type WindowCase, corrections, openCorrectionsWindow, openCorrectionsWindowAt, redrawWindowIfOpen } from './lektor-corrections-window-prototype.ts';
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
-import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, button, el, element, recipient, sendButton, serviceLine, state } from './lektor-prototype-pieces.ts';
+import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, button, dollars, el, element, recipient, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
 
 type Screen = 'start' | 'response' | 'keys';
 
@@ -72,6 +72,7 @@ function startScreen(): Step {
   const send = sendButton(`Pošalji ceo tekst ${state.choice === 'free' ? 'Guglu' : 'OpenRouteru'}`, 'comment', () => {
     screen = 'response';
     commentBy = state.choice;
+    if (commentBy === 'paid') spend(COMMENT_COST_USD);
     isAboutAiOpen = false;
     render();
   }, 'status-action lektor-main-action');
@@ -102,6 +103,9 @@ const COMMENT = [
 
 /** Who wrote the comment shown. */
 let commentBy: Choice = state.choice;
+
+/** What a paid comment costs here: Opus wrote five for $0.25 in the measurement (2026-11-09). */
+const COMMENT_COST_USD = 0.05;
 
 /** Whether "AI može da pogreši" is opened to say what that means, as in the app. */
 let isAboutAiOpen = false;
@@ -150,7 +154,9 @@ function responseScreen(): Step {
   comment.append(el('span', 'lektor-response-end'));
   // Signed by who wrote it, which stays so when the Lektor is changed afterwards, here or in the window.
   const signed = serviceLine(commentBy);
-  signed.append(el('span', 'lektor-comment-when', ' · upravo sad'));
+  // A paid one's cost after when, as the corrections' cards have it: a fact once spent.
+  const cost = commentBy === 'paid' ? ` · ${dollars(COMMENT_COST_USD)}` : '';
+  signed.append(el('span', 'lektor-comment-when', ` · upravo sad${cost}`));
   const signature = el('div', 'lektor-comment-notes');
   signature.append(signed, ...aboutAi());
   // No arrow: like every button in the app that opens a window. The ellipsis is Windows' own sign, as on
@@ -183,6 +189,10 @@ function render(): void {
   close.append(icon('fold-down'));
   const title = el('div', 'lektor-side-title');
   title.append(icon('lektor'), el('span', '', TITLES[screen]), close);
+  // Redrawn in place on the same screen (opening "AI može da pogreši"), it keeps where he had scrolled to;
+  // a new screen starts at its top.
+  const keptScroll = screen === lastDrawnScreen ? (side.querySelector('.lektor-side-body')?.scrollTop ?? 0) : 0;
+  lastDrawnScreen = screen;
   const { content, main, back } = screenNow();
   const body = el('div', 'lektor-side-body');
   body.append(...content);
@@ -191,7 +201,10 @@ function render(): void {
   const dock = el('div', 'lektor-side-dock');
   dock.append(buttons);
   side.replaceChildren(title, body, dock);
+  body.scrollTop = keptScroll;
 }
+
+let lastDrawnScreen: Screen | null = null;
 
 /*
   The switches, for the harness to draw outside the screen: /his-screens?page=lektor-choice-prototype

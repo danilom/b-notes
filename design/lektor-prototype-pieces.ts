@@ -157,6 +157,15 @@ export function balanceLine(): HTMLElement[] {
   return [el('span', 'lektor-balance lektor-balance-low', `Na računu: ${dollars(state.balance)} (malo)`)];
 }
 
+/**
+ * What a paid run cost comes off the balance at once, as OpenRouter's reply states it, so "Na računu"
+ * is right the moment he is back; in the app a fresh read of the account follows to correct any lag.
+ */
+export function spend(cost: number | null): void {
+  if (cost === null || state.balance === null) return;
+  state.balance = Math.max(0, Math.round((state.balance - cost) * 100) / 100);
+}
+
 /** Who did or does it: the Lektor's mark and name, as the app's service line has them. */
 export function serviceLine(by: Choice = state.choice): HTMLElement {
   const line = el('p', 'lektor-service-line');

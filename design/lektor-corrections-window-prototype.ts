@@ -52,6 +52,7 @@ import {
   radio,
   sendButton,
   serviceLine,
+  spend,
   state,
 } from './lektor-prototype-pieces.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
@@ -302,8 +303,15 @@ function paidIfSlowBox(): HTMLElement {
   input.addEventListener('change', () => {
     corrections.isPaidIfSlow = input.checked;
   });
-  // The limit named, as the wait names it: a busy Google is covered too, as one that won't start in time.
-  box.append(input, choiceMark('paid'), el('span', '', `Ako besplatni ne krene za ${FREE_LIMIT_WORDS}, pošalji plaćenom lektoru`));
+  // A short name to tick, and under it in grey what it means: the limit, as the wait names it, and why
+  // paying is no great step here. No sum: a guess would be wrong as often as right, and on these kinds
+  // the paid one runs the same model as the free one, not the dearer one rework uses.
+  const words = el('span', 'lektor-check-words');
+  words.append(
+    el('span', '', 'Ako besplatni ne krene, pošalji plaćenom'),
+    el('span', 'lektor-check-why', `Posle ${FREE_LIMIT_WORDS} čekanja. Za ovu ispravku plaćeni koristi isti model kao besplatni, samo bez čekanja u redu.`),
+  );
+  box.append(input, choiceMark('paid'), words);
   // In a row of the choices' own make, so it is as big a target, with the same hover.
   const row = el('div', 'lektor-choice-options');
   row.append(box);
@@ -382,13 +390,32 @@ function sendRow(preset: Preset): HTMLElement {
   return row;
 }
 
+/**
+ * Whether the instruction sent to the AI is shown. Folded each time the window opens: it is in English
+ * and addressed to a machine, and the kind's description already says the same to him in Serbian; but
+ * whoever wants to see exactly what is sent can.
+ */
+let isPromptOpen = false;
+
+/** "▸ Uputstvo za AI", the usual sign: pointing right while folded, down while open. */
+function promptPart(preset: Preset): HTMLElement[] {
+  const toggle = el('button', 'lektor-prompt-toggle');
+  toggle.type = 'button';
+  toggle.setAttribute('aria-expanded', String(isPromptOpen));
+  toggle.append(el('span', 'lektor-prompt-arrow', isPromptOpen ? '▾' : '▸'), el('span', '', 'Uputstvo za AI'));
+  toggle.addEventListener('click', () => {
+    isPromptOpen = !isPromptOpen;
+    draw();
+  });
+  return isPromptOpen ? [toggle, el('p', 'lektor-prompt', PRESET_PROMPTS[preset])] : [toggle];
+}
+
 function requestDetail(preset: Preset): HTMLElement[] {
   return [
     el('p', 'lektor-window-kind-title', PRESET_NAMES[preset]),
     ...lektorPart(preset),
     ...lastCost(preset),
-    el('p', 'lektor-prompt-label', 'Uputstvo za AI Lektora:'),
-    el('p', 'lektor-prompt', PRESET_PROMPTS[preset]),
+    ...promptPart(preset),
     ...noteField(),
     sendRow(preset),
   ];
@@ -447,10 +474,14 @@ function stageWords(stage: Stage, isCurrent: boolean, before: Stage | undefined)
   return lektor + words[stage.phase][isCurrent ? 0 : 1];
 }
 
-/** A finished stage ticked, one given up or refused crossed, the current one turning. */
+/**
+ * A finished stage ticked, the current one turning, and one given up or refused a soft "!": not a
+ * cross, since the request is still on its way and nothing is asked of him; a cross reads as failure.
+ */
 function stageMark(stage: Stage, isCurrent: boolean): HTMLElement {
   if (isCurrent) return el('span', 'lektor-stage-mark lektor-reading');
-  return el('span', 'lektor-stage-mark', stage.isGivenUp || stage.phase === 'refused' ? '✗' : '✓');
+  if (stage.isGivenUp || stage.phase === 'refused') return el('span', 'lektor-stage-mark lektor-stage-mark-moved', '!');
+  return el('span', 'lektor-stage-mark', '✓');
 }
 
 /** How far the writing has got, under the stage it belongs to: the reply is about as long as his text, so its length says it. */
@@ -505,12 +536,14 @@ function stagesList(preset: Preset): HTMLElement {
   return list;
 }
 
-/** Which Lektor and model is working now: 3.6 named as the older one standing in, so he isn't led to think it's the same. */
+/**
+ * Which Lektor is working now, with no model's name (Danilo, 2026-11-10): the utisak never named one
+ * and is none the worse for it. That it is the older model, where it is, the stages already say.
+ */
 function modelLine(): HTMLElement[] {
   const now = corrections.stages.at(-1);
   if (now === undefined) return [];
-  const standIn = now.model === FREE_STAND_IN ? ' (stariji, rezervni)' : '';
-  return [el('p', 'lektor-wait-small', `${lektorName(now.by)} lektor · ${now.model}${standIn}`)];
+  return [el('p', 'lektor-wait-small', `${lektorName(now.by)} lektor`)];
 }
 
 /**
@@ -614,14 +647,6 @@ function startStage(phase: Phase, by: Choice, model: string): void {
   corrections.stages.push({ phase, by, model, startedAt: Date.now(), endedAt: null, isGivenUp: false });
 }
 
-/**
- * What a paid run cost comes off the balance at once, as OpenRouter's reply states it, so "Na računu"
- * is right the moment he is back; in the app a fresh read of the account follows to correct any lag.
- */
-function spend(cost: number | null): void {
-  if (cost === null || state.balance === null) return;
-  state.balance = Math.max(0, Math.round((state.balance - cost) * 100) / 100);
-}
 
 function finishRun(preset: Preset, to: Choice): void {
   stopTimers();
@@ -880,6 +905,7 @@ export function openCorrectionsWindow(): void {
   corrections.isAskingAgain = false;
   corrections.reworkChoice = 'free';
   corrections.isPaidIfSlow = paidIfSlowByDefault();
+  isPromptOpen = false;
   draw();
 }
 

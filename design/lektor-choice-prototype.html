@@ -347,6 +347,48 @@
         moves with it, and the column fits on his Asus even with the Lektor choice above it. None at
         the foot, as in the panel: a sliver of a fifth line would read as text cut off.
       */
+      /* New: "▸ Uputstvo za AI", folded until he opens it; a link-like line, not a button. */
+      .lektor-window-detail .lektor-prompt-toggle {
+        align-self: flex-start;
+        min-width: 0;
+        padding: 0.15rem 0;
+        display: flex;
+        gap: 0.35rem;
+        align-items: baseline;
+        border: none;
+        background: none;
+        font-size: var(--lektor-small);
+        color: var(--quiet);
+        cursor: pointer;
+      }
+
+      .lektor-window-detail .lektor-prompt-toggle:hover {
+        color: var(--chosen-ink);
+        text-decoration: underline;
+      }
+
+      .lektor-prompt-arrow {
+        display: inline-block;
+        width: 0.8em;
+      }
+
+      /* Pulled up to the line that opened it, as its contents rather than the next thing. */
+      .lektor-prompt-toggle[aria-expanded='true'] + .lektor-prompt {
+        margin-top: -0.3rem;
+      }
+
+      /* New: the tick box's short name, and what it means in grey under it, both part of the target. */
+      .lektor-check-words {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+      }
+
+      .lektor-check-why {
+        font-size: var(--lektor-small);
+        color: var(--quiet);
+      }
+
       .lektor-window-detail .lektor-prompt {
         flex: none;
         box-sizing: content-box;
@@ -597,6 +639,21 @@
         display: flex;
         justify-content: center;
         color: var(--chosen-ink);
+      }
+
+      /* New: a step given up or refused while the request goes on: a quiet "!" in a ring, not a cross. */
+      .lektor-stage-mark.lektor-stage-mark-moved {
+        justify-self: center;
+        align-self: center;
+        width: 1.05em;
+        height: 1.05em;
+        align-items: center;
+        border: 1.5px solid currentColor;
+        border-radius: 50%;
+        font-size: var(--lektor-small);
+        font-weight: 700;
+        line-height: 1;
+        color: var(--quiet);
       }
 
       .lektor-stage-time {
