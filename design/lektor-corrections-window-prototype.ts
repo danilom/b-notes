@@ -4,8 +4,10 @@
   text is held still, which is what thinking of corrections means anyway: the line between the
   panel and the window falls where the text stops being his to change, not midway through.
 
-  His text is on the right, read-only, so he sees what goes. The choices are on the left, as the
-  list is in Ranije verzije. Free or paid is chosen in the panel and only named here.
+  His text is not shown: read-only beside the choices it looked like the review, as if his
+  corrections were already there. Free or paid can be changed here too, but it is the panel's one
+  choice, not a second one: a failure here can offer the other Lektor, and he should see where
+  that changed.
 */
 import { titleOf } from '../src/ui/dialogs/dialog-heading.ts';
 import { type Shown, showAsModal } from '../src/ui/dialogs/modal.ts';
@@ -18,8 +20,8 @@ import {
   PRESET_PROMPTS,
   PRESETS,
   type Preset,
-  TEXT_PARAGRAPHS,
   TEXT_TITLE,
+  balanceLine,
   button,
   choiceMark,
   dollars,
@@ -30,9 +32,9 @@ import {
   radio,
   sendButton,
   sendTooltip,
-  serviceLine,
   state,
 } from './lektor-prototype-pieces.ts';
+import { keys } from './lektor-keys-prototype.ts';
 
 type View = 'choosing' | 'waiting' | 'failed' | 'review';
 type Failure = 'busy' | 'no-credit';
@@ -60,8 +62,8 @@ const PRETEND_RUN_MS = 4000;
 
 let shown: Shown | null = null;
 let timers: number[] = [];
-/** What the panel does when the window asks for the free Lektor, so the two stay one choice. */
-let chooseFreeInPanel: () => void = () => undefined;
+/** The panel's own way of choosing, so the panel and the window stay one choice. */
+let chooseInPanel: (choice: Choice) => void = () => undefined;
 
 function stopTimers(): void {
   for (const timer of timers) clearTimeout(timer);
@@ -74,13 +76,28 @@ function close(): void {
   shown = null;
 }
 
-/** His text, read-only: the same box the review draws it in. */
-function textPane(): HTMLElement {
-  const body = el('div', 'review-body lektor-body');
-  const text = el('div', 'review-text lektor-window-text');
-  text.append(el('p', 'lektor-window-title', TEXT_TITLE), ...TEXT_PARAGRAPHS.map((paragraph) => el('p', '', paragraph)));
-  body.append(text);
-  return body;
+/** Free or paid, as in the panel: greyed without a key, the balance under it, locked while it works. */
+function lektorOption(choice: Choice, isLocked: boolean): HTMLElement {
+  const option = radio('lektor-window-level', lektorName(choice), state.choice === choice, () => {
+    chooseInPanel(choice);
+    corrections.failure = null;
+    corrections.view = 'choosing';
+    draw();
+  }, choice);
+  const hasKey = keys.saved[choice];
+  if (!hasKey) {
+    option.classList.add('lektor-preset-unavailable');
+    option.title = 'Nije unet API ključ.';
+  }
+  const input = option.querySelector('input');
+  if (input !== null) input.disabled = isLocked || !hasKey;
+  return option;
+}
+
+function lektorChoice(isLocked: boolean): HTMLElement[] {
+  const row = el('div', 'lektor-choice-row');
+  row.append(lektorOption('free', isLocked), lektorOption('paid', isLocked));
+  return [el('p', 'lektor-heading', 'AI Lektor:'), row, ...balanceLine()];
 }
 
 /** A kind, with "sačuvano" after it where corrections of it are kept, so trying another loses nothing. */
@@ -149,7 +166,7 @@ function choicesColumn(): HTMLElement {
   const column = el('div', 'lektor-window-side');
   const status = corrections.view === 'waiting' ? [waitingBlock()] : corrections.view === 'failed' ? [failureBlock()] : [];
   column.append(
-    serviceLine(),
+    ...lektorChoice(isLocked),
     el('p', 'lektor-heading', 'Izaberi vrstu ispravke:'),
     ...PRESETS.map((preset) => kindOption(preset, isLocked)),
     el('p', 'lektor-prompt-label', 'Uputstvo za AI Lektora:'),
@@ -183,7 +200,7 @@ function run(): void {
 }
 
 function sendFree(): void {
-  chooseFreeInPanel();
+  chooseInPanel('free');
   run();
 }
 
@@ -238,7 +255,7 @@ function header(note: string): HTMLElement {
 
 function choosingPanel(): HTMLElement {
   const panes = el('div', 'review-panes');
-  panes.append(choicesColumn(), textPane());
+  panes.append(choicesColumn());
   const footNote = corrections.view === 'choosing' ? 'Videćeš predloge. Tekst se ne menja dok ih ne uneseš.' : '';
   return framed(header('Tvoj tekst se ne menja dok je ovaj prozor otvoren.'), panes, footer(choosingButtons(), footNote));
 }
@@ -285,8 +302,8 @@ function draw(): void {
 }
 
 /** Opens the window on choosing, as the app would from the panel's "Pređi na ispravke". */
-export function openCorrectionsWindow(onChooseFree: () => void): void {
-  chooseFreeInPanel = onChooseFree;
+export function openCorrectionsWindow(onChoose: (choice: Choice) => void): void {
+  chooseInPanel = onChoose;
   corrections.view = 'choosing';
   corrections.failure = null;
   draw();

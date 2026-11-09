@@ -10,36 +10,18 @@
 import { icon } from '../src/ui/icons.ts';
 import { corrections, openCorrectionsWindow } from './lektor-corrections-window-prototype.ts';
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
-import { TEXT_PARAGRAPHS, button, dollars, el, element, radio, recipient, sendButton, serviceLine, state } from './lektor-prototype-pieces.ts';
+import { type Choice, TEXT_PARAGRAPHS, balanceLine, button, el, element, radio, recipient, sendButton, serviceLine, state } from './lektor-prototype-pieces.ts';
 
 type Screen = 'start' | 'response' | 'keys';
 
 /** Said once on the first step after a key was saved and works, as the app does. */
 let isKeyJustSaved = false;
 
-/**
- * Under this the balance line says "malo" and turns red: the only warning about money. No cost is
- * estimated in advance: it is mostly the model's thinking, which varies, at prices that can change,
- * so a warning built on a guess would cry wolf or stay quiet. Nothing is blocked either: if the
- * money runs out, OpenRouter refuses and the window says so, with the way to the free one.
- */
-const LOW_BALANCE_USD = 1;
-
 let screen: Screen = 'start';
 
 function choose(choice: 'free' | 'paid'): void {
   state.choice = choice;
   render();
-}
-
-/**
- * Nothing when the balance can't be read: that is OpenRouter's balance lookup failing for a
- * moment while sending still works, and "unknown" would read as trouble with his money.
- */
-function balanceLine(): HTMLElement[] {
-  if (state.balance === null) return [];
-  if (state.balance >= LOW_BALANCE_USD) return [el('p', 'lektor-balance', `Na računu: ${dollars(state.balance)}`)];
-  return [el('p', 'lektor-balance lektor-balance-low', `Na računu: ${dollars(state.balance)} (malo)`)];
 }
 
 /** The two choices, and beside them on Besplatni's line the way to the keys, which decide which he can choose. */
@@ -101,6 +83,7 @@ interface Step {
 function startScreen(): Step {
   const send = sendButton(`Pošalji ceo tekst ${state.choice === 'free' ? 'Guglu' : 'OpenRouteru'}`, 'comment', () => {
     screen = 'response';
+    commentBy = state.choice;
     isAboutAiOpen = false;
     render();
   }, 'status-action lektor-main-action');
@@ -128,6 +111,9 @@ const COMMENT = [
   'Zastao sam kod „Dugo smo ćutali; ponekad je tišina bolja od priče.” Prva polovina je dovoljna. Druga objašnjava ono što je prizor već pokazao, i malo ga razvodnjava. Poželio sam i nešto više o pripovjedaču: ko je on djedu, i zašto ostaje na obali kad djed ode.',
   'U cjelini, ovo je miran, tačan zapis jednog jutra, sa dobrim osjećajem za mjesto i za ljude koji u njemu žive. Kraj, sa vodom koja mijenja boju, lijepo zaokružuje ono što je počelo mirisom soli i kafe.',
 ].join('\n\n');
+
+/** Who wrote the comment shown. */
+let commentBy: Choice = state.choice;
 
 /** Whether "AI može da pogreši" is opened to say what that means, as in the app. */
 let isAboutAiOpen = false;
@@ -171,13 +157,14 @@ function responseScreen(): Step {
   head.append(...staleNote(), again);
   const comment = el('div', 'lektor-response', COMMENT);
   comment.append(el('span', 'lektor-response-end'));
-  const signed = serviceLine();
+  // Signed by who wrote it, which stays so when the Lektor is changed afterwards, here or in the window.
+  const signed = serviceLine(commentBy);
   signed.append(el('span', 'lektor-comment-when', ' · upravo sad'));
   const signature = el('div', 'lektor-comment-notes');
   signature.append(signed, ...aboutAi());
   // No arrow: like every button in the app that opens a window. The ellipsis is Windows' own sign, as on
   // "Print…", that a window will ask more before anything happens: the window is a step, not a send.
-  const toCorrections = button('Pređi na ispravke…', () => openCorrectionsWindow(() => choose('free')), 'status-action lektor-main-action');
+  const toCorrections = button('Pređi na ispravke…', () => openCorrectionsWindow(choose), 'status-action lektor-main-action');
   return { content: [head, comment, signature], main: toCorrections };
 }
 

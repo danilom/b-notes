@@ -7,7 +7,7 @@
     <!--
       The Lektor as it could be once paid goes through OpenRouter with a model for each kind of
       correction: the panel for choosing free or paid and reading the comment, and one modal window
-      for all of the corrections, from choosing the kind to the review. Nothing real behind it:
+      for all of the corrections, from choosing the Lektor and the kind to the review. Nothing real behind it:
       switches above the panel set each case. The text in it is made up: this file is public.
 
       Not part of the app: served by scripts/serve.mjs at /lektor-choice-prototype, and its script
@@ -160,10 +160,9 @@
         margin: 0;
       }
 
-      /* New: the corrections window. Choices on the left, as the list in Ranije verzije; his text on the right, read-only. */
+      /* New: the corrections window, the choices only. The window keeps the review's size, so it doesn't jump when the review comes. */
       .lektor-window-side {
-        flex: none;
-        width: 19rem;
+        flex: 1;
         display: flex;
         flex-direction: column;
         gap: 0.6rem;
@@ -182,14 +181,6 @@
       .lektor-window-side .lektor-prompt {
         max-height: 7em;
         overflow-y: auto;
-      }
-
-      .lektor-window-text {
-        user-select: text;
-      }
-
-      .lektor-window-title {
-        font-weight: 600;
       }
 
       /* New: the main button in a strip of its own at the panel's foot, always in view, with what scrolls above it. */

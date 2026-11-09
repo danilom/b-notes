@@ -123,10 +123,29 @@ export function radio(name: string, label: string, checked: boolean, onChange: (
   return made;
 }
 
+/**
+ * Under this the balance line says "malo" and turns red: the only warning about money. No cost is
+ * estimated in advance: it is mostly the model's thinking, which varies, at prices that can change,
+ * so a warning built on a guess would cry wolf or stay quiet. Nothing is blocked either: if the
+ * money runs out, OpenRouter refuses and the window says so, with the way to the free one.
+ */
+const LOW_BALANCE_USD = 1;
+
+/**
+ * Under the choice, in the panel and in the window alike. Nothing when the balance can't be read:
+ * that is OpenRouter's balance lookup failing for a moment while sending still works, and
+ * "unknown" would read as trouble with his money.
+ */
+export function balanceLine(): HTMLElement[] {
+  if (state.balance === null) return [];
+  if (state.balance >= LOW_BALANCE_USD) return [el('p', 'lektor-balance', `Na računu: ${dollars(state.balance)}`)];
+  return [el('p', 'lektor-balance lektor-balance-low', `Na računu: ${dollars(state.balance)} (malo)`)];
+}
+
 /** Who did or does it: the Lektor's mark and name, as the app's service line has them. */
-export function serviceLine(extra = ''): HTMLElement {
+export function serviceLine(by: Choice = state.choice): HTMLElement {
   const line = el('p', 'lektor-service-line');
-  line.append(el('span', '', 'AI Lektor:'), ' ', choiceMark(), el('span', '', `${lektorName()}${extra}`));
+  line.append(el('span', '', 'AI Lektor:'), ' ', choiceMark(by), el('span', '', lektorName(by)));
   return line;
 }
 
