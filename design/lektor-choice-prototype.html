@@ -529,6 +529,15 @@
         margin-top: 0.5rem;
       }
 
+      /*
+        A header with only the title (the review): the ✕, taller than the title, would hold the header
+        open below it; centred on the title and overhanging, it leaves the title's own height.
+      */
+      .lektor-window header:not(:has(.review-note)) .close {
+        align-self: center;
+        margin-block: -0.4rem;
+      }
+
       /* What sending does, in small print on its own line just over the buttons, so they keep their one line. */
       .lektor-window-actions:has(.lektor-send-note) {
         flex-wrap: wrap;
