@@ -95,15 +95,33 @@
         --lektor-after-radio: calc(var(--lektor-radio) + 0.4rem);
       }
 
+      /* As wide as the column in the window, as it stretches there; in the panel up to the keys button beside it. */
+      .lektor-choice-with-keys > .lektor-choice-options {
+        flex: 1;
+      }
+
       .lektor-choice-options {
         display: flex;
         flex-direction: column;
-        gap: 0.35rem;
         padding-left: var(--lektor-radio-indent);
       }
 
-      .lektor-choice-options .lektor-preset {
-        margin: 0;
+      /*
+        New: each choice a target about as tall as a button and as wide as its column, for an old
+        man's hand: the space between the rows is the rows' own padding, so all of it can be clicked.
+      */
+      .lektor-choice-options .lektor-preset,
+      .lektor-kind .lektor-preset {
+        /* A little room at the left, taken back by the margin, so the hover's tint doesn't cut into the radio. */
+        margin: 0 0 0 -0.35rem;
+        padding: 0.4rem 0.35rem;
+        border-radius: 4px;
+      }
+
+      /* The app's own hover, the wash a row of his list gets, so the whole target shows; not on one that can't be chosen. */
+      .lektor-choice-options .lektor-preset:has(input:enabled):hover,
+      .lektor-kind .lektor-preset:has(input:enabled):hover {
+        background-image: linear-gradient(var(--wash), var(--wash));
       }
 
       .lektor-choice-with-keys .lektor-again {
@@ -113,7 +131,8 @@
       /* New: the balance, small and quiet, under the paid choice. */
       .lektor-balance {
         /* Under the marks, a column with them. */
-        margin: -0.2rem 0 0 calc(var(--lektor-radio-indent) + var(--lektor-after-radio));
+        /* Up into the last choice's padding, so it stays with the choices rather than floating below. */
+        margin: -0.5rem 0 0 calc(var(--lektor-radio-indent) + var(--lektor-after-radio));
         font-size: 0.85rem;
         color: var(--quiet);
       }
@@ -193,12 +212,10 @@
         margin: 0;
       }
 
-      .lektor-window-side > .lektor-kind + .lektor-kind {
-        margin-top: -0.3rem;
-      }
-
-      /* Set in like the Lektor choice above them, so the window's two groups of radios look alike. */
-      .lektor-window-side > .lektor-kind {
+      /* The kinds in a list of their own, spaced only by their padding; set in like the Lektor choice, so the window's two groups of radios look alike. */
+      .lektor-kind-list {
+        display: flex;
+        flex-direction: column;
         padding-left: var(--lektor-radio-indent);
       }
 
@@ -217,7 +234,8 @@
         display: flex;
         align-items: center;
         gap: 0.3em;
-        margin: -0.1rem 0 0 var(--lektor-after-radio);
+        /* Up into its kind's padding, so it reads as that kind's. */
+        margin: -0.45rem 0 0.2rem var(--lektor-after-radio);
         font-size: 0.85rem;
         color: var(--quiet);
       }

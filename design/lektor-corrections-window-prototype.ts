@@ -128,11 +128,13 @@ function kindOption(preset: Preset, isLocked: boolean): HTMLElement {
 /** The left column: his two decisions, locked while a request runs. */
 function choicesColumn(): HTMLElement {
   const isLocked = corrections.view === 'waiting';
+  const kinds = el('div', 'lektor-kind-list');
+  kinds.append(...PRESETS.map((preset) => kindOption(preset, isLocked)));
   const column = el('div', 'lektor-window-side');
   column.append(
     ...lektorChoice({ group: 'lektor-window-level', choose: chooseHere, isLocked }),
     el('p', 'lektor-heading', 'Izaberi vrstu ispravke:'),
-    ...PRESETS.map((preset) => kindOption(preset, isLocked)),
+    kinds,
   );
   return column;
 }
