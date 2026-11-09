@@ -362,6 +362,8 @@
       /* New: "▸ Uputstvo za AI", folded until he opens it; a link-like line, not a button. */
       .lektor-window-detail .lektor-prompt-toggle {
         align-self: flex-start;
+        /* Down by the send button, as small print is, rather than up among what he chooses: it seldom matters. */
+        margin-top: auto;
         min-width: 0;
         padding: 0.15rem 0;
         display: flex;
@@ -392,6 +394,11 @@
         flex-direction: column;
         gap: 0.25rem;
         border-left: 2px solid var(--line);
+      }
+
+      /* The fold has taken the free space above it, so the send row follows at the column's own gap. */
+      .lektor-prompt-toggle ~ .lektor-window-actions {
+        margin-top: 0;
       }
 
       /* The instruction is a paragraph: without its own margins, so it sits under its label as his box does under his. */

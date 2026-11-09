@@ -308,8 +308,9 @@ function paidIfSlowBox(): HTMLElement {
   // the paid one runs the same model as the free one, not the dearer one rework uses.
   const words = el('span', 'lektor-check-words');
   words.append(
-    el('span', '', 'Ako besplatni ne krene, pošalji plaćenom lektoru'),
-    el('span', 'lektor-check-why', `Besplatni lektor je često spor. Ako ne krene za ${FREE_LIMIT_WORDS}, zahtev ide jeftinom plaćenom lektoru, da ne čekaš.`),
+    // What happens in his own word, "spor", rather than ours of a queue that won't start; then when, and why it's no great step.
+    el('span', '', 'Ako je besplatni spor, pošalji plaćenom lektoru'),
+    el('span', 'lektor-check-why', `Posle ${FREE_LIMIT_WORDS} čekanja. Za ovu vrstu ispravke plaćeni je jeftin.`),
   );
   box.append(input, choiceMark('paid'), words);
   // In a row of the choices' own make, so it is as big a target, with the same hover.
