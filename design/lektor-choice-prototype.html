@@ -446,6 +446,24 @@
         color: var(--ink);
       }
 
+      /* One column, one left edge, narrow enough that each stage's time sits near its words. */
+      .lektor-wait-column {
+        width: min(22rem, 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        text-align: left;
+      }
+
+      .lektor-wait-column > * {
+        margin: 0;
+      }
+
+      .lektor-wait-column .lektor-stages {
+        width: 100%;
+      }
+
       .lektor-window-clock {
         font-size: 2rem;
         font-variant-numeric: tabular-nums;

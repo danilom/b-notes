@@ -466,8 +466,10 @@ function queueNote(preset: Preset): HTMLElement[] {
  * big as the one thing to glance at, the model and notes in small grey.
  */
 function waitingDetail(preset: Preset): HTMLElement {
-  const big = el('div', 'lektor-window-big lektor-window-wait');
-  big.append(
+  // One column with one left edge, in the middle of the right side: read top to bottom like a list,
+  // and starting where the form he just sent from started.
+  const column = el('div', 'lektor-wait-column');
+  column.append(
     el('p', 'lektor-heading', TEXT_TITLE),
     el('p', '', `Vrsta ispravke: ${PRESET_NAMES[preset]}`),
     stagesList(),
@@ -479,6 +481,8 @@ function waitingDetail(preset: Preset): HTMLElement {
       show('choosing');
     }, ''),
   );
+  const big = el('div', 'lektor-window-big lektor-window-wait');
+  big.append(column);
   return big;
 }
 
