@@ -21,7 +21,6 @@ import {
   PRESETS,
   type Preset,
   TEXT_TITLE,
-  balanceLine,
   button,
   choiceMark,
   dollars,
@@ -34,7 +33,7 @@ import {
   sendTooltip,
   state,
 } from './lektor-prototype-pieces.ts';
-import { keys } from './lektor-keys-prototype.ts';
+import { lektorChoice } from './lektor-choice-radios.ts';
 
 type View = 'choosing' | 'waiting' | 'failed' | 'review';
 type Failure = 'busy' | 'no-credit';
@@ -64,6 +63,7 @@ let shown: Shown | null = null;
 let timers: number[] = [];
 /** The panel's own way of choosing, so the panel and the window stay one choice. */
 let chooseInPanel: (choice: Choice) => void = () => undefined;
+let openKeysInPanel: () => void = () => undefined;
 
 function stopTimers(): void {
   for (const timer of timers) clearTimeout(timer);
@@ -76,28 +76,18 @@ function close(): void {
   shown = null;
 }
 
-/** Free or paid, as in the panel: greyed without a key, the balance under it, locked while it works. */
-function lektorOption(choice: Choice, isLocked: boolean): HTMLElement {
-  const option = radio('lektor-window-level', lektorName(choice), state.choice === choice, () => {
-    chooseInPanel(choice);
-    corrections.failure = null;
-    corrections.view = 'choosing';
-    draw();
-  }, choice);
-  const hasKey = keys.saved[choice];
-  if (!hasKey) {
-    option.classList.add('lektor-preset-unavailable');
-    option.title = 'Nije unet API ključ.';
-  }
-  const input = option.querySelector('input');
-  if (input !== null) input.disabled = isLocked || !hasKey;
-  return option;
+/** A different Lektor starts afresh: whatever failed was the other one's. */
+function chooseHere(choice: Choice): void {
+  chooseInPanel(choice);
+  corrections.failure = null;
+  corrections.view = 'choosing';
+  draw();
 }
 
-function lektorChoice(isLocked: boolean): HTMLElement[] {
-  const row = el('div', 'lektor-choice-row');
-  row.append(lektorOption('free', isLocked), lektorOption('paid', isLocked));
-  return [el('p', 'lektor-heading', 'AI Lektor:'), row, ...balanceLine()];
+/** The keys are entered in the panel, so the window closes for them. */
+function keysFromHere(): void {
+  close();
+  openKeysInPanel();
 }
 
 /** A kind, with "sačuvano" after it where corrections of it are kept, so trying another loses nothing. */
@@ -166,7 +156,7 @@ function choicesColumn(): HTMLElement {
   const column = el('div', 'lektor-window-side');
   const status = corrections.view === 'waiting' ? [waitingBlock()] : corrections.view === 'failed' ? [failureBlock()] : [];
   column.append(
-    ...lektorChoice(isLocked),
+    ...lektorChoice({ group: 'lektor-window-level', choose: chooseHere, openKeys: keysFromHere, isLocked }),
     el('p', 'lektor-heading', 'Izaberi vrstu ispravke:'),
     ...PRESETS.map((preset) => kindOption(preset, isLocked)),
     el('p', 'lektor-prompt-label', 'Uputstvo za AI Lektora:'),
@@ -302,8 +292,9 @@ function draw(): void {
 }
 
 /** Opens the window on choosing, as the app would from the panel's "Pređi na ispravke". */
-export function openCorrectionsWindow(onChoose: (choice: Choice) => void): void {
+export function openCorrectionsWindow(onChoose: (choice: Choice) => void, onOpenKeys: () => void): void {
   chooseInPanel = onChoose;
+  openKeysInPanel = onOpenKeys;
   corrections.view = 'choosing';
   corrections.failure = null;
   draw();

@@ -10,7 +10,8 @@
 import { icon } from '../src/ui/icons.ts';
 import { corrections, openCorrectionsWindow } from './lektor-corrections-window-prototype.ts';
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
-import { type Choice, TEXT_PARAGRAPHS, balanceLine, button, el, element, radio, recipient, sendButton, serviceLine, state } from './lektor-prototype-pieces.ts';
+import { lektorChoice } from './lektor-choice-radios.ts';
+import { type Choice, TEXT_PARAGRAPHS, button, el, element, recipient, sendButton, serviceLine, state } from './lektor-prototype-pieces.ts';
 
 type Screen = 'start' | 'response' | 'keys';
 
@@ -24,28 +25,9 @@ function choose(choice: 'free' | 'paid'): void {
   render();
 }
 
-/** The two choices, and beside them on Besplatni's line the way to the keys, which decide which he can choose. */
-function choicesWithKeys(): HTMLElement {
-  const options = el('div', 'lektor-choice-options');
-  options.append(levelOption('free', 'Besplatni'), levelOption('paid', 'Plaćeni'));
-  const toKeys = button('API ključevi', () => {
-    screen = 'keys';
-    render();
-  }, 'lektor-again');
-  const row = el('div', 'lektor-choice-with-keys');
-  row.append(options, toKeys);
-  return row;
-}
-
-/** A choice whose key hasn't been entered is greyed, with the reason on hovering, as in the app. */
-function levelOption(choice: 'free' | 'paid', name: string): HTMLElement {
-  const option = radio('lektor-level', name, state.choice === choice, () => choose(choice), choice);
-  if (keys.saved[choice]) return option;
-  option.classList.add('lektor-preset-unavailable');
-  option.title = 'Nije unet API ključ.';
-  const input = option.querySelector('input');
-  if (input !== null) input.disabled = true;
-  return option;
+function openKeys(): void {
+  screen = 'keys';
+  render();
 }
 
 /** One key is enough: on a choice without one he moves to the other, as the app does. */
@@ -93,9 +75,7 @@ function startScreen(): Step {
     content: [
       ...saved,
       el('p', 'lektor-line', 'AI Lektor čita tvoj tekst, kaže šta misli i, ako želiš, predlaže ispravke.'),
-      el('p', 'lektor-heading', 'Izaberi AI Lektora:'),
-      choicesWithKeys(),
-      ...balanceLine(),
+      ...lektorChoice({ group: 'lektor-level', choose, openKeys }),
       // Small: it explains the choice, it isn't what he came for.
       el('p', 'lektor-where', 'Za slova, zareze i gramatiku oba su ista. Plaćeni je bolji za stil i dubinsku preradu, a radi i kad besplatni ne može.'),
       // Last above the strip, so it is next to the button it is about.
@@ -164,7 +144,7 @@ function responseScreen(): Step {
   signature.append(signed, ...aboutAi());
   // No arrow: like every button in the app that opens a window. The ellipsis is Windows' own sign, as on
   // "Print…", that a window will ask more before anything happens: the window is a step, not a send.
-  const toCorrections = button('Pređi na ispravke…', () => openCorrectionsWindow(choose), 'status-action lektor-main-action');
+  const toCorrections = button('Pređi na ispravke…', () => openCorrectionsWindow(choose, openKeys), 'status-action lektor-main-action');
   return { content: [head, comment, signature], main: toCorrections };
 }
 
