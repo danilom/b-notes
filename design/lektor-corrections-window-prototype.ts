@@ -87,17 +87,30 @@ interface WindowState {
    * so it can go ahead without asking him minutes in. Off each time the window opens.
    */
   isPaidIfSlow: boolean;
-  /** Where the request running is, as the services' streams tell it: queued at Google, thinking, writing. */
-  phase: Phase;
+  /** The stages of the request running, as the services' streams tell them, the last one the current one. */
+  stages: Stage[];
   /** How far the writing has got, by its length against his text's. */
   progress: number;
   /** When he sent it, so the clock counts his whole wait, across a switch to the paid one. */
   runStartedAt: number;
-  /** Why the paid one took over, as he had ticked; null when it didn't. */
-  switchedBecause: 'queue' | 'busy' | null;
 }
 
-type Phase = 'queue' | 'thinking' | 'writing';
+/**
+ * A stage of the wait: queued at Google (free only), refused by a busy Google, thinking, writing.
+ * Each says how long it took once over, so a long queue reads as the queue's, not as the work's.
+ */
+type Phase = 'queue' | 'refused' | 'thinking' | 'writing';
+
+interface Stage {
+  phase: Phase;
+  by: Choice;
+  /** The model doing it: on free, 3.6 when Google turned 3.8 away as busy. */
+  model: string;
+  startedAt: number;
+  endedAt: number | null;
+  /** Left for the paid one, as he had ticked. */
+  isGivenUp: boolean;
+}
 
 export const corrections: WindowState = {
   view: 'choosing',
@@ -110,10 +123,9 @@ export const corrections: WindowState = {
   reworkChoice: 'free',
   sentTo: 'free',
   isPaidIfSlow: false,
-  phase: 'queue',
+  stages: [],
   progress: 0,
   runStartedAt: 0,
-  switchedBecause: null,
 };
 
 /**
@@ -378,48 +390,90 @@ function startClock(): void {
   }, 1000);
 }
 
-/**
- * What it is doing, as the services' streams say: Google's free door sends only "still here" while
- * the request waits its turn, then the thinking and the words; the paid one has no queue.
- */
-const PHASE_WORDS: Readonly<Record<Phase, string>> = {
-  queue: 'Čeka u redu kod Gugla…',
-  thinking: 'Razmišlja…',
-  writing: 'Ispravlja tekst…',
-};
+/** How long a finished stage took, as he'd say it. */
+function durationWords(ms: number): string {
+  const seconds = Math.max(1, Math.round(ms / 1000));
+  return seconds < 60 ? `${seconds} s` : `${Math.floor(seconds / 60)} min ${seconds % 60} s`;
+}
 
-/** How far the writing has got: the reply is about as long as his text, so its length says it. */
-function progressBlock(): HTMLElement[] {
-  if (corrections.phase !== 'writing') return [];
+/** Who is doing it, by the maker of the model: the company, not the Lektor, since that is who has his text. */
+const aiName = (model: string): string => (model.startsWith('claude') ? 'Claude AI' : 'Google AI');
+
+/**
+ * What a stage is, said as going on while it does and as done after: the free door sends only "still
+ * here" while the request waits its turn at Google, then the thinking and the words; paid has no queue.
+ * The first stage of the other Lektor names it, so a switch shows.
+ */
+function stageWords(stage: Stage, isCurrent: boolean, before: Stage | undefined): string {
+  const lektor = before !== undefined && before.by !== stage.by ? `${lektorName(stage.by)} lektor: ` : '';
+  const ai = aiName(stage.model);
+  const words: Readonly<Record<Phase, [string, string]>> = {
+    queue: ['Zahtev čeka u redu kod Gugla…', 'Zahtev je čekao u redu kod Gugla'],
+    refused: ['Gugl je zauzet i nije primio zahtev', 'Gugl je zauzet i nije primio zahtev'],
+    thinking: [`${ai} razmišlja…`, `${ai} je razmislio`],
+    writing: [`${ai} ispravlja tekst…`, `${ai} je ispravio tekst`],
+  };
+  return lektor + words[stage.phase][isCurrent ? 0 : 1];
+}
+
+/** A finished stage ticked, one given up or refused crossed, the current one turning. */
+function stageMark(stage: Stage, isCurrent: boolean): HTMLElement {
+  if (isCurrent) return el('span', 'lektor-stage-mark lektor-reading');
+  return el('span', 'lektor-stage-mark', stage.isGivenUp || stage.phase === 'refused' ? '✗' : '✓');
+}
+
+/** How far the writing has got, under the stage it belongs to: the reply is about as long as his text, so its length says it. */
+function progressRow(): HTMLElement {
   const bar = el('div', 'lektor-progress');
   const filled = el('div', 'lektor-progress-done');
   filled.style.width = `${corrections.progress}%`;
   bar.append(filled);
-  return [bar, el('p', 'lektor-wait-note', `Ispravljeno oko ${corrections.progress}%`)];
+  const row = el('div', 'lektor-stage-progress');
+  row.append(bar, el('span', 'lektor-stage-time', `${corrections.progress}%`));
+  return row;
 }
 
-/** What he should know about this wait: why it waits, what happens if it waits too long, or that the paid one took over. */
-function waitNotes(preset: Preset): HTMLElement[] {
-  if (corrections.switchedBecause !== null) {
-    const why = corrections.switchedBecause === 'queue' ? 'je predugo čekao u redu' : 'nije mogao, Gugl je zauzet';
-    return [el('p', 'lektor-fallback', `Besplatni ${why}, pa sada radi plaćeni, kako si izabrao.`)];
-  }
-  if (corrections.sentTo !== 'free') return [];
-  const notes: HTMLElement[] = [];
-  if (corrections.phase === 'queue') notes.push(el('p', 'lektor-wait-note', 'Besplatni čeka dok Gugl ne nađe mesta za njega.'));
-  if (corrections.phase === 'queue' && mayGoToPaid(preset)) notes.push(el('p', 'lektor-wait-note', `Ako ne krene za ${QUEUE_LIMIT_WORDS}, šalje se plaćenom.`));
-  if (state.isFreeBusy && corrections.phase !== 'queue') notes.push(el('p', 'lektor-fallback', 'Gugl je bio zauzet, pa ovo radi njegov brži model.'));
-  return notes;
+function stagesList(): HTMLElement {
+  const list = el('div', 'lektor-stages');
+  corrections.stages.forEach((stage, index) => {
+    const isCurrent = stage.endedAt === null;
+    const row = el('div', 'lektor-stage');
+    const took = stage.endedAt === null || stage.phase === 'refused' ? '' : durationWords(stage.endedAt - stage.startedAt);
+    row.append(stageMark(stage, isCurrent), el('span', '', stageWords(stage, isCurrent, corrections.stages[index - 1])), el('span', 'lektor-stage-time', took));
+    list.append(row);
+    if (isCurrent && stage.phase === 'writing') list.append(progressRow());
+  });
+  return list;
 }
 
+/** Which Lektor and model is working now: 3.6 named as the older one standing in, so he isn't led to think it's the same. */
+function modelLine(): HTMLElement[] {
+  const now = corrections.stages.at(-1);
+  if (now === undefined) return [];
+  const standIn = now.model === 'gemini-3.6-flash' ? ' (stariji, rezervni: Gugl je bio zauzet)' : '';
+  return [el('p', 'lektor-wait-small', `${lektorName(now.by)} lektor · ${now.model}${standIn}`)];
+}
+
+/** While it waits its turn: why, and what happens if it waits too long and he ticked for that. */
+function queueNote(preset: Preset): HTMLElement[] {
+  if (corrections.stages.at(-1)?.phase !== 'queue') return [];
+  const after = mayGoToPaid(preset) ? ` Ako ne krene za ${QUEUE_LIMIT_WORDS}, šalje se plaćenom.` : '';
+  return [el('p', 'lektor-wait-small', `Besplatni lektor: zahtev čeka kod Gugla dok ne dođe na red. Ovo traje nekoliko minuta.${after}`)];
+}
+
+/**
+ * The wait, in four styles: the text's name in bold, the kind and the stages as words, the clock
+ * big as the one thing to glance at, the model and notes in small grey.
+ */
 function waitingDetail(preset: Preset): HTMLElement {
-  const big = el('div', 'lektor-window-big');
+  const big = el('div', 'lektor-window-big lektor-window-wait');
   big.append(
-    el('p', 'lektor-reading lektor-window-big-title', PHASE_WORDS[corrections.phase]),
-    el('p', 'lektor-window-big-kind', PRESET_NAMES[preset]),
-    ...progressBlock(),
+    el('p', 'lektor-heading', TEXT_TITLE),
+    el('p', '', `Vrsta ispravke: ${PRESET_NAMES[preset]}`),
+    stagesList(),
     el('p', 'lektor-window-clock', waitedWords()),
-    ...waitNotes(preset),
+    ...modelLine(),
+    ...queueNote(preset),
     button('Prekini', () => {
       stopTimers();
       show('choosing');
@@ -483,8 +537,25 @@ function pretendFailure(preset: Preset, to: Choice): Failure | null {
   return FALLS_BACK.has(preset) && !state.isFallbackBusy ? null : 'busy';
 }
 
+/** The model a request of this kind runs on: on free, 3.6 when Google turns 3.8 away as busy and the kind allows it. */
+function modelFor(preset: Preset, to: Choice): string {
+  if (to === 'free' && FALLS_BACK.has(preset) && state.isFreeBusy) return 'gemini-3.6-flash';
+  return MODELS[to][preset];
+}
+
+function endStage(): void {
+  const current = corrections.stages.at(-1);
+  if (current !== undefined && current.endedAt === null) current.endedAt = Date.now();
+}
+
+function startStage(phase: Phase, by: Choice, model: string): void {
+  endStage();
+  corrections.stages.push({ phase, by, model, startedAt: Date.now(), endedAt: null, isGivenUp: false });
+}
+
 function finishRun(preset: Preset, to: Choice): void {
   stopTimers();
+  endStage();
   corrections.kept[preset] = { ...corrections.kept[preset], [to]: { at: JUST_NOW, cost: pretendCost(preset, to) } };
   corrections.isAskingAgain = false;
   openReview(preset, to);
@@ -495,27 +566,31 @@ function writingStep(preset: Preset, to: Choice, step: number): void {
     finishRun(preset, to);
     return;
   }
-  corrections.phase = 'writing';
+  if (step === 0) startStage('writing', to, modelFor(preset, to));
   corrections.progress = step * 10;
   show('waiting');
   timers.push(window.setTimeout(() => writingStep(preset, to, step + 1), times().writingStepMs));
 }
 
 function thinking(preset: Preset, to: Choice): void {
-  corrections.phase = 'thinking';
+  startStage('thinking', to, modelFor(preset, to));
   show('waiting');
   timers.push(window.setTimeout(() => writingStep(preset, to, 0), times().thinkingMs));
 }
 
 /** As he ticked: the same request to the paid one. Only from the queue, so no work is thrown away or paid twice. */
 function handToPaid(preset: Preset, because: 'queue' | 'busy'): void {
-  corrections.switchedBecause = because;
+  const now = Date.now();
+  if (because === 'busy') corrections.stages.push({ phase: 'refused', by: 'free', model: MODELS.free[preset], startedAt: now, endedAt: now, isGivenUp: true });
+  const current = corrections.stages.at(-1);
+  if (because === 'queue' && current !== undefined) current.isGivenUp = true;
+  endStage();
   ask(preset, 'paid');
 }
 
 /** Free waits its turn at Google first; past the limit, a ticked request goes to the paid one instead. */
 function queued(preset: Preset): void {
-  corrections.phase = 'queue';
+  startStage('queue', 'free', modelFor(preset, 'free'));
   show('waiting');
   const queueMs = state.isFreeQueueLong ? times().longQueueMs : times().queueMs;
   if (mayGoToPaid(preset) && queueMs > times().queueLimitMs) {
@@ -545,7 +620,7 @@ function run(to: Choice): void {
   const preset = corrections.preset;
   if (preset === null) return;
   stopTimers();
-  corrections.switchedBecause = null;
+  corrections.stages = [];
   corrections.progress = 0;
   corrections.runStartedAt = Date.now();
   startClock();
@@ -644,12 +719,15 @@ export type WindowCase = 'waiting' | 'queued' | 'busy' | 'no-credit';
 
 /** A wait held still at one stage, until Prekini, so it can be looked at. */
 function holdWait(preset: Preset, to: Choice, phase: Phase): void {
+  const now = Date.now();
+  const model = modelFor(preset, to);
   corrections.preset = preset;
   corrections.sentTo = to;
-  corrections.phase = phase;
   corrections.progress = 40;
-  corrections.switchedBecause = null;
-  corrections.runStartedAt = Date.now();
+  // Writing, held there: the thinking before it done some seconds ago, as it would have been.
+  const before: Stage[] = phase === 'writing' ? [{ phase: 'thinking', by: to, model, startedAt: now - 47_000, endedAt: now - 44_000, isGivenUp: false }] : [];
+  corrections.stages = [...before, { phase, by: to, model, startedAt: phase === 'writing' ? now - 44_000 : now, endedAt: null, isGivenUp: false }];
+  corrections.runStartedAt = before[0]?.startedAt ?? now;
   startClock();
   show('waiting');
 }
