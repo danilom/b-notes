@@ -64,9 +64,14 @@ interface WindowState {
   kept: KeptByKind;
   /** Whose corrections the review open shows. */
   reviewBy: Choice;
+  /** How a line of ready corrections begins, set by the harness to compare: the Lektor's name, or "Predlozi". */
+  readyWording: 'name' | 'predlozi';
 }
 
-export const corrections: WindowState = { view: 'choosing', preset: 'letters', note: '', failure: null, kept: {}, reviewBy: 'free' };
+export const corrections: WindowState = { view: 'choosing', preset: 'letters', note: '', failure: null, kept: {}, reviewBy: 'free', readyWording: 'name' };
+
+/** When corrections just made were made: reads after "od" as well as on its own, which "upravo sad" doesn't. */
+const JUST_NOW = 'maločas';
 
 /** Placeholders, one line each on how far a kind goes, for Danilo to word. */
 const KIND_SUMMARIES: Readonly<Record<Preset, string>> = {
@@ -116,11 +121,22 @@ function openReview(preset: Preset, by: Choice): void {
   show('review');
 }
 
+/**
+ * Who made them and when: "[mark] Plaćeni · juče u 18:40", or "Predlozi · [mark] od juče u 18:40",
+ * the app's own word for them, which also says nothing has happened to his text yet.
+ */
+function readyWords(by: Choice, kept: Kept): (Node | string)[] {
+  const cost = kept.cost === null ? '' : ` · ${dollars(kept.cost)}`;
+  if (corrections.readyWording === 'predlozi') {
+    return [el('span', 'lektor-kind-ready', 'Predlozi'), ' · ', choiceMark(by), el('span', '', `od ${kept.at}${cost}`)];
+  }
+  return [choiceMark(by), el('span', '', `${lektorName(by)} · ${kept.at}${cost}`)];
+}
+
 /** Corrections ready: who made them, when, on paid what they cost, and the way straight to them. */
 function readyLine(preset: Preset, by: Choice, kept: Kept, isLocked: boolean): HTMLElement {
   const line = el('span', 'lektor-kind-state');
-  const cost = kept.cost === null ? '' : ` · ${dollars(kept.cost)}`;
-  line.append(el('span', 'lektor-kind-ready', 'Spremno'), ' · ', choiceMark(by), el('span', '', `${kept.at}${cost}`));
+  line.append(...readyWords(by, kept));
   line.title = `Ispravke koje je napravio ${lektorName(by)} Lektor čekaju da ih pogledaš.`;
   const open = button('Pogledaj', () => openReview(preset, by), 'lektor-kind-open');
   open.disabled = isLocked;
@@ -273,7 +289,7 @@ function pretendCost(): number | null {
 
 function finishRun(): void {
   const preset = corrections.preset;
-  corrections.kept[preset] = { ...corrections.kept[preset], [state.choice]: { at: 'upravo sad', cost: pretendCost() } };
+  corrections.kept[preset] = { ...corrections.kept[preset], [state.choice]: { at: JUST_NOW, cost: pretendCost() } };
   openReview(preset, state.choice);
 }
 
@@ -325,7 +341,7 @@ function reviewPanel(): HTMLElement {
   const cost = kept?.cost == null ? 'besplatno' : `koštalo ${dollars(kept.cost)}`;
   const ran = el('div', 'lektor-review-ran');
   const line = el('p', 'lektor-service-line');
-  line.append(el('span', 'lektor-review-kind', PRESET_NAMES[corrections.preset]), ' · ', choiceMark(by), el('span', '', `${lektorName(by)} · ${kept?.at ?? 'upravo sad'}`));
+  line.append(el('span', 'lektor-review-kind', PRESET_NAMES[corrections.preset]), ' · ', choiceMark(by), el('span', '', `${lektorName(by)} · ${kept?.at ?? JUST_NOW}`));
   ran.append(line, el('p', 'lektor-where', `Model: ${MODELS[by][corrections.preset]} · ${cost}`));
   const stand = el('div', 'review-text review-text-empty');
   stand.textContent = '(Ovde je pregled ispravki, kao sada.)';

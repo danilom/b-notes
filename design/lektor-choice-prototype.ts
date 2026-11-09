@@ -241,27 +241,47 @@ const CONTROLS: readonly PrototypeControl[] = [
   },
   {
     id: 'letters-kept',
-    label: 'Slova i zarezi spremni',
+    label: 'Gotovi predlozi',
     options: [
-      { value: 'none', label: 'ne' },
-      { value: 'paid', label: 'od plaćenog (juče)' },
-      { value: 'both', label: 'od oba' },
+      { value: 'none', label: 'nema' },
+      { value: 'paid', label: 'Slova i zarezi, od plaćenog' },
+      { value: 'both', label: 'Slova i zarezi, od oba' },
+      { value: 'all', label: 'sve četiri vrste, od oba' },
     ],
     value: 'none',
+  },
+  {
+    id: 'ready-wording',
+    label: 'Red sa predlozima',
+    options: [
+      { value: 'name', label: 'Plaćeni · juče u 18:40' },
+      { value: 'predlozi', label: 'Predlozi · od juče u 18:40' },
+    ],
+    value: 'name',
   },
   { id: 'busy', label: 'Besplatni je zauzet', value: false },
   { id: 'money-out', label: 'Plaćeni nema novca', value: false },
   { id: 'dark', label: 'Tamna pozadina', value: false },
 ];
 
-/** Corrections of Slova i zarezi ready: none, the paid Lektor's from yesterday, or that and the free one's too. */
-function setLettersKept(value: string | boolean): void {
-  if (value === 'none') {
-    delete corrections.kept.letters;
+/** Every kind with both Lektors' corrections, of various ages, to see the window at its fullest. */
+const ALL_KEPT: typeof corrections.kept = {
+  letters: { free: { at: 'pre 10 min', cost: null }, paid: { at: 'juče u 18:40', cost: 0.09 } },
+  grammar: { free: { at: 'pre 2 sata', cost: null }, paid: { at: 'juče u 18:52', cost: 0.11 } },
+  wording: { free: { at: 'pre 3 dana', cost: null }, paid: { at: 'pre 3 dana', cost: 0.48 } },
+  rewrite: { free: { at: 'prošle nedelje', cost: null }, paid: { at: 'prošle nedelje', cost: 0.61 } },
+};
+
+/** Ready corrections: none, Slova i zarezi from the paid Lektor or from both, or every kind from both. */
+function setKept(value: string | boolean): void {
+  if (value === 'all') {
+    corrections.kept = structuredClone(ALL_KEPT);
     return;
   }
-  const paid = { at: 'juče u 18:40', cost: 0.09 };
-  corrections.kept.letters = value === 'both' ? { free: { at: 'pre 10 min', cost: null }, paid } : { paid };
+  corrections.kept = {};
+  const letters = structuredClone(ALL_KEPT.letters);
+  if (value === 'paid' && letters !== undefined) corrections.kept.letters = { paid: letters.paid };
+  if (value === 'both') corrections.kept.letters = letters;
 }
 
 /** "3. Prozor za ispravke" is the comment step with the window opened on it, as "Pređi na ispravke…" does. */
@@ -282,7 +302,8 @@ function setControl(id: string, value: string | boolean): void {
   if (id === 'balance') state.balance = value === 'unknown' ? null : Number(value);
   if (id === 'busy') state.isFreeBusy = value === true;
   if (id === 'money-out') state.isMoneyOut = value === true;
-  if (id === 'letters-kept') setLettersKept(value);
+  if (id === 'letters-kept') setKept(value);
+  if (id === 'ready-wording') corrections.readyWording = value === 'predlozi' ? 'predlozi' : 'name';
   // The app's own switch, as the diff prototype sets it.
   if (id === 'dark') document.documentElement.dataset['mode'] = value === true ? 'dark' : 'light';
   render();
