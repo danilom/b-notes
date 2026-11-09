@@ -362,9 +362,9 @@
         cursor: pointer;
       }
 
+      /* No underline: it opens a part of the window, not a page, so it lights up as the app's quiet buttons do. */
       .lektor-window-detail .lektor-prompt-toggle:hover {
         color: var(--chosen-ink);
-        text-decoration: underline;
       }
 
       .lektor-prompt-arrow {
@@ -478,6 +478,14 @@
         align-items: center;
         justify-content: flex-end;
         gap: 0.6rem;
+      }
+
+      /*
+        The column's buttons as far above the footer's line as Zatvori is below it: the footer's own
+        space above (1rem) less the 0.2rem the row keeps for the focus ring, to match its 0.7rem below.
+      */
+      .lektor-window:has(.lektor-window-actions) > footer {
+        margin-top: 0.5rem;
       }
 
       /* What sending does, in small print on its own line just over the buttons, so they keep their one line. */

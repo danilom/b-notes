@@ -309,7 +309,7 @@ function paidIfSlowBox(): HTMLElement {
   const words = el('span', 'lektor-check-words');
   words.append(
     el('span', '', 'Ako besplatni ne krene, pošalji plaćenom'),
-    el('span', 'lektor-check-why', `Posle ${FREE_LIMIT_WORDS} čekanja. Za ovu ispravku plaćeni koristi isti model kao besplatni, samo bez čekanja u redu.`),
+    el('span', 'lektor-check-why', `Besplatni lektor je često spor. Ako ne krene za ${FREE_LIMIT_WORDS}, zahtev ide jeftinom plaćenom lektoru, da ne čekaš.`),
   );
   box.append(input, choiceMark('paid'), words);
   // In a row of the choices' own make, so it is as big a target, with the same hover.
@@ -391,9 +391,10 @@ function sendRow(preset: Preset): HTMLElement {
 }
 
 /**
- * Whether the instruction sent to the AI is shown. Folded each time the window opens: it is in English
- * and addressed to a machine, and the kind's description already says the same to him in Serbian; but
- * whoever wants to see exactly what is sent can.
+ * Whether the instruction sent to the AI, and his own added to it, are shown. Folded each time the
+ * window opens: the instruction is in English and addressed to a machine, the kind's description
+ * already says the same to him in Serbian, and adding his own is rare. Open, though, whenever he has
+ * written one: a note that goes with the request is never sent out of his sight.
  */
 let isPromptOpen = false;
 
@@ -407,7 +408,7 @@ function promptPart(preset: Preset): HTMLElement[] {
     isPromptOpen = !isPromptOpen;
     draw();
   });
-  return isPromptOpen ? [toggle, el('p', 'lektor-prompt', PRESET_PROMPTS[preset])] : [toggle];
+  return isPromptOpen ? [toggle, el('p', 'lektor-prompt', PRESET_PROMPTS[preset]), ...noteField()] : [toggle];
 }
 
 function requestDetail(preset: Preset): HTMLElement[] {
@@ -416,7 +417,6 @@ function requestDetail(preset: Preset): HTMLElement[] {
     ...lektorPart(preset),
     ...lastCost(preset),
     ...promptPart(preset),
-    ...noteField(),
     sendRow(preset),
   ];
 }
@@ -537,13 +537,15 @@ function stagesList(preset: Preset): HTMLElement {
 }
 
 /**
- * Which Lektor is working now, with no model's name (Danilo, 2026-11-10): the utisak never named one
- * and is none the worse for it. That it is the older model, where it is, the stages already say.
+ * Which Lektor and model is working now: 3.6 named as the older one standing in, so he isn't led to
+ * think it's the same. The one place the model is shown outright (Danilo, 2026-11-10): small, under
+ * a wait he is only watching, it does the least harm.
  */
 function modelLine(): HTMLElement[] {
   const now = corrections.stages.at(-1);
   if (now === undefined) return [];
-  return [el('p', 'lektor-wait-small', `${lektorName(now.by)} lektor`)];
+  const standIn = now.model === FREE_STAND_IN ? ' (stariji, rezervni)' : '';
+  return [el('p', 'lektor-wait-small', `${lektorName(now.by)} lektor · ${now.model}${standIn}`)];
 }
 
 /**
@@ -792,27 +794,27 @@ function choosingPanel(): HTMLElement {
 }
 
 /**
- * One line above the review: the kind, who made it, when, and on paid what it cost, as OpenRouter's
- * reply stated it (known only now, after the run; "Besplatni" already says free cost nothing); the
- * model at the line's right, in small grey, for whoever wants it.
- */
-/**
- * The first of two lines, what came back: the kind, who made it, when, on paid what it cost, and how
- * much it changed (the numbers made up); the model at the right, in grey, for whoever wants it.
+ * The first of two lines, what came back: the kind, who made it, when, on paid what it cost, as
+ * OpenRouter's reply stated it, and how much it changed (the numbers made up). The model only in the
+ * tooltip on who made it (Danilo, 2026-11-10): on this line it was cryptic and crowded it, and the
+ * wait, where it does least harm, has already shown it.
  */
 function reviewWhoLine(preset: Preset, by: Choice, kept: Kept | undefined): HTMLElement {
   const said = strings('sr').lektor.review;
   const cost = kept?.cost == null ? '' : ` · ${dollars(kept.cost)}`;
   const model = kept?.model ?? MODELS[by][preset];
+  const lektor = el('span', 'lektor-review-who');
+  lektor.append(choiceMark(by), el('span', '', `${lektorName(by)} lektor`));
+  lektor.title = `Model: ${model}${model === FREE_STAND_IN ? ' (stariji, rezervni)' : ''}`;
   const who = el('p', 'lektor-service-line');
   who.append(
     el('span', 'lektor-review-kind', PRESET_NAMES[preset]),
     ' · ',
-    choiceMark(by),
-    el('span', '', `${lektorName(by)} lektor · ${kept?.at ?? JUST_NOW}${cost} · ${said.counts(12, 31)}`),
+    lektor,
+    el('span', '', ` · ${kept?.at ?? JUST_NOW}${cost} · ${said.counts(12, 31)}`),
   );
   const line = el('div', 'lektor-review-row');
-  line.append(who, el('span', 'lektor-where', `Model: ${model}${model === FREE_STAND_IN ? ' (stariji, rezervni)' : ''}`));
+  line.append(who);
   return line;
 }
 
@@ -905,7 +907,7 @@ export function openCorrectionsWindow(): void {
   corrections.isAskingAgain = false;
   corrections.reworkChoice = 'free';
   corrections.isPaidIfSlow = paidIfSlowByDefault();
-  isPromptOpen = false;
+  isPromptOpen = corrections.note.trim() !== '';
   draw();
 }
 
