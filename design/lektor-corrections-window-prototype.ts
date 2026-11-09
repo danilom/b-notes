@@ -786,10 +786,11 @@ function footer(buttons: HTMLButtonElement[], note: string): HTMLElement {
   return bottom;
 }
 
-function header(note: string): HTMLElement {
+function header(note = ''): HTMLElement {
   const top = document.createElement('header');
   const heading = el('div', 'review-heading');
-  heading.append(titleOf({ mark: 'lektor', label: 'AI ispravke', name: TEXT_TITLE }), el('p', 'review-note', note));
+  heading.append(titleOf({ mark: 'lektor', label: 'AI ispravke', name: TEXT_TITLE }));
+  if (note !== '') heading.append(el('p', 'review-note', note));
   const dismiss = button('', close, 'close');
   dismiss.setAttribute('aria-label', 'Zatvori');
   dismiss.append(icon('close'));
@@ -880,15 +881,10 @@ function reviewPanel(preset: Preset): HTMLElement {
   const back = button('', () => show('choosing'), 'lektor-footer-back');
   back.append(icon('back'), el('span', '', 'Nazad'));
   bottom.prepend(back);
-  return framed(header(REVIEW_GUIDE), panes, bottom);
+  // No guide under the title (Danilo, 2026-11-10): "review them, click to change" floated there before
+  // any mark was in sight, and changing one is rare; a change shows it can be clicked when hovered.
+  return framed(header(), panes, bottom);
 }
-
-/**
- * Shorter than the app's said.guide ("Pregledaj predloge ispravki u tekstu ispod…"): that he is to
- * look them over, and that they are in the text below, is plain from the screen. To become the app's
- * wording when the window is built.
- */
-const REVIEW_GUIDE = 'Ako ti neka izmena ne odgovara, klikni na nju i promeni je.';
 
 function framed(top: HTMLElement, middle: HTMLElement, bottom: HTMLElement): HTMLElement {
   const panel = el('div', 'panel review-panel lektor-panel lektor-window');
