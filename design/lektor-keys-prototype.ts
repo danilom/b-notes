@@ -104,8 +104,8 @@ export function keysScreen(
 ): { content: HTMLElement[]; main: HTMLButtonElement; back: HTMLButtonElement } {
   const isChecking = keys.notes.free === 'checking' || keys.notes.paid === 'checking';
   const save = (): void => saveKeys(redraw, backToStart, savedAndBack);
-  // The small grey button with its arrow, as it was at the top: the way out, not competing with Sačuvaj.
-  const leave = button('', backToStart, 'lektor-again');
+  // A full button, as tall as Sačuvaj beside it; plain, so the way out doesn't compete with the coloured one.
+  const leave = button('', backToStart, 'status-action lektor-side-back');
   leave.append(icon('back'), el('span', '', 'Nazad'));
   const saveButton = button('Sačuvaj', save, 'status-action lektor-main-action');
   saveButton.disabled = isChecking;
