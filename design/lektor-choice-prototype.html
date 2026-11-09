@@ -124,6 +124,15 @@
         /* Above and below, what a row of his list has, so the two are as tall. */
         padding: 0.5rem 0.35rem 0.5rem var(--lektor-radio-indent);
         border-radius: 4px;
+        /* A line said about the choice (the balance, "Spremno") wraps onto a line of its own inside the row. */
+        flex-wrap: wrap;
+        row-gap: 0.1rem;
+      }
+
+      /* Under the words or mark, a column with them; the radio stays on the first line. */
+      .lektor-preset > :is(.lektor-balance, .lektor-kind-state) {
+        flex-basis: 100%;
+        margin: 0 0 0 var(--lektor-after-radio);
       }
 
       /* The app's own hover, the wash a row of his list gets, so the whole target shows; not on one that can't be chosen. */
@@ -136,11 +145,8 @@
         font-size: var(--lektor-small);
       }
 
-      /* New: the balance, small and quiet, under the paid choice. */
+      /* New: the balance, small and quiet, in Plaćeni's row. */
       .lektor-balance {
-        /* Under the marks, a column with them. */
-        /* Up into the last choice's padding, so it stays with the choices rather than floating below. */
-        margin: -0.6rem 0 0 calc(var(--lektor-radio-indent) + var(--lektor-after-radio));
         font-size: 0.85rem;
         color: var(--quiet);
       }
@@ -237,13 +243,11 @@
         font-weight: 600;
       }
 
-      /* New: under a kind with corrections ready, indented under its name as the balance is under the choices. */
+      /* New: in the row of a kind with corrections ready, under its name as the balance is under Plaćeni. */
       .lektor-kind-state {
         display: flex;
         align-items: center;
         gap: 0.3em;
-        /* Up into its kind's padding, so it reads as that kind's. */
-        margin: -0.55rem 0 0.2rem var(--lektor-after-radio);
         font-size: 0.85rem;
         color: var(--quiet);
       }

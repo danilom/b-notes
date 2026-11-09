@@ -15,9 +15,19 @@ export interface LektorChoiceActions {
   isLocked?: boolean;
 }
 
+/**
+ * The balance is the paid Lektor's money, so it is part of Plaćeni's row: its hover covers it and
+ * clicking it picks Plaćeni. Shown under either choice, so nothing moves on switching; not without
+ * a paid key, where there is no account to read.
+ */
+function paidBalance(): HTMLElement[] {
+  return keys.saved.paid ? balanceLine() : [];
+}
+
 /** A choice whose key hasn't been entered is greyed, with the reason on hovering, as in the app. */
 function levelOption(choice: Choice, name: string, actions: LektorChoiceActions): HTMLElement {
   const option = radio(actions.group, name, state.choice === choice, () => actions.choose(choice), choice);
+  if (choice === 'paid') option.append(...paidBalance());
   const input = option.querySelector('input');
   if (input !== null) input.disabled = actions.isLocked === true || !keys.saved[choice];
   if (keys.saved[choice]) return option;
@@ -26,13 +36,13 @@ function levelOption(choice: Choice, name: string, actions: LektorChoiceActions)
   return option;
 }
 
-/** The heading, the two choices with the way to the keys on Besplatni's line if wanted, and the balance under them. */
+/** The heading, and the two choices with the way to the keys on Besplatni's line if wanted. */
 export function lektorChoice(actions: LektorChoiceActions): HTMLElement[] {
   const options = el('div', 'lektor-choice-options');
   options.append(levelOption('free', 'Besplatni', actions), levelOption('paid', 'Plaćeni', actions));
   const heading = el('p', 'lektor-heading', 'Izaberi AI Lektora:');
-  if (actions.openKeys === undefined) return [heading, options, ...balanceLine()];
+  if (actions.openKeys === undefined) return [heading, options];
   const row = el('div', 'lektor-choice-with-keys');
   row.append(options, button('API ključevi', actions.openKeys, 'lektor-again'));
-  return [heading, row, ...balanceLine()];
+  return [heading, row];
 }

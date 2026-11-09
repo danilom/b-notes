@@ -132,14 +132,15 @@ export function radio(name: string, label: string, checked: boolean, onChange: (
 const LOW_BALANCE_USD = 1;
 
 /**
- * Under the choice, in the panel and in the window alike. Nothing when the balance can't be read:
+ * Under Plaćeni, in the panel and in the window alike. Nothing when the balance can't be read:
  * that is OpenRouter's balance lookup failing for a moment while sending still works, and
  * "unknown" would read as trouble with his money.
  */
 export function balanceLine(): HTMLElement[] {
   if (state.balance === null) return [];
-  if (state.balance >= LOW_BALANCE_USD) return [el('p', 'lektor-balance', `Na računu: ${dollars(state.balance)}`)];
-  return [el('p', 'lektor-balance lektor-balance-low', `Na računu: ${dollars(state.balance)} (malo)`)];
+  // A span: it goes inside Plaćeni's label, where a paragraph may not.
+  if (state.balance >= LOW_BALANCE_USD) return [el('span', 'lektor-balance', `Na računu: ${dollars(state.balance)}`)];
+  return [el('span', 'lektor-balance lektor-balance-low', `Na računu: ${dollars(state.balance)} (malo)`)];
 }
 
 /** Who did or does it: the Lektor's mark and name, as the app's service line has them. */

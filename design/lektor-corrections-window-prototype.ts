@@ -103,7 +103,7 @@ function chooseHere(choice: Choice): void {
 
 /** Under a kind with corrections ready: who made them, when, and on paid what they cost. */
 function readyLine(kept: Kept): HTMLElement {
-  const line = el('p', 'lektor-kind-state');
+  const line = el('span', 'lektor-kind-state');
   const cost = kept.cost === null ? '' : ` · ${dollars(kept.cost)}`;
   line.append(el('span', 'lektor-kind-ready', 'Spremno'), ' · ', choiceMark(kept.by), el('span', '', `${kept.at}${cost}`));
   line.title = `Ispravke koje je napravio ${lektorName(kept.by)} Lektor čekaju da ih pogledaš.`;
@@ -119,9 +119,11 @@ function kindOption(preset: Preset, isLocked: boolean): HTMLElement {
   });
   const input = option.querySelector('input');
   if (input !== null) input.disabled = isLocked;
+  // Part of the kind's row, as the balance is of Plaćeni's: its hover covers it, and clicking it picks the kind.
   const kept = corrections.kept[preset];
+  if (kept !== undefined) option.append(readyLine(kept));
   const kind = el('div', 'lektor-kind');
-  kind.append(option, ...(kept === undefined ? [] : [readyLine(kept)]));
+  kind.append(option);
   return kind;
 }
 
