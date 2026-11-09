@@ -8,7 +8,7 @@
   classes and icons, piece for piece as lektor-sidebar.ts builds its screens.
 */
 import { icon } from '../src/ui/icons.ts';
-import { corrections, openCorrectionsWindow, redrawWindowIfOpen } from './lektor-corrections-window-prototype.ts';
+import { type WindowCase, corrections, openCorrectionsWindow, openCorrectionsWindowAt, redrawWindowIfOpen } from './lektor-corrections-window-prototype.ts';
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
 import { type Choice, TEXT_PARAGRAPHS, button, el, element, recipient, sendButton, serviceLine, state } from './lektor-prototype-pieces.ts';
@@ -212,6 +212,9 @@ const CONTROLS: readonly PrototypeControl[] = [
       { value: 'start', label: '1. Slanje teksta' },
       { value: 'response', label: '2. AI utisak (pa Pređi na ispravke)' },
       { value: 'window', label: '3. Prozor za ispravke' },
+      { value: 'waiting', label: '3a. Prozor: čeka (Stilska, plaćeni)' },
+      { value: 'busy', label: '3b. Prozor: Gugl zauzet (Slova i zarezi)' },
+      { value: 'no-credit', label: '3c. Prozor: nema novca (Dubinska)' },
       { value: 'keys', label: 'API ključevi' },
     ],
     value: 'start',
@@ -284,13 +287,23 @@ function setKept(value: string | boolean): void {
   if (value === 'both') corrections.kept.letters = letters;
 }
 
-/** "3. Prozor za ispravke" is the comment step with the window opened on it, as "Pređi na ispravke…" does. */
+const WINDOW_CASES: readonly WindowCase[] = ['waiting', 'busy', 'no-credit'];
+
+function isWindowCase(value: string | boolean): value is WindowCase {
+  return WINDOW_CASES.some((one) => one === value);
+}
+
+/**
+ * "3. Prozor za ispravke" is the comment step with the window opened on it, as "Pređi na
+ * ispravke…" does; 3a–3c open it straight on the wait or a failure.
+ */
 function setScreen(value: string | boolean): void {
-  screen = value === 'response' || value === 'window' ? 'response' : value === 'keys' ? 'keys' : 'start';
-  if (value === 'window') {
-    render();
-    openCorrectionsWindow();
-  }
+  const isWindow = value === 'window' || isWindowCase(value);
+  screen = value === 'response' || isWindow ? 'response' : value === 'keys' ? 'keys' : 'start';
+  if (!isWindow) return;
+  render();
+  if (isWindowCase(value)) openCorrectionsWindowAt(value);
+  else openCorrectionsWindow();
 }
 
 function setControl(id: string, value: string | boolean): void {

@@ -472,3 +472,25 @@ export function openCorrectionsWindow(): void {
   corrections.reworkChoice = state.choice;
   draw();
 }
+
+/** A state of the window the harness can open straight away, without sending and waiting for it. */
+export type WindowCase = 'waiting' | 'busy' | 'no-credit';
+
+/**
+ * For the harness: the wait (Stilska dorada on paid, left running until Prekini), Google busy on
+ * Slova i zarezi, or the paid account empty on Dubinska prerada.
+ */
+export function openCorrectionsWindowAt(windowCase: WindowCase): void {
+  openCorrectionsWindow();
+  stopTimers();
+  if (windowCase === 'waiting') {
+    corrections.preset = 'wording';
+    corrections.sentTo = 'paid';
+    show('waiting');
+    return;
+  }
+  corrections.preset = windowCase === 'busy' ? 'letters' : 'rewrite';
+  corrections.sentTo = windowCase === 'busy' ? 'free' : 'paid';
+  corrections.failure = windowCase;
+  show('failed');
+}
