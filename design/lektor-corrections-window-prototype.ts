@@ -434,10 +434,10 @@ function progressRow(): HTMLElement {
   return row;
 }
 
-/** Under the queue while it lasts: why it waits, and what happens if it waits too long and he ticked for that. */
+/** Under the queue while it lasts: that free requests wait (not that something is wrong), and what happens if he ticked for a long wait. */
 function queueNote(preset: Preset): HTMLElement {
   const after = mayGoToPaid(preset) ? ` Ako ne krene za ${QUEUE_LIMIT_WORDS}, šalje se plaćenom.` : '';
-  return el('p', 'lektor-wait-small lektor-stage-note', `Čeka dok ne dođe na red. Ovo traje nekoliko minuta.${after}`);
+  return el('p', 'lektor-wait-small lektor-stage-note', `Besplatni zahtevi čekaju na red, pa traju duže, obično nekoliko minuta.${after}`);
 }
 
 /** What belongs to the stage going on, under it: the queue's note, the writing's bar. */
