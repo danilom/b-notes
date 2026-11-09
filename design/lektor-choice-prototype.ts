@@ -166,12 +166,12 @@ export function nameForHeading(title: string): string | null {
 
 /**
  * What the comment is and what about, before its first word, so it doesn't start mid-thought; and it
- * travels with the comment when he copies it out. Part of the comment's own block, not the panel's.
+ * travels with the comment when he copies it out. Its first paragraph, in its font (Danilo, 2026-11-10):
+ * context, not a heading or a piece of the panel, which in the panel's own type it looked like.
  */
-function commentHeading(): HTMLElement {
+function commentOpening(): string {
   const name = nameForHeading(commentTextTitle);
-  // Plain, in the panel's words (Danilo, 2026-11-10): context for what follows, not a heading; the panel's title is that.
-  return el('p', 'lektor-line lektor-comment-about', name === null ? 'Utisak AI Lektora o tekstu bez naslova:' : `Utisak AI Lektora o tekstu „${name}”:`);
+  return name === null ? 'Utisak AI Lektora o tekstu bez naslova:' : `Utisak AI Lektora o tekstu „${name}”:`;
 }
 
 /** The comment as the app draws it: the way to a new one above, the comment with its end mark, and a signature under it. */
@@ -188,7 +188,7 @@ function responseScreen(): Step {
   ask.append(icon('back'), el('span', '', 'Traži novi utisak'));
   again.append(ask);
   head.append(...staleNote(), again);
-  const comment = el('div', 'lektor-response', COMMENT);
+  const comment = el('div', 'lektor-response', `${commentOpening()}\n\n${COMMENT}`);
   comment.append(el('span', 'lektor-response-end'));
   // Signed by who wrote it, which stays so when the Lektor is changed afterwards, here or in the window.
   const signed = serviceLine(commentBy);
@@ -200,7 +200,7 @@ function responseScreen(): Step {
   // No arrow: like every button in the app that opens a window. The ellipsis is Windows' own sign, as on
   // "Print…", that a window will ask more before anything happens: the window is a step, not a send.
   const toCorrections = button('Pređi na ispravke…', () => openCorrectionsWindow(), 'status-action lektor-main-action');
-  return { content: [head, commentHeading(), comment, signature], main: toCorrections };
+  return { content: [head, comment, signature], main: toCorrections };
 }
 
 const TITLES: Readonly<Record<Screen, string>> = { start: 'AI Lektor: slanje teksta', response: 'AI Lektor: utisak', keys: 'AI Lektor: podešavanje' };
