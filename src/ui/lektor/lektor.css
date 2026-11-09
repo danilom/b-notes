@@ -193,10 +193,14 @@ body.lektor-open #lektor-side {
 }
 
 /* For context, not for attention: quieter than a dialog's title, and it stays put while the rest scrolls. */
+/*
+  Its words on one baseline: Zatvori is in smaller type, and centred beside the title it sat
+  2px higher than the title's line. The icon has no baseline of its own, so it stays centred.
+*/
 .lektor-side-title {
   flex: none;
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 0.25rem;
   /* Its icon level with the top of Novi tekst, across the window. */
   padding: 0.5rem 1rem 0.6rem;
@@ -207,6 +211,10 @@ body.lektor-open #lektor-side {
   flex: none;
   width: 1.05em;
   height: 1.05em;
+}
+
+.lektor-side-title > svg {
+  align-self: center;
 }
 
 /* About the panel rather than the step, so up here with its name, and quiet. Its height is taken back from the row's, so the title stays level with Novi tekst. */
