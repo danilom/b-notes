@@ -77,12 +77,16 @@
         margin: 0 0 1em;
       }
 
-      /* New: the two choices on the left and the way to the keys on the right, on Besplatni's line: a column's baseline is its first line's. */
+      /* New: the heading on the left and the way to the keys on the right, on one baseline. */
       .lektor-choice-with-keys {
         display: flex;
         align-items: baseline;
         justify-content: space-between;
         gap: 0.6rem;
+      }
+
+      .lektor-choice-with-keys > .lektor-heading {
+        margin: 0;
       }
 
       /*
@@ -95,14 +99,8 @@
         --lektor-after-radio: calc(var(--lektor-radio) + 0.4rem);
       }
 
-      /* As wide as the column in the window, as it stretches there; in the panel up to the keys button beside it. */
-      .lektor-choice-with-keys > .lektor-choice-options {
-        flex: 1;
-      }
-
       /* Up into the first row's padding, so a list sits under its heading as close as before the rows grew. */
-      .lektor-choice-with-keys,
-      .lektor-window-side > .lektor-choice-options,
+      .lektor-choice-options,
       .lektor-kind-list {
         margin-top: -0.45rem;
       }

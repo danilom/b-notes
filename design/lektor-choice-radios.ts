@@ -36,13 +36,16 @@ function levelOption(choice: Choice, name: string, actions: LektorChoiceActions)
   return option;
 }
 
-/** The heading, and the two choices with the way to the keys on Besplatni's line if wanted. */
+/**
+ * The heading, with the way to the keys at its right if wanted: the keys decide what can be
+ * chosen, and there it leaves the choices' rows their full width. Then the two choices.
+ */
 export function lektorChoice(actions: LektorChoiceActions): HTMLElement[] {
   const options = el('div', 'lektor-choice-options');
   options.append(levelOption('free', 'Besplatni', actions), levelOption('paid', 'Plaćeni', actions));
   const heading = el('p', 'lektor-heading', 'Izaberi AI Lektora:');
   if (actions.openKeys === undefined) return [heading, options];
   const row = el('div', 'lektor-choice-with-keys');
-  row.append(options, button('API ključevi', actions.openKeys, 'lektor-again'));
-  return [heading, row];
+  row.append(heading, button('API ključevi', actions.openKeys, 'lektor-again'));
+  return [row, options];
 }
