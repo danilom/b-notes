@@ -34,6 +34,7 @@ import {
   PRESET_NAMES,
   PRESET_PROMPTS,
   PRESETS,
+  type Pace,
   type Preset,
   TEXT_TITLE,
   button,
@@ -127,15 +128,27 @@ const KIND_SUMMARIES: Readonly<Record<Preset, { does: string; keeps: string }>> 
 };
 
 /*
-  The wait, pretended, shortened so it can be watched: a short queue at Google, a long one (in the
-  app, longer than the limit below), thinking, then writing in ten steps. The limit stands for the
-  2 minutes in the queue after which a ticked request goes to the paid one.
+  The wait, pretended: a short queue at Google, a long one (longer than the limit), thinking, then
+  writing in ten steps. The limit stands for the 2 minutes in the queue after which a ticked request
+  goes to the paid one. At the harness's pace: shortened to watch, twice that to feel some of it, or
+  as measured on 2026-11-09 (queues up to 3–5 min, thinking seconds, a correction's writing 1–3 min).
 */
-const PRETEND_QUEUE_MS = 2500;
-const PRETEND_LONG_QUEUE_MS = 20_000;
-const PRETEND_QUEUE_LIMIT_MS = 6000;
-const PRETEND_THINKING_MS = 1500;
-const PRETEND_WRITING_STEP_MS = 400;
+interface WaitTimes {
+  queueMs: number;
+  longQueueMs: number;
+  queueLimitMs: number;
+  thinkingMs: number;
+  writingStepMs: number;
+}
+
+const SHORTENED: WaitTimes = { queueMs: 2500, longQueueMs: 20_000, queueLimitMs: 6000, thinkingMs: 1500, writingStepMs: 400 };
+const WAIT_TIMES: Readonly<Record<Pace, WaitTimes>> = {
+  short: SHORTENED,
+  double: { queueMs: 5000, longQueueMs: 40_000, queueLimitMs: 12_000, thinkingMs: 3000, writingStepMs: 800 },
+  real: { queueMs: 30_000, longQueueMs: 300_000, queueLimitMs: 120_000, thinkingMs: 3000, writingStepMs: 12_000 },
+};
+
+const times = (): WaitTimes => WAIT_TIMES[state.pace];
 /** What the limit stands for in the app, said to him. */
 const QUEUE_LIMIT_WORDS = '2 minuta';
 
@@ -485,13 +498,13 @@ function writingStep(preset: Preset, to: Choice, step: number): void {
   corrections.phase = 'writing';
   corrections.progress = step * 10;
   show('waiting');
-  timers.push(window.setTimeout(() => writingStep(preset, to, step + 1), PRETEND_WRITING_STEP_MS));
+  timers.push(window.setTimeout(() => writingStep(preset, to, step + 1), times().writingStepMs));
 }
 
 function thinking(preset: Preset, to: Choice): void {
   corrections.phase = 'thinking';
   show('waiting');
-  timers.push(window.setTimeout(() => writingStep(preset, to, 0), PRETEND_THINKING_MS));
+  timers.push(window.setTimeout(() => writingStep(preset, to, 0), times().thinkingMs));
 }
 
 /** As he ticked: the same request to the paid one. Only from the queue, so no work is thrown away or paid twice. */
@@ -504,9 +517,9 @@ function handToPaid(preset: Preset, because: 'queue' | 'busy'): void {
 function queued(preset: Preset): void {
   corrections.phase = 'queue';
   show('waiting');
-  const queueMs = state.isFreeQueueLong ? PRETEND_LONG_QUEUE_MS : PRETEND_QUEUE_MS;
-  if (mayGoToPaid(preset) && queueMs > PRETEND_QUEUE_LIMIT_MS) {
-    timers.push(window.setTimeout(() => handToPaid(preset, 'queue'), PRETEND_QUEUE_LIMIT_MS));
+  const queueMs = state.isFreeQueueLong ? times().longQueueMs : times().queueMs;
+  if (mayGoToPaid(preset) && queueMs > times().queueLimitMs) {
+    timers.push(window.setTimeout(() => handToPaid(preset, 'queue'), times().queueLimitMs));
     return;
   }
   timers.push(window.setTimeout(() => thinking(preset, 'free'), queueMs));

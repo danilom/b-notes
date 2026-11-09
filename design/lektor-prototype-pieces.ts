@@ -41,6 +41,8 @@ export const TEXT_PARAGRAPHS: readonly string[] = [
   'Kad je sunce preslo preko brda, djed je ustao, otresao kapu i krenuo uz stepenice. "Ajde," rekao je, "riba nece cekati." Ostao sam jos malo, da vidim kako voda mijenja boju.',
 ];
 
+export type Pace = 'short' | 'double' | 'real';
+
 export interface PrototypeState {
   choice: Choice;
   /** Dollars on the account, or null when it couldn't be read. */
@@ -51,11 +53,13 @@ export interface PrototypeState {
   isFallbackBusy: boolean;
   /** Google's free queue is long today: longer than the wait after which a ticked request goes to the paid one. */
   isFreeQueueLong: boolean;
+  /** How long the pretended waits take: shortened to watch, twice that to feel, or as measured. */
+  pace: Pace;
   /** The paid Lektor is refused for want of money. */
   isMoneyOut: boolean;
 }
 
-export const state: PrototypeState = { choice: 'free', balance: 7.47, isFreeBusy: false, isFallbackBusy: false, isFreeQueueLong: false, isMoneyOut: false };
+export const state: PrototypeState = { choice: 'free', balance: 7.47, isFreeBusy: false, isFallbackBusy: false, isFreeQueueLong: false, pace: 'double', isMoneyOut: false };
 
 export function element<T extends HTMLElement>(id: string, kind: new () => T): T {
   const found = document.getElementById(id);
