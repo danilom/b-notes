@@ -157,6 +157,7 @@ const SHORTENED: WaitTimes = { queueMs: 2500, longQueueMs: 20_000, queueLimitMs:
 const WAIT_TIMES: Readonly<Record<Pace, WaitTimes>> = {
   short: SHORTENED,
   double: { queueMs: 5000, longQueueMs: 40_000, queueLimitMs: 12_000, thinkingMs: 3000, writingStepMs: 800 },
+  quadruple: { queueMs: 10_000, longQueueMs: 80_000, queueLimitMs: 24_000, thinkingMs: 6000, writingStepMs: 1600 },
   real: { queueMs: 30_000, longQueueMs: 300_000, queueLimitMs: 120_000, thinkingMs: 3000, writingStepMs: 12_000 },
 };
 
@@ -433,15 +434,28 @@ function progressRow(): HTMLElement {
   return row;
 }
 
-function stagesList(): HTMLElement {
+/** Under the queue while it lasts: why it waits, and what happens if it waits too long and he ticked for that. */
+function queueNote(preset: Preset): HTMLElement {
+  const after = mayGoToPaid(preset) ? ` Ako ne krene za ${QUEUE_LIMIT_WORDS}, šalje se plaćenom.` : '';
+  return el('p', 'lektor-wait-small lektor-stage-note', `Čeka dok ne dođe na red. Ovo traje nekoliko minuta.${after}`);
+}
+
+/** What belongs to the stage going on, under it: the queue's note, the writing's bar. */
+function underStage(stage: Stage, preset: Preset): HTMLElement[] {
+  if (stage.endedAt !== null) return [];
+  if (stage.phase === 'queue') return [queueNote(preset)];
+  if (stage.phase === 'writing') return [progressRow()];
+  return [];
+}
+
+function stagesList(preset: Preset): HTMLElement {
   const list = el('div', 'lektor-stages');
   corrections.stages.forEach((stage, index) => {
     const isCurrent = stage.endedAt === null;
     const row = el('div', 'lektor-stage');
     const took = stage.endedAt === null || stage.phase === 'refused' ? '' : durationWords(stage.endedAt - stage.startedAt);
     row.append(stageMark(stage, isCurrent), el('span', '', stageWords(stage, isCurrent, corrections.stages[index - 1])), el('span', 'lektor-stage-time', took));
-    list.append(row);
-    if (isCurrent && stage.phase === 'writing') list.append(progressRow());
+    list.append(row, ...underStage(stage, preset));
   });
   return list;
 }
@@ -452,13 +466,6 @@ function modelLine(): HTMLElement[] {
   if (now === undefined) return [];
   const standIn = now.model === 'gemini-3.6-flash' ? ' (stariji, rezervni: Gugl je bio zauzet)' : '';
   return [el('p', 'lektor-wait-small', `${lektorName(now.by)} lektor · ${now.model}${standIn}`)];
-}
-
-/** While it waits its turn: why, and what happens if it waits too long and he ticked for that. */
-function queueNote(preset: Preset): HTMLElement[] {
-  if (corrections.stages.at(-1)?.phase !== 'queue') return [];
-  const after = mayGoToPaid(preset) ? ` Ako ne krene za ${QUEUE_LIMIT_WORDS}, šalje se plaćenom.` : '';
-  return [el('p', 'lektor-wait-small', `Besplatni lektor: zahtev čeka kod Gugla dok ne dođe na red. Ovo traje nekoliko minuta.${after}`)];
 }
 
 /**
@@ -472,10 +479,9 @@ function waitingDetail(preset: Preset): HTMLElement {
   column.append(
     el('p', 'lektor-heading', TEXT_TITLE),
     el('p', '', `Vrsta ispravke: ${PRESET_NAMES[preset]}`),
-    stagesList(),
+    stagesList(preset),
     el('p', 'lektor-window-clock', waitedWords()),
     ...modelLine(),
-    ...queueNote(preset),
     button('Prekini', () => {
       stopTimers();
       show('choosing');

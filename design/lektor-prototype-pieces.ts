@@ -41,7 +41,7 @@ export const TEXT_PARAGRAPHS: readonly string[] = [
   'Kad je sunce preslo preko brda, djed je ustao, otresao kapu i krenuo uz stepenice. "Ajde," rekao je, "riba nece cekati." Ostao sam jos malo, da vidim kako voda mijenja boju.',
 ];
 
-export type Pace = 'short' | 'double' | 'real';
+export type Pace = 'short' | 'double' | 'quadruple' | 'real';
 
 export interface PrototypeState {
   choice: Choice;

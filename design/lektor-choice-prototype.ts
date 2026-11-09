@@ -282,6 +282,7 @@ const CONTROLS: readonly PrototypeControl[] = [
     label: 'Brzina čekanja',
     options: [
       { value: 'double', label: '×2 (da se oseti)' },
+      { value: 'quadruple', label: '×4' },
       { value: 'short', label: 'skraćeno' },
       { value: 'real', label: 'stvarno vreme' },
     ],
@@ -344,7 +345,7 @@ function setControl(id: string, value: string | boolean): void {
     state.isFallbackBusy = value === 'both';
   }
   if (id === 'free-queue') state.isFreeQueueLong = value === 'long';
-  if (id === 'pace') state.pace = value === 'short' || value === 'real' ? value : 'double';
+  if (id === 'pace') state.pace = value === 'short' || value === 'quadruple' || value === 'real' ? value : 'double';
   if (id === 'money-out') state.isMoneyOut = value === true;
   if (id === 'letters-kept') setKept(value);
   // The app's own switch, as the diff prototype sets it.

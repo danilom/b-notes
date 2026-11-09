@@ -504,6 +504,12 @@
         white-space: nowrap;
       }
 
+      /* Said about the stage going on, under its words, gone when it ends: the queue's why and its limit. */
+      .lektor-stage-note {
+        /* The mark's column at the stages' size, not this smaller print's, so it lines up with their words. */
+        margin: -0.2rem 0 0 calc(1.4 * var(--lektor-text) + 0.5rem);
+      }
+
       /* The bar under the stage it measures, in line with its words, so it can't be read as the whole wait's. */
       .lektor-stage-progress {
         display: grid;
