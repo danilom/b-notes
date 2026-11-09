@@ -57,7 +57,7 @@ import {
 import { lektorChoice } from './lektor-choice-radios.ts';
 
 type View = 'choosing' | 'waiting' | 'failed' | 'review';
-type Failure = 'busy' | 'no-credit';
+type Failure = 'busy' | 'no-credit' | 'offline';
 
 /**
  * Corrections ready to look at. Only while his text is as it was when they were made: on a changed
@@ -547,26 +547,38 @@ function sendToButton(preset: Preset, to: Choice): HTMLButtonElement {
   return made;
 }
 
-/** The way on: the other Lektor where it has a key, else trying again where that can help. */
-function failureWays(preset: Preset): HTMLButtonElement[] {
+/**
+ * Whether the other Lektor can help: only where the trouble was the company's (busy, its money),
+ * not his internet or his text; and only where he has its key.
+ */
+function shortcutAfter(preset: Preset): HTMLButtonElement[] {
   const to = other(corrections.sentTo);
-  const switchTo = keys.saved[to] ? [sendToButton(preset, to)] : [];
-  if (corrections.failure === 'no-credit') return switchTo;
-  return [...switchTo, button('Pokušaj ponovo', () => run(corrections.sentTo), switchTo.length > 0 ? '' : 'keep')];
+  const isCompanys = corrections.failure === 'busy' || corrections.failure === 'no-credit';
+  return isCompanys && keys.saved[to] ? [sendToButton(preset, to)] : [];
 }
 
-function failedDetail(preset: Preset): HTMLElement {
-  const isNoCredit = corrections.failure === 'no-credit';
-  const ways = el('div', 'lektor-window-ways');
-  ways.append(...failureWays(preset));
+/** What went wrong, in the app's own words, and a line on what can be done. */
+function failureWords(): HTMLElement {
+  if (corrections.failure === 'no-credit') return problem('Plaćeni iznos je potrošen.', keys.saved.free ? 'Možeš da pošalješ besplatnom lektoru, ili neka se uplati još.' : 'Neka se uplati još.');
+  if (corrections.failure === 'offline') return problem('Internet ne radi, a AI Lektoru je potreban.', 'Kad internet proradi, pošalji ponovo.');
+  return problem('Gugl je sada zauzet.', keys.saved.paid ? 'Probaj malo kasnije, ili pošalji plaćenom lektoru.' : 'Probaj malo kasnije.');
+}
+
+/**
+ * Every failure the same shape: what went wrong, big; "← Nazad" back to the request just as he left
+ * it, where sending again is the retry; and at most one shortcut, the other Lektor, where it can help.
+ */
+function failedDetail(preset: Preset): HTMLElement[] {
   const big = el('div', 'lektor-window-big');
-  big.append(
-    isNoCredit
-      ? problem('Plaćeni iznos je potrošen.', 'Možeš da pošalješ besplatnom lektoru, ili neka se uplati još. Tvoj izbor i uputstva su ostali.')
-      : problem('Gugl je sada zauzet.', keys.saved.paid ? 'Probaj malo kasnije, ili pošalji plaćenom lektoru.' : 'Probaj malo kasnije.'),
-    ways,
-  );
-  return big;
+  big.append(failureWords());
+  const back = button('', () => {
+    corrections.failure = null;
+    show('choosing');
+  }, 'lektor-back-to-ready');
+  back.append(icon('back'), el('span', '', 'Nazad'));
+  const row = el('div', 'lektor-window-actions');
+  row.append(back, ...shortcutAfter(preset));
+  return [big, row];
 }
 
 function detailColumn(): HTMLElement {
@@ -574,7 +586,7 @@ function detailColumn(): HTMLElement {
   const preset = corrections.preset;
   if (preset === null) column.append(emptyDetail());
   else if (corrections.view === 'waiting') column.append(...waitingDetail(preset));
-  else if (corrections.view === 'failed') column.append(failedDetail(preset));
+  else if (corrections.view === 'failed') column.append(...failedDetail(preset));
   else if (keptFor(preset).length > 0 && !corrections.isAskingAgain) column.append(...readyDetail(preset));
   else column.append(...requestDetail(preset));
   return column;
@@ -635,6 +647,10 @@ function fail(failure: Failure): void {
 
 function askPaid(preset: Preset): void {
   corrections.sentTo = 'paid';
+  if (state.isOffline) {
+    fail('offline');
+    return;
+  }
   if (state.isMoneyOut) {
     fail('no-credit');
     return;
@@ -680,6 +696,10 @@ function givenUp(preset: Preset, model: FreeModel): void {
  */
 function askFree(preset: Preset, model: FreeModel): void {
   corrections.sentTo = 'free';
+  if (state.isOffline) {
+    fail('offline');
+    return;
+  }
   const day = state.google[model];
   if (day === 'busy') {
     refusedBy(preset, model);
@@ -853,7 +873,7 @@ export function openCorrectionsWindow(): void {
 }
 
 /** A state of the window the harness can open straight away, without sending and waiting for it. */
-export type WindowCase = 'waiting' | 'queued' | 'busy' | 'no-credit';
+export type WindowCase = 'waiting' | 'queued' | 'busy' | 'no-credit' | 'offline';
 
 /** A wait held still at one stage, until "Odustani od zahteva", so it can be looked at. */
 function holdWait(preset: Preset, to: Choice, phase: Phase): void {
@@ -886,8 +906,8 @@ export function openCorrectionsWindowAt(windowCase: WindowCase): void {
     holdWait('letters', 'free', 'queue');
     return;
   }
-  corrections.preset = windowCase === 'busy' ? 'letters' : 'rewrite';
-  corrections.sentTo = windowCase === 'busy' ? 'free' : 'paid';
+  corrections.preset = windowCase === 'no-credit' ? 'rewrite' : 'letters';
+  corrections.sentTo = windowCase === 'no-credit' ? 'paid' : 'free';
   corrections.failure = windowCase;
   show('failed');
 }

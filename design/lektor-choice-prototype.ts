@@ -220,6 +220,7 @@ const CONTROLS: readonly PrototypeControl[] = [
       { value: 'queued', label: '3a2. Prozor: u redu kod Gugla (Slova i zarezi)' },
       { value: 'busy', label: '3b. Prozor: Gugl zauzet (Slova i zarezi)' },
       { value: 'no-credit', label: '3c. Prozor: nema novca (Dubinska)' },
+      { value: 'offline', label: '3d. Prozor: nema interneta (Slova i zarezi)' },
       { value: 'keys', label: 'API ključevi' },
     ],
     // Where the work is now: the corrections window, open on arriving.
@@ -291,6 +292,7 @@ const CONTROLS: readonly PrototypeControl[] = [
     value: 'double',
   },
   { id: 'money-out', label: 'Plaćeni nema novca', value: false },
+  { id: 'offline', label: 'Nema interneta', value: false },
   { id: 'dark', label: 'Tamna pozadina', value: false },
 ];
 
@@ -314,7 +316,7 @@ function setKept(value: string | boolean): void {
   if (value === 'both') corrections.kept.letters = letters;
 }
 
-const WINDOW_CASES: readonly WindowCase[] = ['waiting', 'queued', 'busy', 'no-credit'];
+const WINDOW_CASES: readonly WindowCase[] = ['waiting', 'queued', 'busy', 'no-credit', 'offline'];
 
 function isWindowCase(value: string | boolean): value is WindowCase {
   return WINDOW_CASES.some((one) => one === value);
@@ -348,6 +350,7 @@ function setControl(id: string, value: string | boolean): void {
   if (id === 'google-36') state.google['gemini-3.6-flash'] = googleDayOf(value);
   if (id === 'pace') state.pace = value === 'short' || value === 'quadruple' || value === 'real' ? value : 'double';
   if (id === 'money-out') state.isMoneyOut = value === true;
+  if (id === 'offline') state.isOffline = value === true;
   if (id === 'letters-kept') setKept(value);
   // The app's own switch, as the diff prototype sets it.
   if (id === 'dark') document.documentElement.dataset['mode'] = value === true ? 'dark' : 'light';

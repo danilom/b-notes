@@ -53,6 +53,8 @@ export interface PrototypeState {
   pace: Pace;
   /** The paid Lektor is refused for want of money. */
   isMoneyOut: boolean;
+  /** No internet: every request fails before it reaches anyone. */
+  isOffline: boolean;
 }
 
 /** The free tier's two models: 3.8 first, 3.6 standing in for it on Slova i zarezi and Pravopis. */
@@ -65,6 +67,7 @@ export const state: PrototypeState = {
   google: { 'gemini-3.8-flash': 'ok', 'gemini-3.6-flash': 'ok' },
   pace: 'double',
   isMoneyOut: false,
+  isOffline: false,
 };
 
 export function element<T extends HTMLElement>(id: string, kind: new () => T): T {
