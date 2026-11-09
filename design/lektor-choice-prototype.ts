@@ -222,7 +222,8 @@ const CONTROLS: readonly PrototypeControl[] = [
       { value: 'no-credit', label: '3c. Prozor: nema novca (Dubinska)' },
       { value: 'keys', label: 'API ključevi' },
     ],
-    value: 'start',
+    // Where the work is now: the corrections window, open on arriving.
+    value: 'window',
   },
   { id: 'stale', label: 'Tekst promenjen posle utiska', value: false },
   { id: 'free-key', label: 'Ključ za besplatni sačuvan', value: true },
@@ -365,4 +366,6 @@ window.prototypeControls = CONTROLS;
 window.prototypeSet = setControl;
 
 element('prototype-text', HTMLElement).append(el('p', '', 'Probni tekst'), ...TEXT_PARAGRAPHS.map((paragraph) => el('p', '', paragraph)));
+// On the Panel switch's default, so the page and the switch agree.
+setScreen('window');
 render();
