@@ -277,9 +277,14 @@
         overflow-y: auto;
       }
 
-      /* A heading like "Izaberi…": bold and at the top is enough, no size of its own. */
+      /*
+        Bold and at the top, no size of its own; in the colour the window's title gives the name of
+        what it is about (.heading-name), since this names what the right side is about, and ties it
+        to the blue of the kind picked.
+      */
       .lektor-window-kind-title {
         font-weight: 600;
+        color: var(--chosen-ink);
       }
 
       /* New: under a kind's name, how far it goes: small and quiet, part of the row's target. */
