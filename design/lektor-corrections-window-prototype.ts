@@ -4,10 +4,11 @@
   text is held still, which is what thinking of corrections means anyway: the line between the
   panel and the window falls where the text stops being his to change, not midway through.
 
-  Two columns. On the left his two decisions, the Lektor and the kind, each kind saying whether
-  corrections of it are ready. On the right whatever belongs to the kind picked: what it does,
-  its instruction and his note; while it runs, the wait, big, since nothing else matters then;
-  and a failure, as big, with its way on as the main button.
+  Two columns, one meaning each. On the left what there is: his two decisions, the Lektor and the
+  kind, and under each kind the corrections ready for it, one line for each Lektor that made some,
+  each with its own Pogledaj. On the right making new ones, for the kind picked: what it does, its
+  instruction, his note and the send button; while it runs, the wait, big, since nothing else
+  matters then; and a failure, as big, with its way on. The footer has only what is the window's.
 
   His text is not shown: read-only beside the choices it looked like the review, as if his
   corrections were already there. Free or paid can be changed here too, but it is the panel's one
@@ -35,7 +36,6 @@ import {
   problem,
   radio,
   sendButton,
-  sendTooltip,
   state,
 } from './lektor-prototype-pieces.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
@@ -48,23 +48,25 @@ type Failure = 'busy' | 'no-credit';
  * text the app doesn't offer them at all, since the review would offer to undo his own edits.
  */
 export interface Kept {
-  by: Choice;
   at: string;
   /** What the run cost, from OpenRouter's reply; null on free. */
   cost: number | null;
 }
+
+/** As the app keeps them: one for each kind and each Lektor. */
+type KeptByKind = Partial<Record<Preset, Partial<Record<Choice, Kept>>>>;
 
 interface WindowState {
   view: View;
   preset: Preset;
   note: string;
   failure: Failure | null;
-  kept: Partial<Record<Preset, Kept>>;
-  /** Whether the review open is a kept one rather than just made. */
-  isReviewKept: boolean;
+  kept: KeptByKind;
+  /** Whose corrections the review open shows. */
+  reviewBy: Choice;
 }
 
-export const corrections: WindowState = { view: 'choosing', preset: 'letters', note: '', failure: null, kept: {}, isReviewKept: false };
+export const corrections: WindowState = { view: 'choosing', preset: 'letters', note: '', failure: null, kept: {}, reviewBy: 'free' };
 
 /** Placeholders, one line each on how far a kind goes, for Danilo to word. */
 const KIND_SUMMARIES: Readonly<Record<Preset, string>> = {
@@ -87,47 +89,69 @@ function stopTimers(): void {
   timers = [];
 }
 
+/** Closing while it runs stops it: the wait is the window's, and nothing is kept from it. */
 function close(): void {
   stopTimers();
+  if (corrections.view === 'waiting') corrections.view = 'choosing';
   shown?.close();
   shown = null;
+}
+
+function show(view: View): void {
+  corrections.view = view;
+  draw();
 }
 
 /** A different Lektor starts afresh: whatever failed was the other one's. */
 function chooseHere(choice: Choice): void {
   chooseInPanel(choice);
   corrections.failure = null;
-  corrections.view = 'choosing';
-  draw();
+  show('choosing');
 }
 
-/** Under a kind with corrections ready: who made them, when, and on paid what they cost. */
-function readyLine(kept: Kept): HTMLElement {
+function openReview(preset: Preset, by: Choice): void {
+  corrections.preset = preset;
+  corrections.reviewBy = by;
+  corrections.failure = null;
+  show('review');
+}
+
+/** Corrections ready: who made them, when, on paid what they cost, and the way straight to them. */
+function readyLine(preset: Preset, by: Choice, kept: Kept, isLocked: boolean): HTMLElement {
   const line = el('span', 'lektor-kind-state');
   const cost = kept.cost === null ? '' : ` · ${dollars(kept.cost)}`;
-  line.append(el('span', 'lektor-kind-ready', 'Spremno'), ' · ', choiceMark(kept.by), el('span', '', `${kept.at}${cost}`));
-  line.title = `Ispravke koje je napravio ${lektorName(kept.by)} Lektor čekaju da ih pogledaš.`;
+  line.append(el('span', 'lektor-kind-ready', 'Spremno'), ' · ', choiceMark(by), el('span', '', `${kept.at}${cost}`));
+  line.title = `Ispravke koje je napravio ${lektorName(by)} Lektor čekaju da ih pogledaš.`;
+  const open = button('Pogledaj', () => openReview(preset, by), 'lektor-kind-open');
+  open.disabled = isLocked;
+  line.append(open);
   return line;
+}
+
+function readyLines(preset: Preset, isLocked: boolean): HTMLElement[] {
+  const kept = corrections.kept[preset] ?? {};
+  return (['free', 'paid'] as const).flatMap((by) => {
+    const one = kept[by];
+    return one === undefined ? [] : [readyLine(preset, by, one, isLocked)];
+  });
 }
 
 function kindOption(preset: Preset, isLocked: boolean): HTMLElement {
   const option = radio('lektor-window-kind', PRESET_NAMES[preset], corrections.preset === preset, () => {
     corrections.preset = preset;
     corrections.failure = null;
-    corrections.view = 'choosing';
-    draw();
+    show('choosing');
   });
   const input = option.querySelector('input');
   if (input !== null) input.disabled = isLocked;
-  // Part of the kind's row, as the balance is of Plaćeni's: its hover covers it, and clicking it picks the kind.
-  const kept = corrections.kept[preset];
-  if (kept !== undefined) option.append(readyLine(kept));
+  // Part of the kind's row, as the balance is of Plaćeni's: its hover covers them, and clicking one picks the kind.
+  option.append(...readyLines(preset, isLocked));
   const kind = el('div', 'lektor-kind');
   kind.append(option);
   return kind;
 }
 
-/** The left column: his two decisions, locked while a request runs. */
+/** The left column: his two decisions and what is ready, locked while a request runs. */
 function choicesColumn(): HTMLElement {
   const isLocked = corrections.view === 'waiting';
   const kinds = el('div', 'lektor-kind-list');
@@ -154,7 +178,19 @@ function noteField(): HTMLElement[] {
   return [label, box];
 }
 
-/** The right column while choosing: what the kind picked does, its instruction and his note. */
+/**
+ * Blue when it is the obvious next step; plain when this Lektor's corrections of this kind are
+ * already there, so asking again stays possible without looking like what to do.
+ */
+function sendRow(): HTMLElement {
+  const isRepeat = corrections.kept[corrections.preset]?.[state.choice] !== undefined;
+  const send = sendButton('Pošalji zahtev za ispravke', corrections.preset, run, isRepeat ? 'status-action' : 'status-action lektor-main-action');
+  const row = el('div', 'lektor-window-actions');
+  row.append(send);
+  return row;
+}
+
+/** The right column while choosing: what the kind picked does, its instruction, his note, and sending. */
 function kindDetail(): HTMLElement[] {
   return [
     el('p', 'lektor-window-kind-title', PRESET_NAMES[corrections.preset]),
@@ -162,6 +198,7 @@ function kindDetail(): HTMLElement[] {
     el('p', 'lektor-prompt-label', 'Uputstvo za AI Lektora:'),
     el('p', 'lektor-prompt', PRESET_PROMPTS[corrections.preset]),
     ...noteField(),
+    sendRow(),
   ];
 }
 
@@ -176,7 +213,12 @@ function runningClock(): HTMLElement {
   return clock;
 }
 
-/** The right column while it runs, all of it: the one thing happening, said big. */
+function stopRun(): void {
+  stopTimers();
+  show('choosing');
+}
+
+/** The right column while it runs, all of it: the one thing happening, said big, and the way to stop it. */
 function waitingDetail(): HTMLElement {
   const fellBack = state.choice === 'free' && state.isFreeBusy ? [el('p', 'lektor-fallback', 'Gugl je bio zauzet, pa ovo radi njegov brži model.')] : [];
   const big = el('div', 'lektor-window-big');
@@ -186,17 +228,31 @@ function waitingDetail(): HTMLElement {
     runningClock(),
     el('p', 'lektor-wait-note', state.choice === 'free' ? 'Obično traje oko minut.' : 'Može da potraje nekoliko minuta.'),
     ...fellBack,
+    button('Prekini', stopRun, 'status-action'),
   );
   return big;
 }
 
-/** The right column after a failure, as big: what happened, and the way on is the main button. */
+function sendFree(): void {
+  chooseInPanel('free');
+  run();
+}
+
+function freeSendButton(): HTMLButtonElement {
+  const made = button('Pošalji besplatnom', sendFree, 'status-action lektor-main-action lektor-sends');
+  made.append(choiceMark('free'), icon('move-out'));
+  return made;
+}
+
+/** The right column after a failure, as big: what happened, and the way on under it. */
 function failedDetail(): HTMLElement {
+  const isNoCredit = corrections.failure === 'no-credit';
   const big = el('div', 'lektor-window-big');
   big.append(
-    corrections.failure === 'no-credit'
+    isNoCredit
       ? problem('Plaćeni iznos je potrošen.', 'Možeš da pošalješ besplatnom, ili neka se uplati još. Tvoj izbor i uputstva su ostali.')
       : problem('AI Lektor sada ne radi. Probaj kasnije.', 'Gugl je zauzet. Za slova i gramatiku bi uzeo svoj brži model, ali za stil i dubinsku preradu on nije dovoljno dobar.'),
+    isNoCredit ? freeSendButton() : button('Pokušaj ponovo', run, 'status-action lektor-main-action'),
   );
   return big;
 }
@@ -215,62 +271,23 @@ function pretendCost(): number | null {
   return FALLS_BACK.has(corrections.preset) ? 0.09 : 0.52;
 }
 
+function finishRun(): void {
+  const preset = corrections.preset;
+  corrections.kept[preset] = { ...corrections.kept[preset], [state.choice]: { at: 'upravo sad', cost: pretendCost() } };
+  openReview(preset, state.choice);
+}
+
 function run(): void {
   stopTimers();
   corrections.failure = null;
   const cantFallBack = state.choice === 'free' && state.isFreeBusy && !FALLS_BACK.has(corrections.preset);
   if (cantFallBack || (state.choice === 'paid' && state.isMoneyOut)) {
     corrections.failure = cantFallBack ? 'busy' : 'no-credit';
-    corrections.view = 'failed';
-    draw();
+    show('failed');
     return;
   }
-  corrections.view = 'waiting';
-  draw();
-  timers.push(
-    window.setTimeout(() => {
-      corrections.kept[corrections.preset] = { by: state.choice, at: 'upravo sad', cost: pretendCost() };
-      corrections.isReviewKept = false;
-      corrections.view = 'review';
-      draw();
-    }, PRETEND_RUN_MS),
-  );
-}
-
-function sendFree(): void {
-  chooseInPanel('free');
-  run();
-}
-
-function freeSendButton(): HTMLButtonElement {
-  const made = button('Pošalji besplatnom', sendFree, 'keep lektor-sends');
-  made.append(choiceMark('free'), icon('move-out'));
-  return made;
-}
-
-/** The buttons for choosing: show what is ready, or send; and the way out. */
-function choosingButtons(): HTMLButtonElement[] {
-  const leave = button('Zatvori', close);
-  if (corrections.view === 'waiting') {
-    return [button('Prekini', () => {
-      stopTimers();
-      corrections.view = 'choosing';
-      draw();
-    })];
-  }
-  if (corrections.view === 'failed') {
-    return [corrections.failure === 'no-credit' ? freeSendButton() : button('Pokušaj ponovo', run, 'keep'), leave];
-  }
-  if (corrections.kept[corrections.preset] === undefined) return [sendButton('Pošalji zahtev za ispravke', corrections.preset, run, 'keep'), leave];
-  const again = button('Pošalji nov zahtev', run, 'lektor-sends');
-  again.title = sendTooltip(corrections.preset);
-  again.append(choiceMark());
-  const showKept = button('Pogledaj ispravke', () => {
-    corrections.isReviewKept = true;
-    corrections.view = 'review';
-    draw();
-  }, 'keep');
-  return [showKept, again, leave];
+  show('waiting');
+  timers.push(window.setTimeout(finishRun, PRETEND_RUN_MS));
 }
 
 function footer(buttons: HTMLButtonElement[], note: string): HTMLElement {
@@ -295,7 +312,7 @@ function choosingPanel(): HTMLElement {
   const panes = el('div', 'review-panes');
   panes.append(choicesColumn(), detailColumn());
   const footNote = corrections.view === 'choosing' ? 'Videćeš predloge. Tekst se ne menja dok ih ne uneseš.' : '';
-  return framed(header('Tvoj tekst se ne menja dok je ovaj prozor otvoren.'), panes, footer(choosingButtons(), footNote));
+  return framed(header('Tvoj tekst se ne menja dok je ovaj prozor otvoren.'), panes, footer([button('Zatvori', close)], footNote));
 }
 
 /**
@@ -303,8 +320,8 @@ function choosingPanel(): HTMLElement {
  * on paid, what it cost, as OpenRouter's reply stated it: known only now, after the run.
  */
 function reviewPanel(): HTMLElement {
-  const kept = corrections.kept[corrections.preset];
-  const by = kept?.by ?? state.choice;
+  const by = corrections.reviewBy;
+  const kept = corrections.kept[corrections.preset]?.[by];
   const cost = kept?.cost == null ? 'besplatno' : `koštalo ${dollars(kept.cost)}`;
   const ran = el('div', 'lektor-review-ran');
   const line = el('p', 'lektor-service-line');
@@ -316,11 +333,7 @@ function reviewPanel(): HTMLElement {
   body.append(ran, stand);
   const panes = el('div', 'review-panes');
   panes.append(body);
-  const back = button('Nazad na izbor', () => {
-    corrections.view = 'choosing';
-    draw();
-  });
-  const buttons = [button('Unesi sve izmene u tekst', close, 'keep'), back, button('Zatvori', close)];
+  const buttons = [button('Unesi sve izmene u tekst', close, 'keep'), button('Nazad na izbor', () => show('choosing')), button('Zatvori', close)];
   return framed(header('Pregledaj predloge ispravki u tekstu ispod. Ako ti nešto ne odgovara, klikni na to i promeni.'), panes, footer(buttons, 'Izmene ulaze u tvoj tekst.'));
 }
 

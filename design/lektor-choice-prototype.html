@@ -225,9 +225,10 @@
         font-size: 0.95rem;
       }
 
+      /* Wide enough for a ready line and its Pogledaj on one line; the right column has room to spare. */
       .lektor-window-side {
         flex: none;
-        width: 19rem;
+        width: 22rem;
       }
 
       .lektor-window-detail {
@@ -270,6 +271,43 @@
 
       .lektor-kind-ready {
         color: var(--chosen-ink);
+      }
+
+      /*
+        New: the way straight to ready corrections, at the right end of their line: a real button,
+        bordered, so it reads as its own target inside the row's.
+      */
+      .lektor-kind-state > span {
+        white-space: nowrap;
+      }
+
+      .lektor-kind-open {
+        margin-left: auto;
+        padding: 0.15rem 0.7rem;
+        font-size: var(--lektor-small);
+      }
+
+      /* Under the pointer the button is what will be clicked, not the row, so the row's wash steps aside. */
+      .lektor-kind .lektor-preset:has(.lektor-kind-open:hover) {
+        background-image: none;
+      }
+
+      /* New: sending, at the foot of the right column, at its right, as a window's main button stands. */
+      .lektor-window-actions {
+        margin-top: auto;
+        padding-bottom: 0.2rem;
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .lektor-window-actions .status-action,
+      .lektor-window-big .status-action {
+        min-height: 2.1rem;
+        padding-inline: 0.8rem;
+      }
+
+      .lektor-window-big .status-action {
+        margin-top: 0.8rem;
       }
 
       .lektor-kind-state .lektor-choice-mark {

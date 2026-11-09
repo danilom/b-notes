@@ -211,6 +211,7 @@ const CONTROLS: readonly PrototypeControl[] = [
     options: [
       { value: 'start', label: '1. Slanje teksta' },
       { value: 'response', label: '2. AI utisak (pa Pređi na ispravke)' },
+      { value: 'window', label: '3. Prozor za ispravke' },
       { value: 'keys', label: 'API ključevi' },
     ],
     value: 'start',
@@ -238,14 +239,42 @@ const CONTROLS: readonly PrototypeControl[] = [
     ],
     value: '7.47',
   },
-  { id: 'letters-kept', label: 'Slova i zarezi spremni (od juče)', value: false },
+  {
+    id: 'letters-kept',
+    label: 'Slova i zarezi spremni',
+    options: [
+      { value: 'none', label: 'ne' },
+      { value: 'paid', label: 'od plaćenog (juče)' },
+      { value: 'both', label: 'od oba' },
+    ],
+    value: 'none',
+  },
   { id: 'busy', label: 'Besplatni je zauzet', value: false },
   { id: 'money-out', label: 'Plaćeni nema novca', value: false },
   { id: 'dark', label: 'Tamna pozadina', value: false },
 ];
 
+/** Corrections of Slova i zarezi ready: none, the paid Lektor's from yesterday, or that and the free one's too. */
+function setLettersKept(value: string | boolean): void {
+  if (value === 'none') {
+    delete corrections.kept.letters;
+    return;
+  }
+  const paid = { at: 'juče u 18:40', cost: 0.09 };
+  corrections.kept.letters = value === 'both' ? { free: { at: 'pre 10 min', cost: null }, paid } : { paid };
+}
+
+/** "3. Prozor za ispravke" is the comment step with the window opened on it, as "Pređi na ispravke…" does. */
+function setScreen(value: string | boolean): void {
+  screen = value === 'response' || value === 'window' ? 'response' : value === 'keys' ? 'keys' : 'start';
+  if (value === 'window') {
+    render();
+    openCorrectionsWindow(choose);
+  }
+}
+
 function setControl(id: string, value: string | boolean): void {
-  if (id === 'screen') screen = value === 'response' || value === 'keys' ? value : 'start';
+  if (id === 'screen') setScreen(value);
   if (id === 'stale') isCommentStale = value === true;
   if (id === 'free-key') keys.saved.free = value === true;
   if (id === 'paid-key') keys.saved.paid = value === true;
@@ -253,8 +282,7 @@ function setControl(id: string, value: string | boolean): void {
   if (id === 'balance') state.balance = value === 'unknown' ? null : Number(value);
   if (id === 'busy') state.isFreeBusy = value === true;
   if (id === 'money-out') state.isMoneyOut = value === true;
-  if (id === 'letters-kept' && value === true) corrections.kept.letters = { by: 'paid', at: 'juče u 18:40', cost: 0.09 };
-  if (id === 'letters-kept' && value !== true) delete corrections.kept.letters;
+  if (id === 'letters-kept') setLettersKept(value);
   // The app's own switch, as the diff prototype sets it.
   if (id === 'dark') document.documentElement.dataset['mode'] = value === true ? 'dark' : 'light';
   render();
