@@ -160,6 +160,14 @@ Each of the three had drifted into the wrong slot at least once. The test is
 whether the sentence is about the screen, about a thing on it, or about an act
 — and then putting it where that thing is.
 
+**Solid blue is for the next step of work he has started, not for every main
+button.** In the AI Lektor, sending, *Pogledaj* and *Unesi sve izmene u tekst*
+are solid blue: he asked for corrections, and taking them is the point of the
+screen. In *Ranije verzije*, *Arhiva* and *Obrisani tekstovi* the main button
+keeps the dialog's blue edge (`.keep`): there it is an open choice whether to
+bring a text back, and mostly he won't. Making every dialog's main button solid
+was considered (2026-11-10) and turned down for that reason.
+
 ## Stack
 
 - Electron + TypeScript. The Electron version is pinned deliberately: the app is local-files-only with no network and no untrusted content, so there is no pressure to chase Chromium updates. Don't upgrade it without a concrete reason.
