@@ -234,10 +234,10 @@
       }
 
       /*
-        The review's header: three lines in the dialog's own font and size (as its title's note and
-        buttons), with ordinary line spacing and the same room under each; only the text in the box
-        below is his, and set as his. Everything starts at one left edge; what is on the right (the
-        model, "Prikaži tekst kakav će biti") ends at one right edge.
+        The review's header: two lines, what came back and how the text below is shown, in the
+        dialog's own font and size (as its title's note and buttons), with ordinary line spacing; only
+        the text in the box below is his, and set as his. Everything starts at one left edge; what is
+        on the right (the model, "Prikaži tekst kakav će biti") ends at one right edge.
       */
       .lektor-window .review-body > :not(.review-text) {
         margin: 0 0 0.5rem;
@@ -251,24 +251,29 @@
         line-height: inherit;
       }
 
-      .lektor-window .review-body > .lektor-about-row {
+      /* A little more room before the box than between the two lines. */
+      .lektor-window .review-body > .lektor-review-row + .lektor-review-row {
         margin-bottom: 0.7rem;
       }
 
-      /* Who made it on the left, the model at the right of the same line, on its baseline. */
-      .lektor-review-who {
+      /* Each line: what is said on the left, its companion at the right, on one baseline. */
+      .lektor-review-row {
         display: flex;
         align-items: baseline;
         justify-content: space-between;
         gap: 1rem;
       }
 
-      .lektor-review-who > * {
+      .lektor-review-row > * {
         margin: 0;
       }
 
-      .lektor-review-who > .lektor-where {
+      .lektor-review-row > .lektor-where {
         color: var(--quiet);
+        white-space: nowrap;
+      }
+
+      .lektor-review-row > .lektor-only-new {
         white-space: nowrap;
       }
 

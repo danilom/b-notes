@@ -729,26 +729,35 @@ function choosingPanel(): HTMLElement {
  * reply stated it (known only now, after the run; "Besplatni" already says free cost nothing); the
  * model at the line's right, in small grey, for whoever wants it.
  */
+/**
+ * The first of two lines, what came back: the kind, who made it, when, on paid what it cost, and how
+ * much it changed (the numbers made up); the model at the right, in grey, for whoever wants it.
+ */
 function reviewWhoLine(preset: Preset, by: Choice, kept: Kept | undefined): HTMLElement {
+  const said = strings('sr').lektor.review;
   const cost = kept?.cost == null ? '' : ` · ${dollars(kept.cost)}`;
   const model = kept?.model ?? MODELS[by][preset];
   const who = el('p', 'lektor-service-line');
-  who.append(el('span', 'lektor-review-kind', PRESET_NAMES[preset]), ' · ', choiceMark(by), el('span', '', `${lektorName(by)} lektor · ${kept?.at ?? JUST_NOW}${cost}`));
-  const line = el('div', 'lektor-review-who');
+  who.append(
+    el('span', 'lektor-review-kind', PRESET_NAMES[preset]),
+    ' · ',
+    choiceMark(by),
+    el('span', '', `${lektorName(by)} lektor · ${kept?.at ?? JUST_NOW}${cost} · ${said.counts(12, 31)}`),
+  );
+  const line = el('div', 'lektor-review-row');
   line.append(who, el('span', 'lektor-where', `${model}${model === FREE_STAND_IN ? ' (stariji, rezervni)' : ''}`));
   return line;
 }
 
-/** The counts and "only new", as the app's review has them over its box; the numbers made up. */
-function reviewAboutRow(): HTMLElement {
-  const said = strings('sr').lektor.review;
+/** The second line, how the text below is shown: what its marks mean, and the box that changes the view. */
+function reviewViewLine(legend: HTMLElement): HTMLElement {
   const only = el('label', 'lektor-only-new');
   const box = el('input');
   box.type = 'checkbox';
-  only.append(box, said.onlyNew);
-  const row = el('div', 'lektor-about-row');
-  row.append(el('p', 'review-note-aside diff-legend-counts', said.counts(12, 31)), only);
-  return row;
+  only.append(box, strings('sr').lektor.review.onlyNew);
+  const line = el('div', 'lektor-review-row');
+  line.append(legend, only);
+  return line;
 }
 
 /** His text in the review's own read-only box, without the marks: the real review draws the changes here. */
@@ -780,8 +789,7 @@ function reviewPanel(preset: Preset): HTMLElement {
   const body = el('div', 'review-body lektor-body');
   body.append(
     reviewWhoLine(preset, by, kept),
-    legend,
-    reviewAboutRow(),
+    reviewViewLine(legend),
     reviewTextBox(),
   );
   const panes = el('div', 'review-panes');
