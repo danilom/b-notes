@@ -202,15 +202,15 @@ function readyCard(preset: Preset, by: Choice, kept: Kept): HTMLElement {
   const cost = kept.cost === null ? '' : ` · ${dollars(kept.cost)}`;
   const words = el('span', 'lektor-ready-words', `Predlozi od ${kept.at}${cost}`);
   words.title = `Napravio ${lektorName(by)} Lektor.`;
-  card.append(choiceMark(by), words, button('Pogledaj', () => openReview(preset, by), 'status-action lektor-main-action'));
+  card.append(choiceMark(by), words, button('Pogledaj', () => openReview(preset, by), 'keep'));
   return card;
 }
 
 function readyDetail(preset: Preset): HTMLElement[] {
-  const again = button('Pošalji nov zahtev…', () => {
+  const again = button('Novi zahtev za ispravke…', () => {
     corrections.isAskingAgain = true;
     show('choosing');
-  }, 'lektor-again lektor-ask-again');
+  }, 'lektor-ask-again');
   return [
     el('p', 'lektor-window-kind-title', PRESET_NAMES[preset]),
     ...keptFor(preset).map(([by, kept]) => readyCard(preset, by, kept)),
@@ -259,10 +259,10 @@ function sendRow(preset: Preset): HTMLElement {
     row.append(button('Nazad na predloge', () => {
       corrections.isAskingAgain = false;
       show('choosing');
-    }, 'lektor-again'));
+    }, 'lektor-back-to-ready'));
   }
   const to = lektorFor(preset);
-  const send = sendButton('Pošalji zahtev za ispravke', preset, () => run(to), 'status-action lektor-main-action');
+  const send = sendButton('Pošalji zahtev za ispravke', preset, () => run(to), 'keep');
   // Who it goes to is this kind's Lektor here, not the panel's choice that sendButton reads.
   send.querySelector('.lektor-choice-mark')?.replaceWith(choiceMark(to));
   send.title = [`Šalje se ${to === 'free' ? 'Guglu' : 'firmi OpenRouter'}`, `Model: ${MODELS[to][preset]}`].join('\n');
@@ -308,13 +308,13 @@ function waitingDetail(preset: Preset): HTMLElement {
     button('Prekini', () => {
       stopTimers();
       show('choosing');
-    }, 'status-action'),
+    }, ''),
   );
   return big;
 }
 
 function sendToButton(preset: Preset, to: Choice): HTMLButtonElement {
-  const made = button(to === 'free' ? 'Pošalji besplatnom' : 'Pošalji plaćenom', () => run(to), 'status-action lektor-main-action lektor-sends');
+  const made = button(to === 'free' ? 'Pošalji besplatnom' : 'Pošalji plaćenom', () => run(to), 'keep lektor-sends');
   made.append(choiceMark(to), icon('move-out'));
   made.title = `Model: ${MODELS[to][preset]}`;
   return made;
@@ -325,7 +325,7 @@ function failureWays(preset: Preset): HTMLButtonElement[] {
   const to = other(corrections.sentTo);
   const switchTo = keys.saved[to] ? [sendToButton(preset, to)] : [];
   if (corrections.failure === 'no-credit') return switchTo;
-  return [...switchTo, button('Pokušaj ponovo', () => run(corrections.sentTo), switchTo.length > 0 ? 'status-action' : 'status-action lektor-main-action')];
+  return [...switchTo, button('Pokušaj ponovo', () => run(corrections.sentTo), switchTo.length > 0 ? '' : 'keep')];
 }
 
 function failedDetail(preset: Preset): HTMLElement {

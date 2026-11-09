@@ -329,11 +329,11 @@
         color: inherit;
       }
 
-      .lektor-ready-card .status-action {
+      .lektor-ready-card button {
         margin-left: auto;
       }
 
-      /* Asking again past ready corrections: quiet, the way past rather than the way on. */
+      /* Asking again past ready corrections: plain, the way past rather than the way on; it opens the form, sends nothing. */
       .lektor-ask-again {
         align-self: flex-start;
         margin-top: 0.4rem;
@@ -349,13 +349,19 @@
         gap: 0.6rem;
       }
 
-      .lektor-window-actions .lektor-again {
+      .lektor-window-actions .lektor-back-to-ready {
         margin-right: auto;
       }
 
-      .lektor-window-detail .status-action {
-        min-height: 2.1rem;
-        padding-inline: 0.8rem;
+      /*
+        The dialog's own buttons, as its footer has them (.panel footer button), so every button in
+        the window is one height and one size of words: blue-edged .keep for the way on, plain for the rest.
+      */
+      .lektor-window-detail button {
+        min-width: 6.5rem;
+        padding: 0.5rem 1rem;
+        /* The dialog's own size (.panel), not the column's or the big panel's they sit in. */
+        font-size: calc(var(--ui-size) * 0.85);
       }
 
       .lektor-window-ways {
@@ -476,13 +482,14 @@
         color: var(--quiet);
       }
 
-      .lektor-window footer .lektor-sends {
+      .lektor-window .lektor-sends {
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 0.35em;
       }
 
-      .lektor-window footer .lektor-sends svg {
+      .lektor-window .lektor-sends svg {
         width: 1.05em;
         height: 1.05em;
       }
