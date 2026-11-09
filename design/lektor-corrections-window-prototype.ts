@@ -794,8 +794,8 @@ function reviewPanel(preset: Preset): HTMLElement {
   );
   const panes = el('div', 'review-panes');
   panes.append(body);
-  // No note beside it: "Unesi sve izmene u tekst" says what it does.
-  const bottom = footer([button(said.apply, close, 'keep'), button('Zatvori', close)], '');
+  // No note beside it: "Unesi sve izmene u tekst" says what it does. Solid blue, the next step, as on every screen of the window.
+  const bottom = footer([button(said.apply, close, 'lektor-main-action'), button('Zatvori', close)], '');
   // A step back, at the footer's left, apart from the two that finish or leave: as Nazad on the keys screen.
   const back = button('', () => show('choosing'), 'lektor-footer-back');
   back.append(icon('back'), el('span', '', 'Nazad'));
