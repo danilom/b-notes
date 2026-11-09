@@ -382,6 +382,11 @@
         border-left: 2px solid var(--line);
       }
 
+      /* The instruction is a paragraph: without its own margins, so it sits under its label as his box does under his. */
+      .lektor-prompt-group .lektor-prompt {
+        margin: 0;
+      }
+
       /* Its parts' labels, at the heading's own quiet level, so neither reads as a heading of the column. */
       .lektor-prompt-sub {
         margin: 0;
