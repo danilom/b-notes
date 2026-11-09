@@ -441,7 +441,13 @@
         in bold at that size (the text's name), its small grey print (times, model, notes), and the
         clock, big, as the one thing to glance at.
       */
+      /*
+        Pinned to the top, where the form's title was: a new stage adds a line below and nothing he has
+        read moves. Centred top to bottom, each new line shifted the whole block up.
+      */
       .lektor-window-wait {
+        justify-content: flex-start;
+        padding: 0;
         font-size: var(--lektor-text);
         color: var(--ink);
       }
@@ -485,11 +491,16 @@
         text-align: left;
       }
 
+      /*
+        The marks hang out in the margin, so every line of text, the bar and the notes share one left
+        edge, and the marks make a column of their own beside it.
+      */
       .lektor-stage {
         display: grid;
         grid-template-columns: 1.4em minmax(0, 1fr) auto;
         align-items: center;
         gap: 0.5rem;
+        margin-left: calc(-1.4em - 0.5rem);
       }
 
       .lektor-stage-mark {
@@ -506,17 +517,15 @@
 
       /* Said about the stage going on, under its words, gone when it ends: the queue's why and its limit. */
       .lektor-stage-note {
-        /* The mark's column at the stages' size, not this smaller print's, so it lines up with their words. */
-        margin: -0.2rem 0 0 calc(1.4 * var(--lektor-text) + 0.5rem);
+        margin-top: -0.2rem;
       }
 
-      /* The bar under the stage it measures, in line with its words, so it can't be read as the whole wait's. */
+      /* The bar under the stage it measures, at the shared edge, so it can't be read as the whole wait's. */
       .lektor-stage-progress {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
         gap: 0.5rem;
-        margin-left: calc(1.4em + 0.5rem);
       }
 
       /* New: how far the writing has got, a plain bar in the app's blue. */

@@ -472,9 +472,8 @@ function modelLine(): HTMLElement[] {
  * The wait, in four styles: the text's name in bold, the kind and the stages as words, the clock
  * big as the one thing to glance at, the model and notes in small grey.
  */
-function waitingDetail(preset: Preset): HTMLElement {
-  // One column with one left edge, in the middle of the right side: read top to bottom like a list,
-  // and starting where the form he just sent from started.
+function waitingDetail(preset: Preset): HTMLElement[] {
+  // One column with one left edge, in the middle of the right side, read top to bottom like a list.
   const column = el('div', 'lektor-wait-column');
   column.append(
     el('p', 'lektor-heading', TEXT_TITLE),
@@ -482,14 +481,16 @@ function waitingDetail(preset: Preset): HTMLElement {
     stagesList(preset),
     el('p', 'lektor-window-clock', waitedWords()),
     ...modelLine(),
-    button('Prekini', () => {
-      stopTimers();
-      show('choosing');
-    }, ''),
   );
   const big = el('div', 'lektor-window-big lektor-window-wait');
   big.append(column);
-  return big;
+  // Where the send button was, apart from what he is watching: the hand that sent it finds the way to stop it.
+  const stop = el('div', 'lektor-window-actions');
+  stop.append(button('Prekini', () => {
+    stopTimers();
+    show('choosing');
+  }, ''));
+  return [big, stop];
 }
 
 function sendToButton(preset: Preset, to: Choice): HTMLButtonElement {
@@ -525,7 +526,7 @@ function detailColumn(): HTMLElement {
   const column = el('div', 'lektor-window-detail');
   const preset = corrections.preset;
   if (preset === null) column.append(emptyDetail());
-  else if (corrections.view === 'waiting') column.append(waitingDetail(preset));
+  else if (corrections.view === 'waiting') column.append(...waitingDetail(preset));
   else if (corrections.view === 'failed') column.append(failedDetail(preset));
   else if (keptFor(preset).length > 0 && !corrections.isAskingAgain) column.append(...readyDetail(preset));
   else column.append(...requestDetail(preset));
