@@ -819,8 +819,9 @@ function reviewWhoLine(preset: Preset, by: Choice, kept: Kept | undefined): HTML
   lektor.append(choiceMark(by), el('span', '', `${lektorName(by)} lektor`));
   lektor.title = `Model: ${model}${model === FREE_STAND_IN ? ' (stariji, rezervni)' : ''}`;
   const who = el('p', 'lektor-service-line');
+  // Named as the wait names it, so the kind reads as what was asked rather than as a heading.
   who.append(
-    el('span', 'lektor-review-kind', PRESET_NAMES[preset]),
+    el('span', 'lektor-review-kind', `Vrsta ispravke: ${PRESET_NAMES[preset]}`),
     ' · ',
     lektor,
     el('span', '', ` · ${kept?.at ?? JUST_NOW}${cost} · ${said.counts(12, 31)}`),
