@@ -160,7 +160,8 @@
         font-size: 0.95rem;
       }
 
-      .lektor-window-side > * {
+      /* No weight of its own (:where), so a piece shared with the panel, as the balance's indent, keeps its own margins. */
+      :where(.lektor-window-side > *) {
         margin: 0;
       }
 
