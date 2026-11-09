@@ -86,6 +86,14 @@ const targets = [
     platform: 'browser',
     format: 'iife',
   },
+  {
+    // A page for trying out the Lektor's free and paid choice. Into dist-browser/ only, like the one above.
+    ...shared,
+    entryPoints: ['design/lektor-choice-prototype.ts'],
+    outfile: 'dist-browser/lektor-choice-prototype.js',
+    platform: 'browser',
+    format: 'iife',
+  },
 ];
 
 await mkdir('dist', { recursive: true });

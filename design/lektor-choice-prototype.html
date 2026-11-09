@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="sr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Prototip izbora Lektora</title>
+    <link rel="icon" href="/icon.svg" />
+    <!--
+      The Lektor as it could be once paid goes through OpenRouter with a model for each kind of
+      correction: the panel for choosing free or paid and reading the comment, and one modal window
+      for all of the corrections, from choosing the kind to the review. Nothing real behind it:
+      switches above the panel set each case. The text in it is made up: this file is public.
+
+      Not part of the app: served by scripts/serve.mjs at /lektor-choice-prototype, and its script
+      is built into dist-browser/ only. The panel's look is the app's own stylesheet, so what is
+      seen is what the app would draw; the few new pieces are styled below, marked as new.
+    -->
+    <link rel="stylesheet" href="/interface.css" />
+    <link rel="stylesheet" href="/lektor.css" />
+    <style>
+      body {
+        flex-direction: column;
+        gap: 0.6rem;
+        box-sizing: border-box;
+        min-height: 100vh;
+        padding: 0.8rem 1.2rem;
+        background: var(--page);
+        color: var(--ink);
+      }
+
+      /* The switches: this page's scaffolding, not part of the design. */
+      .prototype-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem 1.2rem;
+        padding-bottom: 0.6rem;
+        border-bottom: 1px solid var(--line);
+        font-size: 0.85rem;
+      }
+
+      .prototype-controls label {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+      }
+
+      .prototype-frame {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 22rem;
+        height: 40rem;
+        border: 1px solid var(--line);
+      }
+
+      .prototype-text {
+        overflow: hidden;
+        padding: 1.2rem 1.6rem;
+        font-family: Georgia, serif;
+        font-size: 1.1rem;
+        line-height: 1.75;
+        color: var(--quiet);
+      }
+
+      .prototype-notes {
+        max-width: 60rem;
+        font-size: 0.85rem;
+        color: var(--quiet);
+      }
+
+      /* New: the choice on the corrections step, one line, so the kinds of correction stay the heading. */
+      .lektor-choice-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.2rem 0.8rem;
+      }
+
+      .lektor-choice-row .lektor-preset {
+        margin: 0;
+      }
+
+      /* New: the two choices on the left and the way to the keys on the right, on Besplatni's line: a column's baseline is its first line's. */
+      .lektor-choice-with-keys {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.6rem;
+      }
+
+      .lektor-choice-options {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+
+      .lektor-choice-options .lektor-preset {
+        margin: 0;
+      }
+
+      .lektor-choice-with-keys .lektor-again {
+        font-size: var(--lektor-small);
+      }
+
+      /* New: the balance, small and quiet, under the paid choice. */
+      .lektor-balance {
+        margin: -0.2rem 0 0 1.6rem;
+        font-size: 0.85rem;
+        color: var(--quiet);
+      }
+
+      /* New: where the text goes and, if shown, what it costs, beside the send button. */
+      .lektor-where {
+        font-size: 0.85rem;
+        color: var(--quiet);
+      }
+
+      /* New: a balance under 1 $ in the app's red, with "malo" after it: the only warning about money. */
+      .lektor-balance-low {
+        color: var(--danger);
+      }
+
+      /* New: the free and paid marks, beside the choice and on the buttons that send, the size of the service marks. */
+      .lektor-choice-mark {
+        flex: none;
+        width: 1.05em;
+        height: 1.05em;
+      }
+
+      .lektor-choice-mark-free {
+        color: var(--chosen-ink);
+      }
+
+      .lektor-choice-mark-paid {
+        color: #a87412;
+      }
+
+      /* On a filled button the mark takes the button's own words' colour. */
+      .lektor-main-action .lektor-choice-mark {
+        color: inherit;
+      }
+
+      /* The stand-in for the review: who wrote it, the model and the cost, then where the review would be. */
+      .lektor-review-ran {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+      }
+
+      .lektor-review-ran p {
+        margin: 0;
+      }
+
+      /* New: the corrections window. Choices on the left, as the list in Ranije verzije; his text on the right, read-only. */
+      .lektor-window-side {
+        flex: none;
+        width: 19rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        overflow-y: auto;
+        font-size: 0.95rem;
+      }
+
+      .lektor-window-side > * {
+        margin: 0;
+      }
+
+      .lektor-window-side > .lektor-preset + .lektor-preset {
+        margin-top: -0.3rem;
+      }
+
+      .lektor-window-side .lektor-prompt {
+        max-height: 7em;
+        overflow-y: auto;
+      }
+
+      .lektor-window-text {
+        user-select: text;
+      }
+
+      .lektor-window-title {
+        font-weight: 600;
+      }
+
+      /* New: "sačuvano" after a kind with kept corrections, with the mark of the Lektor that made them. */
+      .lektor-kept-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2em;
+        margin-left: 0.5em;
+        font-size: 0.8em;
+        color: var(--quiet);
+      }
+
+      .lektor-kept-badge .lektor-choice-mark {
+        width: 0.95em;
+        height: 0.95em;
+      }
+
+      .lektor-window footer .lektor-sends {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35em;
+      }
+
+      .lektor-window footer .lektor-sends svg {
+        width: 1.05em;
+        height: 1.05em;
+      }
+
+      /* New: the line under "Ispravlja tekst…" when the free one moved to its quicker model. */
+      .lektor-fallback {
+        font-size: 0.85rem;
+        color: var(--quiet);
+      }
+    </style>
+  </head>
+  <body class="lektor-open">
+    <div class="prototype-controls">
+      <label>Panel
+        <select id="screen">
+          <option value="start" selected>1. Slanje teksta</option>
+          <option value="response">2. Utisak (pa Pređi na ispravke)</option>
+        </select>
+      </label>
+      <label>Stanje računa
+        <select id="balance">
+          <option value="7.47">7,47 $</option>
+          <option value="0.9">0,90 $ (ispod 1 $: malo)</option>
+          <option value="unknown">ne može da se pročita (ne prikazuje se)</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="letters-kept" /> Slova i zarezi već sačuvani</label>
+      <label><input type="checkbox" id="busy" /> Besplatni je zauzet</label>
+      <label><input type="checkbox" id="money-out" /> Plaćeni nema novca</label>
+      <label><input type="checkbox" id="dark" /> Tamna pozadina</label>
+    </div>
+
+    <div class="prototype-frame">
+      <div class="prototype-text">
+        Probni tekst<br /><br />
+        Ujutru sam sisao do obale, gdje ribari vec slazu mreze. Mirisalo je na so i na kafu iz obliznje kafane, a galebovi su
+        se svadjali oko onoga sto je ostalo od noci.
+      </div>
+      <aside id="lektor-side"></aside>
+    </div>
+
+    <!-- The app's own: the window all of the corrections happen in, modal, so the text can't be edited under it. -->
+    <dialog id="lektor-dialog"></dialog>
+
+    <p class="prototype-notes">
+      Panel: izbor besplatnog ili plaćenog i utisak. Prozor: sve oko ispravki, od izbora vrste do pregleda; tekst je u njemu samo
+      za čitanje. Plaćene Slova i zarezi i Pravopis rade na Gemini 3.8 Flash, Stilska dorada i Dubinska prerada na Opusu. Cena
+      se ne procenjuje unapred; slanje se nikad ne zabranjuje, a ako novca nema, prozor to kaže i nudi besplatnog.
+    </p>
+
+    <script src="/lektor-choice-prototype.js"></script>
+  </body>
+</html>
