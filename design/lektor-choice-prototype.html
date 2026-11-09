@@ -100,6 +100,13 @@
         flex: 1;
       }
 
+      /* Up into the first row's padding, so a list sits under its heading as close as before the rows grew. */
+      .lektor-choice-with-keys,
+      .lektor-window-side > .lektor-choice-options,
+      .lektor-kind-list {
+        margin-top: -0.45rem;
+      }
+
       .lektor-choice-options {
         display: flex;
         flex-direction: column;
@@ -114,7 +121,8 @@
       .lektor-kind .lektor-preset {
         /* A little room at the left, taken back by the margin, so the hover's tint doesn't cut into the radio. */
         margin: 0 0 0 -0.35rem;
-        padding: 0.4rem 0.35rem;
+        /* Above and below, what a row of his list has, so the two are as tall. */
+        padding: 0.5rem 0.35rem;
         border-radius: 4px;
       }
 
@@ -132,7 +140,7 @@
       .lektor-balance {
         /* Under the marks, a column with them. */
         /* Up into the last choice's padding, so it stays with the choices rather than floating below. */
-        margin: -0.5rem 0 0 calc(var(--lektor-radio-indent) + var(--lektor-after-radio));
+        margin: -0.6rem 0 0 calc(var(--lektor-radio-indent) + var(--lektor-after-radio));
         font-size: 0.85rem;
         color: var(--quiet);
       }
@@ -235,7 +243,7 @@
         align-items: center;
         gap: 0.3em;
         /* Up into its kind's padding, so it reads as that kind's. */
-        margin: -0.45rem 0 0.2rem var(--lektor-after-radio);
+        margin: -0.55rem 0 0.2rem var(--lektor-after-radio);
         font-size: 0.85rem;
         color: var(--quiet);
       }
