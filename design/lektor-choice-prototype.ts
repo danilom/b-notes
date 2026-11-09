@@ -8,7 +8,7 @@
   classes and icons, piece for piece as lektor-sidebar.ts builds its screens.
 */
 import { icon } from '../src/ui/icons.ts';
-import { corrections, openCorrectionsWindow } from './lektor-corrections-window-prototype.ts';
+import { corrections, openCorrectionsWindow, redrawWindowIfOpen } from './lektor-corrections-window-prototype.ts';
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
 import { type Choice, TEXT_PARAGRAPHS, button, el, element, recipient, sendButton, serviceLine, state } from './lektor-prototype-pieces.ts';
@@ -251,6 +251,7 @@ function setControl(id: string, value: string | boolean): void {
   // The app's own switch, as the diff prototype sets it.
   if (id === 'dark') document.documentElement.dataset['mode'] = value === true ? 'dark' : 'light';
   render();
+  redrawWindowIfOpen();
 }
 
 declare global {

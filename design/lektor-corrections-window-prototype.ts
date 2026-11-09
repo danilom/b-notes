@@ -335,6 +335,14 @@ function draw(): void {
   else dialog.replaceChildren(panel);
 }
 
+/**
+ * For the harness's switches: a case set while the window is open shows at once, not only on
+ * reopening. Not while it runs, where a redraw would start the clock again from nought.
+ */
+export function redrawWindowIfOpen(): void {
+  if (shown !== null && corrections.view !== 'waiting') draw();
+}
+
 /** Opens the window on choosing, as the app would from the panel's "Pređi na ispravke". */
 export function openCorrectionsWindow(onChoose: (choice: Choice) => void): void {
   chooseInPanel = onChoose;
