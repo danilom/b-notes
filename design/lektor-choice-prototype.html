@@ -489,9 +489,13 @@
       }
 
       /* New: the main button in a strip of its own at the panel's foot, always in view, with what scrolls above it. */
+      /*
+        Under the button as much room as over it (the strip's 0.5rem below its line, lektor.css), so it
+        sits evenly between that line and the bottom bar's edge under the panel.
+      */
       .lektor-side-dock {
         flex: none;
-        padding: 0 1rem 0.8rem;
+        padding: 0 1rem 0.5rem;
       }
 
       .lektor-side-dock .lektor-side-buttons {
