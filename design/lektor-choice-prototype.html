@@ -558,12 +558,24 @@
         row-gap: 0.4rem;
       }
 
-      .lektor-send-note {
+      /* Its own line over the buttons: "▸ Uputstva za AI" at the left while folded, what sending does at the right. */
+      .lektor-send-line {
         order: -1;
         flex-basis: 100%;
+        display: flex;
+        align-items: baseline;
+        gap: 1rem;
+      }
+
+      .lektor-send-note {
         max-width: none;
-        margin: 0;
+        margin: 0 0 0 auto;
         text-align: right;
+      }
+
+      /* On the send line, not taking the free space above as it does when it heads the open instructions. */
+      .lektor-window-detail .lektor-send-line .lektor-prompt-toggle {
+        margin-top: 0;
       }
 
       .lektor-window-actions button {

@@ -387,8 +387,11 @@ function sendRow(preset: Preset): HTMLElement {
   // Who it goes to is this kind's Lektor here, not the panel's choice that sendButton reads.
   send.querySelector('.lektor-choice-mark')?.replaceWith(choiceMark(to));
   send.title = [`Šalje se ${to === 'free' ? 'Guglu' : 'firmi OpenRouter'}`, `Model: ${MODELS[to][preset]}`].join('\n');
-  // What sending does, next to the button that does it, rather than by Zatvori in the footer.
-  row.append(el('span', 'lektor-wait-small lektor-send-note', 'Videćeš predloge. Tekst se ne menja dok ih ne uneseš.'), send);
+  // What sending does, next to the button that does it, rather than by Zatvori in the footer; and,
+  // while the instructions are folded, the way to them at its left: one line of small print over the buttons.
+  const line = el('div', 'lektor-send-line');
+  line.append(...(isPromptOpen ? [] : [promptToggle()]), el('span', 'lektor-wait-small lektor-send-note', 'Videćeš predloge. Tekst se ne menja dok ih ne uneseš.'));
+  row.append(line, send);
   return row;
 }
 
@@ -400,8 +403,8 @@ function sendRow(preset: Preset): HTMLElement {
  */
 let isPromptOpen = false;
 
-/** "▸ Uputstvo za AI", the usual sign: pointing right while folded, down while open. */
-function promptPart(preset: Preset): HTMLElement[] {
+/** "▸ Uputstva za AI", the usual sign: pointing right while folded, down while open. */
+function promptToggle(): HTMLButtonElement {
   const toggle = el('button', 'lektor-prompt-toggle');
   toggle.type = 'button';
   toggle.setAttribute('aria-expanded', String(isPromptOpen));
@@ -410,7 +413,16 @@ function promptPart(preset: Preset): HTMLElement[] {
     isPromptOpen = !isPromptOpen;
     draw();
   });
-  if (!isPromptOpen) return [toggle];
+  return toggle;
+}
+
+/**
+ * The instructions, open: the opener over them, heading what it opened, since ▾ points down at its
+ * contents. Folded, the opener sits on the send line instead (sendRow) and this is nothing.
+ */
+function promptPart(preset: Preset): HTMLElement[] {
+  if (!isPromptOpen) return [];
+  const toggle = promptToggle();
   // One heading for both, and what it opens held together by a line down its side, so the two
   // small labels inside read as parts of it rather than as headings of the column.
   const group = el('div', 'lektor-prompt-group');
