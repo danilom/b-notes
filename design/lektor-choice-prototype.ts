@@ -231,7 +231,7 @@ const CONTROLS: readonly PrototypeControl[] = [
     ],
     value: '7.47',
   },
-  { id: 'letters-kept', label: 'Slova i zarezi već sačuvani', value: false },
+  { id: 'letters-kept', label: 'Slova i zarezi spremni (od juče)', value: false },
   { id: 'busy', label: 'Besplatni je zauzet', value: false },
   { id: 'money-out', label: 'Plaćeni nema novca', value: false },
   { id: 'dark', label: 'Tamna pozadina', value: false },
@@ -246,7 +246,7 @@ function setControl(id: string, value: string | boolean): void {
   if (id === 'balance') state.balance = value === 'unknown' ? null : Number(value);
   if (id === 'busy') state.isFreeBusy = value === true;
   if (id === 'money-out') state.isMoneyOut = value === true;
-  if (id === 'letters-kept' && value === true) corrections.kept.letters = { by: 'free', at: 'juče u 18:40' };
+  if (id === 'letters-kept' && value === true) corrections.kept.letters = { by: 'paid', at: 'juče u 18:40', cost: 0.09 };
   if (id === 'letters-kept' && value !== true) delete corrections.kept.letters;
   // The app's own switch, as the diff prototype sets it.
   if (id === 'dark') document.documentElement.dataset['mode'] = value === true ? 'dark' : 'light';

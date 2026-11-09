@@ -148,10 +148,13 @@
         margin: 0;
       }
 
-      /* New: the corrections window, the choices only. The window keeps the review's size, so it doesn't jump when the review comes. */
-      .lektor-window-side {
-        flex: 1;
-        /* Room under the header's line, so "Izaberi AI Lektora" starts the choices rather than continuing the title. */
+      /*
+        New: the corrections window in two columns: his decisions on the left, what belongs to the kind
+        picked on the right. The window keeps the review's size, so it doesn't jump when the review comes.
+      */
+      .lektor-window-side,
+      .lektor-window-detail {
+        /* Room under the header's line, so the first heading starts the choices rather than continuing the title. */
         padding-top: 0.8rem;
         display: flex;
         flex-direction: column;
@@ -160,18 +163,109 @@
         font-size: 0.95rem;
       }
 
+      .lektor-window-side {
+        flex: none;
+        width: 19rem;
+      }
+
+      .lektor-window-detail {
+        flex: 1;
+        min-width: 0;
+        padding-left: 1rem;
+        border-left: 1px solid var(--line);
+      }
+
       /* No weight of its own (:where), so a piece shared with the panel, as the balance's indent, keeps its own margins. */
-      :where(.lektor-window-side > *) {
+      :where(.lektor-window-side > *, .lektor-window-detail > *, .lektor-kind > *) {
         margin: 0;
       }
 
-      .lektor-window-side > .lektor-preset + .lektor-preset {
+      .lektor-window-side > .lektor-kind + .lektor-kind {
         margin-top: -0.3rem;
       }
 
-      .lektor-window-side .lektor-prompt {
+      .lektor-window-detail .lektor-prompt {
         max-height: 7em;
         overflow-y: auto;
+      }
+
+      .lektor-window-kind-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+
+      /* New: under a kind with corrections ready, indented under its name as the balance is under the choices. */
+      .lektor-kind-state {
+        display: flex;
+        align-items: center;
+        gap: 0.3em;
+        margin: -0.1rem 0 0 1.6rem;
+        font-size: 0.85rem;
+        color: var(--quiet);
+      }
+
+      .lektor-kind-ready {
+        color: var(--chosen-ink);
+        font-weight: 600;
+      }
+
+      .lektor-kind-state .lektor-choice-mark {
+        width: 0.95em;
+        height: 0.95em;
+      }
+
+      /* New: the wait and a failure fill the right column, centred and large: while either lasts it is all there is. */
+      .lektor-window-big {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        text-align: center;
+        font-size: 1.1rem;
+      }
+
+      .lektor-window-big > * {
+        margin: 0;
+      }
+
+      .lektor-window-big-title {
+        font-size: 1.3rem;
+        color: var(--ink);
+      }
+
+      .lektor-window-big-kind {
+        font-weight: 600;
+      }
+
+      .lektor-window-clock {
+        font-size: 2rem;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .lektor-window-big .lektor-wait-note {
+        color: var(--quiet);
+      }
+
+      .lektor-window-big .lektor-problem {
+        max-width: 28rem;
+        text-align: left;
+      }
+
+      .lektor-window-big .lektor-problem p {
+        font-size: 1.15rem;
+      }
+
+      .lektor-window-big .lektor-problem .lektor-where {
+        margin-top: 0.5rem;
+        font-size: 0.95rem;
+      }
+
+      .lektor-window-big .lektor-problem svg {
+        width: 2em;
+        height: 2em;
       }
 
       /* New: the main button in a strip of its own at the panel's foot, always in view, with what scrolls above it. */
@@ -223,21 +317,6 @@
         margin-top: -0.35rem;
         font-size: 0.85rem;
         color: var(--quiet);
-      }
-
-      /* New: "sačuvano" after a kind with kept corrections, with the mark of the Lektor that made them. */
-      .lektor-kept-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.2em;
-        margin-left: 0.5em;
-        font-size: 0.8em;
-        color: var(--quiet);
-      }
-
-      .lektor-kept-badge .lektor-choice-mark {
-        width: 0.95em;
-        height: 0.95em;
       }
 
       .lektor-window footer .lektor-sends {
