@@ -192,6 +192,19 @@
         font-weight: 600;
       }
 
+      /* New on the keys screen: each key named after the choice it opens, with its mark, and a saved key said in words. */
+      .lektor-key-label {
+        display: flex;
+        align-items: center;
+        gap: 0.35em;
+      }
+
+      .lektor-key-state {
+        margin-top: -0.35rem;
+        font-size: 0.85rem;
+        color: var(--quiet);
+      }
+
       /* New: "sačuvano" after a kind with kept corrections, with the mark of the Lektor that made them. */
       .lektor-kept-badge {
         display: inline-flex;

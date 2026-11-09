@@ -9,9 +9,13 @@
 */
 import { icon } from '../src/ui/icons.ts';
 import { corrections, openCorrectionsWindow } from './lektor-corrections-window-prototype.ts';
+import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { TEXT_PARAGRAPHS, button, dollars, el, element, radio, recipient, sendButton, serviceLine, state } from './lektor-prototype-pieces.ts';
 
-type Screen = 'start' | 'response';
+type Screen = 'start' | 'response' | 'keys';
+
+/** Said once on the first step after a key was saved and works, as the app does. */
+let isKeyJustSaved = false;
 
 /**
  * Under this the balance line says "malo" and turns red: the only warning about money. No cost is
@@ -41,13 +45,31 @@ function balanceLine(): HTMLElement[] {
 /** The two choices, and beside them on Besplatni's line the way to the keys, which decide which he can choose. */
 function choicesWithKeys(): HTMLElement {
   const options = el('div', 'lektor-choice-options');
-  options.append(
-    radio('lektor-level', 'Besplatni', state.choice === 'free', () => choose('free'), 'free'),
-    radio('lektor-level', 'Plaćeni', state.choice === 'paid', () => choose('paid'), 'paid'),
-  );
+  options.append(levelOption('free', 'Besplatni'), levelOption('paid', 'Plaćeni'));
+  const toKeys = button('API ključevi', () => {
+    screen = 'keys';
+    render();
+  }, 'lektor-again');
   const row = el('div', 'lektor-choice-with-keys');
-  row.append(options, button('API ključevi', () => undefined, 'lektor-again'));
+  row.append(options, toKeys);
   return row;
+}
+
+/** A choice whose key hasn't been entered is greyed, with the reason on hovering, as in the app. */
+function levelOption(choice: 'free' | 'paid', name: string): HTMLElement {
+  const option = radio('lektor-level', name, state.choice === choice, () => choose(choice), choice);
+  if (keys.saved[choice]) return option;
+  option.classList.add('lektor-preset-unavailable');
+  option.title = 'Nije unet API ključ.';
+  const input = option.querySelector('input');
+  if (input !== null) input.disabled = true;
+  return option;
+}
+
+/** One key is enough: on a choice without one he moves to the other, as the app does. */
+function settleOnChoiceWithKey(): void {
+  const other = state.choice === 'free' ? 'paid' : 'free';
+  if (!keys.saved[state.choice] && keys.saved[other]) state.choice = other;
 }
 
 function privacyWarning(): HTMLElement {
@@ -77,7 +99,10 @@ function startScreen(): HTMLElement[] {
     screen = 'response';
     render();
   }, 'status-action lektor-main-action');
+  const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', 'API ključ radi i sačuvan je.')] : [];
+  isKeyJustSaved = false;
   return [
+    ...saved,
     el('p', 'lektor-line', 'AI Lektor čita tvoj tekst, kaže šta misli i, ako želiš, predlaže ispravke.'),
     el('p', 'lektor-heading', 'Izaberi AI Lektora:'),
     choicesWithKeys(),
@@ -103,16 +128,32 @@ function responseScreen(): HTMLElement[] {
   return [again, comment, serviceLine(' · upravo sad'), footer([], toCorrections)];
 }
 
-const TITLES: Readonly<Record<Screen, string>> = { start: 'AI Lektor: slanje teksta', response: 'AI utisak' };
+const TITLES: Readonly<Record<Screen, string>> = { start: 'AI Lektor: slanje teksta', response: 'AI utisak', keys: 'AI Lektor: podešavanje' };
+
+function backToStart(): void {
+  screen = 'start';
+  render();
+}
+
+function savedAndBack(): void {
+  isKeyJustSaved = true;
+  backToStart();
+}
+
+function screenNow(): HTMLElement[] {
+  if (screen === 'keys') return keysScreen(render, backToStart, savedAndBack);
+  return screen === 'start' ? startScreen() : responseScreen();
+}
 
 function render(): void {
+  settleOnChoiceWithKey();
   const side = element('lektor-side', HTMLElement);
   const close = button('Zatvori', () => undefined, 'lektor-side-close');
   close.append(icon('fold-down'));
   const title = el('div', 'lektor-side-title');
   title.append(icon('lektor'), el('span', '', TITLES[screen]), close);
   const body = el('div', 'lektor-side-body');
-  body.append(...(screen === 'start' ? startScreen() : responseScreen()));
+  body.append(...screenNow());
   side.replaceChildren(title, body);
 }
 
@@ -138,8 +179,21 @@ const CONTROLS: readonly PrototypeControl[] = [
     options: [
       { value: 'start', label: '1. Slanje teksta' },
       { value: 'response', label: '2. Utisak (pa Pređi na ispravke)' },
+      { value: 'keys', label: 'API ključevi' },
     ],
     value: 'start',
+  },
+  { id: 'free-key', label: 'Ključ za besplatni sačuvan', value: true },
+  { id: 'paid-key', label: 'Ključ za plaćeni sačuvan', value: true },
+  {
+    id: 'key-check',
+    label: 'Provera zalepljenog ključa',
+    options: [
+      { value: 'works', label: 'radi' },
+      { value: 'refused', label: 'ne radi' },
+      { value: 'offline', label: 'nema interneta' },
+    ],
+    value: 'works',
   },
   {
     id: 'balance',
@@ -158,7 +212,10 @@ const CONTROLS: readonly PrototypeControl[] = [
 ];
 
 function setControl(id: string, value: string | boolean): void {
-  if (id === 'screen') screen = value === 'response' ? 'response' : 'start';
+  if (id === 'screen') screen = value === 'response' || value === 'keys' ? value : 'start';
+  if (id === 'free-key') keys.saved.free = value === true;
+  if (id === 'paid-key') keys.saved.paid = value === true;
+  if (id === 'key-check') keys.check = value === 'refused' || value === 'offline' ? value : ('works' satisfies KeyCheck);
   if (id === 'balance') state.balance = value === 'unknown' ? null : Number(value);
   if (id === 'busy') state.isFreeBusy = value === true;
   if (id === 'money-out') state.isMoneyOut = value === true;
