@@ -104,3 +104,8 @@
 /* The light mini page: seated in the sheet's button (0.593 px a unit), 2.8 shows 1.67 px and 3.4 shows 2.0 px, as the menu picture. */
 .lektor-picture .ic-mini-light { stroke-width: 2.8; }
 .lektor-picture .ic-mini-light-red { stroke-width: 3.4; }
+/* A page a shade darker than the menu's, to stand off a white button (the mini page in "Ispravke…"). */
+:root { --ic-paper-deep: #f4e8cf; }
+:root[data-mode='dark'] { --ic-paper-deep: #4a453c; }
+.lektor-picture .ic-paper-deep { fill: var(--ic-paper-deep); }
+.lektor-picture.lektor-picture-mono .ic-paper-deep { fill: color-mix(in srgb, var(--mono) 22%, var(--page)); }

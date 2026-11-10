@@ -478,6 +478,20 @@ export const ISPRAVKE_MINI: MenuPicture = {
 };
 
 /**
+ * The mini page for "Ispravke…" as tried in the panel (Danilo, 2026-11-10, option C): the ž and one
+ * line of text under it, so it reads as a page with a correction rather than a lone red mark, on a
+ * page a shade darker than the menu's, so it stands off the white button.
+ */
+export const ISPRAVKE_MINI_PAGE: MenuPicture = {
+  label: 'mala strana, ž i red, tamnija',
+  shapes: [
+    shape('rect', 'ic-paper-deep ic-mini-light', { x: 9, y: 3, width: 30, height: 42, rx: 4 }),
+    shape('path', 'ic-red-line ic-mini-light-red', { d: 'M18.5 18h11l-11 11h11M20.5 8.8l3.5 3.2 3.5-3.2' }),
+    shape('path', 'ic-line ic-mini-light', { d: 'M15.5 36.5h17' }),
+  ],
+};
+
+/**
  * The light mini page with one line of his text under the ž (Danilo, 2026-11-10): the ž raised to make
  * room, the line in the outline's ink and weight, as the menu picture's lines are.
  */

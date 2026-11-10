@@ -12,7 +12,7 @@ import { type WindowCase, corrections, openCorrectionsWindow, openCorrectionsWin
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
 import { commentFailure, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
-import { ISPRAVKE_MINI, ISPRAVKE_MINI_LIGHT, ISPRAVKE_MINI_VIEWBOX, ISPRAVKE_PICTURES, UTISAK_PICTURES, drawPicture } from './lektor-menu-icons-prototype.ts';
+import { ISPRAVKE_MINI, ISPRAVKE_MINI_LIGHT, ISPRAVKE_MINI_PAGE, ISPRAVKE_MINI_VIEWBOX, ISPRAVKE_PICTURES, UTISAK_PICTURES, drawPicture } from './lektor-menu-icons-prototype.ts';
 import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, button, dollars, el, element, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
 
 /** The menu, then the utisak's own step ('start': who writes it), its wait or failure, the utisak; and the keys. */
@@ -281,20 +281,30 @@ function responseScreen(): Step {
   // and drawn as the menu's card, so he knows it for the same. The ellipsis is Windows' sign that a
   // window opens and asks more; no arrow, like every button in the app that opens a window.
   const toCorrections = button('Ispravke…', () => openCorrectionsWindow(), 'status-action lektor-to-corrections');
-  toCorrections.prepend(correctionsButtonIcon());
+  toCorrections.prepend(...correctionsButtonIcon());
   return { content: [head, comment, signature], main: toCorrections };
 }
 
 /*
-  The mark on "Ispravke…", to compare (His screens' "Ikonica na Ispravke…"): the menu's page in a
-  small version of its own, whole, with only a red ž on it (Danilo, 2026-11-10, his pick), at a
-  button icon's size or bigger; or the menu's page, most of it, standing on the button's lower edge.
-  The ž on a page in the app's line, with its folded corner, was dropped.
+  The mark on "Ispravke…", to compare (His screens' "Ikonica na Ispravke…"). Now trying (Danilo,
+  2026-11-10, option C): the mini page with the ž and one line under it, on a darker page, so it reads
+  as a page with a correction and stands off the white button. Also: no picture at all (option B), the
+  mini page with only a ž, and the menu's page standing on the button's lower edge. A card like the
+  menu's (option A) was rejected: it takes the utisak's room. The line page with a folded corner is gone.
 */
-type CorrectionsButtonIcon = 'mini-light' | 'mini' | 'mini-big' | 'picture';
-let correctionsButtonIconKind: CorrectionsButtonIcon = 'mini-light';
+type CorrectionsButtonIcon = 'mini-page' | 'none' | 'mini-light' | 'mini' | 'mini-big' | 'picture';
+let correctionsButtonIconKind: CorrectionsButtonIcon = 'mini-page';
 
-function correctionsButtonIcon(): SVGSVGElement {
+const CORRECTIONS_BUTTON_ICONS: readonly CorrectionsButtonIcon[] = ['mini-page', 'none', 'mini-light', 'mini', 'mini-big', 'picture'];
+const isCorrectionsButtonIcon = (value: string | boolean): value is CorrectionsButtonIcon => CORRECTIONS_BUTTON_ICONS.some((one) => one === value);
+
+function correctionsButtonIcon(): SVGSVGElement[] {
+  if (correctionsButtonIconKind === 'none') return [];
+  return [correctionsButtonPicture()];
+}
+
+function correctionsButtonPicture(): SVGSVGElement {
+  if (correctionsButtonIconKind === 'mini-page') return drawPicture(ISPRAVKE_MINI_PAGE, 'lektor-to-corrections-mini', 'colour', ISPRAVKE_MINI_VIEWBOX);
   if (correctionsButtonIconKind === 'mini-light') return drawPicture(ISPRAVKE_MINI_LIGHT, 'lektor-to-corrections-mini', 'colour', ISPRAVKE_MINI_VIEWBOX);
   if (correctionsButtonIconKind === 'mini') return drawPicture(ISPRAVKE_MINI, 'lektor-to-corrections-mini', 'colour', ISPRAVKE_MINI_VIEWBOX);
   if (correctionsButtonIconKind === 'mini-big') return drawPicture(ISPRAVKE_MINI, 'lektor-to-corrections-mini-big');
@@ -524,12 +534,14 @@ const CONTROLS: readonly PrototypeControl[] = [
     id: 'corrections-icon',
     label: 'Ikonica na Ispravke…',
     options: [
+      { value: 'mini-page', label: 'C: mala strana, ž i red, tamnija' },
+      { value: 'none', label: 'B: bez slike' },
       { value: 'mini-light', label: 'mala strana, samo ž, tanje linije' },
       { value: 'mini', label: 'mala strana, samo ž' },
       { value: 'mini-big', label: 'mala strana, samo ž, veća' },
       { value: 'picture', label: 'crtež strane, u boji' },
     ],
-    value: 'mini-light',
+    value: 'mini-page',
   },
   {
     id: 'comment-title',
@@ -674,7 +686,7 @@ const ODD_TITLES: Readonly<Record<string, string>> = {
 function setControl(id: string, value: string | boolean): void {
   if (id === 'screen') setScreen(value);
   if (id === 'stale') isCommentStale = value === true;
-  if (id === 'corrections-icon') correctionsButtonIconKind = value === 'picture' || value === 'mini-big' || value === 'mini' ? value : 'mini-light';
+  if (id === 'corrections-icon') correctionsButtonIconKind = isCorrectionsButtonIcon(value) ? value : 'mini-page';
   if (id === 'comment-title' && typeof value === 'string') commentTextTitle = ODD_TITLES[value] ?? TEXT_TITLE;
   if (id === 'free-key') keys.saved.free = value === true;
   if (id === 'paid-key') keys.saved.paid = value === true;
