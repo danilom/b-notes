@@ -143,11 +143,12 @@ function startScreen(): Step {
   const send = sendButton(`Pošalji ceo tekst ${state.choice === 'free' ? 'Guglu' : 'OpenRouteru'}`, 'comment', () => askForComment(state.choice), 'status-action lektor-main-action');
   // What paying gives for the comment, as measured (2026-11-09): a draw blind (Opus 3, Flash 2), but
   // about 18 s against 3–5 minutes. So speed, beside Plaćeni as the corrections window gives its reason;
-  // and the equal quality under the heading, in his ordinary type, read on the way to choosing rather
-  // than as small print after it (Danilo, 2026-11-10). The corrections choose their own Lektor in the window.
+  // and the equal quality under the heading, read on the way to choosing rather than after it. In the
+  // small grey of "mnogo brži", the same kind of thing, and quiet once he knows it (Danilo, 2026-11-10).
+  // The corrections choose their own Lektor in the window.
   const [heading, ...choices] = lektorChoice({ group: 'lektor-level', choose, better: { choice: 'paid', why: 'mnogo brži' } });
   return {
-    content: [chosenOnMenu(), ...(heading === undefined ? [] : [heading]), el('p', 'lektor-line lektor-choice-lead', 'Oba pišu utisak sličnog kvaliteta.'), ...choices],
+    content: [chosenOnMenu(), ...(heading === undefined ? [] : [heading]), el('p', 'lektor-where lektor-choice-lead', 'Oba pišu utisak sličnog kvaliteta.'), ...choices],
     main: send,
     back: backButton('Nazad', toMenu),
   };
