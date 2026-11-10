@@ -11,7 +11,6 @@ import {
   PICTURE_COLOURS,
   type PictureColours,
   UTISAK_PICTURES,
-  drawLinePageZ,
   drawPicture,
   isPictureColours,
 } from './lektor-menu-icons-prototype.ts';
@@ -99,12 +98,12 @@ function menuPreview(): HTMLElement {
 function buttonPreviews(): HTMLElement {
   const picture = pictureOf('ispravke');
   const colours = chosen.ispravke.colours;
+  // The line ž-page with its folded corner was dropped (Danilo, 2026-11-10).
   const candidates: readonly [string, () => SVGSVGElement, string][] = [
+    [`${ISPRAVKE_MINI.label}, veća`, () => drawPicture(ISPRAVKE_MINI, 'sheet-button-mini-big', colours), ''],
     [ISPRAVKE_MINI.label, () => drawPicture(ISPRAVKE_MINI, 'sheet-button-mini', colours), ''],
     ['vrh strane, u boji', () => drawPicture(picture, 'sheet-button-page-top', colours, '6 2 34 33'), 'sheet-button-with-top'],
     ['cela slika, mala', () => drawPicture(picture, 'sheet-button-icon', colours), ''],
-    ['ž na strani, linijom', () => drawLinePageZ('sheet-button-icon'), ''],
-    ['ž na strani, linijom, crveno ž', () => drawLinePageZ('sheet-button-icon', true), ''],
   ];
   const list = el('div', 'sheet-buttons');
   for (const [label, mark, extra] of candidates) {

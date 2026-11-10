@@ -12,7 +12,7 @@ import { type WindowCase, corrections, openCorrectionsWindow, openCorrectionsWin
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
 import { commentFailure, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
-import { ISPRAVKE_MINI, ISPRAVKE_PICTURES, UTISAK_PICTURES, drawLinePageZ, drawPicture } from './lektor-menu-icons-prototype.ts';
+import { ISPRAVKE_MINI, ISPRAVKE_PICTURES, UTISAK_PICTURES, drawPicture } from './lektor-menu-icons-prototype.ts';
 import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, button, dollars, el, element, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
 
 /** The menu, then the utisak's own step ('start': who writes it), its wait or failure, the utisak; and the keys. */
@@ -286,16 +286,17 @@ function responseScreen(): Step {
 }
 
 /*
-  The mark on "Ispravke…", three to compare (His screens' "Ikonica na Ispravke…"): the menu's page in
-  a small version of its own, whole, with only a big red ž on it (Danilo, 2026-11-10, his pick); the
-  menu's page, most of it, standing on the button's lower edge; or a ž on a page in the app's line.
+  The mark on "Ispravke…", to compare (His screens' "Ikonica na Ispravke…"): the menu's page in a
+  small version of its own, whole, with only a red ž on it (Danilo, 2026-11-10, his pick), at a
+  button icon's size or bigger; or the menu's page, most of it, standing on the button's lower edge.
+  The ž on a page in the app's line, with its folded corner, was dropped.
 */
-type CorrectionsButtonIcon = 'mini' | 'line' | 'picture';
+type CorrectionsButtonIcon = 'mini' | 'mini-big' | 'picture';
 let correctionsButtonIconKind: CorrectionsButtonIcon = 'mini';
 
 function correctionsButtonIcon(): SVGSVGElement {
   if (correctionsButtonIconKind === 'mini') return drawPicture(ISPRAVKE_MINI, 'lektor-to-corrections-mini');
-  if (correctionsButtonIconKind === 'line') return drawLinePageZ('lektor-to-corrections-line');
+  if (correctionsButtonIconKind === 'mini-big') return drawPicture(ISPRAVKE_MINI, 'lektor-to-corrections-mini-big');
   return drawPicture(ISPRAVKE_PICTURES['page-z-caron'], 'lektor-to-corrections-icon', 'colour', '6 2 34 33');
 }
 
@@ -522,8 +523,8 @@ const CONTROLS: readonly PrototypeControl[] = [
     id: 'corrections-icon',
     label: 'Ikonica na Ispravke…',
     options: [
-      { value: 'mini', label: 'mala strana, samo veliko ž' },
-      { value: 'line', label: 'ž na strani, linijom' },
+      { value: 'mini', label: 'mala strana, samo ž' },
+      { value: 'mini-big', label: 'mala strana, samo ž, veća' },
       { value: 'picture', label: 'crtež strane, u boji' },
     ],
     value: 'mini',
@@ -671,7 +672,7 @@ const ODD_TITLES: Readonly<Record<string, string>> = {
 function setControl(id: string, value: string | boolean): void {
   if (id === 'screen') setScreen(value);
   if (id === 'stale') isCommentStale = value === true;
-  if (id === 'corrections-icon') correctionsButtonIconKind = value === 'picture' || value === 'line' ? value : 'mini';
+  if (id === 'corrections-icon') correctionsButtonIconKind = value === 'picture' || value === 'mini-big' ? value : 'mini';
   if (id === 'comment-title' && typeof value === 'string') commentTextTitle = ODD_TITLES[value] ?? TEXT_TITLE;
   if (id === 'free-key') keys.saved.free = value === true;
   if (id === 'paid-key') keys.saved.paid = value === true;
