@@ -142,11 +142,23 @@
         margin-block: -0.45em;
       }
 
+      /*
+        The mini page at the button's left, as far from its left edge as from its top and bottom
+        (Danilo, 2026-11-10): its height the button's inside less two insets, its width from its shape.
+      */
+      .sheet-button.sheet-button-with-mini {
+        --mini-inset: 0.3em;
+        position: relative;
+        padding-left: calc(var(--mini-inset) + (2.1rem - 2 * var(--mini-inset)) * 33.2 / 45.2 + 0.45em);
+      }
+
       .sheet-button .sheet-button-mini {
-        flex: none;
-        width: 1.7em;
-        height: 1.7em;
-        margin-block: -0.2em;
+        position: absolute;
+        left: var(--mini-inset);
+        top: var(--mini-inset);
+        height: calc(100% - 2 * var(--mini-inset));
+        width: auto;
+        aspect-ratio: 33.2 / 45.2;
       }
 
       .sheet-button .sheet-button-icon {

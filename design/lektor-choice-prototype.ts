@@ -12,7 +12,7 @@ import { type WindowCase, corrections, openCorrectionsWindow, openCorrectionsWin
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
 import { commentFailure, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
-import { ISPRAVKE_MINI, ISPRAVKE_PICTURES, UTISAK_PICTURES, drawPicture } from './lektor-menu-icons-prototype.ts';
+import { ISPRAVKE_MINI, ISPRAVKE_MINI_VIEWBOX, ISPRAVKE_PICTURES, UTISAK_PICTURES, drawPicture } from './lektor-menu-icons-prototype.ts';
 import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, button, dollars, el, element, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
 
 /** The menu, then the utisak's own step ('start': who writes it), its wait or failure, the utisak; and the keys. */
@@ -295,7 +295,7 @@ type CorrectionsButtonIcon = 'mini' | 'mini-big' | 'picture';
 let correctionsButtonIconKind: CorrectionsButtonIcon = 'mini';
 
 function correctionsButtonIcon(): SVGSVGElement {
-  if (correctionsButtonIconKind === 'mini') return drawPicture(ISPRAVKE_MINI, 'lektor-to-corrections-mini');
+  if (correctionsButtonIconKind === 'mini') return drawPicture(ISPRAVKE_MINI, 'lektor-to-corrections-mini', 'colour', ISPRAVKE_MINI_VIEWBOX);
   if (correctionsButtonIconKind === 'mini-big') return drawPicture(ISPRAVKE_MINI, 'lektor-to-corrections-mini-big');
   return drawPicture(ISPRAVKE_PICTURES['page-z-caron'], 'lektor-to-corrections-icon', 'colour', '6 2 34 33');
 }

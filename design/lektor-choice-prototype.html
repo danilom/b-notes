@@ -179,18 +179,32 @@
         the menu. The button keeps its height; the words make room at the left.
       */
       /* Within the strip: lektor.css's .lektor-side-buttons .status-action sets its own padding and would win. */
-      /* The mini page: bigger than a button's icon, as a picture, overhanging the padding so the button keeps its height. */
-      .lektor-side-buttons .lektor-to-corrections:has(.lektor-to-corrections-mini, .lektor-to-corrections-mini-big) {
+      /* The bigger mini page: overhanging the padding so the button keeps its height. */
+      .lektor-side-buttons .lektor-to-corrections:has(.lektor-to-corrections-mini-big) {
         display: inline-flex;
         align-items: center;
         gap: 0.45em;
       }
 
+      /*
+        The mini page at the button's left, as far from its left edge as from its top and bottom
+        (Danilo, 2026-11-10): its height the button's inside less two insets, its width from its shape.
+      */
+      .lektor-side-buttons .lektor-to-corrections:has(.lektor-to-corrections-mini) {
+        --mini-inset: 0.3em;
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        padding-left: calc(var(--mini-inset) + (2.1rem - 2 * var(--mini-inset)) * 33.2 / 45.2 + 0.45em);
+      }
+
       .lektor-to-corrections .lektor-to-corrections-mini {
-        flex: none;
-        width: 1.7em;
-        height: 1.7em;
-        margin-block: -0.2em;
+        position: absolute;
+        left: var(--mini-inset);
+        top: var(--mini-inset);
+        height: calc(100% - 2 * var(--mini-inset));
+        width: auto;
+        aspect-ratio: 33.2 / 45.2;
       }
 
       /* Bigger still (Danilo, 2026-11-10: "bigger than the normal UI icon is fine"). */

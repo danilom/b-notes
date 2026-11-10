@@ -465,6 +465,9 @@ export const isPictureColours = (value: unknown): value is PictureColours => typ
  * colours, whole, but nothing on it except one big red ž in the middle; its lines and caret would be
  * crumbs at a button's size. Drawn heavier than the menu's, so it holds at about 24 pixels.
  */
+/** Just the mini page and its outline, no empty box around it: so a margin set beside it is the margin seen. */
+export const ISPRAVKE_MINI_VIEWBOX = '7.4 1.4 33.2 45.2';
+
 export const ISPRAVKE_MINI: MenuPicture = {
   label: 'mala strana, samo ž',
   shapes: [
