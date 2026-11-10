@@ -45,10 +45,11 @@ function privacyWarning(): HTMLElement {
   const warning = el('div', 'lektor-warning');
   warning.setAttribute('role', 'note');
   const words = TEXT_PARAGRAPHS.join(' ').split(/\s+/).length;
-  // On the menu nothing says yet who it goes to, so both are named, by the Lektor each belongs to.
+  // Both named, as on the menu nothing yet says which; but not which Lektor is which (Danilo,
+  // 2026-11-10): too early for that, and the warning's point is only that the text leaves his hands.
   warning.append(
     heading,
-    el('p', 'lektor-line', `Ceo tekst (${words} reči) se šalje Guglu (besplatni lektor) ili firmi OpenRouter (plaćeni). Ne objavljuje se javno, ali je moguće da ga neko vidi.`),
+    el('p', 'lektor-line', `Ceo tekst (${words} reči) se šalje Guglu ili firmi OpenRouter. Ne objavljuje se javno, ali je moguće da ga neko vidi.`),
     el('p', 'lektor-line', 'Ne šalji ništa što ne bi pokazao drugima: lične misli, tajne, lozinke i slično.'),
   );
   return warning;
@@ -102,8 +103,11 @@ function menuOption(name: string, does: string, onPick: () => void, icon: SVGSVG
 function menuScreen(): Step {
   const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', 'API ključ radi i sačuvan je.')] : [];
   isKeyJustSaved = false;
-  const heading = el('div', 'lektor-choice-with-keys');
-  heading.append(el('p', 'lektor-heading', 'Šta želiš?'), button('API ključevi', openKeys, 'lektor-again'));
+  const heading = el('p', 'lektor-heading', 'Šta želiš?');
+  // At the very bottom, quiet (Danilo, 2026-11-10): a step the panel needs, but set up once, and
+  // after everything he does need; beside the warning, as the keys decide who the text goes to.
+  const keysLink = el('div', 'lektor-menu-keys');
+  keysLink.append(button('API ključevi', openKeys, 'lektor-again'));
   const options = el('div', 'lektor-menu');
   options.append(
     menuOption('Utisak o tekstu', 'Kratak osvrt na tekst, kao od pažljivog čitaoca.', () => {
@@ -116,7 +120,7 @@ function menuScreen(): Step {
     menuOption('Ispravke', 'Predlozi ispravki, od zareza do stila.', () => openCorrectionsWindow(), ispravkeIcon('lektor-menu-icon')),
   );
   return {
-    content: [...saved, el('p', 'lektor-line', 'AI Lektor čita tvoj tekst, kaže šta misli i predlaže ispravke.'), heading, options, privacyFoot()],
+    content: [...saved, el('p', 'lektor-line', 'AI Lektor čita tvoj tekst, kaže šta misli i predlaže ispravke.'), heading, options, privacyFoot(), keysLink],
   };
 }
 
