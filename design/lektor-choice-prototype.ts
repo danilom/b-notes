@@ -57,7 +57,7 @@ function privacyWarning(): HTMLElement {
   // 2026-11-10): too early for that, and the warning's point is only that the text leaves his hands.
   warning.append(
     heading,
-    el('p', 'lektor-line', `Ceo tekst (${words} reči) se šalje Guglu ili firmi OpenRouter. Ne objavljuje se javno, ali je moguće da ga neko vidi.`),
+    el('p', 'lektor-line', `Ceo tekst (${words} reči) se šalje firmi Google ili OpenRouter. Ne objavljuje se javno, ali je moguće da ga neko vidi.`),
     el('p', 'lektor-line', 'Ne šalji ništa što ne bi pokazao drugima: lične misli, tajne, lozinke i slično.'),
   );
   return warning;
