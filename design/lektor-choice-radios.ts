@@ -64,8 +64,9 @@ export function paidIfSlowBox(paidIfSlow: PaidIfSlow, isDisabled: boolean): HTML
   input.disabled = isDisabled;
   input.addEventListener('change', () => paidIfSlow.tick(input.checked));
   const words = el('span', 'lektor-check-words');
-  // The name after "lektoru", as Serbian sets a name.
-  words.append(el('span', '', `Ako čeka duže od ${FREE_LIMIT_WORDS}, pošalji plaćenom lektoru „Flash”`));
+  // The name after "lektoru", as Serbian sets a name; the two held together (a no-break space), so a
+  // wrap never leaves „Flash” alone on a line of its own.
+  words.append(el('span', '', `Ako čeka duže od ${FREE_LIMIT_WORDS}, pošalji tekst plaćenom lektoru\u00a0„Flash”`));
   box.append(input, markOf('flash'), words);
   if (isDisabled) box.classList.add('lektor-preset-unavailable');
   return box;
