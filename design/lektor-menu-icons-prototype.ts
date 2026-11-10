@@ -87,6 +87,60 @@ export const UTISAK_PICTURES = {
       shape('path', 'ic-line', { d: 'M15 39.5h18' }),
     ],
   },
+  'glasses-on-book': {
+    label: 'naočare na otvorenoj knjizi',
+    shapes: [
+      shape('path', 'ic-paper', { d: 'M24 27c-6-4-13-4-19-2v16c6-2 13-2 19 2z' }),
+      shape('path', 'ic-paper', { d: 'M24 27c6-4 13-4 19-2v16c-6-2-13-2-19 2z' }),
+      shape('path', 'ic-line', { d: 'M9 32c4-1 8-1 11 1M28 33c3-2 7-2 11-1M9 37c4-1 8-1 11 1M28 38c3-2 7-2 11-1' }),
+      shape('path', 'ic-line', { d: 'M9.5 15.5 6 12m32.5 3.5L42 12' }),
+      shape('circle', 'ic-lens', { cx: 16, cy: 17, r: 6.5 }),
+      shape('circle', 'ic-lens', { cx: 32, cy: 17, r: 6.5 }),
+      shape('path', 'ic-line', { d: 'M22.5 16.5q1.5-2 3 0' }),
+      shape('path', 'ic-shine', { d: 'M12.5 15a3.5 3.5 0 0 1 2.5-2M28.5 15a3.5 3.5 0 0 1 2.5-2' }),
+    ],
+  },
+  'owl-reading': {
+    label: 'sova čita knjigu',
+    shapes: [
+      shape('path', 'ic-wood', { d: 'M12 26c0-9 4-15 12-15s12 6 12 15-5 12-12 12-12-3-12-12z' }),
+      shape('path', 'ic-line', { d: 'm15 13 1-6 5 4M33 13l-1-6-5 4' }),
+      shape('circle', 'ic-paper', { cx: 19, cy: 21, r: 4.5 }),
+      shape('circle', 'ic-paper', { cx: 29, cy: 21, r: 4.5 }),
+      shape('circle', 'ic-ink', { cx: 19, cy: 22.5, r: 1.8 }),
+      shape('circle', 'ic-ink', { cx: 29, cy: 22.5, r: 1.8 }),
+      shape('path', 'ic-yellow', { d: 'm22.5 26 1.5 2.5 1.5-2.5z' }),
+      shape('path', 'ic-paper', { d: 'M24 34c-5-3-11-3-16-1v10c5-2 11-2 16 1z' }),
+      shape('path', 'ic-paper', { d: 'M24 34c5-3 11-3 16-1v10c-5-2-11-2-16 1z' }),
+    ],
+  },
+  'owl-face': {
+    label: 'glava sove sa naočarima',
+    shapes: [
+      shape('path', 'ic-wood', { d: 'M8 26c0-11 7-18 16-18s16 7 16 18-7 16-16 16S8 37 8 26z' }),
+      shape('path', 'ic-line', { d: 'M11 14 10 5l8 6M37 14l1-9-8 6' }),
+      shape('circle', 'ic-pink', { cx: 11.5, cy: 32, r: 2 }),
+      shape('circle', 'ic-pink', { cx: 36.5, cy: 32, r: 2 }),
+      shape('circle', 'ic-lens', { cx: 17, cy: 24, r: 6.5 }),
+      shape('circle', 'ic-lens', { cx: 31, cy: 24, r: 6.5 }),
+      shape('path', 'ic-line', { d: 'M23.5 23.5h1' }),
+      shape('circle', 'ic-ink', { cx: 17, cy: 24.5, r: 2.2 }),
+      shape('circle', 'ic-ink', { cx: 31, cy: 24.5, r: 2.2 }),
+      shape('path', 'ic-yellow', { d: 'm22 31 2 3.5 2-3.5z' }),
+    ],
+  },
+  'glasses-twinkle': {
+    label: 'naočare sa iskrama',
+    shapes: [
+      shape('path', 'ic-line', { d: 'M5 28 2.5 22M43 28l2.5-6' }),
+      shape('circle', 'ic-lens', { cx: 14, cy: 30, r: 9 }),
+      shape('circle', 'ic-lens', { cx: 34, cy: 30, r: 9 }),
+      shape('path', 'ic-line', { d: 'M23 29q1-2.5 2 0' }),
+      shape('path', 'ic-shine', { d: 'M9.5 27a5 5 0 0 1 3.5-3M29.5 27a5 5 0 0 1 3.5-3' }),
+      shape('path', 'ic-yellow', { d: 'm40 4 1.2 2.6 2.6 1.2-2.6 1.2L40 11.6l-1.2-2.6-2.6-1.2 2.6-1.2z' }),
+      shape('path', 'ic-pink', { d: 'm9 7 .9 1.9 1.9.9-1.9.9L9 12.6l-.9-1.9-1.9-.9 1.9-.9z' }),
+    ],
+  },
   bookmark: {
     label: 'knjiga sa crvenim obeleživačem',
     shapes: [
@@ -118,6 +172,46 @@ export const ISPRAVKE_PICTURES = {
       shape('path', 'ic-red-line', { d: 'M11 18h19M22 21.5l1.5 3 1.5-3' }),
       shape('circle', 'ic-green', { cx: 35, cy: 36, r: 8 }),
       shape('path', 'ic-white-line', { d: 'm31 36 3 3 5-6' }),
+    ],
+  },
+  'pencil-on-page': {
+    label: 'olovka piše po strani',
+    shapes: [
+      shape('rect', 'ic-paper', { x: 5, y: 5, width: 26, height: 34, rx: 3 }),
+      shape('path', 'ic-line', { d: 'M10 13h16M10 19h16M10 25h9' }),
+      shape('path', 'ic-red-line', { d: 'M10 31q2.5-2.5 5 0t5 0' }),
+      shape('path', 'ic-red', { d: 'M24 38 38 24l5 5-14 14z' }),
+      shape('path', 'ic-wood', { d: 'm24 38 5 5-8 3z' }),
+      shape('path', 'ic-pink', { d: 'm38 24 2.5-2.5a2 2 0 0 1 2.8 0l2.2 2.2a2 2 0 0 1 0 2.8L43 29z' }),
+    ],
+  },
+  'page-circled': {
+    label: 'strana sa zaokruženom rečju',
+    shapes: [
+      shape('rect', 'ic-paper', { x: 8, y: 4, width: 30, height: 38, rx: 3 }),
+      shape('path', 'ic-line', { d: 'M13 12h20M13 18h20M13 24h20M13 30h12' }),
+      shape('ellipse', 'ic-red-line', { cx: 24, cy: 18, rx: 6.5, ry: 3.6 }),
+      shape('path', 'ic-red-line', { d: 'M14 24h8M28 27.5l2 3 2-3' }),
+    ],
+  },
+  'pencil-check': {
+    label: 'olovka crta zelenu kvačicu',
+    shapes: [
+      shape('path', 'ic-green-line', { d: 'm6 30 7 7 15-12' }),
+      shape('path', 'ic-red', { d: 'M30 22 40 12l4 4-10 10z' }),
+      shape('path', 'ic-wood', { d: 'm30 22 4 4-6 2z' }),
+      shape('path', 'ic-pink', { d: 'm40 12 2-2a1.8 1.8 0 0 1 2.5 0l1.5 1.5a1.8 1.8 0 0 1 0 2.5l-2 2z' }),
+    ],
+  },
+  'notebook-pencil': {
+    label: 'sveska i olovka',
+    shapes: [
+      shape('rect', 'ic-paper', { x: 8, y: 6, width: 25, height: 36, rx: 3 }),
+      shape('path', 'ic-line', { d: 'M5 12h6M5 19h6M5 26h6M5 33h6M15 14h13M15 20h13M15 26h8' }),
+      shape('path', 'ic-red-line', { d: 'm15 33 2 2 4-4' }),
+      shape('rect', 'ic-red', { x: 37, y: 12, width: 7, height: 24 }),
+      shape('path', 'ic-wood', { d: 'M37 36h7l-3.5 6z' }),
+      shape('path', 'ic-pink', { d: 'M37 12V9a1.5 1.5 0 0 1 1.5-1.5h4A1.5 1.5 0 0 1 44 9v3z' }),
     ],
   },
   eraser: {

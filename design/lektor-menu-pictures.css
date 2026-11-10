@@ -54,6 +54,7 @@
 .lektor-picture .ic-shine { fill: none; stroke: #fff; stroke-width: 1.6; }
 .lektor-picture .ic-red-line { fill: none; stroke: var(--ic-red); stroke-width: 2.4; }
 .lektor-picture .ic-white-line { fill: none; stroke: #fff; stroke-width: 2.6; }
+.lektor-picture .ic-green-line { fill: none; stroke: var(--ic-green); stroke-width: 4; }
 
 /*
   New, to compare: the same pictures in one colour (the "Boje" switches): its outline in
@@ -72,7 +73,7 @@
   fill: color-mix(in srgb, var(--mono) 38%, var(--page));
 }
 
-.lektor-picture.lektor-picture-mono :is(.ic-handle, .ic-brown, .ic-steam, .ic-red-line) {
+.lektor-picture.lektor-picture-mono :is(.ic-handle, .ic-brown, .ic-steam, .ic-red-line, .ic-green-line) {
   stroke: var(--mono);
 }
 
