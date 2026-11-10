@@ -89,6 +89,11 @@
         position: relative;
       }
 
+      /* At full size the screen is bigger than the room for it: the room scrolls instead. */
+      #stage.at-full-size {
+        overflow: auto;
+      }
+
       /*
         A prototype's switches, above the screen rather than on it, in as many columns as the width
         allows: beside it, they took width the screen needed and drew it smaller.
@@ -182,6 +187,7 @@
       <span>His screens:</span>
       <span id="choices"></span>
       <button id="reload" type="button" title="Load the app in the frame again">Reload</button>
+      <button id="full-size" type="button" aria-pressed="false" title="Show the screen at its own size, scrolling, rather than shrunk to fit">100 %</button>
       <span id="about"></span>
     </header>
     <div id="middle">
@@ -268,13 +274,42 @@
         return { width: screen.width, height: screen.height - screen.taskbar - screen.titleBar };
       }
 
-      /** Shrunk to fit this browser window, never enlarged: the layout is the same either way. */
+      /**
+       * Whether the screen is shown at its own size, one CSS pixel to one, scrolling where it is bigger
+       * than the room: shrunk to fit, small details (an icon's line, a pixel of spacing) are hard to judge.
+       * Remembered in this browser only, as a convenience; it starts shrunk wherever that is unavailable.
+       */
+      const FULL_SIZE_KEY = 'his-screens-full-size';
+      let isFullSize = false;
+      try {
+        isFullSize = localStorage.getItem(FULL_SIZE_KEY) === 'yes';
+      } catch {
+        // No storage here (a private window, blocked site data): start shrunk, which is the usual view anyway.
+      }
+
+      const fullSizeButton = document.getElementById('full-size');
+
+      function setFullSize(wanted) {
+        isFullSize = wanted;
+        try {
+          localStorage.setItem(FULL_SIZE_KEY, wanted ? 'yes' : 'no');
+        } catch {
+          // Not remembered: it only means the next visit starts shrunk.
+        }
+        fit();
+        // The Lektor and most of what is tuned here sits at the window's right: start the scroll there.
+        if (wanted) stage.scrollLeft = stage.scrollWidth;
+      }
+
+      /** Shrunk to fit this browser window, never enlarged: the layout is the same either way; or at full size, scrolling. */
       function fit() {
         const room = stage.getBoundingClientRect();
-        const shrink = Math.min(1, (room.width - 24) / shown.width, (room.height - 24) / shown.height);
+        const shrink = isFullSize ? 1 : Math.min(1, (room.width - 24) / shown.width, (room.height - 24) / shown.height);
+        stage.classList.toggle('at-full-size', isFullSize);
+        fullSizeButton.setAttribute('aria-pressed', String(isFullSize));
         screenBox.style.transform = `scale(${shrink})`;
-        screenBox.style.left = `${(room.width - shown.width * shrink) / 2}px`;
-        screenBox.style.top = `${(room.height - shown.height * shrink) / 2}px`;
+        screenBox.style.left = `${Math.max(12, (room.width - shown.width * shrink) / 2)}px`;
+        screenBox.style.top = `${Math.max(12, (room.height - shown.height * shrink) / 2)}px`;
         const inside = windowSize(shown);
         about.textContent =
           `${shown.pixels} at ${Math.round(shown.scale * 100)} % → screen ${shown.width} × ${shown.height}, ` +
@@ -310,6 +345,7 @@
       document.getElementById('reload').addEventListener('click', () => {
         frame.contentWindow?.location.reload();
       });
+      fullSizeButton.addEventListener('click', () => setFullSize(!isFullSize));
       window.addEventListener('resize', fit);
       show(remembered());
 
