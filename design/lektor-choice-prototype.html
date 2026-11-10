@@ -195,7 +195,9 @@
         position: relative;
         display: inline-flex;
         align-items: center;
-        padding-left: calc(var(--mini-inset) + (2.1rem - 2 * var(--mini-inset)) * 33.2 / 45.2 + 0.45em);
+        /* Generous, as on the pictures page (Danilo, 2026-11-10): the strip is a row of its own with room to spare. */
+        padding-left: calc(var(--mini-inset) + (2.1rem - 2 * var(--mini-inset)) * 33.2 / 45.2 + 1.05em);
+        padding-right: 1.5em;
       }
 
       .lektor-to-corrections .lektor-to-corrections-mini {
