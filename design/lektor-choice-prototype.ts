@@ -13,7 +13,7 @@ import { type KeyCheck, deadKeyNotice, isAnyKeyDead, keys, keysScreen } from './
 import { type PaidIfSlow, lektorChoice, paidIfSlowByDefault } from './lektor-choice-radios.ts';
 import { type CommentFailure, commentFailure, commentRun, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
 import { ISPRAVKE_PICTURES, UTISAK_PICTURES, drawPicture } from './lektor-menu-icons-prototype.ts';
-import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, type Tier, button, dollars, el, element, sendButton, serviceLineOf, spend, state, tierOfModel } from './lektor-prototype-pieces.ts';
+import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, type Tier, button, dollars, el, element, problem, sendButton, serviceLineOf, spend, state, tierOfModel } from './lektor-prototype-pieces.ts';
 
 /** The menu, then the utisak's own step ('start': who writes it), its wait or failure, the utisak; and the keys. */
 type Screen = 'menu' | 'start' | 'waiting' | 'failed' | 'response' | 'keys';
@@ -421,12 +421,35 @@ function waitingScreen(): Step {
 }
 
 /**
+ * The text being read was deleted meanwhile (Danilo, 2026-11-10): the request is stopped at once, as
+ * it belongs to its text, and said so; the panel can't be left waiting for something that won't come.
+ * Back goes to the text that is open now, whose panel starts at the menu.
+ */
+function textGoneScreen(): Step {
+  const back = backButton('Nazad', () => {
+    commentRun.failure = null;
+    requestSlot = openSlot;
+    screen = 'menu';
+    render();
+  });
+  return { content: [problem(`Tekst ${textInWords()} je obrisan.`, 'Zato utisak o njemu neće stići.')], back };
+}
+
+/** What the app does when the text a utisak is being read for is deleted: stops it, and says so. */
+function textDeletedWhileReading(): void {
+  stopCommentRun();
+  commentRun.failure = 'text-gone';
+  setRequestScreen('failed');
+}
+
+/**
  * A failure, as in the window: the problem, "← Nazad", and the other Lektor where it can help. Named
  * by its text when another is open, since the panel then speaks of a text not in front of him.
  */
 function failedScreen(): Step {
   // Found only on sending: the same screen as on opening, with the way back as well.
   if (commentRun.failure === 'bad-key') return { ...deadKeyScreen(), back: backButton('Nazad', backFromComment) };
+  if (commentRun.failure === 'text-gone') return textGoneScreen();
   const which = isRequestElsewhere() ? [el('p', 'lektor-line', `Utisak o tekstu ${textInWords()} nije stigao.`)] : [];
   const content = [...which, commentFailure()];
   // With another text open, back leaves the panel to that text; the failed one is back at step 2 for when he returns.
@@ -577,6 +600,7 @@ const CONTROLS: readonly PrototypeControl[] = [
       { value: 'bad-key', label: '4e. Prozor: ključ ne radi pri slanju (Slova i zarezi)' },
       { value: 'spent', label: '4f. Prozor: besplatni potrošen za danas (Slova i zarezi)' },
       { value: 'broke-after-slow', label: '4g. Prozor: besplatni spor, plaćeni bez novca' },
+      { value: 'text-gone', label: '6. Utisak: tekst obrisan dok AI Lektor čita' },
       { value: 'dead-key-send', label: '5. Utisak: ključ ne radi pri slanju' },
       { value: 'keys', label: 'API ključevi' },
     ],
@@ -720,6 +744,12 @@ function setScreen(value: string | boolean): void {
   screen = value === 'response' || isWindow ? 'response' : named;
   if (value === 'dead-key-send') {
     showCommentFailure('bad-key');
+    return;
+  }
+  if (value === 'text-gone') {
+    // As it happens: the utisak sent and waiting, then its text deleted from the list.
+    screen = 'waiting';
+    textDeletedWhileReading();
     return;
   }
   // Opening the first step afresh, as he would: on Besplatni.

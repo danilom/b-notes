@@ -15,7 +15,8 @@ import { FREE_LIMIT_WORDS } from './lektor-choice-radios.ts';
 import { keys } from './lektor-keys-prototype.ts';
 import { type Choice, type FreeModel, HANDED_OVER_BROKE, HANDED_OVER_BROKE_NOTE, MODELS, PAID_IF_SLOW_MODEL, button, choiceMark, el, freeResetWords, problem, state } from './lektor-prototype-pieces.ts';
 
-export type CommentFailure = 'busy' | 'no-credit' | 'offline' | 'bad-key' | 'spent';
+/** 'text-gone': the text being read was deleted meanwhile, so the request was stopped. */
+export type CommentFailure = 'busy' | 'no-credit' | 'offline' | 'bad-key' | 'spent' | 'text-gone';
 
 interface CommentRun {
   sentTo: Choice;
