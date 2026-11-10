@@ -12,10 +12,10 @@
 import { icon } from '../src/ui/icons.ts';
 import { times } from './lektor-corrections-window-prototype.ts';
 import { FREE_LIMIT_WORDS } from './lektor-choice-radios.ts';
-import { keys } from './lektor-keys-prototype.ts';
+import { deadKeyProblem, keys } from './lektor-keys-prototype.ts';
 import { type Choice, type FreeModel, MODELS, PAID_IF_SLOW_MODEL, button, choiceMark, el, problem, state } from './lektor-prototype-pieces.ts';
 
-export type CommentFailure = 'busy' | 'no-credit' | 'offline';
+export type CommentFailure = 'busy' | 'no-credit' | 'offline' | 'bad-key';
 
 interface CommentRun {
   sentTo: Choice;
@@ -58,6 +58,7 @@ function fail(failure: CommentFailure, events: CommentRunEvents): void {
 function askPaid(events: CommentRunEvents, model: string = MODELS.paid.comment): void {
   commentRun.sentTo = 'paid';
   if (state.isOffline) return fail('offline', events);
+  if (keys.dead.paid) return fail('bad-key', events);
   if (state.isMoneyOut) return fail('no-credit', events);
   timers.push(window.setTimeout(() => finish('paid', model, events), workMs('paid')));
 }
@@ -76,6 +77,7 @@ function afterStandIn(events: CommentRunEvents): void {
 function askFree(model: FreeModel, events: CommentRunEvents): void {
   commentRun.sentTo = 'free';
   if (state.isOffline) return fail('offline', events);
+  if (keys.dead.free) return fail('bad-key', events);
   const day = state.google[model];
   const isFirst = model === 'gemini-3.8-flash';
   const next = (): void => (isFirst ? askFree('gemini-3.6-flash', events) : afterStandIn(events));
@@ -138,6 +140,7 @@ function freeExpect(): string {
 
 /** The window's words for the same failures, and the same shape: the problem, then the way back. */
 export function commentFailure(): HTMLElement {
+  if (commentRun.failure === 'bad-key') return deadKeyProblem();
   if (commentRun.failure === 'no-credit') return problem('Plaćeni iznos je potrošen.', keys.saved.free ? 'Možeš da pošalješ besplatnom lektoru, ili neka se uplati još.' : 'Neka se uplati još.');
   if (commentRun.failure === 'offline') return problem('Internet ne radi, a AI Lektoru je potreban.', 'Kad internet proradi, pošalji ponovo.');
   return problem('Gugl je sada zauzet.', keys.saved.paid ? 'Probaj malo kasnije, ili pošalji plaćenom lektoru.' : 'Probaj malo kasnije.');

@@ -956,6 +956,31 @@
         height: 2em;
       }
 
+      /*
+        New: a key that no longer works, its own mark: a key in the problem's red, drawn as a line like
+        the app's icons, not the red disc with a white mark, which says the Lektor failed.
+      */
+      .lektor-problem svg.lektor-dead-key-mark {
+        width: 1.7em;
+        height: 1.7em;
+        stroke: hsl(358 60% 50%);
+        stroke-width: 2.2;
+      }
+
+      .lektor-problem svg.lektor-dead-key-mark path:first-child {
+        fill: none;
+        stroke: hsl(358 60% 50%);
+      }
+
+      .lektor-dead-key {
+        margin-bottom: 0.4rem;
+      }
+
+      /* New: the menu under a dead key's message, there but out of use, so he sees what waits on the key. */
+      .lektor-menu-unavailable {
+        opacity: 0.45;
+      }
+
       /* New: the main button in a strip of its own at the panel's foot, always in view, with what scrolls above it. */
       /*
         Under the button as much room as over it (the strip's 0.5rem below its line, lektor.css), so it

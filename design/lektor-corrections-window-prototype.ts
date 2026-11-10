@@ -28,7 +28,7 @@ import { type Shown, showAsModal } from '../src/ui/dialogs/modal.ts';
 import { strings } from '../src/language/wording.ts';
 import { createDiffLegend } from '../src/ui/diff-legend.ts';
 import { icon } from '../src/ui/icons.ts';
-import { keys } from './lektor-keys-prototype.ts';
+import { deadKeyProblem, keys } from './lektor-keys-prototype.ts';
 import {
   type Choice,
   FALLS_BACK,
@@ -65,7 +65,7 @@ import {
 import { FREE_LIMIT_WORDS, type PaidIfSlow, lektorChoice, paidBalance, paidIfSlowBox, paidIfSlowByDefault } from './lektor-choice-radios.ts';
 
 type View = 'choosing' | 'waiting' | 'failed' | 'review';
-type Failure = 'busy' | 'no-credit' | 'offline';
+type Failure = 'busy' | 'no-credit' | 'offline' | 'bad-key';
 
 /**
  * Corrections ready to look at. Only while his text is as it was when they were made (trailing
@@ -630,6 +630,7 @@ function shortcutAfter(preset: Preset): HTMLButtonElement[] {
 
 /** What went wrong, in the app's own words, and a line on what can be done. */
 function failureWords(): HTMLElement {
+  if (corrections.failure === 'bad-key') return deadKeyProblem();
   if (corrections.failure === 'no-credit') return problem('Plaćeni iznos je potrošen.', keys.saved.free ? 'Možeš da pošalješ besplatnom lektoru, ili neka se uplati još.' : 'Neka se uplati još.');
   if (corrections.failure === 'offline') return problem('Internet ne radi, a AI Lektoru je potreban.', 'Kad internet proradi, pošalji ponovo.');
   return problem('Gugl je sada zauzet.', keys.saved.paid ? 'Probaj malo kasnije, ili pošalji plaćenom lektoru.' : 'Probaj malo kasnije.');
@@ -648,8 +649,23 @@ function failedDetail(preset: Preset): HTMLElement[] {
   }, 'lektor-back-to-ready');
   back.append(icon('back'), el('span', '', 'Nazad'));
   const row = el('div', 'lektor-window-actions');
-  row.append(back, ...shortcutAfter(preset));
+  row.append(back, ...(corrections.failure === 'bad-key' ? [keysButton()] : shortcutAfter(preset)));
   return [big, row];
+}
+
+/** Where to go to enter keys, which is the panel's: set by the panel, since the window can't reach it. */
+let openKeysInPanel: () => void = () => undefined;
+
+export function setKeysOpener(open: () => void): void {
+  openKeysInPanel = open;
+}
+
+/** A dead key's way out: the window closes and the panel opens on the keys. */
+function keysButton(): HTMLButtonElement {
+  return button('API ključevi', () => {
+    close();
+    openKeysInPanel();
+  }, 'lektor-main-action');
 }
 
 function detailColumn(): HTMLElement {
@@ -737,6 +753,10 @@ function askPaid(preset: Preset, model: string = MODELS.paid[preset]): void {
     fail('offline');
     return;
   }
+  if (keys.dead.paid) {
+    fail('bad-key');
+    return;
+  }
   if (state.isMoneyOut) {
     fail('no-credit');
     return;
@@ -806,6 +826,10 @@ function askFree(preset: Preset, model: FreeModel): void {
   corrections.sentTo = 'free';
   if (state.isOffline) {
     fail('offline');
+    return;
+  }
+  if (keys.dead.free) {
+    fail('bad-key');
     return;
   }
   const day = state.google[model];

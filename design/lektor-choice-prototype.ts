@@ -8,8 +8,8 @@
   classes and icons, piece for piece as lektor-sidebar.ts builds its screens.
 */
 import { icon } from '../src/ui/icons.ts';
-import { type WindowCase, corrections, openCorrectionsWindow, setCorrectionsStale, openCorrectionsWindowAt, redrawWindowIfOpen } from './lektor-corrections-window-prototype.ts';
-import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
+import { type WindowCase, corrections, openCorrectionsWindow, setCorrectionsStale, setKeysOpener, openCorrectionsWindowAt, redrawWindowIfOpen } from './lektor-corrections-window-prototype.ts';
+import { type KeyCheck, deadKeyProblem, isAnyKeyDead, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { type PaidIfSlow, lektorChoice, paidIfSlowByDefault } from './lektor-choice-radios.ts';
 import { commentFailure, commentRun, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
 import { ISPRAVKE_PICTURES, UTISAK_PICTURES, drawPicture } from './lektor-menu-icons-prototype.ts';
@@ -131,8 +131,23 @@ function menuScreen(): Step {
     // No "Ti biraš šta ulazi u tekst" (Danilo, 2026-11-10): "predlozi" says it, and the window says it by its send button.
     menuOption('Ispravke', 'Predlozi ispravki, od zareza do stila.', () => openCorrectionsWindow(), ispravkeIcon('lektor-menu-icon')),
   );
+  if (isAnyKeyDead()) return deadKeyMenu(options);
   return {
     content: [...saved, el('p', 'lektor-line', 'AI Lektor čita tvoj tekst, kaže šta misli i predlaže ispravke.'), heading, options, privacyFoot(), keysLink],
+  };
+}
+
+/**
+ * With a key that no longer works, found when the panel opened: the whole feature greyed under the
+ * message (Danilo, 2026-11-10), not one Lektor of two, and the way to fix it as the step's main button.
+ */
+function deadKeyMenu(options: HTMLElement): Step {
+  for (const option of options.querySelectorAll('button')) option.disabled = true;
+  options.classList.add('lektor-menu-unavailable');
+  return {
+    // No quiet "API ključevi" link at the foot as well: the main button is the way, said once.
+    content: [deadKeyProblem(), el('p', 'lektor-heading', 'Šta želiš?'), options],
+    main: button('API ključevi', openKeys, 'status-action lektor-main-action'),
   };
 }
 
@@ -410,6 +425,7 @@ function failedScreen(): Step {
   const content = [...which, commentFailure()];
   // With another text open, back leaves the panel to that text; the failed one is back at step 2 for when he returns.
   const back = backButton('Nazad', backFromComment);
+  if (commentRun.failure === 'bad-key') return { content, main: button('API ključevi', openKeys, 'status-action lektor-main-action'), back };
   const shortcut = commentShortcut((to) => askForComment(to, requestSlot));
   return shortcut === null ? { content, back } : { content, main: shortcut, back };
 }
@@ -538,6 +554,17 @@ const CONTROLS: readonly PrototypeControl[] = [
   },
   { id: 'free-key', label: 'Ključ za besplatni sačuvan', value: true },
   { id: 'paid-key', label: 'Ključ za plaćeni sačuvan', value: true },
+  {
+    id: 'dead-key',
+    label: 'Ključ više ne radi',
+    options: [
+      { value: 'none', label: 'nijedan' },
+      { value: 'free', label: 'besplatni' },
+      { value: 'paid', label: 'plaćeni' },
+      { value: 'both', label: 'oba' },
+    ],
+    value: 'none',
+  },
   {
     id: 'key-check',
     label: 'Provera zalepljenog ključa',
@@ -670,6 +697,10 @@ function setControl(id: string, value: string | boolean): void {
   if (id === 'comment-title' && typeof value === 'string') commentTextTitle = ODD_TITLES[value] ?? TEXT_TITLE;
   if (id === 'free-key') keys.saved.free = value === true;
   if (id === 'paid-key') keys.saved.paid = value === true;
+  if (id === 'dead-key') {
+    keys.dead.free = value === 'free' || value === 'both';
+    keys.dead.paid = value === 'paid' || value === 'both';
+  }
   if (id === 'key-check') keys.check = value === 'refused' || value === 'offline' ? value : ('works' satisfies KeyCheck);
   if (id === 'balance') state.balance = value === 'unknown' ? null : Number(value);
   if (id === 'google-38') state.google['gemini-3.8-flash'] = googleDayOf(value);
@@ -694,6 +725,8 @@ declare global {
 
 window.prototypeControls = CONTROLS;
 window.prototypeSet = setControl;
+// The window's way to the keys, which are entered in the panel.
+setKeysOpener(openKeys);
 
 // His list, clickable: another text opened, as he would, to see the panel stay with a request.
 for (const item of document.querySelectorAll('.prototype-list p')) {
