@@ -148,10 +148,15 @@
         The words a little further off than the maths would put them, to look as far from the page as
         "…" looks from the right edge: the page's hard edge reads closer than the dots' airy end.
       */
+      /*
+        Generous, as the strip it stands in is a whole row of its own with room to spare (Danilo,
+        2026-11-10); the gaps keep the proportion that looked even.
+      */
       .sheet-button.sheet-button-with-mini {
         --mini-inset: 0.3em;
         position: relative;
-        padding-left: calc(var(--mini-inset) + (2.1rem - 2 * var(--mini-inset)) * 33.2 / 45.2 + 0.65em);
+        padding-left: calc(var(--mini-inset) + (2.1rem - 2 * var(--mini-inset)) * 33.2 / 45.2 + 1.05em);
+        padding-right: 1.5em;
       }
 
       .sheet-button .sheet-button-mini {
