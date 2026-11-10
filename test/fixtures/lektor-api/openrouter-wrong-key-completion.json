@@ -1,0 +1,37 @@
+{
+  "name": "openrouter-wrong-key-completion",
+  "recordedAt": "2026-11-10T17:01:47.637Z",
+  "request": {
+    "method": "POST",
+    "url": "https://openrouter.ai/api/v1/chat/completions",
+    "headers": {
+      "Authorization": "<KEY>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "model": "google/gemini-3.8-flash",
+      "stream": true,
+      "max_tokens": 1,
+      "messages": [
+        {
+          "role": "user",
+          "content": "Zdravo."
+        }
+      ]
+    }
+  },
+  "status": 401,
+  "headers": {
+    "content-type": "application/json",
+    "x-openrouter-error-origin": "client"
+  },
+  "headersAtMs": 434,
+  "pieces": [
+    {
+      "atMs": 434,
+      "text": "{\"error\":{\"message\":\"User not found.\",\"code\":401}}"
+    }
+  ],
+  "endAtMs": 436,
+  "failure": null
+}

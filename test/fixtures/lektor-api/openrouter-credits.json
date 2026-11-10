@@ -1,0 +1,26 @@
+{
+  "name": "openrouter-credits",
+  "recordedAt": "2026-11-10T17:01:47.649Z",
+  "request": {
+    "method": "GET",
+    "url": "https://openrouter.ai/api/v1/credits",
+    "headers": {
+      "Authorization": "<KEY>",
+      "Content-Type": "application/json"
+    },
+    "body": null
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "headersAtMs": 392,
+  "pieces": [
+    {
+      "atMs": 395,
+      "text": "{\"data\":{\"total_credits\":15,\"total_usage\":7.924696649}}"
+    }
+  ],
+  "endAtMs": 395,
+  "failure": null
+}

@@ -1,0 +1,27 @@
+{
+  "name": "openrouter-wrong-key-key",
+  "recordedAt": "2026-11-10T17:01:47.641Z",
+  "request": {
+    "method": "GET",
+    "url": "https://openrouter.ai/api/v1/key",
+    "headers": {
+      "Authorization": "<KEY>",
+      "Content-Type": "application/json"
+    },
+    "body": null
+  },
+  "status": 401,
+  "headers": {
+    "content-type": "application/json",
+    "x-openrouter-error-origin": "client"
+  },
+  "headersAtMs": 359,
+  "pieces": [
+    {
+      "atMs": 360,
+      "text": "{\"error\":{\"message\":\"User not found.\",\"code\":401}}"
+    }
+  ],
+  "endAtMs": 361,
+  "failure": null
+}

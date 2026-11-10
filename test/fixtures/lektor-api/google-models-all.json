@@ -1,0 +1,28 @@
+{
+  "name": "google-models-all",
+  "recordedAt": "2026-11-10T17:01:47.632Z",
+  "request": {
+    "method": "GET",
+    "url": "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000",
+    "headers": {
+      "Api-Revision": "2026-05-20",
+      "Content-Type": "application/json",
+      "x-goog-api-key": "<KEY>"
+    },
+    "body": null
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json; charset=UTF-8"
+  },
+  "headersAtMs": 290,
+  "pieces": [
+    {
+      "atMs": 300,
+      "text": "{\n  \"models\": [\n    {\n      \"name\": \"models/gemini-3.5-flash\",\n      \"version\": \"3.5-flash-05-2026\",\n      \"displayName\": \"Gemini 3.5 Flash\",\n      \"description\": \"Gemini 3.5 Flash\",\n      \"inputTokenLimit\": 1048576,\n      \"outputTokenLimit\": 65536,\n      \"supportedGenerationMethods\": [\n        \"generateContent\",\n        \"countTokens\",\n        \"createCachedContent\",\n        \"batchGenerateContent\"\n      ],\n      \"temperature\": 1,\n      \"topP\": 0.95,\n      \"topK\": 64,\n      \"maxTemperature\": 2,\n      \"thinking\": true\n    },\n    {\n      \"name\": \"models/gemini-3.6-flash\",\n      \"version\": \"3.6-flash-07-2026\",\n      \"displayName\": \"Gemini 3.6 Flash\",\n      \"description\": \"Gemini 3.6 Flash\",\n      \"inputTokenLimit\": 1048576,\n      \"outputTokenLimit\": 65536,\n      \"supportedGenerationMethods\": [\n        \"generateContent\",\n        \"countTokens\",\n        \"createCachedContent\",\n        \"batchGenerateContent\"\n      ],\n      \"temperature\": 1,\n      \"topP\": 0.95,\n      \"topK\": 64,\n      \"maxTemperature\": 2,\n      \"thinking\": true\n    },\n    {\n      \"name\": \"models/gemini-3.7-flash\",\n      \"version\": \"3.7-flash-08-2026\",\n      \"displayName\": \"Gemini 3.7 Flash\",\n      \"description\": \"Gemini 3.7 Flash\",\n      \"inputTokenLimit\": 1048576,\n      \"outputTokenLimit\": 65536,\n      \"supportedGenerationMethods\": [\n        \"generateContent\",\n        \"countTokens\",\n        \"createCachedContent\",\n        \"batchGenerateContent\"\n      ],\n      \"temperature\": 1,\n      \"topP\": 0.95,\n      \"topK\": 64,\n      \"maxTemperature\": 2,\n      \"thinking\": true\n    },\n    {\n      \"name\": \"models/gemini-3.8-flash\",\n      \"version\": \"3.0\",\n      \"displayName\": \"Gemini 3.8 Flash\",\n      \"description\": \"Gemini 3.8 Flash\",\n      \"inputTokenLimit\": 1048576,\n      \"outputTokenLimit\": 65536,\n      \"supportedGenerationMethods\": [\n        \"generateContent\",\n        \"countTokens\",\n        \"createCachedContent\",\n        \"batchGenerateContent\"\n      ],\n      \"temperature\": 1,\n      \"topP\": 0.95,\n      \"topK\": 64,\n      \"maxTemperature\": 2,\n      \"thinking\": true\n    }\n  ]\n}\n"
+    }
+  ],
+  "endAtMs": 300,
+  "failure": null,
+  "trimmed": "models other than gemini-3.x-flash taken out (62 listed, 4 kept); re-serialised, and the pieces joined"
+}

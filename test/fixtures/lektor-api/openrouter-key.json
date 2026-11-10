@@ -1,0 +1,30 @@
+{
+  "name": "openrouter-key",
+  "recordedAt": "2026-11-10T17:01:47.645Z",
+  "request": {
+    "method": "GET",
+    "url": "https://openrouter.ai/api/v1/key",
+    "headers": {
+      "Authorization": "<KEY>",
+      "Content-Type": "application/json"
+    },
+    "body": null
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "headersAtMs": 404,
+  "pieces": [
+    {
+      "atMs": 405,
+      "text": "{\"data\":{\"label\":\"sk-or-v1-abc...xyz\",\"is_management_key\":false,\"is_provisioning_key\":false,\"limit\":20,\"limit_reset\":null,\"limit_remaining\":12.075303350999999,\"include_byok_in_limit\":false,\"budgets\":[{"
+    },
+    {
+      "atMs": 406,
+      "text": "\"scope\":\"key_limit\",\"guardrail_id\":null,\"budget_id\":null,\"limit_usd\":20,\"spend_usd\":7.924696649,\"remaining_usd\":12.075303350999999,\"reset_interval\":null,\"resets_at\":null,\"include_byok\":false}],\"effective_budget\":{\"scope\":\"key_limit\",\"guardrail_id\":null,\"budget_id\":null,\"limit_usd\":20,\"spend_usd\":7.924696649,\"remaining_usd\":12.075303350999999,\"reset_interval\":null,\"resets_at\":null,\"include_byok\":false},\"usage\":7.924696649,\"usage_daily\":0,\"usage_weekly\":0.258974,\"usage_monthly\":7.924696649,\"byok_usage\":0,\"byok_usage_daily\":0,\"byok_usage_weekly\":0,\"byok_usage_monthly\":0,\"is_free_tier\":false,\"expires_at\":\"2027-05-07T16:52:04.387Z\",\"creator_user_id\":\"user_REDACTED\",\"organization_id\":null,\"workspace_id\":\"workspace_REDACTED\",\"allowed_data_regions\":[\"global\"],\"free_model_daily_requests\":{\"used\":0,\"limit\":1000,\"remaining\":1000},\"rate_limit\":{\"requests\":-1,\"interval\":\"10s\",\"note\":\"This field is deprecated and safe to ignore.\"}}}"
+    }
+  ],
+  "endAtMs": 406,
+  "failure": null
+}

@@ -1,0 +1,27 @@
+{
+  "name": "google-wrong-key-models",
+  "recordedAt": "2026-11-10T17:01:47.569Z",
+  "request": {
+    "method": "GET",
+    "url": "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1",
+    "headers": {
+      "Api-Revision": "2026-05-20",
+      "Content-Type": "application/json",
+      "x-goog-api-key": "<KEY>"
+    },
+    "body": null
+  },
+  "status": 400,
+  "headers": {
+    "content-type": "application/json; charset=UTF-8"
+  },
+  "headersAtMs": 271,
+  "pieces": [
+    {
+      "atMs": 300,
+      "text": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"API key not valid. Please pass a valid API key.\",\n    \"status\": \"INVALID_ARGUMENT\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.ErrorInfo\",\n        \"reason\": \"API_KEY_INVALID\",\n        \"domain\": \"googleapis.com\",\n        \"metadata\": {\n          \"service\": \"generativelanguage.googleapis.com\"\n        }\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.LocalizedMessage\",\n        \"locale\": \"en-US\",\n        \"message\": \"API key not valid. Please pass a valid API key.\"\n      }\n    ]\n  }\n}\n"
+    }
+  ],
+  "endAtMs": 302,
+  "failure": null
+}
