@@ -106,6 +106,21 @@
         font-size: var(--lektor-small);
       }
 
+      /* New: the menu's choice repeated at the top of its step, laid out as its card, without the card. */
+      .lektor-step-what {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        column-gap: 0.7rem;
+        align-items: center;
+        /* In line with the card's insides on the menu, so the picture doesn't jump between the steps. */
+        padding: 0.6rem 0.75rem 0.2rem;
+      }
+
+      .lektor-step-what .lektor-menu-name,
+      .lektor-step-what .lektor-menu-does {
+        grid-column: 2;
+      }
+
       /* New: the panel's first step, two big choices, each its name and a sentence on what it does. */
       .lektor-menu {
         display: flex;

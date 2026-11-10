@@ -127,11 +127,23 @@ function menuScreen(): Step {
   };
 }
 
+/**
+ * What he picked on the menu, at the top of its step (Danilo, 2026-11-10): the owl, the name and its
+ * sentence, as the menu's card had them, so the Lektor chosen below reads as the utisak's. Not a box
+ * or a button: here it is said, not offered.
+ */
+function chosenOnMenu(): HTMLElement {
+  const what = el('div', 'lektor-step-what');
+  what.append(...utisakIcon('lektor-menu-icon'), el('span', 'lektor-menu-name', 'Utisak o tekstu'), el('span', 'lektor-menu-does', 'Kratak osvrt na tekst, kao od pažljivog čitaoca.'));
+  return what;
+}
+
 /** Step 2, the utisak's own: who writes it, and sending it; "← Nazad" to the menu. */
 function startScreen(): Step {
   const send = sendButton(`Pošalji ceo tekst ${state.choice === 'free' ? 'Guglu' : 'OpenRouteru'}`, 'comment', () => askForComment(state.choice), 'status-action lektor-main-action');
   return {
     content: [
+      chosenOnMenu(),
       ...lektorChoice({ group: 'lektor-level', choose }),
       // What paying gives for the comment, as measured (2026-11-09): a draw blind (Opus 3, Flash 2), but
       // about 18 s against 3–5 minutes. So speed, not quality. The corrections choose their own Lektor in the window.
