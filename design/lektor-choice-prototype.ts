@@ -12,7 +12,8 @@ import { type WindowCase, corrections, openCorrectionsWindow, openCorrectionsWin
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
 import { commentFailure, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
-import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, button, dollars, el, element, lineIcon, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
+import { ISPRAVKE_PICTURES, type IspravkePicture, UTISAK_PICTURES, type UtisakPicture, drawPicture } from './lektor-menu-icons-prototype.ts';
+import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, button, dollars, el, element, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
 
 /** The menu, then the utisak's own step ('start': who writes it), its wait or failure, the utisak; and the keys. */
 type Screen = 'menu' | 'start' | 'waiting' | 'failed' | 'response' | 'keys';
@@ -73,27 +74,23 @@ interface Step {
 }
 
 /*
-  Icons for the menu's two choices, to try (Danilo, 2026-11-10): less drab, the AI as someone with a
-  character, and the corrections' mark again on "Pređi na ispravke…" to tie the two together. Lucide's,
-  in the app's line; not the app's pencil (`edit`), which is the diff's "change this" and would say he
-  is about to edit. A His screens switch picks the corrections' one, or none, as before.
+  Pictures for the menu's two choices, to try (Danilo, 2026-11-10): a bit playful, with colour and
+  personality, the AI as someone with a character; and the corrections' one again on "Pređi na
+  ispravke…" to tie the two together. His screens has a switch for each, with none as before.
 */
-type MenuIcons = 'none' | 'spell-check' | 'pen-line';
-let menuIcons: MenuIcons = 'spell-check';
+let utisakPicture: UtisakPicture | 'none' = 'glasses';
+let ispravkePicture: IspravkePicture | 'none' = 'red-pencil';
 
-/** Someone talking about his text: a speech bubble with quotation marks (message-square-quote). */
-const UTISAK_ICON = ['M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', 'M8 12a2 2 0 0 0 2-2V8H8', 'M14 12a2 2 0 0 0 2-2V8h-2'];
+const isUtisakPicture = (value: string | boolean): value is UtisakPicture => typeof value === 'string' && Object.hasOwn(UTISAK_PICTURES, value);
+const isIspravkePicture = (value: string | boolean): value is IspravkePicture => typeof value === 'string' && Object.hasOwn(ISPRAVKE_PICTURES, value);
 
-const ISPRAVKE_ICONS: Readonly<Record<Exclude<MenuIcons, 'none'>, readonly string[]>> = {
-  // Letters with a tick: corrections, said most plainly.
-  'spell-check': ['m6 16 6-12 6 12', 'M8 12h8', 'm16 20 2 2 4-4'],
-  // A pen with the line it draws: a little more character.
-  'pen-line': ['M12 20h9', 'M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z'],
-};
+function utisakIcon(className: string): SVGSVGElement[] {
+  return utisakPicture === 'none' ? [] : [drawPicture(UTISAK_PICTURES[utisakPicture], className)];
+}
 
-/** The corrections' mark at this size, or nothing when the switch says none. */
+/** The corrections' picture at this size, or nothing when the switch says none. */
 function ispravkeIcon(className: string): SVGSVGElement[] {
-  return menuIcons === 'none' ? [] : [lineIcon(ISPRAVKE_ICONS[menuIcons], [className])];
+  return ispravkePicture === 'none' ? [] : [drawPicture(ISPRAVKE_PICTURES[ispravkePicture], className)];
 }
 
 /** One of the menu's two choices: a big target, its name and a sentence on what it does, and its icon if on. */
@@ -121,7 +118,7 @@ function menuScreen(): Step {
       state.choice = 'free';
       screen = 'start';
       render();
-    }, menuIcons === 'none' ? [] : [lineIcon(UTISAK_ICON, ['lektor-menu-icon'])]),
+    }, utisakIcon('lektor-menu-icon')),
     // No "Ti biraš šta ulazi u tekst" (Danilo, 2026-11-10): "predlozi" says it, and the window says it by its send button.
     menuOption('Ispravke', 'Predlozi ispravki, od zareza do stila.', () => openCorrectionsWindow(), ispravkeIcon('lektor-menu-icon')),
   );
@@ -484,14 +481,16 @@ const CONTROLS: readonly PrototypeControl[] = [
     value: 'menu',
   },
   {
-    id: 'menu-icons',
-    label: 'Ikonice (meni, ispravke)',
-    options: [
-      { value: 'none', label: 'bez ikonica (kao pre)' },
-      { value: 'spell-check', label: 'ispravke: slova sa kvačicom' },
-      { value: 'pen-line', label: 'ispravke: olovka sa linijom' },
-    ],
-    value: 'spell-check',
+    id: 'utisak-picture',
+    label: 'Slika: utisak',
+    options: [{ value: 'none', label: 'bez slike' }, ...Object.entries(UTISAK_PICTURES).map(([value, picture]) => ({ value, label: picture.label }))],
+    value: 'glasses',
+  },
+  {
+    id: 'ispravke-picture',
+    label: 'Slika: ispravke',
+    options: [{ value: 'none', label: 'bez slike' }, ...Object.entries(ISPRAVKE_PICTURES).map(([value, picture]) => ({ value, label: picture.label }))],
+    value: 'red-pencil',
   },
   { id: 'stale', label: 'Tekst promenjen posle utiska', value: false },
   {
@@ -637,7 +636,8 @@ const ODD_TITLES: Readonly<Record<string, string>> = {
 function setControl(id: string, value: string | boolean): void {
   if (id === 'screen') setScreen(value);
   if (id === 'stale') isCommentStale = value === true;
-  if (id === 'menu-icons') menuIcons = value === 'none' || value === 'pen-line' ? value : 'spell-check';
+  if (id === 'utisak-picture') utisakPicture = isUtisakPicture(value) ? value : 'none';
+  if (id === 'ispravke-picture') ispravkePicture = isIspravkePicture(value) ? value : 'none';
   if (id === 'comment-title' && typeof value === 'string') commentTextTitle = ODD_TITLES[value] ?? TEXT_TITLE;
   if (id === 'free-key') keys.saved.free = value === true;
   if (id === 'paid-key') keys.saved.paid = value === true;

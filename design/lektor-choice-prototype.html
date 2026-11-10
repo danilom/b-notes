@@ -114,12 +114,68 @@
         align-items: center;
       }
 
+      /* Big, so the picture holds its own beside the privacy warning's weight. */
       .lektor-menu-icon {
         grid-row: span 2;
-        width: 1.9rem;
-        height: 1.9rem;
-        color: var(--chosen-ink);
+        width: 2.8rem;
+        height: 2.8rem;
       }
+
+      .lektor-to-corrections-icon {
+        width: 1.4em;
+        height: 1.4em;
+        flex: none;
+      }
+
+      /*
+        New: the menu's pictures' colours, warm and few, one ink outline over every part. Their own
+        here and not the app's tokens: the app has no reds, yellows or greens to lend, on purpose.
+      */
+      :root {
+        --ic-ink: #3a3d44;
+        --ic-paper: #fffaf0;
+        --ic-red: #e2584c;
+        --ic-yellow: #f2b53a;
+        --ic-blue: #6ea8e6;
+        --ic-lens: #d6ebfc;
+        --ic-pink: #f3a0b5;
+        --ic-green: #47ab73;
+        --ic-wood: #f1d29b;
+        --ic-brown: #9c6236;
+        --ic-dark: #4a3f5c;
+      }
+
+      :root[data-mode='dark'] {
+        --ic-ink: #e4e6ea;
+        --ic-paper: #3c3a36;
+        --ic-lens: #34506b;
+      }
+
+      .lektor-picture * {
+        stroke: var(--ic-ink);
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .lektor-picture .ic-line,
+      .lektor-picture .ic-steam { fill: none; }
+      .lektor-picture .ic-steam { stroke: var(--ic-brown); opacity: 0.7; }
+      .lektor-picture .ic-paper { fill: var(--ic-paper); }
+      .lektor-picture .ic-red { fill: var(--ic-red); }
+      .lektor-picture .ic-yellow { fill: var(--ic-yellow); stroke-width: 1.5; }
+      .lektor-picture .ic-handle { fill: none; stroke: var(--ic-yellow); stroke-width: 5; }
+      .lektor-picture .ic-blue { fill: var(--ic-blue); }
+      .lektor-picture .ic-lens { fill: var(--ic-lens); }
+      .lektor-picture .ic-pink { fill: var(--ic-pink); }
+      .lektor-picture .ic-green { fill: var(--ic-green); }
+      .lektor-picture .ic-wood { fill: var(--ic-wood); }
+      .lektor-picture .ic-brown { fill: none; stroke: var(--ic-brown); stroke-width: 3; }
+      .lektor-picture .ic-dark { fill: var(--ic-dark); }
+      .lektor-picture .ic-white { fill: #fff; }
+      .lektor-picture .ic-shine { fill: none; stroke: #fff; stroke-width: 1.6; }
+      .lektor-picture .ic-red-line { fill: none; stroke: var(--ic-red); stroke-width: 2.4; }
+      .lektor-picture .ic-white-line { fill: none; stroke: #fff; stroke-width: 2.6; }
 
       /* The corrections' mark on "Pređi na ispravke…", before the words, as the menu has it before its name. */
       .lektor-main-action:has(.lektor-to-corrections-icon) {
