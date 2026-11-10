@@ -129,6 +129,68 @@ export const UTISAK_PICTURES = {
       shape('path', 'ic-yellow', { d: 'm22 31 2 3.5 2-3.5z' }),
     ],
   },
+  /* Variations on the owl's face, Danilo's pick for the utisak (2026-11-10). */
+  'owl-wink': {
+    label: 'sova namiguje',
+    shapes: [
+      shape('path', 'ic-wood', { d: 'M8 26c0-11 7-18 16-18s16 7 16 18-7 16-16 16S8 37 8 26z' }),
+      shape('path', 'ic-line', { d: 'M11 14 10 5l8 6M37 14l1-9-8 6' }),
+      shape('circle', 'ic-pink', { cx: 11.5, cy: 32, r: 2 }),
+      shape('circle', 'ic-pink', { cx: 36.5, cy: 32, r: 2 }),
+      shape('circle', 'ic-lens', { cx: 17, cy: 24, r: 6.5 }),
+      shape('circle', 'ic-lens', { cx: 31, cy: 24, r: 6.5 }),
+      shape('path', 'ic-line', { d: 'M23.5 23.5h1' }),
+      shape('circle', 'ic-ink', { cx: 17, cy: 24.5, r: 2.2 }),
+      shape('path', 'ic-line', { d: 'M28 25q3 2 6 0' }),
+      shape('path', 'ic-yellow', { d: 'm22 31 2 3.5 2-3.5z' }),
+    ],
+  },
+  'owl-peek': {
+    label: 'sova viri iznad knjige',
+    shapes: [
+      shape('path', 'ic-wood', { d: 'M8 22c0-11 7-18 16-18s16 7 16 18-7 14-16 14S8 33 8 22z' }),
+      shape('path', 'ic-line', { d: 'M11 10 10 2l8 5M37 10l1-8-8 5' }),
+      shape('circle', 'ic-lens', { cx: 17, cy: 20, r: 6 }),
+      shape('circle', 'ic-lens', { cx: 31, cy: 20, r: 6 }),
+      shape('path', 'ic-line', { d: 'M23 19.5h2' }),
+      shape('circle', 'ic-ink', { cx: 17, cy: 22, r: 2 }),
+      shape('circle', 'ic-ink', { cx: 31, cy: 22, r: 2 }),
+      shape('path', 'ic-paper', { d: 'M24 31c-6-4-13-4-19-2v14c6-2 13-2 19 2z' }),
+      shape('path', 'ic-paper', { d: 'M24 31c6-4 13-4 19-2v14c-6-2-13-2-19 2z' }),
+      shape('path', 'ic-line', { d: 'M9 36c4-1 8-1 11 1M28 37c3-2 7-2 11-1' }),
+    ],
+  },
+  'owl-curious': {
+    label: 'sova radoznalo diže obrve',
+    shapes: [
+      shape('path', 'ic-wood', { d: 'M8 26c0-11 7-18 16-18s16 7 16 18-7 16-16 16S8 37 8 26z' }),
+      shape('path', 'ic-line', { d: 'M11 14 10 5l8 6M37 14l1-9-8 6' }),
+      shape('path', 'ic-line', { d: 'M11.5 15.5q5-3.5 10 0M27 14q5-3 10 .5' }),
+      shape('circle', 'ic-pink', { cx: 11.5, cy: 33, r: 2 }),
+      shape('circle', 'ic-pink', { cx: 36.5, cy: 33, r: 2 }),
+      shape('circle', 'ic-lens', { cx: 17, cy: 25, r: 6.5 }),
+      shape('circle', 'ic-lens', { cx: 31, cy: 25, r: 6.5 }),
+      shape('path', 'ic-line', { d: 'M23.5 24.5h1' }),
+      shape('circle', 'ic-ink', { cx: 18, cy: 24.5, r: 2.2 }),
+      shape('circle', 'ic-ink', { cx: 32, cy: 24.5, r: 2.2 }),
+      shape('path', 'ic-yellow', { d: 'm22 32 2 3.5 2-3.5z' }),
+    ],
+  },
+  'owl-fluffy': {
+    label: 'okrugla sova, velike naočare',
+    shapes: [
+      shape('path', 'ic-wood', { d: 'M7 27c0-12 7-19 17-19s17 7 17 19-8 17-17 17S7 39 7 27z' }),
+      shape('path', 'ic-line', { d: 'm11 15 1-7 5 5M37 15l-1-7-5 5' }),
+      shape('circle', 'ic-pink', { cx: 11, cy: 33, r: 2 }),
+      shape('circle', 'ic-pink', { cx: 37, cy: 33, r: 2 }),
+      shape('circle', 'ic-lens', { cx: 16.5, cy: 23, r: 7.5 }),
+      shape('circle', 'ic-lens', { cx: 31.5, cy: 23, r: 7.5 }),
+      shape('circle', 'ic-ink', { cx: 17, cy: 23.5, r: 2.6 }),
+      shape('circle', 'ic-ink', { cx: 31, cy: 23.5, r: 2.6 }),
+      shape('path', 'ic-shine', { d: 'M12 21a4.5 4.5 0 0 1 3-3M27 21a4.5 4.5 0 0 1 3-3' }),
+      shape('path', 'ic-yellow', { d: 'm22 28.5 2 3.5 2-3.5z' }),
+    ],
+  },
   'glasses-twinkle': {
     label: 'naočare sa iskrama',
     shapes: [
@@ -192,6 +254,39 @@ export const ISPRAVKE_PICTURES = {
       shape('path', 'ic-line', { d: 'M13 12h20M13 18h20M13 24h20M13 30h12' }),
       shape('ellipse', 'ic-red-line', { cx: 24, cy: 18, rx: 6.5, ry: 3.6 }),
       shape('path', 'ic-red-line', { d: 'M14 24h8M28 27.5l2 3 2-3' }),
+    ],
+  },
+  /*
+    His own letters, put in by the editor's hand (Danilo, 2026-11-10): the Lektor's commonest work on
+    his texts is the diacritics he leaves out. A red letter over the line, its caret under it.
+  */
+  'page-c-caron': {
+    label: 'strana sa crvenim č',
+    shapes: [
+      shape('rect', 'ic-paper', { x: 8, y: 4, width: 30, height: 38, rx: 3 }),
+      shape('path', 'ic-line', { d: 'M13 24h20M13 30h20M13 36h12' }),
+      shape('path', 'ic-red-line', { d: 'M28.6 14.2a3.8 3.8 0 1 0 0 4.6M21.8 9 24 11l2.2-2' }),
+      shape('path', 'ic-red-line', { d: 'm22 29 2-3.4 2 3.4' }),
+    ],
+  },
+  'page-z-caron': {
+    label: 'strana sa crvenim ž',
+    shapes: [
+      shape('rect', 'ic-paper', { x: 8, y: 4, width: 30, height: 38, rx: 3 }),
+      shape('path', 'ic-line', { d: 'M13 24h20M13 30h20M13 36h12' }),
+      shape('path', 'ic-red-line', { d: 'M20.5 13h7l-7 7h7M21.8 8.4 24 10.4l2.2-2' }),
+      shape('path', 'ic-red-line', { d: 'm22 29 2-3.4 2 3.4' }),
+    ],
+  },
+  'page-c-caron-tick': {
+    label: 'strana sa crvenim č i zelenom kvačicom',
+    shapes: [
+      shape('rect', 'ic-paper', { x: 7, y: 4, width: 27, height: 36, rx: 3 }),
+      shape('path', 'ic-line', { d: 'M12 22h17M12 28h17M12 34h9' }),
+      shape('path', 'ic-red-line', { d: 'M25.6 12.2a3.8 3.8 0 1 0 0 4.6M18.8 7 21 9l2.2-2' }),
+      shape('path', 'ic-red-line', { d: 'm19 27 2-3.4 2 3.4' }),
+      shape('circle', 'ic-green', { cx: 35, cy: 36, r: 8 }),
+      shape('path', 'ic-white-line', { d: 'm31 36 3 3 5-6' }),
     ],
   },
   'pencil-check': {
