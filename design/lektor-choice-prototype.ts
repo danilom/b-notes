@@ -150,14 +150,13 @@ function chosenOnMenu(): HTMLElement {
 /** Step 2, the utisak's own: who writes it, and sending it; "← Nazad" to the menu. */
 function startScreen(): Step {
   const send = sendButton(`Pošalji tekst ${state.choice === 'free' ? 'Guglu' : 'OpenRouteru'}`, 'comment', () => askForComment(state.choice), 'status-action lektor-main-action');
-  // What paying gives for the comment, as measured (2026-11-09): a draw blind (Opus 3, Flash 2), but
-  // about 18 s against 3–5 minutes. So speed, beside Plaćeni as the corrections window gives its reason;
-  // and the equal quality under the heading, read on the way to choosing rather than after it. In the
-  // small grey of "mnogo brži", the same kind of thing, and quiet once he knows it (Danilo, 2026-11-10).
-  // The corrections choose their own Lektor in the window.
   // The paid utisak is Opus (Danilo, 2026-11-10), as on rework: so the tick box under Besplatni (the
-  // same writer without the queue) and Plaćeni (the better one) are two things, as on every screen.
-  const [heading, ...choices] = lektorChoice({ group: 'lektor-level', choose, better: { choice: 'paid', why: 'mnogo brži' }, what: 'comment', paidIfSlow: commentPaidIfSlow });
+  // same writer without the queue) and Plaćeni (another one) are two things, as on every screen.
+  // What paying gives for the comment, as measured (2026-11-09): a draw blind (Opus 3, Flash 2), and
+  // about 18 s against minutes. Not "mnogo brži": with the box ticked a slow free one is with paid Flash
+  // at two minutes. So "brži" and another reader's view, not a better one (Danilo, 2026-11-10); the
+  // equal quality is said under the heading, read on the way to choosing rather than after it.
+  const [heading, ...choices] = lektorChoice({ group: 'lektor-level', choose, better: { choice: 'paid', why: 'brži, drugačije mišljenje' }, what: 'comment', paidIfSlow: commentPaidIfSlow });
   return {
     content: [chosenOnMenu(), ...(heading === undefined ? [] : [heading]), el('p', 'lektor-where lektor-choice-lead', 'Oba pišu utisak sličnog kvaliteta.'), ...choices],
     main: send,
