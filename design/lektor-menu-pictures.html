@@ -98,6 +98,64 @@
         color: var(--quiet);
       }
 
+      .sheet-top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 1rem 2rem;
+      }
+
+      /* The utisak's "Ispravke…" candidates, at the strip's size, each named under it. */
+      .sheet-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem 1.5rem;
+        margin-top: 1rem;
+        padding: 0.8rem;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+      }
+
+      .sheet-button-item {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.35rem;
+      }
+
+      .sheet-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45em;
+        min-height: 2.1rem;
+        padding-inline: 0.8rem;
+        font-size: 15px;
+        white-space: nowrap;
+      }
+
+      .sheet-button .sheet-button-icon {
+        flex: none;
+        width: 1.35em;
+        height: 1.35em;
+      }
+
+      /* As in the panel: the page's top standing on the button's lower edge, as far from its left as its top. */
+      .sheet-button.sheet-button-with-top {
+        --page-top-inset: 0.3em;
+        position: relative;
+        padding-left: calc(var(--page-top-inset) + (2.1rem - var(--page-top-inset)) * 34 / 33 + 0.4em);
+      }
+
+      .sheet-button .sheet-button-page-top {
+        position: absolute;
+        left: var(--page-top-inset);
+        bottom: 0;
+        height: calc(100% - var(--page-top-inset));
+        width: auto;
+        aspect-ratio: 34 / 33;
+      }
+
       .sheet-gallery {
         display: flex;
         flex-wrap: wrap;

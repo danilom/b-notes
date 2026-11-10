@@ -461,6 +461,32 @@ export const isPictureColours = (value: unknown): value is PictureColours => typ
 
 /** A picture as an SVG, its parts classed for colour, at the size the class gives it. */
 /**
+ * A ž on a page in the app's own line (Lucide's 24×24, stroke 2, the button's ink), for "Ispravke…"
+ * where a picture is too big (Danilo, 2026-11-10): the page's outline and folded corner, then the ž,
+ * which may be the corrections' red.
+ */
+export function drawLinePageZ(className: string, isLetterRed = false): SVGSVGElement {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  for (const [name, value] of Object.entries({ viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' })) {
+    svg.setAttribute(name, value);
+  }
+  svg.classList.add(className);
+  const parts: readonly [string, boolean][] = [
+    ['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z', false],
+    ['M14 2v6h6', false],
+    ['M8.5 12.5h6l-6 6h6', true],
+    ['M9.5 8.8l2 1.6 2-1.6', true],
+  ];
+  for (const [d, isLetter] of parts) {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    if (isLetter && isLetterRed) path.setAttribute('stroke', 'var(--ic-red)');
+    svg.append(path);
+  }
+  return svg;
+}
+
+/**
  * @param viewBox The part of the 48×48 drawing to show: all of it, or a crop, as the button's page top.
  */
 export function drawPicture(picture: MenuPicture, className: string, colours: PictureColours = 'colour', viewBox = '0 0 48 48'): SVGSVGElement {

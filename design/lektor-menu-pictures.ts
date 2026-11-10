@@ -10,6 +10,7 @@ import {
   PICTURE_COLOURS,
   type PictureColours,
   UTISAK_PICTURES,
+  drawLinePageZ,
   drawPicture,
   isPictureColours,
 } from './lektor-menu-icons-prototype.ts';
@@ -89,6 +90,39 @@ function menuPreview(): HTMLElement {
   return preview;
 }
 
+/**
+ * "Ispravke…" as the utisak's strip would have it, beside the menu, with each mark it could carry
+ * (Danilo, 2026-11-10): the chosen picture's top standing on its edge, the whole picture small, or a
+ * ž on a page in the app's line, its ž in ink or red.
+ */
+function buttonPreviews(): HTMLElement {
+  const picture = pictureOf('ispravke');
+  const colours = chosen.ispravke.colours;
+  const candidates: readonly [string, () => SVGSVGElement, string][] = [
+    ['vrh strane, u boji', () => drawPicture(picture, 'sheet-button-page-top', colours, '6 2 34 33'), 'sheet-button-with-top'],
+    ['cela slika, mala', () => drawPicture(picture, 'sheet-button-icon', colours), ''],
+    ['ž na strani, linijom', () => drawLinePageZ('sheet-button-icon'), ''],
+    ['ž na strani, linijom, crveno ž', () => drawLinePageZ('sheet-button-icon', true), ''],
+  ];
+  const list = el('div', 'sheet-buttons');
+  for (const [label, mark, extra] of candidates) {
+    const made = el('button', `status-action sheet-button ${extra}`.trim());
+    made.type = 'button';
+    made.append(mark(), 'Ispravke…');
+    const item = el('div', 'sheet-button-item');
+    item.append(made, el('span', 'sheet-label', label));
+    list.append(item);
+  }
+  return list;
+}
+
+/** The menu at the panel's size and, beside it, the utisak's "Ispravke…" with each mark it could carry. */
+function topRow(): HTMLElement {
+  const row = el('div', 'sheet-top');
+  row.append(menuPreview(), buttonPreviews());
+  return row;
+}
+
 /** One group's pictures, big and at the menu's size, in its colour; clicking one puts it in the menu above. */
 function groupGallery(group: Group): HTMLElement {
   const section = el('section', 'sheet-group');
@@ -139,7 +173,7 @@ function contactSheet(): HTMLElement {
 }
 
 function draw(): void {
-  byId('sheet', HTMLElement).replaceChildren(menuPreview(), groupGallery('utisak'), groupGallery('ispravke'), contactSheet());
+  byId('sheet', HTMLElement).replaceChildren(topRow(), groupGallery('utisak'), groupGallery('ispravke'), contactSheet());
 }
 
 byId('sheet-controls', HTMLElement).append(colourSelect('utisak'), colourSelect('ispravke'), darkToggle());

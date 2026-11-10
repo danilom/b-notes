@@ -12,8 +12,8 @@ import { type WindowCase, corrections, openCorrectionsWindow, openCorrectionsWin
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
 import { commentFailure, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
-import { ISPRAVKE_PICTURES, UTISAK_PICTURES, drawPicture } from './lektor-menu-icons-prototype.ts';
-import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, button, dollars, el, element, lineIcon, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
+import { ISPRAVKE_PICTURES, UTISAK_PICTURES, drawLinePageZ, drawPicture } from './lektor-menu-icons-prototype.ts';
+import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, button, dollars, el, element, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
 
 /** The menu, then the utisak's own step ('start': who writes it), its wait or failure, the utisak; and the keys. */
 type Screen = 'menu' | 'start' | 'waiting' | 'failed' | 'response' | 'keys';
@@ -293,11 +293,8 @@ function responseScreen(): Step {
 type CorrectionsButtonIcon = 'line' | 'picture';
 let correctionsButtonIconKind: CorrectionsButtonIcon = 'line';
 
-/** A page with a ž on it, in Lucide's line: the page's outline, its folded corner, the letter and its háček. */
-const PAGE_Z_LINE = ['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z', 'M14 2v6h6', 'M8.5 12.5h6l-6 6h6', 'M9.5 8.8l2 1.6 2-1.6'];
-
 function correctionsButtonIcon(): SVGSVGElement {
-  if (correctionsButtonIconKind === 'line') return lineIcon(PAGE_Z_LINE, ['lektor-to-corrections-line']);
+  if (correctionsButtonIconKind === 'line') return drawLinePageZ('lektor-to-corrections-line');
   return drawPicture(ISPRAVKE_PICTURES['page-z-caron'], 'lektor-to-corrections-icon', 'colour', '6 2 34 33');
 }
 
