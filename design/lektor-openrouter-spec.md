@@ -81,17 +81,11 @@ the work:
   fixed address), with its key in `lektor.json` next to Google's.
   - OpenRouter's model IDs are `anthropic/claude-opus-5.5` and `google/gemini-3.8-flash` (§16).
   - Opus at medium effort: `reasoning: { effort: "medium" }`.
-  - **Decision needed: Anthropic first, or no-retention hosts only. OpenRouter doesn't offer both.**
-    On OpenRouter, Anthropic's own host is not a zero-retention host. The only zero-retention hosts for
-    Opus 5.5 are Amazon Bedrock and Google Vertex (§16). So "Anthropic first, Bedrock/Google as backup, no-retention
-    only" can't be met. The choices:
-    - **No-retention only** (`provider: { zdr: true, order: ["amazon-bedrock", "google-vertex"] }`): Anthropic is never
-      used. These hosts don't stop work, or the bill, when a request is cancelled (§16).
-    - **Anthropic first** (`order: ["anthropic", "amazon-bedrock", "google-vertex"]`, `data_collection: "deny"`, no `zdr`):
-      no host trains on his text, but Anthropic may keep it for a while for abuse checks. How long isn't verified.
-  - **Paid Flash** with `zdr: true` goes to Google Vertex only, because Google AI Studio isn't a zero-retention host.
-    Vertex still keeps text for abuse checks ("safety retention"). Without `service_tier`, the half-price "flex" and
-    dearer "priority" hosts aren't used.
+  - **No host rules** (Danilo, 2026-11-11): no `provider` object, so OpenRouter routes by its own default, on
+    price and availability. Who runs the model doesn't matter as long as cost and speed are the same. The
+    "Anthropic first" and "no-retention hosts only" ideas were never his asks, and are dropped; §16 keeps the
+    facts in case that ever changes. Without `service_tier`, the half-price "flex" and dearer "priority" hosts
+    aren't used.
   - Stream the paid replies too, so the wait shows thinking and writing.
 - **The time limit for a request is 10 minutes** (it was 4).
 - **Refusals, told apart.** These are the failures in §8:
@@ -538,8 +532,9 @@ Recorded with `scripts/record-lektor-api.mts` and cleaned with `scripts/clean-le
   - The unit is credits, which are dollars: **[call]** `/key`'s `usage` and `/credits`' `total_usage` agree to the
     nanodollar.
 - **[docs] Cancelling** (closing the connection) stops the work and the bill on Anthropic, but **not on Amazon Bedrock
-  or Google**, which finish and bill the whole reply. With the no-retention choice in §2, a cancelled Opus or Flash
-  request is billed in full. That's another reason §9 re-reads the balance after a cancel.
+  or Google**, which finish and bill the whole reply. With default routing (§2) a cancelled request may land on
+  either kind, so it may be billed in full; accepted silently (§6). That's another reason §9 re-reads the balance
+  after a cancel.
 - **[unverified] The real stream:** chunk shapes, the reasoning field names for Opus and Flash, and where `usage.cost`
   sits. All three need a paid completion. Record one on the build's first paid test, as in the README.
 
