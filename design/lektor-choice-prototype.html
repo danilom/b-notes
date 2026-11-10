@@ -178,8 +178,8 @@
         flex: none;
       }
 
-      /* The corrections' mark on "Pređi na ispravke…", before the words, as the menu has it before its name. */
-      .lektor-main-action:has(.lektor-to-corrections-icon) {
+      /* The corrections' picture on "Ispravke…", before the word, as the menu has it before its name. */
+      .lektor-to-corrections {
         display: inline-flex;
         align-items: center;
         gap: 0.45em;
@@ -944,6 +944,12 @@
         align-items: center;
         flex-wrap: wrap;
         row-gap: 0.4rem;
+        /*
+          Its line above whatever it holds: the app draws it only over the solid-blue button, and with
+          none (the utisak's white "Ispravke…", the wait's "Odustani") the text ran into the strip.
+        */
+        padding-top: 0.5rem;
+        border-top: 1.5px solid color-mix(in srgb, var(--quiet) 45%, var(--line));
       }
 
       .lektor-side-dock .lektor-side-buttons > * {

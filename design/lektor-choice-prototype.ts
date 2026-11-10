@@ -249,19 +249,22 @@ function textInWords(): string {
 }
 
 /**
- * The comment as the app draws it: the comment with its end mark, a signature under it, and in the
- * strip "← Traži novi utisak" where the other steps have "← Nazad": the same place and arrow, but
- * words that say this one is replaced, since there is no coming forward to it again.
+ * The comment, the wizard's last step: no "Nazad", since a large way back would throw away what was
+ * written, perhaps paid for (Danilo, 2026-11-10). Asking again is a small grey "Traži novi utisak" at
+ * the top, beside the note that says when the text has changed since, which is when it is wanted.
  */
 function responseScreen(): Step {
-  const ask = backButton('Traži novi utisak', () => {
+  const ask = button('', () => {
     screen = 'start';
     // A new start of the step, so Besplatni again, whatever wrote the comment: nothing is chosen for him from how he left it.
     state.choice = 'free';
     render();
-  });
+  }, 'lektor-again');
+  ask.append(icon('back'), el('span', '', 'Traži novi utisak'));
+  const again = el('div', 'lektor-back-row');
+  again.append(ask);
   const head = el('div', 'lektor-comment-head');
-  head.append(...staleNote());
+  head.append(...staleNote(), again);
   const comment = el('div', 'lektor-response', `${commentOpening()}\n\n${COMMENT}`);
   comment.append(el('span', 'lektor-response-end'));
   // Signed by who wrote it, which stays so when the Lektor is changed afterwards, here or in the window.
@@ -271,12 +274,13 @@ function responseScreen(): Step {
   signed.append(el('span', 'lektor-comment-when', ` · upravo sad${cost}`));
   const signature = el('div', 'lektor-comment-notes');
   signature.append(signed, ...aboutAi());
-  // No arrow: like every button in the app that opens a window. The ellipsis is Windows' own sign, as on
-  // "Print…", that a window will ask more before anything happens: the window is a step, not a send.
-  const toCorrections = button('Pređi na ispravke…', () => openCorrectionsWindow(), 'status-action lektor-main-action');
-  // The menu's corrections mark before the words, where the icons are on: the same way in, the same shape.
+  // White, not solid blue (Danilo, 2026-11-10): since the menu offers the utisak and the corrections as
+  // two jobs, the corrections aren't the utisak's next step but the other one, offered here too. Named
+  // and drawn as the menu's card, so he knows it for the same. The ellipsis is Windows' sign that a
+  // window opens and asks more; no arrow, like every button in the app that opens a window.
+  const toCorrections = button('Ispravke…', () => openCorrectionsWindow(), 'status-action lektor-to-corrections');
   toCorrections.prepend(...ispravkeIcon('lektor-to-corrections-icon'));
-  return { content: [head, comment, signature], main: toCorrections, back: ask };
+  return { content: [head, comment, signature], main: toCorrections };
 }
 
 /*
