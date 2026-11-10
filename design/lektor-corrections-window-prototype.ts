@@ -40,6 +40,7 @@ import {
   type Pace,
   type FreeModel,
   type Preset,
+  type Tier,
   TEXT_PARAGRAPHS,
   TEXT_TITLE,
   button,
@@ -47,15 +48,16 @@ import {
   dollars,
   el,
   element,
-  lektorName,
   markOf,
   nameOf,
   problem,
   radio,
   sendButton,
   serviceLine,
+  serviceLineOf,
   spend,
   state,
+  tierOf,
   tierOfModel,
 } from './lektor-prototype-pieces.ts';
 import { FREE_LIMIT_WORDS, type PaidIfSlow, lektorChoice, paidBalance, paidIfSlowBox, paidIfSlowByDefault } from './lektor-choice-radios.ts';
@@ -174,11 +176,6 @@ const WAIT_TIMES: Readonly<Record<Pace, WaitTimes>> = {
 
 /** The pretended waits at the harness's pace; the utisak's wait in the panel borrows them too. */
 export const times = (): WaitTimes => WAIT_TIMES[state.pace];
-/**
- * What the limits stand for in the app, said to him: a minute in the queue for each free model,
- * so two minutes in all before a ticked request goes to the paid one.
- */
-const STEP_LIMIT_WORDS = '1 minut';
 
 /** When corrections just made were made, Danilo's word; a card from just now says only "Predlozi", since "od upravo sad" reads badly. */
 const JUST_NOW = 'upravo sad';
@@ -276,8 +273,9 @@ function readyCard(preset: Preset, by: Choice, kept: Kept): HTMLElement {
   const card = el('div', 'lektor-ready-card');
   const cost = kept.cost === null ? '' : ` · ${dollars(kept.cost)}`;
   const words = el('span', 'lektor-ready-words', `Predlozi${kept.at === JUST_NOW ? '' : ` od ${kept.at}`}${cost}`);
-  words.title = `Napravio ${lektorName(by)} Lektor.`;
-  card.append(markOf(tierOfModel(by, kept.model ?? MODELS[by][preset])), words, button('Pogledaj', () => openReview(preset, by), 'lektor-main-action'));
+  const tier = tierOfModel(by, kept.model ?? MODELS[by][preset]);
+  words.title = `Napravio AI Lektor ${nameOf(tier)}.`;
+  card.append(markOf(tier), words, button('Pogledaj', () => openReview(preset, by), 'lektor-main-action'));
   return card;
 }
 
@@ -452,33 +450,23 @@ function durationWords(ms: number): string {
   return seconds < 60 ? `${seconds} s` : `${Math.floor(seconds / 60)} min ${seconds % 60} s`;
 }
 
-/** Who is doing it, by the maker of the model: the company, not the Lektor, since that is who has his text. */
-const aiName = (model: string): string => (model.startsWith('claude') ? 'Claude AI' : 'Google AI');
-
 /**
  * What a stage is, said as going on while it does and as done after: the free door sends only "still
- * here" while the request waits its turn at Google, then the thinking and the words; paid has no queue.
- * The first stage of the other Lektor names it, so a switch shows.
+ * here" while the request waits its turn, then the thinking and the words; paid has no queue. Said of
+ * "Lektor", the one named above the list (Danilo, 2026-11-10): "Google AI" and "Claude AI" here were
+ * the only place he met companies and models, and he'd wonder what Google was doing in it.
  */
-/** Which free model a queue or refusal was for, where two take turns: 3.6 named as the older one. */
-function freeModelWords(model: string): string {
-  if (model === FREE_STAND_IN) return ' (stariji model)';
-  return model === FREE_FIRST ? ' (novi model)' : '';
-}
+const STAGE_WORDS: Readonly<Record<Phase, [string, string]>> = {
+  queue: ['Zahtev čeka u redu…', 'Zahtev je čekao u redu'],
+  refused: ['Lektor je zauzet i nije primio zahtev', 'Lektor je zauzet i nije primio zahtev'],
+  thinking: ['Lektor razmišlja…', 'Lektor je razmislio'],
+  writing: ['Lektor ispravlja tekst…', 'Lektor je ispravio tekst'],
+};
 
-function stageWords(stage: Stage, isCurrent: boolean, before: Stage | undefined): string {
-  const lektor = before !== undefined && before.by !== stage.by ? `${lektorName(stage.by)} lektor: ` : '';
-  const ai = aiName(stage.model);
-  // Only where the free one may move to its older model is it worth saying which of the two is queuing.
-  const which = corrections.preset !== null && FALLS_BACK.has(corrections.preset) ? freeModelWords(stage.model) : '';
-  const words: Readonly<Record<Phase, [string, string]>> = {
-    queue: [`Zahtev čeka u redu kod Gugla${which}…`, `Zahtev je čekao u redu kod Gugla${which}`],
-    refused: [`Gugl je zauzet i nije primio zahtev${which}`, `Gugl je zauzet i nije primio zahtev${which}`],
-    thinking: [`${ai} razmišlja…`, `${ai} je razmislio`],
-    writing: [`${ai} ispravlja tekst…`, `${ai} je ispravio tekst`],
-  };
-  return lektor + words[stage.phase][isCurrent ? 0 : 1];
-}
+const stageWords = (stage: Stage, isCurrent: boolean): string => STAGE_WORDS[stage.phase][isCurrent ? 0 : 1];
+
+/** Which of the three a stage is by, by the model that ran it. */
+const stageTier = (stage: Stage): Tier => tierOfModel(stage.by, stage.model);
 
 /**
  * A finished stage ticked, the current one turning, and one given up or refused a soft "!": not a
@@ -501,24 +489,20 @@ function progressRow(): HTMLElement {
   return row;
 }
 
-/** What happens if this model's queue passes its minute: the older model next, or the paid one if he ticked, or nothing. */
-function nextWords(preset: Preset, model: string): string {
-  if (model === FREE_FIRST && FALLS_BACK.has(preset)) return ` Ako ne krene za ${STEP_LIMIT_WORDS}, pokušava se stariji model.`;
-  if (!mayGoToPaid()) return '';
-  if (model === FREE_STAND_IN) return ` Ako ne krene za ${STEP_LIMIT_WORDS}, šalje se plaćenom lektoru „Flash”.`;
-  if (model === FREE_FIRST) return ` Ako ne krene za ${FREE_LIMIT_WORDS}, šalje se plaćenom lektoru „Flash”.`;
-  return '';
-}
-
-/** Under the queue while it lasts: that free requests wait (not that something is wrong), and what comes next if it waits too long. */
-function queueNote(preset: Preset, model: string): HTMLElement {
-  return el('p', 'lektor-wait-small lektor-stage-note', `Besplatni zahtevi čekaju na red, pa traju duže, obično nekoliko minuta.${nextWords(preset, model)}`);
+/**
+ * Under the queue while it lasts: that free requests wait (not that something is wrong), and, if he
+ * ticked, when it goes to the paid one, counted from sending, as the box says. Not the older model
+ * standing in: free Flash to free Flash, nothing he would act on.
+ */
+function queueNote(): HTMLElement {
+  const next = mayGoToPaid() ? ` Ako ne krene za ${FREE_LIMIT_WORDS}, šalje se plaćenom lektoru „Flash”.` : '';
+  return el('p', 'lektor-wait-small lektor-stage-note', `Besplatni zahtevi čekaju na red, pa traju duže, obično nekoliko minuta.${next}`);
 }
 
 /** What belongs to the stage going on, under it: the queue's note, the writing's bar. */
-function underStage(stage: Stage, preset: Preset): HTMLElement[] {
+function underStage(stage: Stage): HTMLElement[] {
   if (stage.endedAt !== null) return [];
-  if (stage.phase === 'queue') return [queueNote(preset, stage.model)];
+  if (stage.phase === 'queue') return [queueNote()];
   if (stage.phase === 'writing') return [progressRow()];
   return [];
 }
@@ -532,28 +516,39 @@ function stageText(words: string, took: string): HTMLElement[] {
   return [el('span', 'lektor-stage-words', words), el('span', 'lektor-stage-leader'), el('span', 'lektor-stage-time', took)];
 }
 
-function stagesList(preset: Preset): HTMLElement {
+/**
+ * The stages, and where it was handed to another Lektor (a slow free one to paid Flash, as he
+ * ticked), that one's own "AI Lektor:" line with its mark before its stages: the one change on this
+ * screen he should notice, since it costs.
+ */
+function stagesList(): HTMLElement {
   const list = el('div', 'lektor-stages');
   corrections.stages.forEach((stage, index) => {
+    const before = corrections.stages[index - 1];
+    if (before !== undefined && stageTier(before) !== stageTier(stage)) list.append(serviceLineOf(stageTier(stage)));
     const isCurrent = stage.endedAt === null;
     const row = el('div', 'lektor-stage');
     const took = stage.endedAt === null || stage.phase === 'refused' ? '' : durationWords(stage.endedAt - stage.startedAt);
-    row.append(stageMark(stage, isCurrent), ...stageText(stageWords(stage, isCurrent, corrections.stages[index - 1]), took));
-    list.append(row, ...underStage(stage, preset));
+    row.append(stageMark(stage, isCurrent), ...stageText(stageWords(stage, isCurrent), took));
+    list.append(row, ...underStage(stage));
   });
   return list;
 }
 
+/** The Lektor it was sent to, with its mark, as the request screen's "AI Lektor:" line has it. */
+function sentToLine(preset: Preset): HTMLElement {
+  const first = corrections.stages[0];
+  return serviceLineOf(first === undefined ? tierOf(corrections.sentTo, preset) : stageTier(first));
+}
+
 /**
- * Which Lektor and model is working now: 3.6 named as the older one standing in, so he isn't led to
- * think it's the same. The one place the model is shown outright (Danilo, 2026-11-10): small, under
- * a wait he is only watching, it does the least harm.
+ * The model working now, in small grey under the clock: the one place it is shown outright (Danilo,
+ * 2026-11-10), for whoever wants it; the Lektor's name is above. 3.6 said to be standing in.
  */
 function modelLine(): HTMLElement[] {
   const now = corrections.stages.at(-1);
   if (now === undefined) return [];
-  const standIn = now.model === FREE_STAND_IN ? ' (stariji, rezervni)' : '';
-  return [el('p', 'lektor-wait-small', `${lektorName(now.by)} lektor · ${now.model}${standIn}`)];
+  return [el('p', 'lektor-wait-small', `${now.model}${now.model === FREE_STAND_IN ? ' (rezervni)' : ''}`)];
 }
 
 /**
@@ -567,7 +562,8 @@ function waitingDetail(preset: Preset): HTMLElement[] {
     // The text's name in the colour the window's title gives it, as everywhere it names his text.
     el('p', 'lektor-heading lektor-wait-name', TEXT_TITLE),
     el('p', '', `Vrsta ispravke: ${PRESET_NAMES[preset]}`),
-    stagesList(preset),
+    sentToLine(preset),
+    stagesList(),
     el('p', 'lektor-window-clock', waitedWords()),
     ...modelLine(),
   );
@@ -653,7 +649,16 @@ function endStage(): void {
   if (current !== undefined && current.endedAt === null) current.endedAt = performance.now();
 }
 
+/**
+ * A new stage; but a free queue going on with the other free model (3.8 to 3.6) stays the one queue,
+ * only its model changing: free Flash to free Flash, which he would not act on, so not shown.
+ */
 function startStage(phase: Phase, by: Choice, model: string): void {
+  const current = corrections.stages.at(-1);
+  if (phase === 'queue' && current?.phase === 'queue' && current.endedAt === null && current.by === by) {
+    current.model = model;
+    return;
+  }
   endStage();
   corrections.stages.push({ phase, by, model, startedAt: performance.now(), endedAt: null, isGivenUp: false });
 }
@@ -730,8 +735,18 @@ function queueLimitFor(preset: Preset, model: FreeModel): number {
   return model === FREE_FIRST && !FALLS_BACK.has(preset) ? 2 * times().queueLimitMs : times().queueLimitMs;
 }
 
-/** Refused outright, without a turn in the queue: noted, and on to the next. */
+/** Whether the next step is only the other free model: then nothing is noted, the queue simply goes on. */
+const staysFree = (preset: Preset, model: FreeModel): boolean => model === FREE_FIRST && FALLS_BACK.has(preset);
+
+/** Refused outright, without a turn in the queue: on to the next, noted only where it leaves the free one. */
 function refusedBy(preset: Preset, model: FreeModel): void {
+  if (staysFree(preset, model)) {
+    askFree(preset, FREE_STAND_IN);
+    return;
+  }
+  // A queue already waited (3.8's, then 3.6 refused) was given up, not finished.
+  const current = corrections.stages.at(-1);
+  if (current !== undefined && current.endedAt === null) current.isGivenUp = true;
   endStage();
   const now = performance.now();
   corrections.stages.push({ phase: 'refused', by: 'free', model, startedAt: now, endedAt: now, isGivenUp: true });
@@ -740,6 +755,10 @@ function refusedBy(preset: Preset, model: FreeModel): void {
 
 /** Still waiting at the limit: given up, on to the next, and nothing of its work is lost since none began. */
 function givenUp(preset: Preset, model: FreeModel): void {
+  if (staysFree(preset, model)) {
+    askFree(preset, FREE_STAND_IN);
+    return;
+  }
   const current = corrections.stages.at(-1);
   if (current !== undefined) current.isGivenUp = true;
   endStage();
