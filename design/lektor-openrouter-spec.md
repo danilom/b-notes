@@ -138,8 +138,8 @@ the work:
 
 ## 5. The tick box: a slow free one goes to paid Flash
 
-- **Wording:** "Ako čeka duže od 2 minuta, pošalji tekst plaćenom lektoru„Flash”", with the green coin. No-break
-  space before „Flash”; one sentence, with no grey line under it.
+- **Wording:** "Ako čeka duže od 2 minuta, pošalji tekst plaćenom lektoru „Flash”", with the green coin. The space
+  before „Flash” is a no-break one; one sentence, with no grey line under it.
 - **Where it appears:**
   - **Utisak and Stilska/Dubinska:** nested under Besplatni, set in to the Lektor names. Greyed, not hidden,
     while Plaćeni is chosen.
