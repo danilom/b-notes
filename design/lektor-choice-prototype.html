@@ -173,73 +173,12 @@
       }
 
       /*
-        "Ispravke…" with the top of the menu's page at its left (Danilo, 2026-11-10): the page cut off
-        below its first line, standing on the button's lower edge as if the rest were behind it, rather
-        than a small whole picture centred like an icon. Bigger than a button's icon: a picture, as on
-        the menu. The button keeps its height; the words make room at the left.
+        "Ispravke…" plain, no picture (Danilo, 2026-11-10), but kept wide, about as wide as with the
+        picture it was tried with: the strip is a row of its own with room to spare. Within the strip,
+        lektor.css's .lektor-side-buttons .status-action sets its own padding, hence both classes.
       */
-      /* Within the strip: lektor.css's .lektor-side-buttons .status-action sets its own padding and would win. */
-      /* The bigger mini page: overhanging the padding so the button keeps its height. */
-      .lektor-side-buttons .lektor-to-corrections:has(.lektor-to-corrections-mini-big) {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.45em;
-      }
-
-      /*
-        The mini page at the button's left, as far from its left edge as from its top and bottom
-        (Danilo, 2026-11-10): its height the button's inside less two insets, its width from its shape.
-      */
-      .lektor-side-buttons .lektor-to-corrections:has(.lektor-to-corrections-mini) {
-        --mini-inset: 0.3em;
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        /* Generous, as on the pictures page (Danilo, 2026-11-10): the strip is a row of its own with room to spare. */
-        padding-left: calc(var(--mini-inset) + (2.1rem - 2 * var(--mini-inset)) * 33.2 / 45.2 + 1.05em);
-        padding-right: 1.5em;
-      }
-
-      .lektor-to-corrections .lektor-to-corrections-mini {
-        position: absolute;
-        left: var(--mini-inset);
-        top: var(--mini-inset);
-        height: calc(100% - 2 * var(--mini-inset));
-        width: auto;
-        aspect-ratio: 33.2 / 45.2;
-      }
-
-      /* Bigger still (Danilo, 2026-11-10: "bigger than the normal UI icon is fine"). */
-      .lektor-to-corrections .lektor-to-corrections-mini-big {
-        flex: none;
-        width: 2.2em;
-        height: 2.2em;
-        margin-block: -0.45em;
-      }
-
-      .lektor-side-buttons .lektor-to-corrections:has(.lektor-to-corrections-icon) {
-        /*
-          As far from the button's left edge as from its top (Danilo, 2026-11-10): the same inset set on
-          both sides, the picture's height whatever the button leaves under it, its width from its shape
-          (34 wide by 33 tall). Exact whatever the screen makes of the button's edge.
-        */
-        /* Small (Danilo, 2026-11-10): more of the page shows, its ž, two lines and the caret. */
-        --page-top-inset: 0.3em;
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        padding-left: calc(var(--page-top-inset) + (2.1rem - var(--page-top-inset)) * 34 / 33 + 0.4em);
-      }
-
-      /* With its button's class too: the app's .status-action svg sizes a button's icon and would win. */
-      .lektor-to-corrections .lektor-to-corrections-icon {
-        position: absolute;
-        left: var(--page-top-inset);
-        bottom: 0;
-        /* The button's inside height less the inset, so the gap above equals the one at the left. */
-        height: calc(100% - var(--page-top-inset));
-        width: auto;
-        aspect-ratio: 34 / 33;
+      .lektor-side-buttons .lektor-to-corrections {
+        padding-inline: 2em;
       }
 
       /* A little lower, off the panel's title line (Danilo, 2026-11-10). */
