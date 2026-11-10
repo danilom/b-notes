@@ -460,9 +460,12 @@ export type PictureColours = keyof typeof PICTURE_COLOURS;
 export const isPictureColours = (value: unknown): value is PictureColours => typeof value === 'string' && Object.hasOwn(PICTURE_COLOURS, value);
 
 /** A picture as an SVG, its parts classed for colour, at the size the class gives it. */
-export function drawPicture(picture: MenuPicture, className: string, colours: PictureColours = 'colour'): SVGSVGElement {
+/**
+ * @param viewBox The part of the 48×48 drawing to show: all of it, or a crop, as the button's page top.
+ */
+export function drawPicture(picture: MenuPicture, className: string, colours: PictureColours = 'colour', viewBox = '0 0 48 48'): SVGSVGElement {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', '0 0 48 48');
+  svg.setAttribute('viewBox', viewBox);
   svg.setAttribute('aria-hidden', 'true');
   svg.classList.add('lektor-picture', className);
   if (colours !== 'colour') svg.classList.add('lektor-picture-mono', `lektor-picture-mono-${colours}`);

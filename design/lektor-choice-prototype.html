@@ -173,22 +173,42 @@
       }
 
       /*
-        Bigger than a button's icon (Danilo, 2026-11-10): a picture, as on the menu, not a sign; allowed
-        to overhang the button's padding, so the strip keeps its height.
+        "Ispravke…" with the top of the menu's page at its left (Danilo, 2026-11-10): the page cut off
+        below its first line, standing on the button's lower edge as if the rest were behind it, rather
+        than a small whole picture centred like an icon. Bigger than a button's icon: a picture, as on
+        the menu. The button keeps its height; the words make room at the left.
       */
-      /* With its button's class too: the app's .status-action svg sizes a button's icon and would win. */
-      .lektor-to-corrections .lektor-to-corrections-icon {
-        width: 2em;
-        height: 2em;
-        margin-block: -0.4em;
-        flex: none;
-      }
-
-      /* The corrections' picture on "Ispravke…", before the word, as the menu has it before its name. */
-      .lektor-to-corrections {
+      /* Within the strip: lektor.css's .lektor-side-buttons .status-action sets its own padding and would win. */
+      .lektor-side-buttons .lektor-to-corrections {
+        position: relative;
         display: inline-flex;
         align-items: center;
-        gap: 0.45em;
+        padding-left: calc(0.55em + 2.2em + 0.5em);
+      }
+
+      /* With its button's class too: the app's .status-action svg sizes a button's icon and would win. */
+      .lektor-to-corrections .lektor-to-corrections-icon {
+        position: absolute;
+        left: 0.55em;
+        bottom: 0;
+        width: 2.2em;
+        height: auto;
+        aspect-ratio: 34 / 25;
+      }
+
+      /* Once his text has changed since the utisak: a white button the size of the strip's, not grey small print. */
+      .lektor-back-row .lektor-again-stale {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        min-height: 2.1rem;
+        padding-inline: 0.8rem;
+        font-size: var(--lektor-text);
+      }
+
+      /* A little lower, off the panel's title line (Danilo, 2026-11-10). */
+      .lektor-comment-head > .lektor-stale {
+        margin-top: 2px;
       }
 
       .lektor-menu-option:has(.lektor-menu-icon) .lektor-menu-name,
