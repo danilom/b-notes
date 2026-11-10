@@ -7,6 +7,7 @@
 import {
   ISPRAVKE_MINI,
   ISPRAVKE_MINI_LIGHT,
+  ISPRAVKE_MINI_LINE,
   ISPRAVKE_MINI_VIEWBOX,
   ISPRAVKE_PICTURES,
   type MenuPicture,
@@ -103,6 +104,7 @@ function buttonPreviews(): HTMLElement {
   // The line ž-page with its folded corner was dropped (Danilo, 2026-11-10).
   const candidates: readonly [string, () => SVGSVGElement, string][] = [
     [ISPRAVKE_MINI_LIGHT.label, () => drawPicture(ISPRAVKE_MINI_LIGHT, 'sheet-button-mini', colours, ISPRAVKE_MINI_VIEWBOX), 'sheet-button-with-mini'],
+    [ISPRAVKE_MINI_LINE.label, () => drawPicture(ISPRAVKE_MINI_LINE, 'sheet-button-mini', colours, ISPRAVKE_MINI_VIEWBOX), 'sheet-button-with-mini'],
     [`${ISPRAVKE_MINI.label}, veća`, () => drawPicture(ISPRAVKE_MINI, 'sheet-button-mini-big', colours), ''],
     [ISPRAVKE_MINI.label, () => drawPicture(ISPRAVKE_MINI, 'sheet-button-mini', colours, ISPRAVKE_MINI_VIEWBOX), 'sheet-button-with-mini'],
     ['vrh strane, u boji', () => drawPicture(picture, 'sheet-button-page-top', colours, '6 2 34 33'), 'sheet-button-with-top'],

@@ -478,6 +478,19 @@ export const ISPRAVKE_MINI: MenuPicture = {
 };
 
 /**
+ * The light mini page with one line of his text under the ž (Danilo, 2026-11-10): the ž raised to make
+ * room, the line in the outline's ink and weight, as the menu picture's lines are.
+ */
+export const ISPRAVKE_MINI_LINE: MenuPicture = {
+  label: 'mala strana, ž i jedan red',
+  shapes: [
+    shape('rect', 'ic-paper ic-mini-light', { x: 9, y: 3, width: 30, height: 42, rx: 4 }),
+    shape('path', 'ic-red-line ic-mini-light-red', { d: 'M18.5 18h11l-11 11h11M20.5 8.8l3.5 3.2 3.5-3.2' }),
+    shape('path', 'ic-line ic-mini-light', { d: 'M15.5 36.5h17' }),
+  ],
+};
+
+/**
  * The mini page with its lines as light as the menu picture's appear on screen, seated in a button at
  * about 25 pixels (Danilo, 2026-11-10): there the picture's outline shows 1.67 px and its ž 2.0 px.
  */
