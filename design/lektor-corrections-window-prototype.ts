@@ -297,16 +297,12 @@ function readyCard(preset: Preset, by: Choice, kept: Kept): HTMLElement {
 }
 
 /**
- * Where a card was, once his text has changed: what they were, and that they no longer hold, so
- * suggestions he may have paid for don't simply vanish (Danilo, 2026-11-10). Nothing to click.
+ * Where the cards were, once his text has changed: one plain line, however many sets there were
+ * (Danilo, 2026-11-10), so suggestions he may have paid for don't simply vanish; whose and when no
+ * longer matter once they're void. Nothing to click.
  */
-function staleLine(preset: Preset, by: Choice, kept: Kept): HTMLElement {
-  const tier = tierOfModel(by, kept.model ?? MODELS[by][preset]);
-  const when = kept.at === JUST_NOW ? '' : ` od ${kept.at}`;
-  return el('p', 'lektor-where lektor-stale-kept', `Predlozi lektora\u00a0${familyOf(tier)}${when} više ne važe: tekst je promenjen.`);
-}
-
-const staleLines = (preset: Preset): HTMLElement[] => keptFor(preset, true).map(([by, kept]) => staleLine(preset, by, kept));
+const staleLines = (preset: Preset): HTMLElement[] =>
+  keptFor(preset, true).length === 0 ? [] : [el('p', 'lektor-where lektor-stale-kept', 'Stari predlozi više ne važe, tekst je promenjen.')];
 
 function readyDetail(preset: Preset): HTMLElement[] {
   const again = button('Novi zahtev za ispravke…', () => {
