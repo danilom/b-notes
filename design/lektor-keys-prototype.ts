@@ -44,18 +44,16 @@ export const isAnyKeyDead = (): boolean => keys.dead.free || keys.dead.paid;
 const KEY_PATHS = ['m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4', 'm21 2-9.6 9.6', 'M7.5 10a5.5 5.5 0 1 0 0 11 5.5 5.5 0 1 0 0-11'];
 
 /**
- * A key that stopped working, said once for the whole feature (Danilo, 2026-11-10): not one Lektor
- * greyed and the other left on, which reads as flaky; the problem, and what to do, which is his to
- * do (or to ask about): a new key, entered under API ključevi. No person named.
+ * A key that stopped working, on a screen of its own (Danilo, 2026-11-10), not squeezed above the
+ * menu or another step: its mark big, and very short, since what to do is ask for help, which he
+ * can (no person named: who helps is his business). Which key isn't said here: the keys screen,
+ * behind the button, says it beside the key, for whoever helps him.
  */
-export function deadKeyProblem(): HTMLElement {
-  const box = el('div', 'lektor-problem lektor-dead-key');
-  box.setAttribute('role', 'alert');
-  const which = keys.dead.free && keys.dead.paid ? 'Ključevi za AI Lektora više ne rade.' : `Ključ za ${keys.dead.free ? 'besplatnog' : 'plaćenog'} lektora više ne radi.`;
-  const lines = el('div', 'lektor-problem-words');
-  lines.append(el('p', 'lektor-line', which), el('p', 'lektor-where', 'Treba nabaviti novi ključ i uneti ga pod „API ključevi”.'));
-  box.append(lineIcon(KEY_PATHS, ['lektor-dead-key-mark']), lines);
-  return box;
+export function deadKeyNotice(): HTMLElement {
+  const notice = el('div', 'lektor-dead-key');
+  notice.setAttribute('role', 'alert');
+  notice.append(lineIcon(KEY_PATHS, ['lektor-dead-key-mark']), el('p', 'lektor-dead-key-title', 'API ključ više ne radi.'), el('p', '', 'Zovi za pomoć.'));
+  return notice;
 }
 
 /** Under a saved key, that it works, and for paid the balance that proves it; "Sačuvan" is in the box. */

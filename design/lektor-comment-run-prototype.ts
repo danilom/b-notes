@@ -12,7 +12,7 @@
 import { icon } from '../src/ui/icons.ts';
 import { times } from './lektor-corrections-window-prototype.ts';
 import { FREE_LIMIT_WORDS } from './lektor-choice-radios.ts';
-import { deadKeyProblem, keys } from './lektor-keys-prototype.ts';
+import { keys } from './lektor-keys-prototype.ts';
 import { type Choice, type FreeModel, MODELS, PAID_IF_SLOW_MODEL, button, choiceMark, el, problem, state } from './lektor-prototype-pieces.ts';
 
 export type CommentFailure = 'busy' | 'no-credit' | 'offline' | 'bad-key';
@@ -140,7 +140,6 @@ function freeExpect(): string {
 
 /** The window's words for the same failures, and the same shape: the problem, then the way back. */
 export function commentFailure(): HTMLElement {
-  if (commentRun.failure === 'bad-key') return deadKeyProblem();
   if (commentRun.failure === 'no-credit') return problem('Plaćeni iznos je potrošen.', keys.saved.free ? 'Možeš da pošalješ besplatnom lektoru, ili neka se uplati još.' : 'Neka se uplati još.');
   if (commentRun.failure === 'offline') return problem('Internet ne radi, a AI Lektoru je potreban.', 'Kad internet proradi, pošalji ponovo.');
   return problem('Gugl je sada zauzet.', keys.saved.paid ? 'Probaj malo kasnije, ili pošalji plaćenom lektoru.' : 'Probaj malo kasnije.');

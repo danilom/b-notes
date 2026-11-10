@@ -9,9 +9,9 @@
 */
 import { icon } from '../src/ui/icons.ts';
 import { type WindowCase, corrections, openCorrectionsWindow, setCorrectionsStale, setKeysOpener, openCorrectionsWindowAt, redrawWindowIfOpen } from './lektor-corrections-window-prototype.ts';
-import { type KeyCheck, deadKeyProblem, isAnyKeyDead, keys, keysScreen } from './lektor-keys-prototype.ts';
+import { type KeyCheck, deadKeyNotice, isAnyKeyDead, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { type PaidIfSlow, lektorChoice, paidIfSlowByDefault } from './lektor-choice-radios.ts';
-import { commentFailure, commentRun, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
+import { type CommentFailure, commentFailure, commentRun, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
 import { ISPRAVKE_PICTURES, UTISAK_PICTURES, drawPicture } from './lektor-menu-icons-prototype.ts';
 import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, type Tier, button, dollars, el, element, sendButton, serviceLineOf, spend, state, tierOfModel } from './lektor-prototype-pieces.ts';
 
@@ -131,24 +131,17 @@ function menuScreen(): Step {
     // No "Ti biraš šta ulazi u tekst" (Danilo, 2026-11-10): "predlozi" says it, and the window says it by its send button.
     menuOption('Ispravke', 'Predlozi ispravki, od zareza do stila.', () => openCorrectionsWindow(), ispravkeIcon('lektor-menu-icon')),
   );
-  if (isAnyKeyDead()) return deadKeyMenu(options);
   return {
     content: [...saved, el('p', 'lektor-line', 'AI Lektor čita tvoj tekst, kaže šta misli i predlaže ispravke.'), heading, options, privacyFoot(), keysLink],
   };
 }
 
 /**
- * With a key that no longer works, found when the panel opened: the whole feature greyed under the
- * message (Danilo, 2026-11-10), not one Lektor of two, and the way to fix it as the step's main button.
+ * A key that no longer works, found when the panel opened: a screen of its own in place of the menu
+ * (Danilo, 2026-11-10), for the whole feature, not one Lektor of two; the way to the keys its button.
  */
-function deadKeyMenu(options: HTMLElement): Step {
-  for (const option of options.querySelectorAll('button')) option.disabled = true;
-  options.classList.add('lektor-menu-unavailable');
-  return {
-    // No quiet "API ključevi" link at the foot as well: the main button is the way, said once.
-    content: [deadKeyProblem(), el('p', 'lektor-heading', 'Šta želiš?'), options],
-    main: button('API ključevi', openKeys, 'status-action lektor-main-action'),
-  };
+function deadKeyScreen(): Step {
+  return { content: [deadKeyNotice()], main: button('API ključevi', openKeys, 'status-action lektor-main-action') };
 }
 
 /**
@@ -421,11 +414,12 @@ function waitingScreen(): Step {
  * by its text when another is open, since the panel then speaks of a text not in front of him.
  */
 function failedScreen(): Step {
+  // Found only on sending: the same screen as on opening, with the way back as well.
+  if (commentRun.failure === 'bad-key') return { ...deadKeyScreen(), back: backButton('Nazad', backFromComment) };
   const which = isRequestElsewhere() ? [el('p', 'lektor-line', `Utisak o tekstu ${textInWords()} nije stigao.`)] : [];
   const content = [...which, commentFailure()];
   // With another text open, back leaves the panel to that text; the failed one is back at step 2 for when he returns.
   const back = backButton('Nazad', backFromComment);
-  if (commentRun.failure === 'bad-key') return { content, main: button('API ključevi', openKeys, 'status-action lektor-main-action'), back };
   const shortcut = commentShortcut((to) => askForComment(to, requestSlot));
   return shortcut === null ? { content, back } : { content, main: shortcut, back };
 }
@@ -483,6 +477,7 @@ function firstRunScreen(): Step {
 function screenNow(): Step {
   if (screen === 'keys') return keysScreen(render, backToStart, savedAndBack);
   if (screen === 'menu' && !keys.saved.free && !keys.saved.paid) return firstRunScreen();
+  if (screen === 'menu' && isAnyKeyDead()) return deadKeyScreen();
   if (screen === 'menu') return menuScreen();
   if (screen === 'waiting') return waitingScreen();
   if (screen === 'failed') return failedScreen();
@@ -543,6 +538,8 @@ const CONTROLS: readonly PrototypeControl[] = [
       { value: 'busy', label: '4b. Prozor: Gugl zauzet (Slova i zarezi)' },
       { value: 'no-credit', label: '4c. Prozor: nema novca (Dubinska)' },
       { value: 'offline', label: '4d. Prozor: nema interneta (Slova i zarezi)' },
+      { value: 'bad-key', label: '4e. Prozor: ključ ne radi pri slanju (Slova i zarezi)' },
+      { value: 'dead-key-send', label: '5. Utisak: ključ ne radi pri slanju' },
       { value: 'keys', label: 'API ključevi' },
     ],
     // Where the work is now: the panel's new first step.
@@ -663,7 +660,7 @@ function setKept(value: string | boolean): void {
   if (value === 'both') corrections.kept.letters = letters;
 }
 
-const WINDOW_CASES: readonly WindowCase[] = ['waiting', 'queued', 'busy', 'no-credit', 'offline'];
+const WINDOW_CASES: readonly WindowCase[] = ['waiting', 'queued', 'busy', 'no-credit', 'offline', 'bad-key'];
 
 function isWindowCase(value: string | boolean): value is WindowCase {
   return WINDOW_CASES.some((one) => one === value);
@@ -673,6 +670,13 @@ function isWindowCase(value: string | boolean): value is WindowCase {
  * "4. Prozor za ispravke" is the comment step with the window opened on it, as "Pređi na
  * ispravke…" does; 4a–4d open it straight on the wait or a failure.
  */
+/** The harness's straight way to a utisak that failed, without sending one and setting the day for it. */
+function showCommentFailure(failure: CommentFailure): void {
+  commentRun.failure = failure;
+  commentRun.sentTo = 'free';
+  screen = 'failed';
+}
+
 function setScreen(value: string | boolean): void {
   stopCommentRun();
   // A screen picked here is the open text's, from a clean start: no request pinning the panel.
@@ -681,6 +685,10 @@ function setScreen(value: string | boolean): void {
   const isWindow = value === 'window' || isWindowCase(value);
   const named: Screen = value === 'keys' ? 'keys' : value === 'start' ? 'start' : 'menu';
   screen = value === 'response' || isWindow ? 'response' : named;
+  if (value === 'dead-key-send') {
+    showCommentFailure('bad-key');
+    return;
+  }
   // Opening the first step afresh, as he would: on Besplatni.
   if (value === 'start') state.choice = 'free';
   if (!isWindow) return;

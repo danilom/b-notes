@@ -28,7 +28,7 @@ import { type Shown, showAsModal } from '../src/ui/dialogs/modal.ts';
 import { strings } from '../src/language/wording.ts';
 import { createDiffLegend } from '../src/ui/diff-legend.ts';
 import { icon } from '../src/ui/icons.ts';
-import { deadKeyProblem, keys } from './lektor-keys-prototype.ts';
+import { deadKeyNotice, keys } from './lektor-keys-prototype.ts';
 import {
   type Choice,
   FALLS_BACK,
@@ -626,7 +626,7 @@ function shortcutAfter(preset: Preset): HTMLButtonElement[] {
 
 /** What went wrong, in the app's own words, and a line on what can be done. */
 function failureWords(): HTMLElement {
-  if (corrections.failure === 'bad-key') return deadKeyProblem();
+  if (corrections.failure === 'bad-key') return deadKeyNotice();
   if (corrections.failure === 'no-credit') return problem('Plaćeni iznos je potrošen.', keys.saved.free ? 'Možeš da pošalješ besplatnom lektoru, ili neka se uplati još.' : 'Neka se uplati još.');
   if (corrections.failure === 'offline') return problem('Internet ne radi, a AI Lektoru je potreban.', 'Kad internet proradi, pošalji ponovo.');
   return problem('Gugl je sada zauzet.', keys.saved.paid ? 'Probaj malo kasnije, ili pošalji plaćenom lektoru.' : 'Probaj malo kasnije.');
@@ -1008,7 +1008,7 @@ export function openCorrectionsWindow(): void {
 }
 
 /** A state of the window the harness can open straight away, without sending and waiting for it. */
-export type WindowCase = 'waiting' | 'queued' | 'busy' | 'no-credit' | 'offline';
+export type WindowCase = 'waiting' | 'queued' | 'busy' | 'no-credit' | 'offline' | 'bad-key';
 
 /** A wait held still at one stage, until "Odustani od zahteva", so it can be looked at. */
 function holdWait(preset: Preset, to: Choice, phase: Phase): void {

@@ -957,28 +957,40 @@
       }
 
       /*
-        New: a key that no longer works, its own mark: a key in the problem's red, drawn as a line like
-        the app's icons, not the red disc with a white mark, which says the Lektor failed.
+        New: a key that no longer works, a screen of its own: its mark big, a key in the problem's red
+        drawn as a line like the app's icons (not the red disc, which says the Lektor failed), and two
+        short lines under it, in the middle of the space, as the window's big notices are.
       */
-      .lektor-problem svg.lektor-dead-key-mark {
-        width: 1.7em;
-        height: 1.7em;
-        stroke: hsl(358 60% 50%);
-        stroke-width: 2.2;
-      }
-
-      .lektor-problem svg.lektor-dead-key-mark path:first-child {
-        fill: none;
-        stroke: hsl(358 60% 50%);
-      }
-
       .lektor-dead-key {
-        margin-bottom: 0.4rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.3rem;
+        margin: auto 0;
+        padding: 1.5rem 0;
+        text-align: center;
       }
 
-      /* New: the menu under a dead key's message, there but out of use, so he sees what waits on the key. */
-      .lektor-menu-unavailable {
-        opacity: 0.45;
+      /* In the middle of the panel's height, as the first step's warning is; the body's own top margin rule would win otherwise. */
+      .lektor-side-body > .lektor-dead-key {
+        margin-block: auto;
+      }
+
+      .lektor-dead-key p {
+        margin: 0;
+      }
+
+      .lektor-dead-key svg.lektor-dead-key-mark {
+        width: 3rem;
+        height: 3rem;
+        margin-bottom: 0.5rem;
+        color: hsl(358 60% 50%);
+        stroke-width: 1.8;
+      }
+
+      .lektor-dead-key-title {
+        font-size: 1.15em;
+        font-weight: 600;
       }
 
       /* New: the main button in a strip of its own at the panel's foot, always in view, with what scrolls above it. */
