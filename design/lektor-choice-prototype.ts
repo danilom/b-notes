@@ -471,8 +471,18 @@ function savedAndBack(): void {
   backToStart();
 }
 
+/**
+ * With no key at all, the panel opens on the keys rather than the menu (decided): nothing else in it
+ * works yet. No "Nazad", since there is nothing to go back to; Zatvori closes the panel as ever.
+ */
+function firstRunScreen(): Step {
+  const { content, main } = keysScreen(render, backToStart, savedAndBack);
+  return { content, main };
+}
+
 function screenNow(): Step {
   if (screen === 'keys') return keysScreen(render, backToStart, savedAndBack);
+  if (screen === 'menu' && !keys.saved.free && !keys.saved.paid) return firstRunScreen();
   if (screen === 'menu') return menuScreen();
   if (screen === 'waiting') return waitingScreen();
   if (screen === 'failed') return failedScreen();
