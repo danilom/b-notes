@@ -960,6 +960,9 @@
       .lektor-side-body > .lektor-elsewhere-open {
         align-self: flex-start;
         margin-top: 0.4rem;
+        /* As tall as the strip's buttons (lektor.css's .lektor-side-buttons .status-action), not a small one in the text. */
+        min-height: 2.1rem;
+        padding-inline: 0.8rem;
       }
 
       /*
@@ -1034,6 +1037,11 @@
       /* Alone on its line once wrapped, still at the right: the side the main button always has. */
       .lektor-side-dock .lektor-side-buttons > :last-child {
         margin-left: auto;
+      }
+
+      /* But "← Nazad" alone in the strip stays at the left, where it always is, not pulled to the middle. */
+      .lektor-side-dock .lektor-side-buttons > .lektor-side-back:last-child {
+        margin-left: 0;
       }
 
       /* A step back at the strip's left end, the main button staying on the right; the same size as it. */
