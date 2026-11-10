@@ -98,7 +98,8 @@ function menuScreen(): Step {
       screen = 'start';
       render();
     }),
-    menuOption('Ispravke', 'Predlaže ispravke, od zareza do stila. Ti biraš šta ulazi u tekst.', () => openCorrectionsWindow()),
+    // No "Ti biraš šta ulazi u tekst" (Danilo, 2026-11-10): "predlozi" says it, and the window says it by its send button.
+    menuOption('Ispravke', 'Predlozi ispravki, od zareza do stila.', () => openCorrectionsWindow()),
   );
   return {
     content: [...saved, el('p', 'lektor-line', 'AI Lektor čita tvoj tekst, kaže šta misli i predlaže ispravke.'), heading, options, privacyFoot()],
