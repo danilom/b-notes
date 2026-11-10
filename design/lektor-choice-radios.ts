@@ -3,7 +3,7 @@
   corrections window: it is one setting, so it looks like one wherever it is changed.
 */
 import { keys } from './lektor-keys-prototype.ts';
-import { type Choice, balanceLine, button, el, radio, state } from './lektor-prototype-pieces.ts';
+import { type Choice, type Work, balanceLine, button, el, radio, state, tierName } from './lektor-prototype-pieces.ts';
 
 export interface LektorChoiceActions {
   /** The radios' group: the panel's copy stays in the page behind the window, and each needs its own. */
@@ -20,6 +20,11 @@ export interface LektorChoiceActions {
    * The why rather than "preporučeno", which reads as selling, not advice.
    */
   better?: { choice: Choice; why: string };
+  /**
+   * What the Lektor is to do, which says which paid one it is: Plaćeni „Flash” where it is the same
+   * writer as the free one, faster; Plaćeni „Opus” where it is another, better one (Danilo, 2026-11-10).
+   */
+  what: Work;
 }
 
 /**
@@ -32,8 +37,9 @@ function paidBalance(): HTMLElement[] {
 }
 
 /** A choice whose key hasn't been entered is greyed, with the reason on hovering, as in the app. */
-function levelOption(choice: Choice, name: string, actions: LektorChoiceActions): HTMLElement {
-  const option = radio(actions.group, name, (actions.chosen ?? state.choice) === choice, () => actions.choose(choice), choice);
+function levelOption(choice: Choice, actions: LektorChoiceActions): HTMLElement {
+  const name = tierName(choice, actions.what);
+  const option = radio(actions.group, name, (actions.chosen ?? state.choice) === choice, () => actions.choose(choice), choice, actions.what);
   if (actions.better?.choice === choice) option.append(el('span', 'lektor-recommended', actions.better.why));
   if (choice === 'paid') option.append(...paidBalance());
   const input = option.querySelector('input');
@@ -50,7 +56,7 @@ function levelOption(choice: Choice, name: string, actions: LektorChoiceActions)
  */
 export function lektorChoice(actions: LektorChoiceActions): HTMLElement[] {
   const options = el('div', 'lektor-choice-options');
-  options.append(levelOption('free', 'Besplatni', actions), levelOption('paid', 'Plaćeni', actions));
+  options.append(levelOption('free', actions), levelOption('paid', actions));
   const heading = el('p', 'lektor-heading', 'Izaberi AI Lektora:');
   if (actions.openKeys === undefined) return [heading, options];
   const row = el('div', 'lektor-choice-with-keys');

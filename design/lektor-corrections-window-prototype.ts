@@ -54,6 +54,7 @@ import {
   serviceLine,
   spend,
   state,
+  tierName,
 } from './lektor-prototype-pieces.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
 
@@ -275,7 +276,7 @@ function readyCard(preset: Preset, by: Choice, kept: Kept): HTMLElement {
   const cost = kept.cost === null ? '' : ` · ${dollars(kept.cost)}`;
   const words = el('span', 'lektor-ready-words', `Predlozi${kept.at === JUST_NOW ? '' : ` od ${kept.at}`}${cost}`);
   words.title = `Napravio ${lektorName(by)} Lektor.`;
-  card.append(choiceMark(by), words, button('Pogledaj', () => openReview(preset, by), 'lektor-main-action'));
+  card.append(choiceMark(by, preset), words, button('Pogledaj', () => openReview(preset, by), 'lektor-main-action'));
   return card;
 }
 
@@ -296,7 +297,7 @@ function readyDetail(preset: Preset): HTMLElement[] {
  * minutes in. Ticking it is his own choice to pay, which is what makes acting on it later fair; and
  * it is set afresh each time the window opens: ticked only with a paid key and $1 or more.
  */
-function paidIfSlowBox(): HTMLElement {
+function paidIfSlowBox(preset: Preset): HTMLElement {
   const box = el('label', 'lektor-preset lektor-check');
   const input = el('input');
   input.type = 'checkbox';
@@ -313,7 +314,7 @@ function paidIfSlowBox(): HTMLElement {
     el('span', '', 'Ako je besplatni spor, pošalji plaćenom lektoru'),
     el('span', 'lektor-check-why', `Posle ${FREE_LIMIT_WORDS} čekanja. Za ovu vrstu ispravke plaćeni je jeftin.`),
   );
-  box.append(input, choiceMark('paid'), words);
+  box.append(input, choiceMark('paid', preset), words);
   // In a row of the choices' own make, so it is as big a target, with the same hover.
   const row = el('div', 'lektor-choice-options');
   row.append(box);
@@ -339,13 +340,14 @@ function mayGoToPaid(preset: Preset): boolean {
 function lektorPart(preset: Preset): HTMLElement[] {
   if (FALLS_BACK.has(preset)) {
     const canSwitch = lektorFor(preset) === 'free' && keys.saved.paid;
-    return [serviceLine(lektorFor(preset)), ...(canSwitch ? [paidIfSlowBox()] : [])];
+    return [serviceLine(lektorFor(preset), preset), ...(canSwitch ? [paidIfSlowBox(preset)] : [])];
   }
   return lektorChoice({
     group: 'lektor-window-level',
     chosen: lektorFor(preset),
     // Not "thorough": on these kinds the free one changed several times more of his words, and lost in the blind picks.
     better: { choice: 'paid', why: 'bolje piše i čuva tvoj glas' },
+    what: preset,
     choose: (choice) => {
       corrections.reworkChoice = choice;
       draw();
@@ -386,7 +388,7 @@ function sendRow(preset: Preset): HTMLElement {
   const to = lektorFor(preset);
   const send = sendButton('Pošalji zahtev za ispravke', preset, () => run(to), 'lektor-main-action');
   // Who it goes to is this kind's Lektor here, not the panel's choice that sendButton reads.
-  send.querySelector('.lektor-choice-mark')?.replaceWith(choiceMark(to));
+  send.querySelector('.lektor-choice-mark')?.replaceWith(choiceMark(to, preset));
   send.title = [`Šalje se ${to === 'free' ? 'Guglu' : 'firmi OpenRouter'}`, `Model: ${MODELS[to][preset]}`].join('\n');
   // What sending does, next to the button that does it, rather than by Zatvori in the footer; and,
   // while the instructions are folded, the way to them at its left: one line of small print over the buttons.
@@ -601,7 +603,7 @@ function waitingDetail(preset: Preset): HTMLElement[] {
 
 function sendToButton(preset: Preset, to: Choice): HTMLButtonElement {
   const made = button(to === 'free' ? 'Pošalji besplatnom lektoru' : 'Pošalji plaćenom lektoru', () => run(to), 'lektor-main-action lektor-sends');
-  made.append(choiceMark(to), icon('move-out'));
+  made.append(choiceMark(to, preset), icon('move-out'));
   made.title = `Model: ${MODELS[to][preset]}`;
   return made;
 }
@@ -829,7 +831,7 @@ function reviewWhoLine(preset: Preset, by: Choice, kept: Kept | undefined): HTML
   const cost = kept?.cost == null ? '' : ` · ${dollars(kept.cost)}`;
   const model = kept?.model ?? MODELS[by][preset];
   const lektor = el('span', 'lektor-review-who');
-  lektor.append(choiceMark(by), el('span', '', `${lektorName(by)} lektor`));
+  lektor.append(choiceMark(by, preset), el('span', '', tierName(by, preset)));
   lektor.title = `Model: ${model}${model === FREE_STAND_IN ? ' (stariji, rezervni)' : ''}`;
   const who = el('p', 'lektor-service-line');
   // Named as the wait names it, so the kind reads as what was asked rather than as a heading.

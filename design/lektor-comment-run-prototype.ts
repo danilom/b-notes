@@ -6,7 +6,7 @@
 
   Measured (2026-11-09/10): a free utisak on 3.8 took 3–5½ minutes, nearly all of it queued at Google,
   the work itself a few seconds; 3.6 mostly started at once (5–8 Nov) but once queued 41 s and was then
-  refused as busy. Paid (Opus via OpenRouter) took about 18 s.
+  refused as busy. Paid (Opus via OpenRouter) took about 18 s, and paid Flash 19 s; the paid utisak is Flash now.
 */
 import { icon } from '../src/ui/icons.ts';
 import { times } from './lektor-corrections-window-prototype.ts';
@@ -40,7 +40,7 @@ export function stopCommentRun(): void {
 
 /** The work once a model has started: a few seconds of thinking and writing; a comment is short. */
 function workMs(to: Choice): number {
-  // Paid (Opus) thinks longer than free Flash: about 18 s against a few seconds, measured.
+  // Paid answers in about 18-19 s (Opus or paid Flash, measured): more than free Flash's few seconds of work, as it streams the thinking too.
   return to === 'paid' ? times().thinkingMs + times().writingStepMs * 1.5 : times().thinkingMs;
 }
 
@@ -128,6 +128,6 @@ export function commentShortcut(send: (to: Choice) => void): HTMLButtonElement |
   const isCompanys = commentRun.failure === 'busy' || commentRun.failure === 'no-credit';
   if (!isCompanys || !keys.saved[to]) return null;
   const made = button(to === 'free' ? 'Pošalji besplatnom lektoru' : 'Pošalji plaćenom lektoru', () => send(to), 'status-action lektor-main-action lektor-sends');
-  made.append(choiceMark(to), icon('move-out'));
+  made.append(choiceMark(to, 'comment'), icon('move-out'));
   return made;
 }

@@ -146,7 +146,9 @@ function startScreen(): Step {
   // and the equal quality under the heading, read on the way to choosing rather than after it. In the
   // small grey of "mnogo brži", the same kind of thing, and quiet once he knows it (Danilo, 2026-11-10).
   // The corrections choose their own Lektor in the window.
-  const [heading, ...choices] = lektorChoice({ group: 'lektor-level', choose, better: { choice: 'paid', why: 'mnogo brži' } });
+  // The paid utisak is Flash, the free one's own model without the queue (Danilo, 2026-11-10): the blind
+  // test was a draw and both answer in ~18 s, so Opus cost five times as much for nothing.
+  const [heading, ...choices] = lektorChoice({ group: 'lektor-level', choose, better: { choice: 'paid', why: 'mnogo brži' }, what: 'comment' });
   return {
     content: [chosenOnMenu(), ...(heading === undefined ? [] : [heading]), el('p', 'lektor-where lektor-choice-lead', 'Oba pišu utisak sličnog kvaliteta.'), ...choices],
     main: send,
@@ -169,8 +171,8 @@ const COMMENT = [
 /** Who wrote the comment shown. */
 let commentBy: Choice = state.choice;
 
-/** What a paid comment costs here: Opus wrote five for $0.25 in the measurement (2026-11-09). */
-const COMMENT_COST_USD = 0.05;
+/** What a paid comment costs here: paid Flash, estimated at about a cent from its prices (Opus was ~5 cents, measured 2026-11-09). */
+const COMMENT_COST_USD = 0.01;
 
 /** Whether "AI može da pogreši" is opened to say what that means, as in the app. */
 let isAboutAiOpen = false;
@@ -270,7 +272,7 @@ function responseScreen(): Step {
   const comment = el('div', 'lektor-response', `${commentOpening()}\n\n${COMMENT}`);
   comment.append(el('span', 'lektor-response-end'));
   // Signed by who wrote it, which stays so when the Lektor is changed afterwards, here or in the window.
-  const signed = serviceLine(commentBy);
+  const signed = serviceLine(commentBy, 'comment');
   // A paid one's cost after when, as the corrections' cards have it: a fact once spent.
   const cost = commentBy === 'paid' ? ` · ${dollars(COMMENT_COST_USD)}` : '';
   signed.append(el('span', 'lektor-comment-when', ` · upravo sad${cost}`));

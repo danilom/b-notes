@@ -25,7 +25,7 @@ export { PRESET_PROMPTS } from '../src/ui/lektor/lektor-presets.ts';
 /** What each choice runs, for the tooltips and the review's line. */
 export const MODELS: Readonly<Record<Choice, Readonly<Record<Preset | 'comment', string>>>> = {
   free: { comment: 'gemini-3.8-flash', letters: 'gemini-3.8-flash', grammar: 'gemini-3.8-flash', wording: 'gemini-3.8-flash', rewrite: 'gemini-3.8-flash' },
-  paid: { comment: 'claude-opus-5.5', letters: 'gemini-3.8-flash', grammar: 'gemini-3.8-flash', wording: 'claude-opus-5.5', rewrite: 'claude-opus-5.5' },
+  paid: { comment: 'gemini-3.8-flash', letters: 'gemini-3.8-flash', grammar: 'gemini-3.8-flash', wording: 'claude-opus-5.5', rewrite: 'claude-opus-5.5' },
 };
 
 /** Only corrections fall back: on rework the quicker model fades and loses his dialect, so he hears it's busy. */
@@ -94,6 +94,32 @@ export function button(label: string, onClick: () => void, className = ''): HTML
 export const dollars = (amount: number): string => `$${amount.toFixed(2).replace('.', ',')}`;
 export const lektorName = (choice: Choice = state.choice): string => (choice === 'free' ? 'Besplatni' : 'Plaćeni');
 
+/** What is asked of the Lektor: one of the corrections, or the utisak. */
+export type Work = Preset | 'comment';
+
+/**
+ * The three Lektors he can meet (Danilo, 2026-11-10): the free Flash, the same Flash paid, and Opus,
+ * which paid rework runs. Which paid one it is follows from the work, so the choice stays free or paid.
+ */
+export type Tier = 'free' | 'flash' | 'opus';
+
+export function tierOf(choice: Choice, what: Work): Tier {
+  if (choice === 'free') return 'free';
+  return MODELS.paid[what].startsWith('claude-opus') ? 'opus' : 'flash';
+}
+
+/**
+ * Each one's name, the model family in quotes as Serbian sets a product's name: one name, in one
+ * style, rather than a word and a grey family after it. Families only, never versions: those change.
+ */
+const TIER_NAMES: Readonly<Record<Tier, string>> = {
+  free: 'Besplatni „Flash”',
+  flash: 'Plaćeni „Flash”',
+  opus: 'Plaćeni „Opus”',
+};
+
+export const tierName = (choice: Choice, what: Work): string => TIER_NAMES[tierOf(choice, what)];
+
 /**
  * Who his text goes to: the company it is sent to, and no further. Past OpenRouter it may be
  * Anthropic, Google or Amazon running the model, which changes with the kind of correction and
@@ -101,17 +127,27 @@ export const lektorName = (choice: Choice = state.choice): string => (choice ===
  */
 export const recipient = (): string => (state.choice === 'free' ? 'Guglu' : 'firmi OpenRouter');
 
-/* The free and paid marks: a gift and a coin rather than a company's mark, since who runs either may change. */
-
-const CHOICE_PATHS: Readonly<Record<Choice, readonly string[]>> = {
+/*
+  The three Lektors' marks rather than a company's, since who runs each may change: a gift for the
+  free one, a coin for paid Flash, a gem for Opus, the premium one (chosen on the tier marks sheet,
+  Danilo, 2026-11-10).
+*/
+const TIER_PATHS: Readonly<Record<Tier, readonly string[]>> = {
   // Lucide's gift.
   free: ['M3 8h18v4H3z', 'M12 8v13', 'M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7', 'M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5'],
   // Lucide's circle-dollar-sign, the circle drawn as a path.
-  paid: ['M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20', 'M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8', 'M12 18V6'],
+  flash: ['M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20', 'M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8', 'M12 18V6'],
+  // Lucide's gem.
+  opus: ['M6 3h12l4 6-10 13L2 9Z', 'M11 3 8 9l4 13 4-13-3-6', 'M2 9h20'],
 };
 
-export function choiceMark(choice: Choice = state.choice): SVGSVGElement {
-  return lineIcon(CHOICE_PATHS[choice], ['lektor-choice-mark', `lektor-choice-mark-${choice}`]);
+/**
+ * The mark of the Lektor that does this work, or, where no work is meant (the paid key), the coin:
+ * the key is OpenRouter's, for both paid ones, and Flash is the one most work goes to.
+ */
+export function choiceMark(choice: Choice = state.choice, what: Work | null = null): SVGSVGElement {
+  const tier = what === null ? (choice === 'free' ? 'free' : 'flash') : tierOf(choice, what);
+  return lineIcon(TIER_PATHS[tier], ['lektor-choice-mark', `lektor-choice-mark-${tier}`]);
 }
 
 /** An icon drawn in the app's line, from Lucide's paths: for the prototype's own marks, which the app's set lacks. */
@@ -129,7 +165,7 @@ export function lineIcon(paths: readonly string[], classes: readonly string[]): 
   return made;
 }
 
-export function radio(name: string, label: string, checked: boolean, onChange: () => void, mark: Choice | null = null): HTMLLabelElement {
+export function radio(name: string, label: string, checked: boolean, onChange: () => void, mark: Choice | null = null, what: Work | null = null): HTMLLabelElement {
   const made = el('label', 'lektor-preset');
   const input = el('input');
   input.type = 'radio';
@@ -137,7 +173,7 @@ export function radio(name: string, label: string, checked: boolean, onChange: (
   input.checked = checked;
   input.addEventListener('change', onChange);
   made.append(input);
-  if (mark !== null) made.append(choiceMark(mark));
+  if (mark !== null) made.append(choiceMark(mark, what));
   made.append(el('span', '', label));
   return made;
 }
@@ -172,9 +208,9 @@ export function spend(cost: number | null): void {
 }
 
 /** Who did or does it: the Lektor's mark and name, as the app's service line has them. */
-export function serviceLine(by: Choice = state.choice): HTMLElement {
+export function serviceLine(by: Choice, what: Work): HTMLElement {
   const line = el('p', 'lektor-service-line');
-  line.append(el('span', '', 'AI Lektor:'), ' ', choiceMark(by), el('span', '', lektorName(by)));
+  line.append(el('span', '', 'AI Lektor:'), ' ', choiceMark(by, what), el('span', '', tierName(by, what)));
   return line;
 }
 
@@ -182,16 +218,16 @@ export function serviceLine(by: Choice = state.choice): HTMLElement {
  * What hovering a sending button tells: who gets the text and which model, one to a line. For
  * whoever wants the particulars, which he needn't. No cost: it can't be known before the run.
  */
-export function sendTooltip(what: Preset | 'comment'): string {
+export function sendTooltip(what: Work): string {
   const fallsBack = state.choice === 'free' && what !== 'comment' && FALLS_BACK.has(what);
   return [`Šalje se ${recipient()}`, `Model: ${MODELS[state.choice][what]}${fallsBack ? ' (ako je zauzet: gemini-3.6-flash)' : ''}`].join('\n');
 }
 
 /** A button that sends: its words, the mark of where it goes, and the app's arrow. */
-export function sendButton(label: string, what: Preset | 'comment', onClick: () => void, className: string): HTMLButtonElement {
+export function sendButton(label: string, what: Work, onClick: () => void, className: string): HTMLButtonElement {
   const made = button(label, onClick, `${className} lektor-sends`);
   made.title = sendTooltip(what);
-  made.append(choiceMark(), icon('move-out'));
+  made.append(choiceMark(state.choice, what), icon('move-out'));
   return made;
 }
 
