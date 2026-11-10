@@ -295,14 +295,18 @@
       }
 
       /* Under the words or mark, a column with them; the radio stays on the first line. */
-      .lektor-preset > :is(.lektor-balance, .lektor-kind-about) {
+      .lektor-preset > .lektor-kind-about {
         flex-basis: 100%;
         margin: 0 0 0 var(--lektor-after-radio);
       }
 
-      /* A pixel off "Plaćeni" above it (Danilo, 2026-11-10), in the panel and the window alike. */
-      .lektor-preset > .lektor-balance {
-        margin-top: 1px;
+      /*
+        The tick box for a slow free one under Besplatni, set in to its name, as part of it (Danilo,
+        2026-11-10); close under it, so it reads as Besplatni's, not as a third choice.
+      */
+      .lektor-choice-options .lektor-check-nested {
+        padding-top: 0.1rem;
+        padding-left: calc(var(--lektor-radio-indent) + var(--lektor-after-radio));
       }
 
       /* The tick box's sentence wraps in its place, beside the box and the coin, rather than dropping below them. */
@@ -340,7 +344,12 @@
       }
 
       /* New: the balance, small and quiet, in Plaćeni's row. */
+      /*
+        The paid account's balance on a line of its own under the choice: both paid Lektors' and the
+        tick box's, so no one row's (Danilo, 2026-11-10). Its words start where the choices' names do.
+      */
       .lektor-balance {
+        margin: 0.15rem 0 0 calc(var(--lektor-radio-indent) + var(--lektor-after-radio));
         font-size: var(--lektor-small);
         color: var(--quiet);
       }

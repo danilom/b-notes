@@ -33,9 +33,9 @@ import {
   type Choice,
   FALLS_BACK,
   MODELS,
+  PAID_IF_SLOW_MODEL,
   PRESET_NAMES,
   PRESET_PROMPTS,
-  LOW_BALANCE_USD,
   PRESETS,
   type Pace,
   type FreeModel,
@@ -48,15 +48,17 @@ import {
   el,
   element,
   lektorName,
+  markOf,
+  nameOf,
   problem,
   radio,
   sendButton,
   serviceLine,
   spend,
   state,
-  tierName,
+  tierOfModel,
 } from './lektor-prototype-pieces.ts';
-import { lektorChoice } from './lektor-choice-radios.ts';
+import { FREE_LIMIT_WORDS, type PaidIfSlow, lektorChoice, paidBalance, paidIfSlowBox, paidIfSlowByDefault } from './lektor-choice-radios.ts';
 
 type View = 'choosing' | 'waiting' | 'failed' | 'review';
 type Failure = 'busy' | 'no-credit' | 'offline';
@@ -177,7 +179,6 @@ export const times = (): WaitTimes => WAIT_TIMES[state.pace];
  * so two minutes in all before a ticked request goes to the paid one.
  */
 const STEP_LIMIT_WORDS = '1 minut';
-const FREE_LIMIT_WORDS = '2 minuta';
 
 /** When corrections just made were made, Danilo's word; a card from just now says only "Predlozi", since "od upravo sad" reads badly. */
 const JUST_NOW = 'upravo sad';
@@ -276,7 +277,7 @@ function readyCard(preset: Preset, by: Choice, kept: Kept): HTMLElement {
   const cost = kept.cost === null ? '' : ` · ${dollars(kept.cost)}`;
   const words = el('span', 'lektor-ready-words', `Predlozi${kept.at === JUST_NOW ? '' : ` od ${kept.at}`}${cost}`);
   words.title = `Napravio ${lektorName(by)} Lektor.`;
-  card.append(choiceMark(by, preset), words, button('Pogledaj', () => openReview(preset, by), 'lektor-main-action'));
+  card.append(markOf(tierOfModel(by, kept.model ?? MODELS[by][preset])), words, button('Pogledaj', () => openReview(preset, by), 'lektor-main-action'));
   return card;
 }
 
@@ -292,57 +293,36 @@ function readyDetail(preset: Preset): HTMLElement[] {
   ];
 }
 
-/**
- * Asked before sending, so a slow or busy free one can be handed to the paid one without a question
- * minutes in. Ticking it is his own choice to pay, which is what makes acting on it later fair; and
- * it is set afresh each time the window opens: ticked only with a paid key and $1 or more.
- */
-function paidIfSlowBox(preset: Preset): HTMLElement {
-  const box = el('label', 'lektor-preset lektor-check');
-  const input = el('input');
-  input.type = 'checkbox';
-  input.checked = corrections.isPaidIfSlow;
-  input.addEventListener('change', () => {
-    corrections.isPaidIfSlow = input.checked;
-  });
-  // A short name to tick, and under it in grey what it means: the limit, as the wait names it, and why
-  // paying is no great step here. No sum: a guess would be wrong as often as right, and on these kinds
-  // the paid one runs the same model as the free one, not the dearer one rework uses.
-  const words = el('span', 'lektor-check-words');
-  words.append(
-    // What happens in his own word, "spor", rather than ours of a queue that won't start; then when, and why it's no great step.
-    el('span', '', 'Ako je besplatni spor, pošalji plaćenom lektoru'),
-    el('span', 'lektor-check-why', `Posle ${FREE_LIMIT_WORDS} čekanja. Za ovu vrstu ispravke plaćeni je jeftin.`),
-  );
-  box.append(input, choiceMark('paid', preset), words);
-  // In a row of the choices' own make, so it is as big a target, with the same hover.
-  const row = el('div', 'lektor-choice-options');
-  row.append(box);
-  return row;
+/** The window's tick box for a slow free one, the same on every kind; set afresh each time the window opens. */
+const windowPaidIfSlow: PaidIfSlow = {
+  get isTicked() {
+    return corrections.isPaidIfSlow;
+  },
+  tick: (isTicked) => {
+    corrections.isPaidIfSlow = isTicked;
+  },
+};
+
+/** Whether a free request may be handed to paid Flash, as he ticked: on every kind (Danilo, 2026-11-10). */
+function mayGoToPaid(): boolean {
+  return corrections.isPaidIfSlow && keys.saved.paid;
 }
 
 /**
- * Ticked when the window opens if there is a paid key and the account holds at least $1 (Danilo,
- * 2026-11-10): a courtesy on days Google's free queue is long, for about 10 cents a request. The
- * one exception to every choice starting on Besplatni, and a fair one since he sees it ticked before
- * he sends. Not with under $1, and not when the balance can't be read, since then it isn't known to be safe.
+ * For the first two kinds, said rather than asked, with the tick for a slow free one under it and the
+ * balance it spends from; for rework, the choice, with the same tick under Besplatni.
  */
-function paidIfSlowByDefault(): boolean {
-  return keys.saved.paid && state.balance !== null && state.balance >= LOW_BALANCE_USD;
-}
-
-/** Whether a free request of this kind may be handed to the paid one, as he ticked. */
-function mayGoToPaid(preset: Preset): boolean {
-  return corrections.isPaidIfSlow && FALLS_BACK.has(preset) && keys.saved.paid;
-}
-
-/** For the first two kinds, said rather than asked, with the tick for a slow free one; for rework, the choice. */
 function lektorPart(preset: Preset): HTMLElement[] {
   if (FALLS_BACK.has(preset)) {
     const canSwitch = lektorFor(preset) === 'free' && keys.saved.paid;
-    return [serviceLine(lektorFor(preset), preset), ...(canSwitch ? [paidIfSlowBox(preset)] : [])];
+    if (!canSwitch) return [serviceLine(lektorFor(preset), preset)];
+    // In a row of the choices' own make, so it is as big a target, with the same hover.
+    const row = el('div', 'lektor-choice-options');
+    row.append(paidIfSlowBox(windowPaidIfSlow, false));
+    return [serviceLine('free', preset), row, ...paidBalance()];
   }
   return lektorChoice({
+    paidIfSlow: windowPaidIfSlow,
     group: 'lektor-window-level',
     chosen: lektorFor(preset),
     // Not "thorough": on these kinds the free one changed several times more of his words, and lost in the blind picks.
@@ -524,7 +504,9 @@ function progressRow(): HTMLElement {
 /** What happens if this model's queue passes its minute: the older model next, or the paid one if he ticked, or nothing. */
 function nextWords(preset: Preset, model: string): string {
   if (model === FREE_FIRST && FALLS_BACK.has(preset)) return ` Ako ne krene za ${STEP_LIMIT_WORDS}, pokušava se stariji model.`;
-  if (model === FREE_STAND_IN && mayGoToPaid(preset)) return ` Ako ne krene za ${STEP_LIMIT_WORDS}, šalje se plaćenom lektoru.`;
+  if (!mayGoToPaid()) return '';
+  if (model === FREE_STAND_IN) return ` Ako ne krene za ${STEP_LIMIT_WORDS}, šalje se plaćenom lektoru „Flash”.`;
+  if (model === FREE_FIRST) return ` Ako ne krene za ${FREE_LIMIT_WORDS}, šalje se plaćenom lektoru „Flash”.`;
   return '';
 }
 
@@ -655,10 +637,11 @@ function detailColumn(): HTMLElement {
 
 /* Running, pretended. */
 
-/** What a run on paid costs here, made up: in the app it is read off OpenRouter's reply. */
-function pretendCost(preset: Preset, to: Choice): number | null {
+/** What a run on paid costs here, made up: in the app it is read off OpenRouter's reply. Flash writes more on rework. */
+function pretendCost(preset: Preset, to: Choice, model: string): number | null {
   if (to === 'free') return null;
-  return FALLS_BACK.has(preset) ? 0.09 : 0.52;
+  if (tierOfModel(to, model) === 'opus') return 0.52;
+  return FALLS_BACK.has(preset) ? 0.09 : 0.14;
 }
 
 const FREE_FIRST: FreeModel = 'gemini-3.8-flash';
@@ -679,9 +662,10 @@ function startStage(phase: Phase, by: Choice, model: string): void {
 function finishRun(preset: Preset, to: Choice): void {
   stopTimers();
   endStage();
-  const cost = pretendCost(preset, to);
+  const model = corrections.stages.at(-1)?.model ?? MODELS[to][preset];
+  const cost = pretendCost(preset, to, model);
   spend(cost);
-  corrections.kept[preset] = { ...corrections.kept[preset], [to]: { at: JUST_NOW, cost, model: corrections.stages.at(-1)?.model ?? MODELS[to][preset] } };
+  corrections.kept[preset] = { ...corrections.kept[preset], [to]: { at: JUST_NOW, cost, model } };
   corrections.isAskingAgain = false;
   openReview(preset, to);
 }
@@ -709,7 +693,8 @@ function fail(failure: Failure): void {
   show('failed');
 }
 
-function askPaid(preset: Preset): void {
+/** Paid: the kind's own paid model, or paid Flash where a slow free one is handed on. */
+function askPaid(preset: Preset, model: string = MODELS.paid[preset]): void {
   corrections.sentTo = 'paid';
   if (state.isOffline) {
     fail('offline');
@@ -719,7 +704,7 @@ function askPaid(preset: Preset): void {
     fail('no-credit');
     return;
   }
-  thinking(preset, 'paid', MODELS.paid[preset]);
+  thinking(preset, 'paid', model);
 }
 
 /**
@@ -728,13 +713,21 @@ function askPaid(preset: Preset): void {
  */
 function nextAfter(preset: Preset, model: FreeModel): void {
   if (model === FREE_FIRST && FALLS_BACK.has(preset)) askFree(preset, FREE_STAND_IN);
-  else if (mayGoToPaid(preset)) askPaid(preset);
+  else if (mayGoToPaid()) askPaid(preset, PAID_IF_SLOW_MODEL);
   else fail('busy');
 }
 
-/** Whether a model still waiting at the limit may be given up for the next: never for 3.8 on rework, 3.6 only if he ticked. */
+/** Whether a model still waiting at the limit may be given up for the next: 3.8 for 3.6 where the kind allows it; else only if he ticked. */
 function mayMoveOn(preset: Preset, model: FreeModel): boolean {
-  return model === FREE_FIRST ? FALLS_BACK.has(preset) : mayGoToPaid(preset);
+  return (model === FREE_FIRST && FALLS_BACK.has(preset)) || mayGoToPaid();
+}
+
+/**
+ * How long a free model may queue before it is given up: a minute a step, so two minutes before a
+ * ticked one reaches paid Flash, as the box says; rework has no 3.6 between, so 3.8 has both minutes.
+ */
+function queueLimitFor(preset: Preset, model: FreeModel): number {
+  return model === FREE_FIRST && !FALLS_BACK.has(preset) ? 2 * times().queueLimitMs : times().queueLimitMs;
 }
 
 /** Refused outright, without a turn in the queue: noted, and on to the next. */
@@ -772,8 +765,9 @@ function askFree(preset: Preset, model: FreeModel): void {
   startStage('queue', 'free', model);
   show('waiting');
   const queueMs = day === 'slow' ? times().longQueueMs : times().queueMs;
-  if (queueMs > times().queueLimitMs && mayMoveOn(preset, model)) {
-    timers.push(window.setTimeout(() => givenUp(preset, model), times().queueLimitMs));
+  const limitMs = queueLimitFor(preset, model);
+  if (queueMs > limitMs && mayMoveOn(preset, model)) {
+    timers.push(window.setTimeout(() => givenUp(preset, model), limitMs));
     return;
   }
   timers.push(window.setTimeout(() => thinking(preset, 'free', model), queueMs));
@@ -831,7 +825,9 @@ function reviewWhoLine(preset: Preset, by: Choice, kept: Kept | undefined): HTML
   const cost = kept?.cost == null ? '' : ` · ${dollars(kept.cost)}`;
   const model = kept?.model ?? MODELS[by][preset];
   const lektor = el('span', 'lektor-review-who');
-  lektor.append(choiceMark(by, preset), el('span', '', tierName(by, preset)));
+  // Who made it, by the model that ran: a slow free rework handed on was paid Flash, not Opus.
+  const tier = tierOfModel(by, model);
+  lektor.append(markOf(tier), el('span', '', nameOf(tier)));
   lektor.title = `Model: ${model}${model === FREE_STAND_IN ? ' (stariji, rezervni)' : ''}`;
   const who = el('p', 'lektor-service-line');
   // Named as the wait names it, so the kind reads as what was asked rather than as a heading.

@@ -103,10 +103,20 @@ export type Work = Preset | 'comment';
  */
 export type Tier = 'free' | 'flash' | 'opus';
 
-export function tierOf(choice: Choice, what: Work): Tier {
+/** Which of the three ran or runs a model: on paid, Opus or else Flash. */
+export function tierOfModel(choice: Choice, model: string): Tier {
   if (choice === 'free') return 'free';
-  return MODELS.paid[what].startsWith('claude-opus') ? 'opus' : 'flash';
+  return model.startsWith('claude-opus') ? 'opus' : 'flash';
 }
+
+export const tierOf = (choice: Choice, what: Work): Tier => tierOfModel(choice, MODELS[choice][what]);
+
+/**
+ * Where a free request goes when it is slow and he ticked for that: paid Flash, whatever the work
+ * (Danilo, 2026-11-10). The same writer he chose, without the queue, so what comes back is what he
+ * asked for, only sooner; never Opus, which would swap in another writer at several times the price.
+ */
+export const PAID_IF_SLOW_MODEL = 'gemini-3.8-flash';
 
 /**
  * Each one's name, the model family in quotes as Serbian sets a product's name: one name, in one
@@ -118,7 +128,8 @@ const TIER_NAMES: Readonly<Record<Tier, string>> = {
   opus: 'Plaćeni „Opus”',
 };
 
-export const tierName = (choice: Choice, what: Work): string => TIER_NAMES[tierOf(choice, what)];
+export const nameOf = (tier: Tier): string => TIER_NAMES[tier];
+export const tierName = (choice: Choice, what: Work): string => nameOf(tierOf(choice, what));
 
 /**
  * Who his text goes to: the company it is sent to, and no further. Past OpenRouter it may be
@@ -146,7 +157,10 @@ const TIER_PATHS: Readonly<Record<Tier, readonly string[]>> = {
  * the key is OpenRouter's, for both paid ones, and Flash is the one most work goes to.
  */
 export function choiceMark(choice: Choice = state.choice, what: Work | null = null): SVGSVGElement {
-  const tier = what === null ? (choice === 'free' ? 'free' : 'flash') : tierOf(choice, what);
+  return markOf(what === null ? (choice === 'free' ? 'free' : 'flash') : tierOf(choice, what));
+}
+
+export function markOf(tier: Tier): SVGSVGElement {
   return lineIcon(TIER_PATHS[tier], ['lektor-choice-mark', `lektor-choice-mark-${tier}`]);
 }
 
@@ -187,15 +201,16 @@ export function radio(name: string, label: string, checked: boolean, onChange: (
 export const LOW_BALANCE_USD = 1;
 
 /**
- * Under Plaćeni, in the panel and in the window alike. Nothing when the balance can't be read:
- * that is OpenRouter's balance lookup failing for a moment while sending still works, and
- * "unknown" would read as trouble with his money.
+ * Under the choice, on a line of its own: the account is both paid Lektors', and the tick box for a
+ * slow free one spends from it too, so it belongs to no one row (Danilo, 2026-11-10); said whose it
+ * is, since apart from the rows "Na računu" alone would leave that to him. Nothing when the
+ * balance can't be read: that is OpenRouter's balance lookup failing for
+ * a moment while sending still works, and "unknown" would read as trouble with his money.
  */
 export function balanceLine(): HTMLElement[] {
   if (state.balance === null) return [];
-  // A span: it goes inside Plaćeni's label, where a paragraph may not.
-  if (state.balance >= LOW_BALANCE_USD) return [el('span', 'lektor-balance', `Na računu: ${dollars(state.balance)}`)];
-  return [el('span', 'lektor-balance lektor-balance-low', `Na računu: ${dollars(state.balance)} (malo)`)];
+  const isLow = state.balance < LOW_BALANCE_USD;
+  return [el('p', `lektor-balance${isLow ? ' lektor-balance-low' : ''}`, `Na računu za plaćene lektore: ${dollars(state.balance)}${isLow ? ' (malo)' : ''}`)];
 }
 
 /**

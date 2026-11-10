@@ -10,8 +10,8 @@
 import { icon } from '../src/ui/icons.ts';
 import { type WindowCase, corrections, openCorrectionsWindow, openCorrectionsWindowAt, redrawWindowIfOpen } from './lektor-corrections-window-prototype.ts';
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
-import { lektorChoice } from './lektor-choice-radios.ts';
-import { commentFailure, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
+import { type PaidIfSlow, lektorChoice, paidIfSlowByDefault } from './lektor-choice-radios.ts';
+import { commentFailure, commentRun, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
 import { ISPRAVKE_PICTURES, UTISAK_PICTURES, drawPicture } from './lektor-menu-icons-prototype.ts';
 import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, button, dollars, el, element, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
 
@@ -27,6 +27,14 @@ function choose(choice: 'free' | 'paid'): void {
   state.choice = choice;
   render();
 }
+
+/** The utisak's tick box for a slow free one: set afresh, as the window's is, each time the utisak is picked on the menu. */
+const commentPaidIfSlow: PaidIfSlow = {
+  isTicked: false,
+  tick: (isTicked) => {
+    commentPaidIfSlow.isTicked = isTicked;
+  },
+};
 
 function openKeys(): void {
   screen = 'keys';
@@ -116,6 +124,7 @@ function menuScreen(): Step {
     menuOption('Utisak o tekstu', 'Kratak osvrt na tekst, kao od pažljivog čitaoca.', () => {
       // A new start of the step, so Besplatni again: nothing is chosen for him from how he left it.
       state.choice = 'free';
+      commentPaidIfSlow.isTicked = paidIfSlowByDefault();
       screen = 'start';
       render();
     }, utisakIcon('lektor-menu-icon')),
@@ -148,7 +157,7 @@ function startScreen(): Step {
   // The corrections choose their own Lektor in the window.
   // The paid utisak is Flash, the free one's own model without the queue (Danilo, 2026-11-10): the blind
   // test was a draw and both answer in ~18 s, so Opus cost five times as much for nothing.
-  const [heading, ...choices] = lektorChoice({ group: 'lektor-level', choose, better: { choice: 'paid', why: 'mnogo brži' }, what: 'comment' });
+  const [heading, ...choices] = lektorChoice({ group: 'lektor-level', choose, better: { choice: 'paid', why: 'mnogo brži' }, what: 'comment', paidIfSlow: commentPaidIfSlow });
   return {
     content: [chosenOnMenu(), ...(heading === undefined ? [] : [heading]), el('p', 'lektor-where lektor-choice-lead', 'Oba pišu utisak sličnog kvaliteta.'), ...choices],
     main: send,
@@ -330,8 +339,8 @@ function askForComment(to: Choice, slot: TextSlot = openSlot): void {
   requestSlot = slot;
   isReadyElsewhere = false;
   setRequestScreen('waiting');
-  render();
-  startCommentRun(to, {
+  // The tick counts only with the paid key there, as the box is only shown then.
+  startCommentRun(to, commentPaidIfSlow.isTicked && keys.saved.paid, {
     done: (by) => {
       setRequestScreen('response');
       commentBy = by;
@@ -345,6 +354,8 @@ function askForComment(to: Choice, slot: TextSlot = openSlot): void {
       render();
     },
   });
+  // Drawn once the run knows whom it went to and whether it may go on to paid, so the wait says so; not if it failed at once.
+  if (commentRun.failure === null) render();
 }
 
 /** Giving up on the request, or back from its failure: its text to step 2 as he left it, where sending again is the retry. */

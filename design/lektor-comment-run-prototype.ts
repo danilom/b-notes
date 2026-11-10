@@ -10,6 +10,7 @@
 */
 import { icon } from '../src/ui/icons.ts';
 import { times } from './lektor-corrections-window-prototype.ts';
+import { FREE_LIMIT_WORDS } from './lektor-choice-radios.ts';
 import { keys } from './lektor-keys-prototype.ts';
 import { type Choice, type FreeModel, button, choiceMark, el, problem, state } from './lektor-prototype-pieces.ts';
 
@@ -19,9 +20,11 @@ interface CommentRun {
   sentTo: Choice;
   startedAt: number;
   failure: CommentFailure | null;
+  /** He ticked for a slow free one to go to paid Flash, and has the key for it. */
+  mayGoToPaid: boolean;
 }
 
-export const commentRun: CommentRun = { sentTo: 'free', startedAt: 0, failure: null };
+export const commentRun: CommentRun = { sentTo: 'free', startedAt: 0, failure: null, mayGoToPaid: false };
 
 /** What the run tells the panel: it's over and the comment is there, or it failed. */
 export interface CommentRunEvents {
@@ -57,19 +60,27 @@ function askPaid(events: CommentRunEvents): void {
   timers.push(window.setTimeout(() => finish('paid', events), workMs('paid')));
 }
 
+/** After free 3.6: paid Flash if he ticked for it, else the utisak has failed as busy. */
+function afterStandIn(events: CommentRunEvents): void {
+  if (commentRun.mayGoToPaid) askPaid(events);
+  else fail('busy', events);
+}
+
 /**
  * Free: 3.8 first; refused as busy, or still queued at the minute, it moves to 3.6 without a word.
- * 3.6 waits as long as it takes (to the app's 10-minute limit); refused, the utisak has failed as busy.
+ * 3.6 likewise moves on to paid Flash if he ticked for that, two minutes in all, as the box says;
+ * if not, it waits as long as it takes (to the app's 10-minute limit), and refused, has failed as busy.
  */
 function askFree(model: FreeModel, events: CommentRunEvents): void {
   commentRun.sentTo = 'free';
   if (state.isOffline) return fail('offline', events);
   const day = state.google[model];
   const isFirst = model === 'gemini-3.8-flash';
-  if (day === 'busy') return isFirst ? askFree('gemini-3.6-flash', events) : fail('busy', events);
+  const next = (): void => (isFirst ? askFree('gemini-3.6-flash', events) : afterStandIn(events));
+  if (day === 'busy') return next();
   const queueMs = day === 'slow' ? times().longQueueMs : times().queueMs;
-  if (isFirst && queueMs > times().queueLimitMs) {
-    timers.push(window.setTimeout(() => askFree('gemini-3.6-flash', events), times().queueLimitMs));
+  if ((isFirst || commentRun.mayGoToPaid) && queueMs > times().queueLimitMs) {
+    timers.push(window.setTimeout(next, times().queueLimitMs));
     return;
   }
   timers.push(window.setTimeout(() => finish('free', events), queueMs + workMs('free')));
@@ -80,9 +91,11 @@ function finish(by: Choice, events: CommentRunEvents): void {
   events.done(by);
 }
 
-export function startCommentRun(to: Choice, events: CommentRunEvents): void {
+export function startCommentRun(to: Choice, mayGoToPaid: boolean, events: CommentRunEvents): void {
   stopCommentRun();
   commentRun.failure = null;
+  commentRun.sentTo = to;
+  commentRun.mayGoToPaid = mayGoToPaid;
   commentRun.startedAt = performance.now();
   clockTimer = window.setInterval(() => {
     const clock = document.querySelector('.lektor-comment-clock');
@@ -104,7 +117,7 @@ function waitedWords(): string {
  */
 export function commentWaiting(textInWords: string): HTMLElement {
   const waiting = el('div', 'lektor-waiting');
-  const expect = commentRun.sentTo === 'free' ? 'Besplatni lektor često čeka na red, pa može da potraje nekoliko minuta.' : 'Obično traje pola minuta.';
+  const expect = commentRun.sentTo === 'free' ? freeExpect() : 'Obično traje pola minuta.';
   waiting.append(
     // Who, what and which text (Danilo, 2026-11-10): "Čita tekst…" alone left the subject for him to
     // supply, and with another text open the panel must say which one it is reading.
@@ -113,6 +126,12 @@ export function commentWaiting(textInWords: string): HTMLElement {
     el('p', 'lektor-comment-clock', waitedWords()),
   );
   return waiting;
+}
+
+/** On free, that a wait of minutes is the queue; and, if he ticked, when it goes to the paid one instead. */
+function freeExpect(): string {
+  const queue = 'Besplatni lektor često čeka na red, pa može da potraje nekoliko minuta.';
+  return commentRun.mayGoToPaid ? `${queue} Ako ne krene za ${FREE_LIMIT_WORDS}, šalje se plaćenom lektoru „Flash”.` : queue;
 }
 
 /** The window's words for the same failures, and the same shape: the problem, then the way back. */
