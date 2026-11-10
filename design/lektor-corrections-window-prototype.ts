@@ -47,9 +47,11 @@ import {
   choiceMark,
   dollars,
   el,
+  familyOf,
   element,
   markOf,
   nameOf,
+  paidWords,
   problem,
   radio,
   sendButton,
@@ -177,7 +179,7 @@ const WAIT_TIMES: Readonly<Record<Pace, WaitTimes>> = {
 /** The pretended waits at the harness's pace; the utisak's wait in the panel borrows them too. */
 export const times = (): WaitTimes => WAIT_TIMES[state.pace];
 
-/** When corrections just made were made, Danilo's word; a card from just now says only "Predlozi", since "od upravo sad" reads badly. */
+/** When corrections just made were made, Danilo's word; a card from just now leaves the time out, since "od upravo sad" reads badly. */
 const JUST_NOW = 'upravo sad';
 
 let shown: Shown | null = null;
@@ -269,11 +271,15 @@ function emptyDetail(): HTMLElement {
 }
 
 /** One kept set of corrections: whose, from when, what it cost, and the way into it. */
+/**
+ * Whose they are by name, then when, then what they cost as "plaćeno" (Danilo, 2026-11-10): a bare
+ * sum after "Predlozi" meant nothing. The mark says free or paid; a free one has no sum.
+ */
 function readyCard(preset: Preset, by: Choice, kept: Kept): HTMLElement {
   const card = el('div', 'lektor-ready-card');
-  const cost = kept.cost === null ? '' : ` · ${dollars(kept.cost)}`;
-  const words = el('span', 'lektor-ready-words', `Predlozi${kept.at === JUST_NOW ? '' : ` od ${kept.at}`}${cost}`);
   const tier = tierOfModel(by, kept.model ?? MODELS[by][preset]);
+  const when = kept.at === JUST_NOW ? '' : ` od ${kept.at}`;
+  const words = el('span', 'lektor-ready-words', `Predlozi lektora\u00a0${familyOf(tier)}${when}${paidWords(kept.cost)}`);
   words.title = `Napravio AI Lektor ${nameOf(tier)}.`;
   card.append(markOf(tier), words, button('Pogledaj', () => openReview(preset, by), 'lektor-main-action'));
   return card;
@@ -841,7 +847,6 @@ function choosingPanel(): HTMLElement {
  */
 function reviewWhoLine(preset: Preset, by: Choice, kept: Kept | undefined): HTMLElement {
   const said = strings('sr').lektor.review;
-  const cost = kept?.cost == null ? '' : ` · ${dollars(kept.cost)}`;
   const model = kept?.model ?? MODELS[by][preset];
   const lektor = el('span', 'lektor-review-who');
   // Who made it, by the model that ran: a slow free rework handed on was paid Flash, not Opus.
@@ -854,7 +859,7 @@ function reviewWhoLine(preset: Preset, by: Choice, kept: Kept | undefined): HTML
     el('span', 'lektor-review-kind', `Vrsta ispravke: ${PRESET_NAMES[preset]}`),
     ' · ',
     lektor,
-    el('span', '', ` · ${kept?.at ?? JUST_NOW}${cost} · ${said.counts(12, 31)}`),
+    el('span', '', ` · ${kept?.at ?? JUST_NOW}${paidWords(kept?.cost)} · ${said.counts(12, 31)}`),
   );
   const line = el('div', 'lektor-review-row');
   line.append(who);

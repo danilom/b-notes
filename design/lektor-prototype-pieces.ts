@@ -129,6 +129,12 @@ const TIER_NAMES: Readonly<Record<Tier, string>> = {
 };
 
 export const nameOf = (tier: Tier): string => TIER_NAMES[tier];
+
+/** The family alone, in quotes, for "lektora „Opus”": where the mark already says free or paid. */
+export const familyOf = (tier: Tier): string => (tier === 'opus' ? '„Opus”' : '„Flash”');
+
+/** What a paid run cost, said as paid, so the sum means something on its own; nothing on free. */
+export const paidWords = (cost: number | null | undefined): string => (cost == null ? '' : ` · plaćeno ${dollars(cost)}`);
 export const tierName = (choice: Choice, what: Work): string => nameOf(tierOf(choice, what));
 
 /**
