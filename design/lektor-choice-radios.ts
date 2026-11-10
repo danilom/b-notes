@@ -26,10 +26,11 @@ export interface LektorChoiceActions {
   /** Which is chosen, where it isn't the panel's choice: in the window each kind has its own. */
   chosen?: Choice;
   /**
-   * Where one choice is better for what is being done: which, and in a word why, after its name.
-   * The why rather than "preporučeno", which reads as selling, not advice.
+   * In a word, after a choice's name, why one might pick it: the why rather than "preporučeno",
+   * which reads as selling, not advice. For one choice or both: where only the paid one has a word,
+   * it reads as the one we're touting (Danilo, 2026-11-10).
    */
-  better?: { choice: Choice; why: string };
+  why?: Partial<Record<Choice, string>>;
   /**
    * What the Lektor is to do, which says which paid one it is: Plaćeni „Flash” where it is the same
    * writer as the free one, faster; Plaćeni „Opus” where it is another, better one (Danilo, 2026-11-10).
@@ -79,7 +80,8 @@ export function paidBalance(): HTMLElement[] {
 function levelOption(choice: Choice, actions: LektorChoiceActions): HTMLElement {
   const option = radio(actions.group, tierName(choice, actions.what), (actions.chosen ?? state.choice) === choice, () => actions.choose(choice), choice, actions.what);
   // Inside the name's own span, as running text, so the smaller grey sits on the name's baseline rather than centred beside it.
-  if (actions.better?.choice === choice) option.lastElementChild?.append(' ', el('span', 'lektor-recommended', actions.better.why));
+  const why = actions.why?.[choice];
+  if (why !== undefined) option.lastElementChild?.append(' ', el('span', 'lektor-recommended', why));
   const input = option.querySelector('input');
   if (input !== null) input.disabled = actions.isLocked === true || !keys.saved[choice];
   if (keys.saved[choice]) return option;

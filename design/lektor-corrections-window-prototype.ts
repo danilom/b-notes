@@ -326,7 +326,7 @@ function lektorPart(preset: Preset): HTMLElement[] {
     group: 'lektor-window-level',
     chosen: lektorFor(preset),
     // Not "thorough": on these kinds the free one changed several times more of his words, and lost in the blind picks.
-    better: { choice: 'paid', why: 'bolje piše i čuva tvoj glas' },
+    why: { paid: 'bolje piše i čuva tvoj glas' },
     what: preset,
     choose: (choice) => {
       corrections.reworkChoice = choice;

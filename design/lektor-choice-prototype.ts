@@ -155,8 +155,10 @@ function startScreen(): Step {
   // What paying gives for the comment, as measured (2026-11-09): a draw blind (Opus 3, Flash 2), and
   // about 18 s against minutes. Not "mnogo brži": with the box ticked a slow free one is with paid Flash
   // at two minutes. So "brži" and another reader's view, not a better one (Danilo, 2026-11-10); the
-  // equal quality is said under the heading, read on the way to choosing rather than after it.
-  const [heading, ...choices] = lektorChoice({ group: 'lektor-level', choose, better: { choice: 'paid', why: 'brži, drugačije mišljenje' }, what: 'comment', paidIfSlow: commentPaidIfSlow });
+  // equal quality is said under the heading, read on the way to choosing rather than after it. And a
+  // kind word for the free one too, "dobar", so the paid one alone isn't the one with a word for it.
+  const why = { free: 'dobar', paid: 'brži, drugačije mišljenje' };
+  const [heading, ...choices] = lektorChoice({ group: 'lektor-level', choose, why, what: 'comment', paidIfSlow: commentPaidIfSlow });
   return {
     content: [chosenOnMenu(), ...(heading === undefined ? [] : [heading]), el('p', 'lektor-where lektor-choice-lead', 'Oba pišu utisak sličnog kvaliteta.'), ...choices],
     main: send,
