@@ -254,14 +254,14 @@ function textInWords(): string {
  * the top, beside the note that says when the text has changed since, which is when it is wanted.
  */
 function responseScreen(): Step {
-  // A small grey link while the utisak is current; once his text has changed since, the same size but
-  // white with an edge, as the note above it suggests asking again (Danilo, 2026-11-10).
+  // Small and grey, stale or not (Danilo, 2026-11-10): one utisak is all he would care to read; asking
+  // again is there for completeness, not to be pointed out.
   const ask = button('', () => {
     screen = 'start';
     // A new start of the step, so Besplatni again, whatever wrote the comment: nothing is chosen for him from how he left it.
     state.choice = 'free';
     render();
-  }, isCommentStale ? 'lektor-again lektor-again-stale' : 'lektor-again');
+  }, 'lektor-again');
   ask.append(icon('back'), el('span', '', 'Traži novi utisak'));
   const again = el('div', 'lektor-back-row');
   again.append(ask);
@@ -283,7 +283,7 @@ function responseScreen(): Step {
   const toCorrections = button('Ispravke…', () => openCorrectionsWindow(), 'status-action lektor-to-corrections');
   // Only the page's top, its ž and the first line (Danilo, 2026-11-10): at a button's height the whole
   // page was too small to read; cut off, it can be drawn bigger and sit on the button's lower edge.
-  toCorrections.prepend(drawPicture(ISPRAVKE_PICTURES['page-z-caron'], 'lektor-to-corrections-icon', 'colour', '6 2 34 25'));
+  toCorrections.prepend(drawPicture(ISPRAVKE_PICTURES['page-z-caron'], 'lektor-to-corrections-icon', 'colour', '6 2 34 33'));
   return { content: [head, comment, signature], main: toCorrections };
 }
 

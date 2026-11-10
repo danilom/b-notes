@@ -183,13 +183,14 @@
         /*
           As far from the button's left edge as from its top (Danilo, 2026-11-10): the same inset set on
           both sides, the picture's height whatever the button leaves under it, its width from its shape
-          (34 wide by 25 tall). Exact whatever the screen makes of the button's edge.
+          (34 wide by 33 tall). Exact whatever the screen makes of the button's edge.
         */
-        --page-top-inset: 0.75em;
+        /* Small (Danilo, 2026-11-10): more of the page shows, its ž, two lines and the caret. */
+        --page-top-inset: 0.3em;
         position: relative;
         display: inline-flex;
         align-items: center;
-        padding-left: calc(var(--page-top-inset) + (2.1rem - var(--page-top-inset)) * 34 / 25 + 0.4em);
+        padding-left: calc(var(--page-top-inset) + (2.1rem - var(--page-top-inset)) * 34 / 33 + 0.4em);
       }
 
       /* With its button's class too: the app's .status-action svg sizes a button's icon and would win. */
@@ -200,18 +201,7 @@
         /* The button's inside height less the inset, so the gap above equals the one at the left. */
         height: calc(100% - var(--page-top-inset));
         width: auto;
-        aspect-ratio: 34 / 25;
-      }
-
-      /*
-        Once his text has changed since the utisak: white, with its edge, but its small size kept (Danilo,
-        2026-11-10): the note above says why; a utisak is wanted once per text, not over and over.
-      */
-      .lektor-back-row .lektor-again-stale {
-        min-height: 0;
-        border: 1px solid var(--line);
-        background: var(--page);
-        color: var(--ink);
+        aspect-ratio: 34 / 33;
       }
 
       /* A little lower, off the panel's title line (Danilo, 2026-11-10). */
