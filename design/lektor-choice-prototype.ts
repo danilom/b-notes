@@ -12,7 +12,7 @@ import { type WindowCase, corrections, openCorrectionsWindow, openCorrectionsWin
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
 import { commentFailure, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
-import { ISPRAVKE_PICTURES, type IspravkePicture, PICTURE_COLOURS, type PictureColours, UTISAK_PICTURES, type UtisakPicture, drawPicture, isPictureColours } from './lektor-menu-icons-prototype.ts';
+import { ISPRAVKE_PICTURES, UTISAK_PICTURES, drawPicture } from './lektor-menu-icons-prototype.ts';
 import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, button, dollars, el, element, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
 
 /** The menu, then the utisak's own step ('start': who writes it), its wait or failure, the utisak; and the keys. */
@@ -74,27 +74,16 @@ interface Step {
 }
 
 /*
-  Pictures for the menu's two choices, to try (Danilo, 2026-11-10): a bit playful, with colour and
-  personality, the AI as someone with a character; and the corrections' one again on "Pređi na
-  ispravke…" to tie the two together. His screens has a switch for each, with none as before.
+  The menu's two pictures (Danilo, 2026-11-10), chosen on the pictures page (lektor-menu-pictures),
+  in full colour: a bit playful, the AI as someone with a character. The corrections' one again on
+  "Pređi na ispravke…" ties the two together.
 */
-let utisakPicture: UtisakPicture | 'none' = 'owl-fluffy';
-let ispravkePicture: IspravkePicture | 'none' = 'page-z-caron';
-
-const isUtisakPicture = (value: string | boolean): value is UtisakPicture => typeof value === 'string' && Object.hasOwn(UTISAK_PICTURES, value);
-const isIspravkePicture = (value: string | boolean): value is IspravkePicture => typeof value === 'string' && Object.hasOwn(ISPRAVKE_PICTURES, value);
-
-/** Each picture's colours, set apart, so the two can differ (His screens' "Boje: …"). */
-let utisakColours: PictureColours = 'colour';
-let ispravkeColours: PictureColours = 'colour';
-
 function utisakIcon(className: string): SVGSVGElement[] {
-  return utisakPicture === 'none' ? [] : [drawPicture(UTISAK_PICTURES[utisakPicture], className, utisakColours)];
+  return [drawPicture(UTISAK_PICTURES['owl-fluffy'], className)];
 }
 
-/** The corrections' picture at this size, or nothing when the switch says none. */
 function ispravkeIcon(className: string): SVGSVGElement[] {
-  return ispravkePicture === 'none' ? [] : [drawPicture(ISPRAVKE_PICTURES[ispravkePicture], className, ispravkeColours)];
+  return [drawPicture(ISPRAVKE_PICTURES['page-z-caron'], className)];
 }
 
 /** One of the menu's two choices: a big target, its name and a sentence on what it does, and its icon if on. */
@@ -465,11 +454,6 @@ interface PrototypeControl {
   value: string | boolean;
 }
 
-/** The pictures' colours, as a switch lists them. */
-function colourOptions(): { value: string; label: string }[] {
-  return Object.entries(PICTURE_COLOURS).map(([value, label]) => ({ value, label: value === 'colour' ? label : `jednobojne: ${label}` }));
-}
-
 const CONTROLS: readonly PrototypeControl[] = [
   {
     id: 'screen',
@@ -489,20 +473,6 @@ const CONTROLS: readonly PrototypeControl[] = [
     // Where the work is now: the panel's new first step.
     value: 'menu',
   },
-  {
-    id: 'utisak-picture',
-    label: 'Slika: utisak',
-    options: [{ value: 'none', label: 'bez slike' }, ...Object.entries(UTISAK_PICTURES).map(([value, picture]) => ({ value, label: picture.label }))],
-    value: 'owl-fluffy',
-  },
-  {
-    id: 'ispravke-picture',
-    label: 'Slika: ispravke',
-    options: [{ value: 'none', label: 'bez slike' }, ...Object.entries(ISPRAVKE_PICTURES).map(([value, picture]) => ({ value, label: picture.label }))],
-    value: 'page-z-caron',
-  },
-  { id: 'utisak-colours', label: 'Boje: utisak', options: colourOptions(), value: 'colour' },
-  { id: 'ispravke-colours', label: 'Boje: ispravke', options: colourOptions(), value: 'colour' },
   { id: 'stale', label: 'Tekst promenjen posle utiska', value: false },
   {
     id: 'comment-title',
@@ -647,10 +617,6 @@ const ODD_TITLES: Readonly<Record<string, string>> = {
 function setControl(id: string, value: string | boolean): void {
   if (id === 'screen') setScreen(value);
   if (id === 'stale') isCommentStale = value === true;
-  if (id === 'utisak-picture') utisakPicture = isUtisakPicture(value) ? value : 'none';
-  if (id === 'ispravke-picture') ispravkePicture = isIspravkePicture(value) ? value : 'none';
-  if (id === 'utisak-colours') utisakColours = isPictureColours(value) ? value : 'colour';
-  if (id === 'ispravke-colours') ispravkeColours = isPictureColours(value) ? value : 'colour';
   if (id === 'comment-title' && typeof value === 'string') commentTextTitle = ODD_TITLES[value] ?? TEXT_TITLE;
   if (id === 'free-key') keys.saved.free = value === true;
   if (id === 'paid-key') keys.saved.paid = value === true;
