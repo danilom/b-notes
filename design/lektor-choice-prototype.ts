@@ -561,17 +561,10 @@ const CONTROLS: readonly PrototypeControl[] = [
   },
   { id: 'free-key', label: 'Ključ za besplatni sačuvan', value: true },
   { id: 'paid-key', label: 'Ključ za plaćeni sačuvan', value: true },
-  {
-    id: 'dead-key',
-    label: 'Ključ više ne radi',
-    options: [
-      { value: 'none', label: 'nijedan' },
-      { value: 'free', label: 'besplatni' },
-      { value: 'paid', label: 'plaćeni' },
-      { value: 'both', label: 'oba' },
-    ],
-    value: 'none',
-  },
+  // Said as working, ticked by default (Danilo, 2026-11-10): "Ključ više ne radi: nijedan" read, as
+  // Serbian's double negative, as no key working at all.
+  { id: 'free-key-works', label: 'Ključ za besplatni radi', value: true },
+  { id: 'paid-key-works', label: 'Ključ za plaćeni radi', value: true },
   {
     id: 'key-check',
     label: 'Provera zalepljenog ključa',
@@ -715,10 +708,8 @@ function setControl(id: string, value: string | boolean): void {
   if (id === 'comment-title' && typeof value === 'string') commentTextTitle = ODD_TITLES[value] ?? TEXT_TITLE;
   if (id === 'free-key') keys.saved.free = value === true;
   if (id === 'paid-key') keys.saved.paid = value === true;
-  if (id === 'dead-key') {
-    keys.dead.free = value === 'free' || value === 'both';
-    keys.dead.paid = value === 'paid' || value === 'both';
-  }
+  if (id === 'free-key-works') keys.dead.free = value !== true;
+  if (id === 'paid-key-works') keys.dead.paid = value !== true;
   if (id === 'key-check') keys.check = value === 'refused' || value === 'offline' ? value : ('works' satisfies KeyCheck);
   if (id === 'balance') state.balance = value === 'unknown' ? null : Number(value);
   if (id === 'google-38') state.google['gemini-3.8-flash'] = googleDayOf(value);
