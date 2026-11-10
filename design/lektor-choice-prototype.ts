@@ -78,8 +78,8 @@ interface Step {
   personality, the AI as someone with a character; and the corrections' one again on "Pređi na
   ispravke…" to tie the two together. His screens has a switch for each, with none as before.
 */
-let utisakPicture: UtisakPicture | 'none' = 'glasses';
-let ispravkePicture: IspravkePicture | 'none' = 'red-pencil';
+let utisakPicture: UtisakPicture | 'none' = 'owl-fluffy';
+let ispravkePicture: IspravkePicture | 'none' = 'page-z-caron';
 
 const isUtisakPicture = (value: string | boolean): value is UtisakPicture => typeof value === 'string' && Object.hasOwn(UTISAK_PICTURES, value);
 const isIspravkePicture = (value: string | boolean): value is IspravkePicture => typeof value === 'string' && Object.hasOwn(ISPRAVKE_PICTURES, value);
@@ -493,13 +493,13 @@ const CONTROLS: readonly PrototypeControl[] = [
     id: 'utisak-picture',
     label: 'Slika: utisak',
     options: [{ value: 'none', label: 'bez slike' }, ...Object.entries(UTISAK_PICTURES).map(([value, picture]) => ({ value, label: picture.label }))],
-    value: 'glasses',
+    value: 'owl-fluffy',
   },
   {
     id: 'ispravke-picture',
     label: 'Slika: ispravke',
     options: [{ value: 'none', label: 'bez slike' }, ...Object.entries(ISPRAVKE_PICTURES).map(([value, picture]) => ({ value, label: picture.label }))],
-    value: 'red-pencil',
+    value: 'page-z-caron',
   },
   { id: 'utisak-colours', label: 'Boje: utisak', options: colourOptions(), value: 'colour' },
   { id: 'ispravke-colours', label: 'Boje: ispravke', options: colourOptions(), value: 'colour' },

@@ -17,6 +17,13 @@ interface Shape {
 
 const shape = (tag: ShapeTag, part: string, attrs: Shape['attrs']): Shape => ({ tag, part, attrs });
 
+/** A red "ž" in the editor's hand, its z's top left corner at (x, y), 7 wide; the háček above. */
+const redZ = (x: number, y: number): Shape =>
+  shape('path', 'ic-red-line', { d: `M${x} ${y}h7l-7 7h7M${x + 1.3} ${y - 4.6} ${x + 3.5} ${y - 2.6}l2.2-2` });
+
+/** The editor's caret under a line of text, its tip just below the line, at x. */
+const redCaret = (x: number, lineY: number): Shape => shape('path', 'ic-red-line', { d: `m${x - 2} ${lineY + 5} 2-3.4 2 3.4` });
+
 export interface MenuPicture {
   label: string;
   shapes: readonly Shape[];
@@ -287,6 +294,47 @@ export const ISPRAVKE_PICTURES = {
       shape('path', 'ic-red-line', { d: 'm19 27 2-3.4 2 3.4' }),
       shape('circle', 'ic-green', { cx: 35, cy: 36, r: 8 }),
       shape('path', 'ic-white-line', { d: 'm31 36 3 3 5-6' }),
+    ],
+  },
+  /*
+    The ž in a corner, away from its caret, as an editor writes the letter in the margin and marks the
+    place in the line (Danilo, 2026-11-10); the page fuller of lines, so it reads as text.
+  */
+  'page-z-margin': {
+    label: 'ž na margini, strelica u redu',
+    shapes: [
+      shape('rect', 'ic-paper', { x: 4, y: 4, width: 30, height: 38, rx: 3 }),
+      shape('path', 'ic-line', { d: 'M9 11h20M9 17h20M9 23h20M9 29h20M9 35h12' }),
+      redCaret(18, 23),
+      redZ(37, 11),
+    ],
+  },
+  'page-z-margin-line': {
+    label: 'ž na margini, crta do strelice',
+    shapes: [
+      shape('rect', 'ic-paper', { x: 4, y: 4, width: 30, height: 38, rx: 3 }),
+      shape('path', 'ic-line', { d: 'M9 11h20M9 17h20M9 23h20M9 29h20M9 35h12' }),
+      shape('path', 'ic-red-thin', { d: 'M20 26.5c6 0 11-3 15-8' }),
+      redCaret(18, 23),
+      redZ(37, 11),
+    ],
+  },
+  'page-z-corner': {
+    label: 'ž u gornjem uglu strane',
+    shapes: [
+      shape('rect', 'ic-paper', { x: 6, y: 4, width: 36, height: 38, rx: 3 }),
+      shape('path', 'ic-line', { d: 'M11 12h16M11 18h26M11 24h26M11 30h26M11 36h14' }),
+      redCaret(17, 30),
+      redZ(30, 9.5),
+    ],
+  },
+  'page-z-bottom': {
+    label: 'ž u donjem uglu strane',
+    shapes: [
+      shape('rect', 'ic-paper', { x: 6, y: 4, width: 36, height: 38, rx: 3 }),
+      shape('path', 'ic-line', { d: 'M11 11h26M11 17h26M11 23h26M11 29h14' }),
+      redCaret(21, 11),
+      redZ(30, 33),
     ],
   },
   'pencil-check': {

@@ -22,8 +22,8 @@ const GROUPS: Readonly<Record<Group, { title: string; pictures: Readonly<Record<
 };
 
 const chosen: Record<Group, { picture: string; colours: PictureColours }> = {
-  utisak: { picture: 'glasses', colours: 'colour' },
-  ispravke: { picture: 'red-pencil', colours: 'colour' },
+  utisak: { picture: 'owl-fluffy', colours: 'colour' },
+  ispravke: { picture: 'page-z-caron', colours: 'colour' },
 };
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text = ''): HTMLElementTagNameMap[K] {
