@@ -106,8 +106,11 @@ function menuScreen(): Step {
   const heading = el('p', 'lektor-heading', 'Šta želiš?');
   // At the very bottom, quiet (Danilo, 2026-11-10): a step the panel needs, but set up once, and
   // after everything he does need; beside the warning, as the keys decide who the text goes to.
+  // Made as "AI može da pogreši" is (Danilo, 2026-11-10): the app's one small link-like button, its words in a span for the dotted line.
+  const keysButton = button('', openKeys, 'lektor-fallible');
+  keysButton.append(el('span', '', 'API ključevi'));
   const keysLink = el('div', 'lektor-menu-keys');
-  keysLink.append(button('API ključevi', openKeys, 'lektor-menu-keys-link'));
+  keysLink.append(keysButton);
   const options = el('div', 'lektor-menu');
   options.append(
     menuOption('Utisak o tekstu', 'Kratak osvrt na tekst, kao od pažljivog čitaoca.', () => {
