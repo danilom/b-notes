@@ -102,12 +102,13 @@ function waitedWords(): string {
  * The app's own wait, with what to expect said for the Lektor he sent it to: on free that a wait of
  * minutes is the queue, not a fault, so he doesn't send it again or close it at the first minute.
  */
-export function commentWaiting(): HTMLElement {
+export function commentWaiting(textInWords: string): HTMLElement {
   const waiting = el('div', 'lektor-waiting');
   const expect = commentRun.sentTo === 'free' ? 'Besplatni lektor često čeka na red, pa može da potraje nekoliko minuta.' : 'Obično traje pola minuta.';
   waiting.append(
-    // Who, then what (Danilo, 2026-11-10): "Čita tekst…" alone left the subject for him to supply.
-    el('p', 'lektor-reading', 'AI Lektor čita tekst…'),
+    // Who, what and which text (Danilo, 2026-11-10): "Čita tekst…" alone left the subject for him to
+    // supply, and with another text open the panel must say which one it is reading.
+    el('p', 'lektor-reading', `AI Lektor čita tekst ${textInWords}…`),
     el('p', '', expect),
     el('p', 'lektor-comment-clock', waitedWords()),
   );

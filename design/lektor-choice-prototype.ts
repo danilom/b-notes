@@ -12,14 +12,15 @@ import { type WindowCase, corrections, openCorrectionsWindow, openCorrectionsWin
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
 import { commentFailure, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
-import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, button, dollars, el, element, recipient, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
+import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, button, dollars, el, element, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
 
-type Screen = 'start' | 'waiting' | 'failed' | 'response' | 'keys';
+/** The menu, then the utisak's own step ('start': who writes it), its wait or failure, the utisak; and the keys. */
+type Screen = 'menu' | 'start' | 'waiting' | 'failed' | 'response' | 'keys';
 
-/** Said once on the first step after a key was saved and works, as the app does. */
+/** Said once on the menu after a key was saved and works, as the app does. */
 let isKeyJustSaved = false;
 
-let screen: Screen = 'start';
+let screen: Screen = 'menu';
 
 function choose(choice: 'free' | 'paid'): void {
   state.choice = choice;
@@ -43,9 +44,10 @@ function privacyWarning(): HTMLElement {
   const warning = el('div', 'lektor-warning');
   warning.setAttribute('role', 'note');
   const words = TEXT_PARAGRAPHS.join(' ').split(/\s+/).length;
+  // On the menu nothing says yet who it goes to, so both are named, by the Lektor each belongs to.
   warning.append(
     heading,
-    el('p', 'lektor-line', `Ceo tekst (${words} reči) se šalje ${recipient()}. Ne objavljuje se javno, ali je moguće da ga neko vidi.`),
+    el('p', 'lektor-line', `Ceo tekst (${words} reči) se šalje Guglu (besplatni lektor) ili firmi OpenRouter (plaćeni). Ne objavljuje se javno, ali je moguće da ga neko vidi.`),
     el('p', 'lektor-line', 'Ne šalji ništa što ne bi pokazao drugima: lične misli, tajne, lozinke i slično.'),
   );
   return warning;
@@ -64,30 +66,63 @@ function privacyFoot(): HTMLElement {
  */
 interface Step {
   content: HTMLElement[];
-  main: HTMLButtonElement;
-  /** A step back, at the strip's left, where there is one: the keys screen's Nazad. */
+  /** The way on, at the strip's right; none on the menu, whose two choices are its ways on. */
+  main?: HTMLButtonElement;
+  /** A step back, at the strip's left, where there is one. */
   back?: HTMLButtonElement;
 }
 
-function startScreen(): Step {
-  const send = sendButton(`Pošalji ceo tekst ${state.choice === 'free' ? 'Guglu' : 'OpenRouteru'}`, 'comment', () => askForComment(state.choice), 'status-action lektor-main-action');
+/** One of the menu's two choices: a big target, its name and a sentence on what it does. */
+function menuOption(name: string, does: string, onPick: () => void): HTMLButtonElement {
+  const option = button('', onPick, 'lektor-menu-option');
+  option.append(el('span', 'lektor-menu-name', name), el('span', 'lektor-menu-does', does));
+  return option;
+}
+
+/**
+ * The first step (Danilo, 2026-11-10): what he wants before who does it, as the window asks the kind
+ * before the Lektor. Nothing to set here, so nothing can be set wrongly before he knows what for. The
+ * privacy warning is here, before either, since both send the whole text; and the keys, since the
+ * corrections have no other way to them.
+ */
+function menuScreen(): Step {
   const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', 'API ključ radi i sačuvan je.')] : [];
   isKeyJustSaved = false;
+  const heading = el('div', 'lektor-choice-with-keys');
+  heading.append(el('p', 'lektor-heading', 'Šta želiš?'), button('API ključevi', openKeys, 'lektor-again'));
+  const options = el('div', 'lektor-menu');
+  options.append(
+    menuOption('Utisak o tekstu', 'AI Lektor čita tekst i kaže šta misli.', () => {
+      // A new start of the step, so Besplatni again: nothing is chosen for him from how he left it.
+      state.choice = 'free';
+      screen = 'start';
+      render();
+    }),
+    menuOption('Ispravke', 'Predlaže ispravke, od zareza do stila. Ti biraš šta ulazi u tekst.', () => openCorrectionsWindow()),
+  );
+  return {
+    content: [...saved, el('p', 'lektor-line', 'AI Lektor čita tvoj tekst, kaže šta misli i predlaže ispravke.'), heading, options, privacyFoot()],
+  };
+}
+
+/** Step 2, the utisak's own: who writes it, and sending it; "← Nazad" to the menu. */
+function startScreen(): Step {
+  const send = sendButton(`Pošalji ceo tekst ${state.choice === 'free' ? 'Guglu' : 'OpenRouteru'}`, 'comment', () => askForComment(state.choice), 'status-action lektor-main-action');
   return {
     content: [
-      ...saved,
-      el('p', 'lektor-line', 'AI Lektor čita tvoj tekst, kaže šta misli i, ako želiš, predlaže ispravke.'),
-      ...lektorChoice({ group: 'lektor-level', choose, openKeys }),
+      ...lektorChoice({ group: 'lektor-level', choose }),
       // What paying gives for the comment, as measured (2026-11-09): a draw blind (Opus 3, Flash 2), but
       // about 18 s against 3–5 minutes. So speed, not quality. The corrections choose their own Lektor in the window.
       el('p', 'lektor-where', 'Oba pišu utisak sličnog kvaliteta; plaćeni je mnogo brži.'),
-      // In the middle of the space left under the choice (Danilo, 2026-11-10, compared with right under
-      // it and down by the button): the first screen's one weighty thing, balanced rather than tucked
-      // away. In the app's foot block, whose rules for the warning's own spacing apply only there.
-      privacyFoot(),
     ],
     main: send,
+    back: backButton('Nazad', toMenu),
   };
+}
+
+function toMenu(): void {
+  screen = 'menu';
+  render();
 }
 
 /** Made up, as the app's comment would read on the made-up text: three short paragraphs, to him, in his dialect. */
@@ -165,24 +200,29 @@ export function nameForHeading(title: string): string | null {
  * context, not a heading or a piece of the panel, which in the panel's own type it looked like.
  */
 function commentOpening(): string {
-  const name = nameForHeading(commentTextTitle);
-  return name === null ? 'Utisak AI Lektora o tekstu bez naslova:' : `Utisak AI Lektora o tekstu „${name}”:`;
+  return `Utisak AI Lektora o tekstu ${textInWords()}:`;
 }
 
-/** The comment as the app draws it: the way to a new one above, the comment with its end mark, and a signature under it. */
+/** The request's text named for a sentence: quoted, or "bez naslova" in words. */
+function textInWords(): string {
+  const name = nameForHeading(textTitleOf(requestSlot));
+  return name === null ? 'bez naslova' : `„${name}”`;
+}
+
+/**
+ * The comment as the app draws it: the comment with its end mark, a signature under it, and in the
+ * strip "← Traži novi utisak" where the other steps have "← Nazad": the same place and arrow, but
+ * words that say this one is replaced, since there is no coming forward to it again.
+ */
 function responseScreen(): Step {
-  const head = el('div', 'lektor-comment-head');
-  const again = el('div', 'lektor-back-row');
-  const ask = button('', () => {
+  const ask = backButton('Traži novi utisak', () => {
     screen = 'start';
-    // A new start of the step, so Besplatni again, whatever wrote the comment: nothing is chosen for him
-    // from how he left it. Coming back from the keys is the same visit, and keeps what he had picked.
+    // A new start of the step, so Besplatni again, whatever wrote the comment: nothing is chosen for him from how he left it.
     state.choice = 'free';
     render();
-  }, 'lektor-again');
-  ask.append(icon('back'), el('span', '', 'Traži novi utisak'));
-  again.append(ask);
-  head.append(...staleNote(), again);
+  });
+  const head = el('div', 'lektor-comment-head');
+  head.append(...staleNote());
   const comment = el('div', 'lektor-response', `${commentOpening()}\n\n${COMMENT}`);
   comment.append(el('span', 'lektor-response-end'));
   // Signed by who wrote it, which stays so when the Lektor is changed afterwards, here or in the window.
@@ -195,59 +235,144 @@ function responseScreen(): Step {
   // No arrow: like every button in the app that opens a window. The ellipsis is Windows' own sign, as on
   // "Print…", that a window will ask more before anything happens: the window is a step, not a send.
   const toCorrections = button('Pređi na ispravke…', () => openCorrectionsWindow(), 'status-action lektor-main-action');
-  return { content: [head, comment, signature], main: toCorrections };
+  return { content: [head, comment, signature], main: toCorrections, back: ask };
 }
 
-/** Sends the text for a comment and waits for it in the panel, as the switches set the day. */
-function askForComment(to: Choice): void {
-  screen = 'waiting';
+/*
+  Two texts, as the app keeps the Lektor's state for each: the one the made-up utisak is about, and
+  any other in the list, which the mockup treats as one. Clicking the list switches between them.
+  While a request runs, or its failure or finished utisak waits to be seen, the panel stays with it
+  whichever text is open: nothing runs where he can't see it.
+*/
+type TextSlot = 'own' | 'other';
+const OTHER_TEXT = 'Pismo prijatelju';
+const textTitleOf = (slot: TextSlot): string => (slot === 'own' ? commentTextTitle : OTHER_TEXT);
+
+let openSlot: TextSlot = 'own';
+/** The screen of the text not open, to come back to; the open one's is `screen`. */
+const savedScreens: Record<TextSlot, Screen> = { own: 'menu', other: 'menu' };
+/** Which text the request running, or last made, is for. */
+let requestSlot: TextSlot = 'own';
+/** A utisak came back while another text was open, and he hasn't yet opened it or gone back. */
+let isReadyElsewhere = false;
+
+const isRequestElsewhere = (): boolean => requestSlot !== openSlot;
+
+/** Sets the screen of the text the request is for, open or not. */
+function setRequestScreen(next: Screen): void {
+  if (isRequestElsewhere()) savedScreens[requestSlot] = next;
+  else screen = next;
+}
+
+/** What the panel shows for a request on another text: its wait, its failure, or that it is ready; otherwise nothing. */
+function pinnedStep(): Step | null {
+  if (!isRequestElsewhere()) return null;
+  const its = savedScreens[requestSlot];
+  if (its === 'waiting') return waitingScreen();
+  if (its === 'failed') return failedScreen();
+  return isReadyElsewhere ? elsewhereScreen() : null;
+}
+
+/**
+ * Sends a text for a comment and waits for it in the panel, as the switches set the day: the open one,
+ * or, sent again from a failure shown while another is open, the one that failed.
+ */
+function askForComment(to: Choice, slot: TextSlot = openSlot): void {
+  requestSlot = slot;
+  isReadyElsewhere = false;
+  setRequestScreen('waiting');
   render();
   startCommentRun(to, {
     done: (by) => {
-      screen = 'response';
+      setRequestScreen('response');
       commentBy = by;
       if (by === 'paid') spend(COMMENT_COST_USD);
       isAboutAiOpen = false;
+      isReadyElsewhere = isRequestElsewhere();
       render();
     },
     failed: () => {
-      screen = 'failed';
+      setRequestScreen('failed');
       render();
     },
   });
 }
 
-/** Back to the first step as he left it: his Lektor, unchanged, where sending again is the retry. */
+/** Giving up on the request, or back from its failure: its text to step 2 as he left it, where sending again is the retry. */
 function backFromComment(): void {
   stopCommentRun();
-  screen = 'start';
+  setRequestScreen('start');
   render();
 }
 
-/** "← Nazad", at the strip's left, made as the keys screen's is. */
-function backButton(label: string): HTMLButtonElement {
-  const back = button('', backFromComment, 'status-action lektor-side-back');
+/** The mockup's list: another text clicked, as he would; the panel follows it unless a request holds it. */
+function openTextInPrototype(title: string): void {
+  const next: TextSlot = title === TEXT_TITLE ? 'own' : 'other';
+  if (next !== openSlot) {
+    savedScreens[openSlot] = screen;
+    screen = savedScreens[next];
+    openSlot = next;
+  }
+  if (!isRequestElsewhere()) isReadyElsewhere = false;
+  for (const item of document.querySelectorAll('.prototype-list p')) item.classList.toggle('prototype-open', item.textContent === title);
+  const shown = next === 'own' ? TEXT_PARAGRAPHS : ['Drugi tekst iz liste, izmišljen za ovaj prototip.'];
+  element('prototype-text', HTMLElement).replaceChildren(el('p', '', title), ...shown.map((paragraph) => el('p', '', paragraph)));
+  render();
+}
+
+/** A way back at the strip's left, made as the keys screen's is: its arrow and its words. */
+function backButton(label: string, onBack: () => void): HTMLButtonElement {
+  const back = button('', onBack, 'status-action lektor-side-back');
   back.append(icon('back'), el('span', '', label));
   return back;
 }
 
 /**
- * The wait: the app's "Čita tekst…" and nothing more, his text beside it to look at meanwhile.
- * Giving up where the send button was, not solid blue: it isn't the next step of his work.
+ * The wait: the app's "čita tekst…" with who and which text, and nothing more, his text beside it to
+ * look at meanwhile. Giving up where the send button was, not solid blue: it isn't the next step of his work.
  */
 function waitingScreen(): Step {
-  return { content: [commentWaiting()], main: button('Odustani od zahteva', backFromComment, 'status-action') };
+  return { content: [commentWaiting(textInWords())], main: button('Odustani od zahteva', backFromComment, 'status-action') };
 }
 
-/** A failure, as in the window: the problem, "← Nazad", and the other Lektor where it can help. */
+/**
+ * A failure, as in the window: the problem, "← Nazad", and the other Lektor where it can help. Named
+ * by its text when another is open, since the panel then speaks of a text not in front of him.
+ */
 function failedScreen(): Step {
-  const shortcut = commentShortcut((to) => askForComment(to));
-  if (shortcut === null) return { content: [commentFailure()], main: backButton('Nazad') };
-  return { content: [commentFailure()], main: shortcut, back: backButton('Nazad') };
+  const which = isRequestElsewhere() ? [el('p', 'lektor-line', `Utisak o tekstu ${textInWords()} nije stigao.`)] : [];
+  const content = [...which, commentFailure()];
+  // With another text open, back leaves the panel to that text; the failed one is back at step 2 for when he returns.
+  const back = backButton('Nazad', backFromComment);
+  const shortcut = commentShortcut((to) => askForComment(to, requestSlot));
+  return shortcut === null ? { content, back } : { content, main: shortcut, back };
+}
+
+/**
+ * Done while another text is open: said, and the way to that text, plain; not the utisak itself,
+ * which quotes a text he can't see and leads to corrections of the wrong one. Plain, not solid blue
+ * (Danilo, 2026-11-10): going to another text isn't the next step of his work. "← Nazad" leaves it
+ * kept with its text, to be there when he opens it, as any utisak is.
+ */
+function elsewhereScreen(): Step {
+  const open = button('Otvori tekst i utisak', () => {
+    isReadyElsewhere = false;
+    openTextInPrototype(TEXT_TITLE);
+  }, 'status-action');
+  const back = backButton('Nazad', () => {
+    isReadyElsewhere = false;
+    render();
+  });
+  return {
+    content: [el('p', 'lektor-line', `Utisak o tekstu ${textInWords()} je gotov.`), el('p', 'lektor-where', 'Videćeš ga i kad otvoriš taj tekst.')],
+    main: open,
+    back,
+  };
 }
 
 const TITLES: Readonly<Record<Screen, string>> = {
-  start: 'AI Lektor: slanje teksta',
+  menu: 'AI Lektor',
+  start: 'AI Lektor: utisak',
   waiting: 'AI Lektor: utisak',
   failed: 'AI Lektor: utisak',
   response: 'AI Lektor: utisak',
@@ -255,7 +380,7 @@ const TITLES: Readonly<Record<Screen, string>> = {
 };
 
 function backToStart(): void {
-  screen = 'start';
+  screen = 'menu';
   render();
 }
 
@@ -266,6 +391,7 @@ function savedAndBack(): void {
 
 function screenNow(): Step {
   if (screen === 'keys') return keysScreen(render, backToStart, savedAndBack);
+  if (screen === 'menu') return menuScreen();
   if (screen === 'waiting') return waitingScreen();
   if (screen === 'failed') return failedScreen();
   return screen === 'start' ? startScreen() : responseScreen();
@@ -276,20 +402,21 @@ function render(): void {
   const side = element('lektor-side', HTMLElement);
   const close = button('Zatvori', () => undefined, 'lektor-side-close');
   close.append(icon('fold-down'));
+  const pinned = pinnedStep();
   const title = el('div', 'lektor-side-title');
-  title.append(icon('lektor'), el('span', '', TITLES[screen]), close);
+  title.append(icon('lektor'), el('span', '', pinned === null ? TITLES[screen] : 'AI Lektor: utisak'), close);
   // Redrawn in place on the same screen (opening "AI može da pogreši"), it keeps where he had scrolled to;
   // a new screen starts at its top.
   const keptScroll = screen === lastDrawnScreen ? (side.querySelector('.lektor-side-body')?.scrollTop ?? 0) : 0;
   lastDrawnScreen = screen;
-  const { content, main, back } = screenNow();
+  const { content, main, back } = pinned ?? screenNow();
   const body = el('div', 'lektor-side-body');
   body.append(...content);
   const buttons = el('div', 'lektor-side-buttons');
-  buttons.append(...(back === undefined ? [] : [back]), main);
+  buttons.append(...[back, main].filter((one) => one !== undefined));
   const dock = el('div', 'lektor-side-dock');
   dock.append(buttons);
-  side.replaceChildren(title, body, dock);
+  side.replaceChildren(title, body, ...(buttons.childElementCount > 0 ? [dock] : []));
   body.scrollTop = keptScroll;
 }
 
@@ -315,18 +442,19 @@ const CONTROLS: readonly PrototypeControl[] = [
     id: 'screen',
     label: 'Panel',
     options: [
-      { value: 'start', label: '1. Slanje teksta' },
-      { value: 'response', label: '2. AI utisak (pa Pređi na ispravke)' },
-      { value: 'window', label: '3. Prozor za ispravke' },
-      { value: 'waiting', label: '3a. Prozor: piše (Stilska, plaćeni)' },
-      { value: 'queued', label: '3a2. Prozor: u redu kod Gugla (Slova i zarezi)' },
-      { value: 'busy', label: '3b. Prozor: Gugl zauzet (Slova i zarezi)' },
-      { value: 'no-credit', label: '3c. Prozor: nema novca (Dubinska)' },
-      { value: 'offline', label: '3d. Prozor: nema interneta (Slova i zarezi)' },
+      { value: 'menu', label: '1. Izbor: utisak ili ispravke' },
+      { value: 'start', label: '2. Utisak: izbor lektora' },
+      { value: 'response', label: '3. AI utisak (pa Pređi na ispravke)' },
+      { value: 'window', label: '4. Prozor za ispravke' },
+      { value: 'waiting', label: '4a. Prozor: piše (Stilska, plaćeni)' },
+      { value: 'queued', label: '4a2. Prozor: u redu kod Gugla (Slova i zarezi)' },
+      { value: 'busy', label: '4b. Prozor: Gugl zauzet (Slova i zarezi)' },
+      { value: 'no-credit', label: '4c. Prozor: nema novca (Dubinska)' },
+      { value: 'offline', label: '4d. Prozor: nema interneta (Slova i zarezi)' },
       { value: 'keys', label: 'API ključevi' },
     ],
-    // Where the work is now: the corrections window, open on arriving.
-    value: 'window',
+    // Where the work is now: the panel's new first step.
+    value: 'menu',
   },
   { id: 'stale', label: 'Tekst promenjen posle utiska', value: false },
   {
@@ -438,13 +566,17 @@ function isWindowCase(value: string | boolean): value is WindowCase {
 }
 
 /**
- * "3. Prozor za ispravke" is the comment step with the window opened on it, as "Pređi na
- * ispravke…" does; 3a–3c open it straight on the wait or a failure.
+ * "4. Prozor za ispravke" is the comment step with the window opened on it, as "Pređi na
+ * ispravke…" does; 4a–4d open it straight on the wait or a failure.
  */
 function setScreen(value: string | boolean): void {
   stopCommentRun();
+  // A screen picked here is the open text's, from a clean start: no request pinning the panel.
+  requestSlot = openSlot;
+  isReadyElsewhere = false;
   const isWindow = value === 'window' || isWindowCase(value);
-  screen = value === 'response' || isWindow ? 'response' : value === 'keys' ? 'keys' : 'start';
+  const named: Screen = value === 'keys' ? 'keys' : value === 'start' ? 'start' : 'menu';
+  screen = value === 'response' || isWindow ? 'response' : named;
   // Opening the first step afresh, as he would: on Besplatni.
   if (value === 'start') state.choice = 'free';
   if (!isWindow) return;
@@ -495,7 +627,11 @@ declare global {
 window.prototypeControls = CONTROLS;
 window.prototypeSet = setControl;
 
-element('prototype-text', HTMLElement).append(el('p', '', 'Probni tekst'), ...TEXT_PARAGRAPHS.map((paragraph) => el('p', '', paragraph)));
+// His list, clickable: another text opened, as he would, to see the panel stay with a request.
+for (const item of document.querySelectorAll('.prototype-list p')) {
+  item.addEventListener('click', () => openTextInPrototype(item.textContent ?? TEXT_TITLE));
+}
 // On the Panel switch's default, so the page and the switch agree.
-setScreen('window');
+openTextInPrototype(TEXT_TITLE);
+setScreen('menu');
 render();

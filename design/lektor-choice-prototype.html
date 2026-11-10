@@ -79,6 +79,42 @@
       .prototype-list p {
         margin: 0;
         padding: 0.35rem 0;
+        /* Clickable in the mockup: opening another text, to see the panel stay with a request. */
+        cursor: pointer;
+      }
+
+      /* New: the panel's first step, two big choices, each its name and a sentence on what it does. */
+      .lektor-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .lektor-side-body .lektor-menu-option {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.15rem;
+        width: 100%;
+        padding: 0.6rem 0.75rem;
+        text-align: left;
+        white-space: normal;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background-color: var(--panel);
+        cursor: pointer;
+      }
+
+      .lektor-menu-name {
+        font-size: var(--lektor-text);
+        font-weight: 700;
+        color: var(--ink);
+      }
+
+      .lektor-menu-does {
+        font-size: var(--lektor-small);
+        color: var(--quiet);
+        line-height: 1.35;
       }
 
       .prototype-list .prototype-open {
