@@ -78,7 +78,8 @@ export function paidBalance(): HTMLElement[] {
 /** A choice whose key hasn't been entered is greyed, with the reason on hovering, as in the app. */
 function levelOption(choice: Choice, actions: LektorChoiceActions): HTMLElement {
   const option = radio(actions.group, tierName(choice, actions.what), (actions.chosen ?? state.choice) === choice, () => actions.choose(choice), choice, actions.what);
-  if (actions.better?.choice === choice) option.append(el('span', 'lektor-recommended', actions.better.why));
+  // Inside the name's own span, as running text, so the smaller grey sits on the name's baseline rather than centred beside it.
+  if (actions.better?.choice === choice) option.lastElementChild?.append(' ', el('span', 'lektor-recommended', actions.better.why));
   const input = option.querySelector('input');
   if (input !== null) input.disabled = actions.isLocked === true || !keys.saved[choice];
   if (keys.saved[choice]) return option;
