@@ -79,16 +79,33 @@ the work:
   - Log which model answered.
 - **Paid goes through OpenRouter.** It's a third provider in `src/platform/lektor-remote.ts` (main process,
   fixed address), with its key in `lektor.json` next to Google's.
-  - Opus at medium effort.
-  - Route Opus to Anthropic first, with Bedrock/Google as backup. Allow only no-retention hosts.
+  - OpenRouter's model IDs are `anthropic/claude-opus-5.5` and `google/gemini-3.8-flash` (§16).
+  - Opus at medium effort: `reasoning: { effort: "medium" }`.
+  - **Decision needed: Anthropic first, or no-retention hosts only. OpenRouter doesn't offer both.**
+    On OpenRouter, Anthropic's own host is not a zero-retention host. The only zero-retention hosts for
+    Opus 5.5 are Amazon Bedrock and Google Vertex (§16). So "Anthropic first, Bedrock/Google as backup, no-retention
+    only" can't be met. The choices:
+    - **No-retention only** (`provider: { zdr: true, order: ["amazon-bedrock", "google-vertex"] }`): Anthropic is never
+      used. These hosts don't stop work, or the bill, when a request is cancelled (§16).
+    - **Anthropic first** (`order: ["anthropic", "amazon-bedrock", "google-vertex"]`, `data_collection: "deny"`, no `zdr`):
+      no host trains on his text, but Anthropic may keep it for a while for abuse checks. How long isn't verified.
+  - **Paid Flash** with `zdr: true` goes to Google Vertex only, because Google AI Studio isn't a zero-retention host.
+    Vertex still keeps text for abuse checks ("safety retention"). Without `service_tier`, the half-price "flex" and
+    dearer "priority" hosts aren't used.
   - Stream the paid replies too, so the wait shows thinking and writing.
 - **The time limit for a request is 10 minutes** (it was 4).
 - **Refusals, told apart.** These are the failures in §8:
-  - **Busy:** Google 503, or an error event mid-stream saying high demand.
-  - **Daily limit spent:** Google 429. Each model has its own limit, which resets at midnight Pacific time.
-  - **Bad key:** OpenRouter 401; Google 400 or 403 for an invalid or revoked key. Never shown as busy.
+  - **Busy:** Google 503 (`code: "service_unavailable"`), or an error event mid-stream saying high demand. A 429
+    with `code` `rate_limit_exceeded` or `too_many_requests` is also busy: those are per-minute limits, not the day's.
+  - **Daily limit spent:** Google 429 with `code: "quota_exceeded"`, and only that. Limits are per project and per model
+    (one key is one project), and the daily ones reset at midnight Pacific time.
+  - **Bad key:** OpenRouter 401. Google 400 `API_KEY_INVALID` for a wrong key, or 403 `PERMISSION_DENIED` for a missing,
+    leaked or blocked key. Also Google 401 `authentication`, which the docs list for `/interactions` but no call
+    returned. Never shown as busy.
   - **Money gone:** OpenRouter 402. No retry.
-  - **Paid busy:** OpenRouter's own host fallbacks exhausted.
+  - **Paid busy:** OpenRouter's own host fallbacks exhausted: 502 (the model is down), 503 (no host meets the routing
+    rules), 429, or a mid-stream chunk with `finish_reason: "error"`. A 404 "No endpoints found…" means the routing
+    rules allow no host at all, which is our bug, not his. Log it loudly and show it as paid busy.
   - **Content filter, no internet, cut-off or mismatched reply, too long.**
 - **Prices, for context only** (none are shown to him in advance):
   - **Flash:** $0.75/$3.75 per million tokens until 2026-12-31, then double.
@@ -298,8 +315,13 @@ marked like Ranije verzije's open row. All are locked while a request runs.
 
 ## 9. Money
 
-- **The balance** comes from OpenRouter (`GET /api/v1/key`, `limit_remaining`, or `/api/v1/credits`; an ordinary key
-  works).
+- **The balance** comes from OpenRouter's `GET /api/v1/credits`: `total_credits − total_usage`. An ordinary key works,
+  verified, although the docs say it needs a management key.
+  - `GET /api/v1/key`'s `limit_remaining` **is not the balance.** It's what is left of the key's own spending cap,
+    and it's `null` when the key has no cap. Measured: the key had $12,08 left of its cap while the account had $7,08.
+  - Show the lower of the two, ignoring `limit_remaining` when it's `null`. Either one running out gets a 402.
+  - If `/credits` starts refusing an ordinary key (403), fall back to `limit_remaining`, or hide the balance if that's
+    `null`. `/key` still tells a dead key (401) from a working one.
   - **On its own line under the choice:** a short rule, then "Na računu za plaćene lektore: $7,47", starting at the heading's edge.
     It belongs to both paid Lektors and to the tick box, not to one row.
   - **Under $1:** red, with "(malo)".
@@ -353,7 +375,8 @@ that fails silently, with names that describe behaviour, mutation-checked (break
 no AI credits ever. Run `npm test` freely; ask Danilo before `npm run test:gui`.
 
 **Unit tests, with the network faked as Google and OpenRouter really answer.** Fake it at the `ask` seam,
-per model, not the service. Fake streams with keep-alives, `interaction.created`, error events mid-stream, 503, 429,
+per model, not the service. Real recorded replies to build the fakes from are in `test/fixtures/lektor-api/`
+(see its README and §16). Fake streams with keep-alives, `interaction.created`, error events mid-stream, 503, 429,
 401/403, 402, partial bodies.
 
 - **Model chain:** for each work kind, free and paid:
@@ -455,3 +478,162 @@ per model, not the service. Fake streams with keep-alives, `interaction.created`
 5. **GUI tests;** ask Danilo before running the suite. Then `npm run release` for a pre-release he tries on the Asus.
 
 Each stage gets its own commits, and nothing is live until Danilo makes it so.
+
+## 16. API facts (verified 2026-11-11)
+
+What the build relies on, checked against the services themselves on 2026-11-10/11, with free calls only: no
+OpenRouter completion with a real key, and no paid Google tier. Each item is marked:
+- **[call]**: seen in a real reply. The reply is saved in `test/fixtures/lektor-api/`, or the call was to a public,
+  keyless listing.
+- **[docs]**: from the official docs only.
+- **[unverified]**: neither; it needs spending, or a state we can't cause.
+
+Recorded with `scripts/record-lektor-api.mts` and cleaned with `scripts/clean-lektor-recordings.mts`.
+
+### OpenRouter: models and routing
+
+- **[call] Model IDs:** `anthropic/claude-opus-5.5` (canonical `anthropic/claude-opus-5.5-20260921`) and
+  `google/gemini-3.8-flash` (canonical `-20260902`). Both accept `reasoning` and `reasoning_effort`. These come from
+  `GET /api/v1/models`, which is public.
+- **[call] Hosts** (`GET /api/v1/models/<id>/endpoints`, public):
+  - Opus 5.5: `anthropic`, `anthropic/fast` (double price), `amazon-bedrock` (plus `/eu-west-1`, `/us-east-1`), `azure`
+    (`/global`, `/us`), `google-vertex` (`/global`, `/us`, `/europe`) and `claude-on-aws`.
+  - Flash 3.8: `google-ai-studio` and `google-vertex`, each also with `/flex` (half price) and `/priority` (dearer)
+    tiers, plus `google-vertex/us`.
+- **[call] Zero-retention hosts** (`GET /api/v1/endpoints/zdr`, public):
+  - Opus 5.5: only `amazon-bedrock` (all three) and `google-vertex` (all three), all with `safety_retention: false`.
+    **Not** `anthropic`, `azure` or `claude-on-aws`.
+  - Flash 3.8: only `google-vertex` (`/global`, `/us`, and its flex and priority tiers), all with
+    `safety_retention: true`. **Not** `google-ai-studio`.
+  - Hence the decision in §2.
+- **[docs] The routing object** is `provider: { order, allow_fallbacks (default true), only, ignore, data_collection:
+  "allow" | "deny", zdr: true, sort, require_parameters }`.
+  - A plain slug in `order` (`"google-vertex"`) matches all of that host's regions.
+  - Setting `order` turns off OpenRouter's own load balancing.
+  - `data_collection: "deny"` keeps out hosts that store and may train on data. It's no promise about retention:
+    some hosts that don't train do keep data. Only `zdr: true` promises no retention.
+  - The flex and priority tiers are used only when asked for (`service_tier`, `:floor`, `:nitro`).
+- **[docs] Effort:** `reasoning: { effort: "medium" }`, with values `max`, `xhigh`, `high`, `medium`, `low`, `minimal`
+  and `none`. On Anthropic models it maps to Claude's effort.
+- **[call] Prices** (per million tokens, input/output):
+  - Opus 5.5: $4/$20 on `anthropic`, the plain `amazon-bedrock` and `google-vertex/global`. The regional Bedrock,
+    Vertex and Azure hosts charge 10 % more ($4.40/$22).
+  - Flash 3.8: $0.75/$3.75 on `google-vertex/global`, but $0.825/$4.125 on `google-vertex/us`. The listing shows
+    `discount: 0.5` on Flash, which fits the price doubling after the promotion (§2).
+- **[docs] Moderation:** the model listing marks Opus `is_moderated: true`, meaning OpenRouter may refuse with a 403
+  and moderation details in `error.metadata`. That's the "content filter" case.
+
+### OpenRouter: streaming, cost, cancelling
+
+- **[docs] The stream:**
+  - It's SSE `data: {json}` lines ending with `data: [DONE]`.
+  - While waiting, it sends comment lines `: OPENROUTER PROCESSING`. Skip anything starting with `:`.
+  - Reasoning arrives in `choices[].delta.reasoning_details`, and the words in `choices[].delta.content`.
+- **[docs] Errors before the stream starts** are plain JSON with the HTTP status.
+- **[docs] Errors mid-stream** keep HTTP 200. The last chunk has a top-level `error` and `finish_reason: "error"`, and
+  a 200 may hold nothing but that error. A cut-off reply ends with `finish_reason: "length"`.
+- **[docs] Cost:** `usage.cost` arrives in a last chunk just before `[DONE]`. That chunk has one choice with an empty
+  delta, which repeats the `finish_reason`; don't read it as a second end.
+  - It's automatic: `usage: { include: true }` is deprecated and does nothing.
+  - The unit is credits, which are dollars: **[call]** `/key`'s `usage` and `/credits`' `total_usage` agree to the
+    nanodollar.
+- **[docs] Cancelling** (closing the connection) stops the work and the bill on Anthropic, but **not on Amazon Bedrock
+  or Google**, which finish and bill the whole reply. With the no-retention choice in §2, a cancelled Opus or Flash
+  request is billed in full. That's another reason §9 re-reads the balance after a cancel.
+- **[unverified] The real stream:** chunk shapes, the reasoning field names for Opus and Flash, and where `usage.cost`
+  sits. All three need a paid completion. Record one on the build's first paid test, as in the README.
+
+### OpenRouter: account and errors
+
+- **[call] `GET /api/v1/key`, ordinary key:** `{ data: { label, is_management_key: false, limit, limit_reset,
+  limit_remaining, budgets[], effective_budget, usage, usage_daily, usage_weekly, usage_monthly, byok_usage…,
+  is_free_tier, expires_at, creator_user_id, organization_id, workspace_id, allowed_data_regions,
+  free_model_daily_requests, rate_limit } }`.
+  - `limit_remaining` is the key's cap, not the account (§9).
+  - The key has an `expires_at` (2027-05-07 for this one), so **a key can expire on a date.** It shows up as the dead
+    key.
+- **[call] `GET /api/v1/credits`, ordinary key:** `{ data: { total_credits, total_usage } }`, status 200. The docs
+  say it needs a management key and answers 403 otherwise. They're wrong today, and could become right.
+- **[call] 401, wrong key:** `{"error":{"message":"User not found.","code":401}}`, with header
+  `x-openrouter-error-origin: client`. It's the same on `/chat/completions` (before any model runs) and on `/key`.
+- **[docs] Error shape** is `{ error: { code: number, message, metadata? } }`, with the HTTP status equal to `code`:
+  - 400: bad request.
+  - 401: wrong or disabled key.
+  - 402: not enough credits, for the account or the key's cap; `metadata.limit_source` says which.
+  - 403: moderation or a guardrail.
+  - 408: timeout.
+  - 429: rate limited.
+  - 502: the model is down or answered nonsense.
+  - 503: no host meets the routing rules.
+- **[unverified] 402, 429, 503 and "no host available" as actually sent.** 402 needs an empty account. The rest need a
+  completion with the real key. A completion constrained to no host at all should be free, but the brief allowed no
+  completions at all. The 404 "No endpoints found matching your data policy" is known from users' reports, not the
+  docs.
+
+### Google: free tier
+
+- **[call] Wrong key** (`/interactions` and `/models` alike): HTTP 400. Unlike the `/interactions` errors below, it's
+  in Google's older error shape: `{"error":{"code":400,"message":"API key not valid. Please pass a valid API
+  key.","status":"INVALID_ARGUMENT","details":[{"reason":"API_KEY_INVALID",…}]}}`. On `/interactions` it comes as
+  plain JSON although the content type says `text/event-stream`.
+- **[call] No key:** HTTP 403 `PERMISSION_DENIED`, "Method doesn't allow unregistered callers…".
+- **[docs] Leaked or blocked key:** 403, "Your API key was reported as leaked…". 403 also covers a project that needs
+  verification, or a place without a free tier. **[docs]** The `/interactions` error list also has 401
+  `authentication` for a missing, invalid or expired key, but no call returned it.
+- **[call] Model list** (`GET /models?pageSize=1`, as the key check asks): `{ models: [ { name: "models/…", version,
+  displayName, description, inputTokenLimit, outputTokenLimit, supportedGenerationMethods, temperature, topP, topK,
+  maxTemperature, thinking } ], nextPageToken }`.
+  - The full list (62 models) has `models/gemini-3.5-flash` to `models/gemini-3.8-flash`, with 1,048,576 tokens in and
+    65,536 out.
+  - It lists only `generateContent`-style methods, never `/interactions`, so don't check for that.
+- **[call] Busy, at once:** HTTP 503 within 1–3 s, with body `{"error":{"message":"gemini-3.8-flash is currently
+  experiencing high demand, spikes in demand are usually temporary. Please try again later.","code":"service_unavailable"}}`.
+  - The `code` is a string here, unlike the key errors.
+  - The content type is `text/event-stream`, but the body is bare JSON with no `data:` framing. **The parser must read
+    a non-200 body as JSON whatever its content type says.**
+  - From 17:01 to 17:12 UTC on 2026-11-10 (00:01–00:12 his time), at about 3-minute intervals, 3.8 answered this way
+    all 5 times. 3.6 answered this way 4 times, then queued and answered on the 5th.
+- **[docs] `/interactions` error codes** (`error.code`, a string), the ones the Lektor tells apart:
+  - `quota_exceeded` 429: the daily quota.
+  - `rate_limit_exceeded` 429: per minute or per second.
+  - `too_many_requests` 429.
+  - `service_unavailable` 503.
+  - `deadline_exceeded` 504.
+  - `invalid_request` 400.
+  - `permission_denied` 403.
+  - `payment_required` 402: prepaid credit, so not the free tier.
+  - Blocked output: `safety`, `prohibited_content`, `recitation`, `blocklist`, `content_blocked`, `spii`. That's the
+    content filter.
+- **[docs] Limits** are per project and vary by model. "Requests per day (RPD) quotas reset at midnight Pacific
+  time." The free numbers for 3.8 and 3.6 aren't published; AI Studio shows them per project.
+- **[unverified] A real 429 `quota_exceeded`,** and whether its body carries a reset time. Getting one would mean using
+  up the day's free quota.
+- **[call] The stream** (`/interactions?alt=sse`, `stream: true`, `store: false`): one whole request on free 3.6,
+  in `google-stream-whole-gemini-3.6-flash.json`. **Where it differs from the docs, the call wins:**
+  - **Framing:** each event is an `event: <name>` line plus a `data: {json}` line, and the JSON repeats the name as
+    `event_type`. Parse by `event_type` and ignore the `event:` line.
+  - **Queued:** `: keep-alive` comments at exactly 15.2, 30.2 and 45.2 s, and nothing else.
+  - **Started**, at 51.5 s: `interaction.created` is `{"interaction":{"object":"interaction","model":"gemini-3.6-flash"}}`.
+    It has **no `id`, `status`, `created` or `event_id`**, unlike the docs, probably because of `store: false`. Don't
+    expect an id to log or resume with.
+  - `interaction.status_update`: `{"status":"in_progress"}`, with no `interaction_id`.
+  - **Thinking** is a step of its own: `step.start` `{index:0, step:{type:"thought"}}`, then `step.delta`s holding only
+    `delta.signature`, an opaque base64 string of ~6 KB, with **no text and no `type`**, then `step.stop`. So the wait
+    can tell "thinking" (a `thought` step started) but has no thoughts to show. The docs' `thought_summary` didn't
+    appear.
+  - **Words:** `step.start` `{index:1, step:{type:"model_output"}}`, then
+    `step.delta` `{index:1, delta:{text, type:"text"}}` several times, then `step.stop`. Several events can share one
+    network chunk, and one event can span several. All the words came within 10 ms: the work took no time, the wait
+    was all queue.
+  - **End:** `interaction.completed` with `{status:"completed", usage:{total_tokens, total_input_tokens,
+    total_output_tokens, total_thought_tokens, total_cached_tokens, total_tool_use_tokens, initial_input_tokens,
+    input_tokens_by_modality}, created, updated, service_tier:"standard", object, model}`. Then a last
+    `event: done` / `data: [DONE]`. **The reply names the model that ran (`model`)**, which is what "log which model
+    answered" should log.
+  - Thought tokens: 1,437 thought against 244 written, for a short text.
+- **[docs] `error` event:** `{ event_type: "error", error: { code, message } }`, which can come mid-stream.
+  **[call, earlier]** A mid-stream "high demand" refusal after queuing was seen by the queue probe on 2026-11-09/10
+  (`design/lektor-free-queue-measurements.md`), but its exact bytes weren't kept. **[unverified]** That shape, and
+  whether its `code` is `service_unavailable` as in the 503.
+- **[unverified] A whole stream on 3.8.** It was refused at once every time it was tried. The measurements file has
+  3.8 queuing ~5 minutes on other days with the same events, so expect the same shapes.
