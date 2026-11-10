@@ -53,45 +53,25 @@
         font-size: 1rem;
       }
 
-      /* The tiers' colours: the free one the app's blue, paid the coin's gold, as in the prototype. */
+      /* Each mark's colours come from the page's script, as --mark-line and --mark-fill on the mark. */
       .tier-mark {
         flex: none;
         width: 1.05em;
         height: 1.05em;
+        color: var(--mark-line);
       }
 
-      .tier-mark-free {
-        color: #3380d6;
+      .tier-mark .tier-body {
+        fill: var(--mark-fill, none);
       }
 
-      .tier-mark-flash {
-        color: #a87412;
+      .tier-picked {
+        outline: 2px solid var(--ink);
+        outline-offset: -2px;
       }
 
-      .tier-mark.opus-gold,
-      .tier-mark.opus-gold-filled {
-        color: #a87412;
-      }
-
-      .tier-mark.opus-bronze {
-        color: #7d4f0c;
-      }
-
-      .tier-mark.opus-copper {
-        color: #b0501e;
-      }
-
-      .tier-mark.opus-purple,
-      .tier-mark.opus-purple-filled {
-        color: #7b4bc4;
-      }
-
-      .tier-mark.opus-gold-filled .tier-body {
-        fill: #f2d48a;
-      }
-
-      .tier-mark.opus-purple-filled .tier-body {
-        fill: #ddccf5;
+      .tier-sheet td {
+        cursor: pointer;
       }
 
       .tier-big {
@@ -216,8 +196,7 @@
         border-radius: 4px;
       }
 
-      .tier-send .tier-mark,
-      .tier-send .tier-mark.tier-mark {
+      .tier-send .tier-mark {
         color: inherit;
       }
 
