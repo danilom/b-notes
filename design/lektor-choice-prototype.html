@@ -172,9 +172,15 @@
         height: 2.3rem;
       }
 
-      .lektor-to-corrections-icon {
-        width: 1.4em;
-        height: 1.4em;
+      /*
+        Bigger than a button's icon (Danilo, 2026-11-10): a picture, as on the menu, not a sign; allowed
+        to overhang the button's padding, so the strip keeps its height.
+      */
+      /* With its button's class too: the app's .status-action svg sizes a button's icon and would win. */
+      .lektor-to-corrections .lektor-to-corrections-icon {
+        width: 2em;
+        height: 2em;
+        margin-block: -0.4em;
         flex: none;
       }
 
