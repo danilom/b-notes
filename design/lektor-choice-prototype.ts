@@ -33,6 +33,8 @@ const commentPaidIfSlow: PaidIfSlow = {
   isTicked: false,
   tick: (isTicked) => {
     commentPaidIfSlow.isTicked = isTicked;
+    // Redrawn, so the send button's tooltip says where a slow one goes.
+    render();
   },
 };
 
@@ -161,7 +163,8 @@ function startScreen(): Step {
   // free one goes to OpenRouter, so "Guglu" would no longer be sure, and "lektoru „Flash”" didn't fit
   // beside Nazad on his Asus. Who gets it is said by the choices above and the button's mark; the
   // companies by the menu's privacy warning and this button's tooltip.
-  const send = sendButton('Pošalji tekst lektoru', 'comment', () => askForComment(state.choice), 'status-action lektor-main-action');
+  const mayHandOver = state.choice === 'free' && commentPaidIfSlow.isTicked && keys.saved.paid;
+  const send = sendButton('Pošalji tekst lektoru', 'comment', () => askForComment(state.choice), 'status-action lektor-main-action', mayHandOver);
   // The paid utisak is Opus (Danilo, 2026-11-10), as on rework: so the tick box under Besplatni (the
   // same writer without the queue) and Plaćeni (another one) are two things, as on every screen.
   // What paying gives for the comment, as measured (2026-11-09): a draw blind (Opus 3, Flash 2). Each

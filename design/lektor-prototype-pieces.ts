@@ -137,12 +137,6 @@ export const familyOf = (tier: Tier): string => (tier === 'opus' ? '„Opus”' 
 export const paidWords = (cost: number | null | undefined): string => (cost == null ? '' : ` · plaćeno ${dollars(cost)}`);
 export const tierName = (choice: Choice, what: Work): string => nameOf(tierOf(choice, what));
 
-/**
- * Who his text goes to: the company it is sent to, and no further. Past OpenRouter it may be
- * Anthropic, Google or Amazon running the model, which changes with the kind of correction and
- * with who has room, so naming one would be a promise the app can't keep.
- */
-export const recipient = (): string => (state.choice === 'free' ? 'Guglu' : 'firmi OpenRouter');
 
 /*
   The three Lektors' marks rather than a company's, since who runs each may change: a gift for the
@@ -242,17 +236,25 @@ export function serviceLineOf(tier: Tier): HTMLElement {
 
 /**
  * What hovering a sending button tells: who gets the text and which model, one to a line. For
- * whoever wants the particulars, which he needn't. No cost: it can't be known before the run.
+ * whoever wants the particulars, which he needn't. No cost: it can't be known before the run. With
+ * the tick box ticked, that a free one waiting too long goes to OpenRouter after all (Danilo,
+ * 2026-11-10): the one place the company is said, so it must be said whole. The company it is sent
+ * to, and no further: past OpenRouter it may be Anthropic, Google or Amazon running the model, which
+ * changes with the kind and with who has room, so naming one would be a promise the app can't keep.
  */
-export function sendTooltip(what: Work): string {
-  const fallsBack = state.choice === 'free' && what !== 'comment' && FALLS_BACK.has(what);
-  return [`Šalje se ${recipient()}`, `Model: ${MODELS[state.choice][what]}${fallsBack ? ' (ako je zauzet: gemini-3.6-flash)' : ''}`].join('\n');
+export function sendTooltip(to: Choice, what: Work, mayHandOver: boolean): string {
+  if (to === 'paid') return ['Šalje se firmi OpenRouter', `Model: ${MODELS.paid[what]}`].join('\n');
+  // The utisak and the first two kinds may move to the older free model; rework doesn't.
+  const standIn = what === 'comment' || FALLS_BACK.has(what) ? ' (ako je zauzet: gemini-3.6-flash)' : '';
+  const lines = ['Šalje se Guglu', `Model: ${MODELS.free[what]}${standIn}`];
+  if (mayHandOver) lines.push(`Ako čeka duže od 2 minuta: firmi OpenRouter, model ${PAID_IF_SLOW_MODEL}`);
+  return lines.join('\n');
 }
 
 /** A button that sends: its words, the mark of where it goes, and the app's arrow. */
-export function sendButton(label: string, what: Work, onClick: () => void, className: string): HTMLButtonElement {
+export function sendButton(label: string, what: Work, onClick: () => void, className: string, mayHandOver = false): HTMLButtonElement {
   const made = button(label, onClick, `${className} lektor-sends`);
-  made.title = sendTooltip(what);
+  made.title = sendTooltip(state.choice, what, mayHandOver);
   made.append(choiceMark(state.choice, what), icon('move-out'));
   return made;
 }

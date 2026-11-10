@@ -55,6 +55,7 @@ import {
   problem,
   radio,
   sendButton,
+  sendTooltip,
   serviceLine,
   serviceLineOf,
   spend,
@@ -324,6 +325,8 @@ const windowPaidIfSlow: PaidIfSlow = {
   },
   tick: (isTicked) => {
     corrections.isPaidIfSlow = isTicked;
+    // Redrawn, so the send button's tooltip says where a slow one goes.
+    draw();
   },
 };
 
@@ -393,7 +396,7 @@ function sendRow(preset: Preset): HTMLElement {
   const send = sendButton('Pošalji zahtev za ispravke', preset, () => run(to), 'lektor-main-action');
   // Who it goes to is this kind's Lektor here, not the panel's choice that sendButton reads.
   send.querySelector('.lektor-choice-mark')?.replaceWith(choiceMark(to, preset));
-  send.title = [`Šalje se ${to === 'free' ? 'Guglu' : 'firmi OpenRouter'}`, `Model: ${MODELS[to][preset]}`].join('\n');
+  send.title = sendTooltip(to, preset, to === 'free' && mayGoToPaid());
   // What sending does, next to the button that does it, rather than by Zatvori in the footer; and,
   // while the instructions are folded, the way to them at its left: one line of small print over the buttons.
   const line = el('div', 'lektor-send-line');
