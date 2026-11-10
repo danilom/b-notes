@@ -24,8 +24,8 @@ What the Lektor mockup on branch `lektor-openrouter` decided (sessions of 2026-1
 - **DESIGN.md:** changes as listed at the end; bring it in line in the same work.
 
 **Ground rules, unchanged.** These come from CLAUDE.md and DESIGN.md:
-- **v1 is in his hands.** Build on a new branch from `main`, publish only with `npm run release`
-  (pre-release), and never `--live`.
+- **v1 is in his hands.** Build on `lektor-openrouter`, where the Lektor, the prototype and the fixtures are
+  (`main` has no Lektor). Publish only with `npm run release` (pre-release), and never `--live`.
 - **No test spends AI credits.**
 - **Keys are never printed, logged or committed.**
 - **LF line endings, one small commit per finished change, no attribution lines.**
@@ -80,7 +80,9 @@ the work:
 - **Paid goes through OpenRouter.** It's a third provider in `src/platform/lektor-remote.ts` (main process,
   fixed address), with its key in `lektor.json` next to Google's.
   - OpenRouter's model IDs are `anthropic/claude-opus-5.5` and `google/gemini-3.8-flash` (§16).
-  - Opus at medium effort: `reasoning: { effort: "medium" }`.
+  - Opus at medium effort: `reasoning: { effort: "medium" }`, as in the model tests.
+  - **Flash, free and paid, gets no reasoning setting:** each service's default (Danilo, 2026-11-11). The tests
+    never set one, and a paid run isn't held back to match the free one if the defaults differ.
   - **No host rules** (Danilo, 2026-11-11): no `provider` object, so OpenRouter routes by its own default, on
     price and availability. Who runs the model doesn't matter as long as cost and speed are the same. The
     "Anthropic first" and "no-retention hosts only" ideas were never his asks, and are dropped; §16 keeps the
@@ -136,6 +138,16 @@ the work:
 - **A key that stops working (dead key):**
   - **Find out early, when the panel opens.** OpenRouter's balance lookup uses the key. Google has a free
     call that lists its models.
+  - **The same check tells him the internet is down** (Danilo, 2026-11-11). Neither call getting an answer at all
+    is what being offline looks like, so there is no separate connection check while a key is saved.
+- **The internet, every time the panel opens:**
+  - **With no keys saved,** a keyless call (as today's `ping`) checks the internet first. He must never be sent to
+    paste keys only to meet a cryptic error afterwards.
+  - **Offline:** a screen of its own, in place of whatever the panel would open on, the comment too. It reads
+    "Internet ne radi, a AI Lektoru je potreban." with "Pokušaj ponovo" (he may tether to his phone). This is
+    likely his commonest failure, so it must be plain.
+  - **No extra effort to read a kept utisak offline.** But a panel already open on the utisak stays as it is when
+    the internet goes; offline is said only when he sends.
   - **Then a screen of its own, in place of the menu:**
     - a big red line key mark (Lucide "key");
     - "API ključ više ne radi." and "Zovi za pomoć.";
@@ -173,6 +185,11 @@ the work:
 The title line reads "AI Lektor" on the menu, "AI Lektor: utisak" on the utisak's steps, and "AI Lektor: podešavanje"
 on keys. "Zatvori" closes the panel, and closing cancels a utisak being read (§7).
 
+**What it opens on** (Danilo, 2026-11-11): the utisak, whenever this text has one, however much the text has
+changed since and however long ago. From there the corrections are one button away. Otherwise the menu. The old
+rule that sent him back to the first step after a big change he came back to goes. Only the stale note is left
+(below).
+
 **Step 1, the menu**
 - **Text, top to bottom:** "AI Lektor čita tvoj tekst, kaže šta misli i predlaže ispravke.", then "Šta želiš?"
 - **Two big white cards** with full-colour pictures (the owl "owl-fluffy" and the page with a red ž "page-z-caron",
@@ -206,6 +223,9 @@ on keys. "Zatvori" closes the panel, and closing cancels a utisak being read (§
   - **Free:** "Besplatni lektor često čeka na red, pa može da potraje nekoliko minuta.", plus "Ako ne krene za
     2 minuta, šalje se plaćenom lektoru „Flash”." if ticked.
   - **Paid:** "Obično traje pola minuta."
+- **The line stays the same for the whole wait, as the prototype does it** (`commentWaiting` in
+  `design/lektor-comment-run-prototype.ts`). The app's note that changes after a while (`waitLong`,
+  `waitVeryLong`) goes.
 - **Then the quiet clock "Prošlo je N s." (N min N s).** Time it with `performance.now()`, never `Date.now()`: the wall
   clock stepped back and showed "−1 s".
 - **"Odustani od zahteva"** with ✕ (the app's close icon), small grey like "Traži novi utisak", right-aligned
@@ -214,8 +234,12 @@ on keys. "Zatvori" closes the panel, and closing cancels a utisak being read (§
 - **Cancelling goes back to step 2** as he left it. A paid request may be charged for work begun; that's accepted silently.
 
 **The utisak**
-- **"← Traži novi utisak"** small grey at the top right (back to step 2, on Besplatni again). The
-  "Tekst promenjen posle utiska" note sits beside it when the text has changed since.
+- **"← Traži novi utisak"** small grey at the top right (back to step 2, on Besplatni again). The stale note
+  sits beside it after a big change, with the count as the app has it now: "Utisak je napisan pre tvojih poslednjih
+  izmena (oko 120 reči)." (`standingOf` decides when, as today).
+- **The words appear one by one,** as the app does now (`revealed()`, a click shows them all), and they're kept
+  deliberately (Danilo, 2026-11-11). The stream brings them almost all at once (§16), so the reveal is what makes the
+  comment read as written.
 - **The comment opens with "Utisak AI Lektora o tekstu „<title>”:"** in the comment's own font. The app adds it; the AI doesn't
   write it.
   - Use the title as the list shows it (`titleFrom` in `src/notes/note-title.ts`), trimmed.
@@ -263,11 +287,14 @@ marked like Ranije verzije's open row. All are locked while a request runs.
 
 **The right side** shows nothing picked ("Izaberi vrstu ispravke sa leve strane.") or one of the following.
 
-- **Ready suggestions:** the kind's name, then one card per Lektor that made some, up to two:
+- **Ready suggestions:** the kind's name, then one card: the latest set of that kind, whichever Lektor made it
+  (Danilo, 2026-11-11). He has no use for choosing between sets.
   - "[mark] Predlozi lektora „Opus” od pre 3 dana · plaćeno $0,48" and a blue "Pogledaj".
   - Free cards have no amount. A just-made card leaves out the time ("od upravo sad" reads badly).
   - The mark and name come from the model that ran.
-  - Two blue "Pogledaj" buttons when both exist is accepted, as it's rare.
+  - **One kept set per kind,** made with any note: a newer request that succeeds replaces it, even a free one after
+    a paid one. That's accepted, since he rarely asks a cheaper Lektor again for the same text. A failed or cancelled
+    request replaces nothing.
   - Then a plain "Novi zahtev za ispravke…".
 - **Void suggestions:**
   - **What counts:** kept suggestions are void once his text differs from what was sent, trailing whitespace aside.
@@ -282,7 +309,8 @@ marked like Ranije verzije's open row. All are locked while a request runs.
   - **"Prošli put za ovaj tekst: $X",** when this kind was paid on this text before. There are no estimates.
   - **"▸ Uputstva za AI",** folded on each opening unless his note isn't empty. Opened (▾), it's one group with a
     line down its side, made of "Za ovu vrstu ispravke" (the app's whole English instruction, read-only, 4 lines,
-    scrolling) and "Tvoja, dodatna (nije obavezno)" (his 3-line note). Folded, the opener sits at the left of
+    scrolling: everything that goes to the model, the preset's prompt and the rules on the reply's shape,
+    `CORRECTION_RULES` or `REWRITE_RULES`, that are hidden today. In English, because that's what is sent) and "Tvoja, dodatna (nije obavezno)" (his 3-line note). Folded, the opener sits at the left of
     the send note's line.
   - **"Videćeš predloge. Tekst se ne menja dok ih ne uneseš."** sits over the send button.
   - **Blue "Pošalji zahtev za ispravke"** with the Lektor's mark and the arrow, and a tooltip as in §6.
@@ -306,6 +334,9 @@ marked like Ranije verzije's open row. All are locked while a request runs.
     sitne popravke: 31.", with the model only as the name's tooltip.
   - **Then the app's legend** with "Prikaži tekst kakav će biti" at the right.
   - **Footer:** "← Nazad" at the far left, solid-blue "Unesi" (the app's hop/confetti stays), and "Zatvori".
+- **After the window closes,** taken or not, the panel stays open, on the screen the window was opened from: the
+  menu, or the utisak (Danilo, 2026-11-11). Closing the panel after the review was for when the corrections were
+  set up in the panel.
 
 ## 9. Money
 
@@ -336,13 +367,19 @@ marked like Ranije verzije's open row. All are locked while a request runs.
 
 Every failure screen has the same shape: the problem, "← Nazad" back to the form exactly as he left it (where sending again is
 the retry), and at most one solid-blue shortcut to the other Lektor, only where the trouble was the
-company's and he has that key. There's no "Pokušaj ponovo". In the panel, a failure while another text is open
-adds "Utisak o tekstu „X” nije stigao."
+company's and he has that key. In the panel, a failure while another text is open adds "Utisak o tekstu „X”
+nije stigao."
+
+- **"Pokušaj ponovo" only where trying again is likely to work** (Danilo, 2026-11-11): no internet (he may tether
+  to his phone) and a cut-off reply. Not on busy, the daily limit or money gone (they have the shortcut), nor on
+  a refusal that would only be refused again.
+- **The service's own words, small and grey, with "Kopiraj poruku",** under every failure where the service gave
+  any, as the app does now (`problem()`).
 
 | Case | Words (see mockup) | Offer |
 |---|---|---|
 | Free busy (both models where 3.6 applies; 3.8 on rework), not ticked | "Gugl je sada zauzet." / "Probaj malo kasnije, ili pošalji plaćenom lektoru." | Pošalji plaćenom lektoru |
-| Free daily limit spent, not ticked | "Besplatni lektor je za danas potrošen." / "Ponovo radi sutra posle HH:MM, ili pošalji plaćenom lektoru." | Pošalji plaćenom lektoru |
+| Free daily limit spent, not ticked | "Besplatni lektor je za danas potrošen." / "Ponovo radi posle HH:MM, ili pošalji plaćenom lektoru." | Pošalji plaćenom lektoru |
 | … ticked | no failure: "! Besplatni lektor je za danas potrošen" line, then paid Flash at once | — |
 | Free 10-minute timeout | as busy | Pošalji plaćenom lektoru |
 | Paid money gone | "Plaćeni iznos je potrošen." / "Možeš da pošalješ besplatnom lektoru, ili neka se uplati još." | Pošalji besplatnom lektoru |
@@ -350,13 +387,14 @@ adds "Utisak o tekstu „X” nije stigao."
 | Paid busy (after OpenRouter's host fallbacks), paid timeout | as busy, for paid | Pošalji besplatnom lektoru |
 | Bad key, either | the dead-key screen (§4), with Nazad | API ključevi |
 | Content filter refused | own sentence | the other Lektor |
-| No internet | "Internet ne radi, a AI Lektoru je potreban." / "Kad internet proradi, pošalji ponovo." | none |
-| Cut off, or the reply doesn't match his text | own sentence | none |
+| No internet | "Internet ne radi, a AI Lektoru je potreban." / "Kad internet proradi, pošalji ponovo." | Pokušaj ponovo |
+| Cut off, or the reply doesn't match his text | own sentence | Pokušaj ponovo |
 | Text too long | own sentence | none (see Later) |
 | Text deleted during a utisak | "Tekst „X” je obrisan." / "Zato utisak o njemu neće stići." | none |
 
-- **HH:MM** is the next midnight Pacific time, in his local 24-hour time, with "danas" or "sutra" as the case may be. That's
-  09:00 in Serbia and 15:00 in Bangkok. Mind the two days a year Pacific time changes its clocks.
+- **HH:MM** is the next midnight Pacific time, in his local 24-hour time: 09:00 in Serbia, 15:00 in Bangkok.
+  **No "danas" or "sutra"** (Danilo, 2026-11-11): on a daily cycle the clock time alone is unambiguous, and the day
+  word can only confuse. Don't build anything for the days the clocks change.
 - **Cross-checks:**
   - An offer follows the kind's own rules: free on Slova/Pravopis goes 3.8 → 3.6 again; rework is 3.8 only.
   - Every switch shows in the stages and in the review's model.
@@ -390,8 +428,11 @@ per model, not the service. Real recorded replies to build the fakes from are in
 - **Balance:** parsing both endpoints, the display rule ($ first, comma, "(malo)" under $1, hidden when unreadable),
   subtracting on finish, re-reading on failure, and a log line on every read.
 - **Cost logging:** each paid reply's cost logged.
-- **The reset time:** midnight Pacific in several local zones, including Belgrade, Bangkok and a US zone, across both DST
-  changes, with "danas" versus "sutra".
+- **The reset time:** midnight Pacific as a local 24-hour time in several zones, including Belgrade, Bangkok and a US
+  zone, with no day word.
+- **Kept sets:** one per kind, the latest replacing the one before whoever made it, and a failed request replacing
+  nothing.
+- **Opening:** offline with and without keys saved (no keys: the keyless check), on the utisak when there is one.
 - **Void suggestions:** trailing whitespace doesn't void them; any other change does; one line however many.
 - **The utisak's title line:** empty, spaces, his own quotes, long, control characters.
 - **Requests and texts:** request for the open text, for another text, text deleted while waiting, failure on
@@ -426,6 +467,13 @@ per model, not the service. Real recorded replies to build the fakes from are in
 - **Closing cancels; one request at a time; switching texts keeps a utisak going.**
 - **Send buttons say to whom; no person's name in the UI.**
 - **Logging:** balance reads, paid costs, and which model answered.
+- **"The panel is one thing" becomes:** it opens on the utisak whenever there is one, with the stale note; the
+  "big change he comes back to opens on the first step" rule goes.
+- **"After the review the sidebar closes" goes:** the panel stays where the window was opened from.
+- **"Results are kept" becomes:** the last comment, and one set of corrections per kind, the latest.
+- **"Fake model" goes:** the test Lektor is removed. The saved real replies move into the fake network (§17.5).
+- **Anthropic direct goes,** with its key, its model and its mark.
+- **"Errors" stays,** with "Pokušaj ponovo" only where trying again may work (§10).
 
 ## 13. Rejected (so they aren't retried)
 
@@ -442,6 +490,9 @@ per model, not the service. Real recorded replies to build the fakes from are in
 - **Void suggestions:** one line per set, naming Lektor and date.
 - **Money:** cost estimates, spending caps, daily ceilings, price checks.
 - **Background requests:** closing doesn't cancel.
+- **The reset time:** "danas"/"sutra" before it.
+- **Kept corrections:** a card per Lektor; matching a kept set by his note.
+- **The test Lektor** as a choice he could see, switched on per machine.
 
 ## 14. Later (not part of this build)
 
@@ -635,9 +686,10 @@ Recorded with `scripts/record-lektor-api.mts` and cleaned with `scripts/clean-le
 
 ## 17. Where it goes in the code
 
-Read from `lektor-openrouter` on 2026-11-11. That branch carries `ai-lektor` → `rewrite-review` → `change-choices`;
-`main` has no Lektor at all (question 1). Paths are from the repo root. Anything marked *(guess)* is a suggestion
-and not something the code settles.
+Read from `lektor-openrouter` on 2026-11-11. That branch carries `ai-lektor` → `rewrite-review` → `change-choices`,
+plus the prototype and the fixtures, and the build happens on it; `main` has no Lektor. Paths are from the repo
+root. Anything marked *(guess)* is a suggestion and not something the code settles. Danilo's answers to the
+questions this section first raised are listed at its end, and are written into the sections above.
 
 **How it works today.**
 - **Services:** the renderer builds one `LektorService` per level (`free` Gemini, `thorough` Claude, `fake` the test
@@ -654,22 +706,31 @@ and not something the code settles.
 
 ### 17.1 The engine
 
+**Removed first,** since it shrinks everything after it:
+- **Anthropic direct:** `lektor-claude-ai.ts`, `src/platform/claude-reply-stream.ts`, `askClaude` and the `claude`
+  provider in `lektor-remote.ts`, `LEKTOR_CLAUDE_URL` in `scripts/serve.mjs`, `anthropicKey`, and
+  `lektor-mark-anthropic.svg`.
+- **The test Lektor:** `lektor-fake-ai.ts`, `lektor-fake-setting.ts` (`lektor-test.json`, `FAKE_BEHAVIOURS`), the
+  `fake` level, its Advanced-settings switch, `lektor-mark-test.svg`, and `test/lektor-fake-ai.test.ts`.
+  - The saved real replies (`lektor-test-replies.ts`, `realReply`, `host.realLektorReply`, the dev server's
+    `/lektor-real-reply`) move into the fake network instead (§17.5).
+  - A leftover `lektor-test.json` on a test machine is simply never read again.
+
 **The way out: `src/platform/lektor-remote.ts`**
-- **Provider:** `LektorProvider` gains `'openrouter'`, with `https://openrouter.ai/api/v1` and an `openrouter` entry
-  in `LektorAddresses`. Whether `'claude'` goes is question 2.
+- **Provider:** `LektorProvider` becomes `'gemini' | 'openrouter'`, with `https://openrouter.ai/api/v1` and an
+  `openrouter` entry in `LektorAddresses`.
 - **The balance:** a `'balance'` action that reads `/credits` and `/key` and returns both bodies, so the rule in §9
   is applied in one tested place in the renderer *(guess)*. The OpenRouter key check (`'check'`) is `GET /key`.
 - **Free sends:** `askGemini` POSTs to `/interactions?alt=sse` with `stream: true`, keeping `store: false` and the
-  `Api-Revision` header. A new `src/platform/google-interaction-stream.ts`, shaped like `claude-reply-stream.ts`,
-  reads the stream (parse rules in §16).
+  `Api-Revision` header. A new `src/platform/google-interaction-stream.ts` reads the stream (parse rules in §16).
   - `plainResponse` already parses a non-200 body as JSON whatever its content type, which is what the bare-JSON
     503 and 400 need. Keep it.
 - **Paid sends:** a new `src/platform/openrouter-reply-stream.ts` reads OpenRouter's SSE (§16). Opus gets
-  `reasoning: { effort: "medium" }`, and there's no `provider` object.
-- **Time limit:** `GEMINI_LIMIT_MS` (240 s) and `CLAUDE_LIMIT_MS` (600 s) become one 10-minute send limit.
+  `reasoning: { effort: "medium" }`; Flash gets no reasoning setting; there's no `provider` object.
+- **Time limit:** `GEMINI_LIMIT_MS` (240 s) becomes a 10-minute send limit, for both providers.
 - **Progress, the one real change of shape.** The chain needs "still queued at 1 minute" and "work began", and the
-  wait needs its stages. So `askLektorService` takes an `onProgress` callback, with a discriminated union such as
-  `queued | started(model) | thinking | writing(share)` *(names a guess)*.
+  window's wait needs its stages. So `askLektorService` takes an `onProgress` callback, with a discriminated union
+  such as `queued | started(model) | thinking | writing(share)` *(names a guess)*.
   - **In the app:** the `lektor:request` handler sends `lektor:progress` with the request id over
     `event.sender.send`. `src/hosts/electron/preload-bridge.ts` exposes a listener for it, and
     `src/hosts/electron/browser-entry.ts` routes it by id.
@@ -677,21 +738,22 @@ and not something the code settles.
     *(guess)*. `src/hosts/mockup/browser-entry.ts` reads them.
   - `Host.askLektorService` in `src/platform/host.ts` gains the callback.
 - **Keep as they are:** `LEKTOR_STOPPED`, `LEKTOR_TIMED_OUT`, `LEKTOR_UNREACHED`, the empty-key short-circuit,
-  `ping`, and `lektorRequestFrom` (it only learns the new provider and action).
+  `ping` (now for the keyless internet check, §4), and `lektorRequestFrom` (it only learns the new provider and
+  action).
 
 **The services: `src/ui/lektor/`**
 - **`lektor-service.ts`:**
   - `feedback` and `corrections` return `{ words, model, cost }` in place of a string *(guess)*, so the tier, mark
     and cost come from the model that ran (§3).
-  - `company` becomes `'google' | 'openrouter' | 'nobody'`, for tooltips and the privacy line.
+  - `company` becomes `'google' | 'openrouter'`, for tooltips and the privacy line.
   - `LektorFailure` maps onto §10 as follows:
     - `overloaded` → busy, and it needs a side (free or paid);
     - `limit` → Google's daily limit only;
     - `declined` → content filter;
     - `no-credit` stays;
     - add "money gone after a hand-over" and "text deleted".
-  - `finalSentence` (today it means "no retry") is probably replaced by the offer, which follows from kind, side and
-    keys *(guess)*.
+  - `finalSentence` (today it means "no retry") is replaced by what §10 decides per case: the shortcut, and
+    "Pokušaj ponovo" only for no internet and a cut-off reply.
 - **`lektor-gemini-ai.ts`:** rewrite.
   - `MODEL = 'gemini-3.6-flash'` and its "never a weaker model" comment go.
   - `refusal()` today reads every 429 as the daily cap and spots a bad key by a regex on the message. Read
@@ -700,9 +762,9 @@ and not something the code settles.
   - Add a `codeOf` beside `messageOf` in `lektor-service-call.ts`; `messageOf` already unwraps Google's list.
   - `wordsOf` reads a whole interaction, so it goes once the words come from the stream.
   - Keep the warning on an unrecognised refusal.
-- **`lektor-claude-ai.ts` → a new `lektor-openrouter-ai.ts`:** the refusal kinds come from the status (§2, §16),
-  not from Anthropic's wording (`credit balance` and its friends go). A 404 "No endpoints found" is `log.error`
-  and shown as paid busy. `finish_reason: "length"` means cut off.
+- **A new `lektor-openrouter-ai.ts`,** in place of the Claude one: the refusal kinds come from the status (§2,
+  §16), not from Anthropic's wording. A 404 "No endpoints found" is `log.error` and shown as paid busy.
+  `finish_reason: "length"` means cut off.
   - Keep the reply checks `proposalFrom` and `withHisFilingMarks` in `lektor-instructions.ts` as they are; they
     work on words from any model.
 - **The model chain:** new and pure, in `src/ui/lektor/lektor-model-chain.ts` *(name a guess)*.
@@ -710,12 +772,10 @@ and not something the code settles.
   - It runs §2 and §5, calling `ask` once per model.
   - It sends out the stage events the window's wait draws.
   - Keep it out of the sidebar, which is 1,105 lines already.
-- **The reset time:** `lektor-daily-cap.ts` reads Google's "retry in 15h57m" and "limit: N requests per day", and
-  says no "sutra" on purpose (question 5).
-  - The spec wants the next midnight Pacific in local 24-hour time, with danas or sutra.
-  - `freeResetWords` in `design/lektor-prototype-pieces.ts` is the sketch. Its own comment says it's an hour out
-    on clock-change days: compute the Pacific midnight properly.
-  - `test/lektor-daily-cap.test.ts` tests the old parse and gets rewritten to §11.
+- **The reset time:** `lektor-daily-cap.ts` reads Google's "retry in 15h57m" and "limit: N requests per day".
+  Replace that with the next midnight Pacific as a local 24-hour time, with no day word (§10).
+  `freeResetWords` in `design/lektor-prototype-pieces.ts` does the sum; drop its "danas"/"sutra" and don't fuss over
+  the clock-change days. `test/lektor-daily-cap.test.ts` tests the old parse and gets rewritten to §11.
 - **The balance:** a new `lektor-balance.ts` *(guess)*.
   - It parses both bodies and returns the lower figure, ignoring a `null` `limit_remaining`.
   - On a 403 from `/credits` it falls back to `limit_remaining`; when unreadable it returns `null`.
@@ -725,7 +785,7 @@ and not something the code settles.
 - **The tick box default:** a pure function (paid key, balance) → boolean. The prototype's `paidIfSlowByDefault`
   in `design/lektor-choice-radios.ts` reads prototype state, so write it anew.
 - **Logging:** "Asked a Lektor service" (`electron-main.ts:248`) logs provider, action, model, status, ms and
-  `reply.usage`, and only Claude's reply has `usage`.
+  `reply.usage`, and only Claude's reply had `usage`.
   - Add `cost` (OpenRouter's `usage.cost`) and the model that answered (Google's `interaction.completed.model`) as
     named fields, never the reply.
   - Do the same for the dev server's console line (`scripts/serve.mjs:147`).
@@ -740,40 +800,45 @@ and not something the code settles.
   1. **Bytes → stream readers.** Feed each fixture's `pieces` to `google-interaction-stream.ts` and
      `openrouter-reply-stream.ts` as `Uint8Array` chunks. Do it as recorded, and also split mid-event.
   2. **Scripted `ask` → services and chain.** Build a fake `ask` per model from the fixtures' final responses, plus
-     progress events on a fake clock: "3.8 busy, 3.6 queues 70 s then streams". Put it in
-     `test/lektor-fake-network.ts` *(guess)*. This is the seam §11 means.
+     progress events on a fake clock: "3.8 busy, 3.6 queues 70 s then streams". This is the seam §11 means. The
+     same fake serves the GUI tests (§17.5), so write it once, in `src/hosts/mockup/` *(guess)*, and import it from
+     `test/`.
 - **`test/lektor-claude-route.test.ts`** runs the dev server for real against a local stand-in, through
-  `LEKTOR_CLAUDE_URL`. Do the same with `LEKTOR_GOOGLE_URL` and `LEKTOR_OPENROUTER_URL`, serving fixture bytes at
-  their `atMs`. That also covers the NDJSON route.
+  `LEKTOR_CLAUDE_URL`. Keep the pattern and retarget it: `LEKTOR_GOOGLE_URL` and `LEKTOR_OPENROUTER_URL`, serving
+  fixture bytes at their `atMs`. That also covers the NDJSON route.
 - **`test/lektor-elapsed-time.test.ts`** stays. It already holds a stepped-back clock at zero, but the sidebar feeds
   it `Date.now()` (`readingSince`, `waitingLine`, `correct`), so switch those to `performance.now()`.
 
-### 17.2 Keys, the dead key, no keys
+### 17.2 Keys, the dead key, no keys, offline
 
 - **`lektor-settings.ts`:**
-  - `LektorSettings { googleKey, anthropicKey }` gains `openRouterKey`.
-  - `writeLektorSettings` already lays the new keys over what's in the file, so an old field survives either way.
-  - `RealLevel 'free' | 'thorough'` becomes the choice `'free' | 'paid'`. It's also stored as `level` in kept
-    results (question 13).
+  - `LektorSettings { googleKey, anthropicKey }` becomes `{ googleKey, openRouterKey }`.
+  - `writeLektorSettings` lays what it writes over what's in the file, so a stray `anthropicKey` is left alone and
+    never read.
+  - `RealLevel 'free' | 'thorough'` becomes the choice `'free' | 'paid'`.
 - **The keys screen (sidebar):** `keyScreen`, `keyField`, `saveKeys`, `checkPastedKeys` and `checkOneKey`, with
   `keyNotes` and `isKeyJustSaved` (`words().keyWorks`). Reuse them.
   - **To add:** the labels, "✓ Radi · na računu $X", Nazad at the left of Sačuvaj, and no Nazad without keys.
   - `settleOnLevelWithKey` already does "Plaćeni only without a free key".
-- **The dead key on opening:** today `openSidebar` runs `checkConnection()` (a keyless ping to Google) only when
-  there's no comment, behind the `connecting` and `offline` screens.
-  - Replace it with Google's model list and the balance lookup, run in parallel.
-  - An answer of 400, 401 or 403 gives a new `dead-key` screen (question 4).
+- **Opening (§4):** today `openSidebar` runs `checkConnection()` (a keyless ping) only when there's no comment,
+  behind the `connecting` and `offline` screens. It becomes:
+  - **every opening,** comment or not;
+  - **with keys saved:** Google's model list and the balance lookup, in parallel. No answer at all → `offline`; an
+    answer of 400, 401 or 403 → a new `dead-key` screen;
+  - **with no keys:** the keyless ping, then `offline` or the keys screen.
+  - The `offline` screen keeps its "Pokušaj ponovo" and the `online` listener that re-checks. `connecting` stays as
+    the brief state while the check runs.
+  - A panel already open on the utisak isn't touched when the internet goes.
 - **The dead key on sending:** today `showReadFailure` sends a `bad-key` to the `key` screen with a note. It
   should go to `dead-key` with Nazad instead.
   - The field's "Ovaj ključ više ne radi. Zalepi novi." is a new `keyNotes` value, cleared by a working paste.
-- **Tests:** `test/lektor-settings.test.ts` covers the file, and "has no say over which Lektor he gets" still holds.
-  Three GUI tests cover keys today: "asks for the keys", "with only the free key…" and "with only the paid key…".
-  Rewrite them to §4.
+- **Tests:** `test/lektor-settings.test.ts` covers the file; its test-Lektor-setting tests go. Three GUI tests cover
+  keys today: "asks for the keys", "with only the free key…" and "with only the paid key…". Rewrite them to §4.
 
 ### 17.3 The panel
 
 - **`lektor-sidebar.ts`, the screens:** the `Screen` union becomes:
-  - menu, step 2 (the utisak's Lektor), reading, failed, response, keys and dead-key;
+  - connecting, offline, menu, step 2 (the utisak's Lektor), reading, failed, response, keys and dead-key;
   - "done or failed while another text is open", and "deleted", as states of the request's own text.
   - `correctionsScreen`, `presetChoice` and `correctionsFoot` go to the window.
 - **Split the file** *(guess)*:
@@ -783,29 +848,32 @@ and not something the code settles.
   - the menu: `lektor-menu.ts`;
   - the pictures, from `design/lektor-menu-icons-prototype.ts` (`drawPicture`, `UTISAK_PICTURES`).
 - **Reuse:**
-  - **`waitingLine`:** the clock and `elapsedLine`. Its notes change at the `WAITS` thresholds (`waitLong`,
-    `waitVeryLong`), which the spec doesn't have (question 8).
-  - **`problem()`:** the failure box, with the service's words and `copyMessageButton` (question 6).
+  - **`waitingLine`:** the clock and `elapsedLine`. Its changing notes (the `WAITS` thresholds, `waitLong`,
+    `waitVeryLong`) go: the line stays as the prototype's `commentWaiting` has it.
+  - **`problem()`:** the failure box, with the service's words and `copyMessageButton`, kept on every failure.
   - **`footer()`:** becomes the strip, with Nazad at the left.
   - **`backButton()`:** "← Traži novi utisak".
-  - **`commentHead` and `staleNote`,** with `standingOf` (`lektor-comment-standing.ts`). The note today says how
-    many words changed (`changedSince`), and the spec has a fixed sentence (question 10).
+  - **`commentHead` and `staleNote`,** with `standingOf` (`lektor-comment-standing.ts`), the note keeping its word
+    count (`changedSince`).
+  - **`revealed()`:** the word-by-word reveal stays as it is.
   - **`commentSignature`:** `serviceLine`, `describeWhen` and `aboutAi()`.
     - It needs the cost.
     - The v1 bug: `aboutAi` re-renders and scrolls nothing, so scroll the explanation into view after the render.
   - **`privacyWarning()`:** `privacyWhole(count, recipient)` gets new wording naming both companies, and moves to
     the menu.
+- **What it opens on:** `openSidebar` today goes to `start` for an `outdated` comment. It goes to the utisak
+  whenever there is one. `standingOf` then decides only whether the stale note shows, so its `outdated` and
+  `changed` kinds can become one *(guess)*.
 - **The marks:** `lektor-service-mark.ts` maps `free`, `thorough` and `fake` to the company SVGs (copied by
   `scripts/build.mjs:143`). It becomes the three tiers with Lucide line marks and §3's colours, as `markOf` in the
   prototype draws them.
-  - The trademark comment and the SVG files go when nothing uses them.
+  - The trademark comment and the SVG files go.
 - **The title line:** `titleFrom` (`src/notes/note-title.ts:37`) and nothing else, then:
   - strip his outer quotes;
   - cut at a word with "…";
   - "bez naslova" when empty.
-  
+
   A small pure function with its own tests. `titleFrom`'s `\s` doesn't catch every control character: test it.
-- **The reveal:** `revealed()` plays a finished comment word by word over 10 s (`REVEAL_MS`). See question 9.
 - **Another text:** today `openTextChanged` → `settleWhatWasUnderway` → `stopWorking()` cancels the reading. §6
   wants the opposite.
   - The `states` Map already holds one state per text, and `working` is already one request at a time.
@@ -817,13 +885,15 @@ and not something the code settles.
   2, not start/response.
 - **Every choice starts on Besplatni:** today `level` lives in `createLektor` and holds while the app is open (the
   comment at line 171). Reset it on each step 2 and on "Traži novi utisak".
-- **Tests:** `lektor-comment-standing.test.ts` stays. The GUI tests on sittings and stale notes (lines 194–266)
-  follow question 10.
+- **After the window:** `finishWithReview` closes the panel. It goes; the panel stays on the screen the window was
+  opened from.
+- **Tests:** `lektor-comment-standing.test.ts` stays, less its "outdated opens on the first step" cases if the kinds
+  merge. The GUI tests on sittings and stale notes (lines 194–266) change to "always opens on the utisak".
 
 ### 17.4 The corrections window
 
 - **One modal with two sides,** in a new `lektor-corrections-window.ts` *(guess)*.
-  - The left side has the kinds. The right side shows nothing picked, the cards, the void line, the request, the
+  - The left side has the kinds. The right side shows nothing picked, the card, the void line, the request, the
     wait, a failure, or the review.
   - Lay it out as `design/lektor-corrections-window-prototype.ts` does.
   - `correct()` and `showCorrectionFailure()` leave the sidebar.
@@ -834,87 +904,73 @@ and not something the code settles.
     `leaveCancel`, picked by `review.hasDecisions()`. §7's wording is already there.
 - **Change in the review:** today's footer is the footer note, then "Unesi sve izmene u tekst", then Zatvori. It
   becomes "← Nazad", solid "Unesi" and Zatvori. The header line moves into `withKind` and its service line.
-- **Reuse as they are:**
-  - `showAsModal`, `titleOf`, `PRESET_ORDER`;
-  - `PRESET_PROMPTS` for the read-only instruction (question 15);
-  - `parts.applyCorrections`, which keeps a version first, and `withEndingOf`.
-- **Cards and void suggestions: `lektor-kept-results.ts`.**
-  - **Matching:** `KeptProposal { preset, level, note, proposed, model }`. `savedCorrections` matches on preset,
-    level and note, and `withCorrections` keeps one per preset and level.
+- **The instruction shown:** today the box shows `PRESET_PROMPTS[preset]` only, and `CORRECTION_RULES` and
+  `REWRITE_RULES` stay hidden. Show what `correctionInstruction` sends, less his note, which is in its own box below.
+- **Reuse as they are:** `showAsModal`, `titleOf`, `PRESET_ORDER`, `PRESET_PROMPTS`, `parts.applyCorrections` (which
+  keeps a version first), and `withEndingOf`.
+- **The card and the void line: `lektor-kept-results.ts`.**
+  - **Matching goes:** one set per kind, the latest. `savedCorrections` drops the level and the note from the match
+    (`isSameChoice`), and `withCorrections` replaces by `preset` alone.
   - **To add:** `madeAt` (for "od pre 3 dana") and `cost` (for "plaćeno $0,48"). The tier comes from `model`.
   - **The void line** is `proposals.length > 0 && !isSameText(text, proposalsFor)`, which today's data already
     supports. `isSameText` is the trailing-whitespace rule the spec asks for.
   - **"Prošli put za ovaj tekst: $X"** must outlive a new set and a changed text, so it's a field of its own, such
     as the last paid cost per kind *(guess)*.
-  - **Older files:** `keptResultsFrom` must accept them without the new fields.
-- **Tests:** `test/lektor-kept-results.test.ts` covers matching, replacing and dropping; add the new fields and the
-  void rule. GUI test "shows corrections already made…" (line 146) and the review tests (lines 293, 327) carry over,
+  - **Older files:** `keptResultsFrom` must accept them without the new fields. An old file with two sets of one
+    kind keeps the later one.
+- **Tests:** `test/lektor-kept-results.test.ts` covers matching, replacing and dropping. Its "stand side by side for
+  each kind and each Lektor" and the note-matching tests become "one per kind"; add the new fields and the void
+  rule. GUI test "shows corrections already made…" (line 146) and the review tests (lines 293, 327) carry over,
   reached through the window.
 
-### 17.5 GUI tests
+### 17.5 GUI tests and the fake network
 
 - **Today:** `test-gui/lektor.spec.ts` turns on the test Lektor by writing `Podaci/lektor-test.json` into the mock
-  store (`withTestLektor`). It counts `**/lektor-ai` requests and aborts them. Keep that counter as the guard.
-- **Where the fixture fakes plug in:**
-  - **`page.route('**/lektor-ai')` fulfilled from fixtures:** simple, and enough for refusals and keys. But a
-    fulfil hands over the whole body at once, so it can't act out a queue, the 1- and 2-minute steps, or a
-    hand-over.
-  - **For timing:** a fake `ask` in the browser build, chosen like the test Lektor, replaying the scripted
-    progress on timers that `page.clock` drives (`install` and then `pauseAt`, as DESIGN.md says) *(guess)*.
-    Question 3 decides whether that is the test Lektor itself.
+  store (`withTestLektor`). It counts `**/lektor-ai` requests and aborts them. Keep that counter as the guard; the
+  test Lektor goes.
+- **The fake network** *(guess on where and how)*: a fake `ask` in `src/hosts/mockup/`, so it's in the browser
+  build only and the installed app can't contain it. `test/boundaries.test.ts` already keeps `hosts/electron` from
+  importing `hosts/mockup`, and keeps Node out of the mock host, so the fake can have no `node:` imports.
+  - It replays the fixture-built scripts (§17.1) on timers that `page.clock` drives (`install` and then `pauseAt`,
+    as DESIGN.md says), so a queue, the 1- and 2-minute steps and a hand-over can be acted out.
+  - A GUI test picks its script by name, written into the mock store the way `withTestLektor` does today.
+  - `page.route('**/lektor-ai')` can't do this alone: a fulfil hands over the whole body at once.
+- **The saved real replies go into it.** A correction request for a text whose title matches a sample is answered
+  with that sample's saved reply, as if Opus had sent it. Use today's title rule (`savedTestReply`) and today's
+  sources: the dev server reads `testdata/diff-samples/`, which is gitignored and stays private.
+  - Keep the `[SAVED OPUS CORRECTIONS]` mark under the title, so a saved reply can't pass for a fresh one.
+  - In the packaged app this is gone, with the rest of the test Lektor. Trying the review on what Opus really sends
+    happens in the browser build.
 
 ### 17.6 Documents
 
-- **DESIGN.md:** the changes in §12, in its "AI Lektor" section, and the `lektor.json` row (two keys). "Testing"
-  names `test-gui/lektor.spec.ts` and the test Lektor.
-- **`HANDOFF-AI-LEKTOR.md`:** describes the old step 1 ("Google: besplatan…", "Anthropic: plaćen…"). It says it can
-  go once that work is merged; its "Where things live" table is still right today.
+- **DESIGN.md:** the changes in §12, in its "AI Lektor" section, and the `lektor.json` row (Google's and
+  OpenRouter's keys). Remove the `lektor-test.json` row. "Testing" names `test-gui/lektor.spec.ts` and the test
+  Lektor; it becomes the fake network.
+- **`HANDOFF-AI-LEKTOR.md`:** describes the old step 1 ("Google: besplatan…", "Anthropic: plaćen…") and the test
+  Lektor. It says it can go once that work is merged; its "Where things live" table is still right today.
 
-### Questions for Danilo
+### Decided with Danilo, 2026-11-11
 
-1. **The branch.** §1 says to build on a new branch from `main`, but `main` has no Lektor. It's only in
-   `ai-lektor` → `rewrite-review` → `change-choices`, which `lektor-openrouter` contains. Branch from
-   `lektor-openrouter` (or `change-choices`) instead? And does the merge order in `HANDOFF-AI-LEKTOR.md` still
-   stand?
-2. **Anthropic direct.** Remove the `claude` provider, `lektor-claude-ai.ts`, `claude-reply-stream.ts`,
-   `anthropicKey` and the Anthropic mark, or keep them as an unused path?
-3. **The test Lektor ("Probni")** isn't in the spec. Today it's a third Lektor with a mark of its own,
-   `FAKE_BEHAVIOURS`, and saved Opus replies (`[SAVED OPUS CORRECTIONS]`).
-   - Does it stay as a third choice in the new choice piece?
-   - Should it move down to the `ask` seam, so it acts out the chain, the queue and the hand-over?
-   - Its behaviours have none of the new cases.
-4. **Opening the panel** runs a keyless ping today and can show "connecting" and "offline" screens. The spec has
-   the dead-key check on opening, and "no internet" only as a send failure. Does the ping and its screens go?
-5. **The daily-limit time.** The code reads Google's own "retry in …" and avoids "sutra" on purpose (said at 1 a.m.
-   it names the wrong day). The spec computes midnight Pacific with danas or sutra. Is that the spec's to win? And if
-   a real 429 turns out to carry a reset time ([unverified]), should it be used?
-6. **The service's own words** small and grey under a failure, with "Kopiraj poruku" (DESIGN.md "Errors"): the
-   failure table doesn't mention them. Keep them on every failure screen?
-7. **"Pokušaj ponovo"** is on the panel's failure, the window's failure and the offline screen today. The spec says
-   there's none anywhere. Confirm, including offline.
-8. **The wait's changing note** (`waitLong` and `waitVeryLong` at per-Lektor thresholds) against the spec's fixed
-   lines. Drop the changing note?
-9. **The utisak's word-by-word reveal** (10 s; a click shows it all). Keep it, show the streamed words as they come,
-   or show it whole?
-10. **Where the panel opens when a comment exists.** DESIGN.md: on the comment, or on step 1 when it's outdated. In
-    the spec, step 1 is the menu.
-    - Current comment → the utisak?
-    - Outdated → the menu, or step 2?
-    - And does the stale note keep its word count, or become the fixed "Tekst promenjen posle utiska"?
-11. **After the review** the sidebar closes today, taken or not (DESIGN.md "After the review"). The spec doesn't
-    say. Keep it?
-12. **Cards: "up to two".** Rework can have three tiers: free Flash, a handed-over paid Flash, and Opus. Which two
-    show? Also, today a kept set matches only the same note. Does a card show whatever note it was made with?
-13. **"One per kind and Lektor"** in kept results: is the Lektor the tier that ran? Then a handed-over set replaces
-    an earlier paid Flash set, and the free one stays. Old kept `level: 'thorough'` sets, on test machines only:
-    read as Opus, or dropped?
-14. **Paid Flash settings:** effort is given only for Opus. Any `reasoning` for paid Flash, or for the free calls?
-15. **"Za ovu vrstu ispravke"** shows "the app's whole English instruction": only `PRESET_PROMPTS` as today, or also
-    the hidden `CORRECTION_RULES` and `REWRITE_RULES`?
-16. **English.** `lektor-wording.ts` has English for every string, and the mockup has Serbian only. Who writes the
-    English for the new screens?
-17. **Not in the spec, so kept as is unless you say:**
-    - the 10-word minimum (`FEWEST_WORDS`, the opener greyed with "Tekst je prekratak…");
-    - the opener labelled "Lektor", where the spec says "AI Lektor".
-18. **The panel behind the window.** What does it show while the window is open from the menu, and after the
-    window closes?
+The questions this section raised, and his answers. Each is also written where it applies above.
+
+1. **Branch:** build on `lektor-openrouter`, not from `main`.
+2. **Anthropic direct:** removed.
+3. **The test Lektor:** removed. The saved real replies move into the fake network (§17.5).
+4. **Opening:** the key checks double as the internet check; with no keys, a keyless check. An offline screen with
+   "Pokušaj ponovo" comes first, over a kept utisak too. No extra work to read a utisak offline, but a panel
+   already open on it stays.
+5. **The reset time:** a local 24-hour time with no "danas"/"sutra"; clock-change days aren't worth code.
+6. **The service's own words** with "Kopiraj poruku": kept, small and grey.
+7. **"Pokušaj ponovo":** only where it may work: no internet and a cut-off reply.
+8. **The wait's line:** as the prototype has it now, fixed, whatever the spec said. The app's changing note goes.
+9. **The word-by-word reveal:** kept.
+10. **Opening on a comment:** always the utisak. The stale note keeps its word count.
+11. **After the review:** the panel stays open, where the window was opened from.
+12. **Cards:** one, the latest set of the kind.
+13. **Kept sets:** one per kind, the latest; a cheaper re-run replacing a paid set is accepted.
+14. **Effort:** Opus at medium as tested; Flash, free and paid, at each service's default.
+15. **The instruction shown:** the whole English instruction sent to the model, rules included.
+16. **English wording:** translated by whoever builds it; Danilo may review it.
+17. **Kept as they are:** the 10-word minimum, and the opener labelled "Lektor".
+18. **The panel behind the window:** where it was; it stays there after the window closes.
