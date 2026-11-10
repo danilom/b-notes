@@ -478,6 +478,18 @@ export const ISPRAVKE_MINI: MenuPicture = {
 };
 
 /**
+ * The mini page with its lines as light as the menu picture's appear on screen, seated in a button at
+ * about 25 pixels (Danilo, 2026-11-10): there the picture's outline shows 1.67 px and its ž 2.0 px.
+ */
+export const ISPRAVKE_MINI_LIGHT: MenuPicture = {
+  label: 'mala strana, samo ž, tanje linije',
+  shapes: [
+    shape('rect', 'ic-paper ic-mini-light', { x: 9, y: 3, width: 30, height: 42, rx: 4 }),
+    shape('path', 'ic-red-line ic-mini-light-red', { d: 'M18.5 23h11l-11 11h11M20.5 13.5l3.5 3.2 3.5-3.2' }),
+  ],
+};
+
+/**
  * @param viewBox The part of the 48×48 drawing to show: all of it, or a crop, as the button's page top.
  */
 export function drawPicture(picture: MenuPicture, className: string, colours: PictureColours = 'colour', viewBox = '0 0 48 48'): SVGSVGElement {
