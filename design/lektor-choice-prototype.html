@@ -179,7 +179,20 @@
         the menu. The button keeps its height; the words make room at the left.
       */
       /* Within the strip: lektor.css's .lektor-side-buttons .status-action sets its own padding and would win. */
-      .lektor-side-buttons .lektor-to-corrections {
+      /* The line ž-page: a button's icon like any other, before the word, a little larger than the app's. */
+      .lektor-side-buttons .lektor-to-corrections:has(.lektor-to-corrections-line) {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45em;
+      }
+
+      .lektor-to-corrections .lektor-to-corrections-line {
+        flex: none;
+        width: 1.35em;
+        height: 1.35em;
+      }
+
+      .lektor-side-buttons .lektor-to-corrections:has(.lektor-to-corrections-icon) {
         /*
           As far from the button's left edge as from its top (Danilo, 2026-11-10): the same inset set on
           both sides, the picture's height whatever the button leaves under it, its width from its shape

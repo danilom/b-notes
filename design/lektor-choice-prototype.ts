@@ -13,7 +13,7 @@ import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
 import { commentFailure, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
 import { ISPRAVKE_PICTURES, UTISAK_PICTURES, drawPicture } from './lektor-menu-icons-prototype.ts';
-import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, button, dollars, el, element, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
+import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, button, dollars, el, element, lineIcon, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
 
 /** The menu, then the utisak's own step ('start': who writes it), its wait or failure, the utisak; and the keys. */
 type Screen = 'menu' | 'start' | 'waiting' | 'failed' | 'response' | 'keys';
@@ -281,10 +281,24 @@ function responseScreen(): Step {
   // and drawn as the menu's card, so he knows it for the same. The ellipsis is Windows' sign that a
   // window opens and asks more; no arrow, like every button in the app that opens a window.
   const toCorrections = button('Ispravke…', () => openCorrectionsWindow(), 'status-action lektor-to-corrections');
-  // Only the page's top, its ž and the first line (Danilo, 2026-11-10): at a button's height the whole
-  // page was too small to read; cut off, it can be drawn bigger and sit on the button's lower edge.
-  toCorrections.prepend(drawPicture(ISPRAVKE_PICTURES['page-z-caron'], 'lektor-to-corrections-icon', 'colour', '6 2 34 33'));
+  toCorrections.prepend(correctionsButtonIcon());
   return { content: [head, comment, signature], main: toCorrections };
+}
+
+/*
+  The mark on "Ispravke…", two to compare (His screens' "Ikonica na Ispravke…"): the menu's coloured
+  page, most of it, standing on the button's lower edge; or a ž on a page drawn in the app's own line,
+  a button's icon like any other (Danilo, 2026-11-10: "just ž on a page, in the style of the old one").
+*/
+type CorrectionsButtonIcon = 'line' | 'picture';
+let correctionsButtonIconKind: CorrectionsButtonIcon = 'line';
+
+/** A page with a ž on it, in Lucide's line: the page's outline, its folded corner, the letter and its háček. */
+const PAGE_Z_LINE = ['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z', 'M14 2v6h6', 'M8.5 12.5h6l-6 6h6', 'M9.5 8.8l2 1.6 2-1.6'];
+
+function correctionsButtonIcon(): SVGSVGElement {
+  if (correctionsButtonIconKind === 'line') return lineIcon(PAGE_Z_LINE, ['lektor-to-corrections-line']);
+  return drawPicture(ISPRAVKE_PICTURES['page-z-caron'], 'lektor-to-corrections-icon', 'colour', '6 2 34 33');
 }
 
 /*
@@ -507,6 +521,15 @@ const CONTROLS: readonly PrototypeControl[] = [
   },
   { id: 'stale', label: 'Tekst promenjen posle utiska', value: false },
   {
+    id: 'corrections-icon',
+    label: 'Ikonica na Ispravke…',
+    options: [
+      { value: 'line', label: 'ž na strani, linijom' },
+      { value: 'picture', label: 'crtež strane, u boji' },
+    ],
+    value: 'line',
+  },
+  {
     id: 'comment-title',
     label: 'Naslov teksta (uvod utiska)',
     options: [
@@ -649,6 +672,7 @@ const ODD_TITLES: Readonly<Record<string, string>> = {
 function setControl(id: string, value: string | boolean): void {
   if (id === 'screen') setScreen(value);
   if (id === 'stale') isCommentStale = value === true;
+  if (id === 'corrections-icon') correctionsButtonIconKind = value === 'picture' ? 'picture' : 'line';
   if (id === 'comment-title' && typeof value === 'string') commentTextTitle = ODD_TITLES[value] ?? TEXT_TITLE;
   if (id === 'free-key') keys.saved.free = value === true;
   if (id === 'paid-key') keys.saved.paid = value === true;
