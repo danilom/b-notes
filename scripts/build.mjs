@@ -102,6 +102,14 @@ const targets = [
     platform: 'browser',
     format: 'iife',
   },
+  {
+    // A page for choosing the marks of the Lektor's three tiers. Into dist-browser/ only, like the ones above.
+    ...shared,
+    entryPoints: ['design/lektor-tier-marks.ts'],
+    outfile: 'dist-browser/lektor-tier-marks.js',
+    platform: 'browser',
+    format: 'iife',
+  },
 ];
 
 await mkdir('dist', { recursive: true });

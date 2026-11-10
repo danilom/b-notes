@@ -35,6 +35,7 @@ const TOOL_PAGES = new Map([
   ['diff-prototype', 'design/diff-prototype.html'],
   ['lektor-choice-prototype', 'design/lektor-choice-prototype.html'],
   ['lektor-menu-pictures', 'design/lektor-menu-pictures.html'],
+  ['lektor-tier-marks', 'design/lektor-tier-marks.html'],
 ]);
 
 /*

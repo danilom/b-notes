@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="sr" data-mode="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lektor: znaci za lektore</title>
+    <link rel="icon" href="/icon.svg" />
+    <!--
+      Choosing the marks of the Lektor's three tiers: not part of the app, built into dist-browser/
+      only. The app's stylesheet for its colours and fonts; the rest drawn here as the prototype draws it.
+    -->
+    <link rel="stylesheet" href="/interface.css" />
+    <style>
+      html,
+      body {
+        height: auto;
+      }
+
+      body {
+        display: block;
+        margin: 0;
+        padding: 1rem 1.5rem 2rem;
+        background: var(--page);
+        color: var(--ink);
+        font-family: var(--ui-font);
+      }
+
+      .sheet-bar {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem 1.5rem;
+        padding: 0.6rem 0;
+        background: var(--page);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .sheet-bar h1 {
+        margin: 0 1rem 0 0;
+        font-size: 1.1rem;
+      }
+
+      .sheet-control select {
+        margin-left: 0.3rem;
+        font: inherit;
+      }
+
+      .tier-set h2 {
+        margin: 1.8rem 0 0.6rem;
+        font-size: 1rem;
+      }
+
+      /* The tiers' colours: the free one the app's blue, paid the coin's gold, as in the prototype. */
+      .tier-mark {
+        flex: none;
+        width: 1.05em;
+        height: 1.05em;
+      }
+
+      .tier-mark-free {
+        color: #3380d6;
+      }
+
+      .tier-mark-flash {
+        color: #a87412;
+      }
+
+      .tier-mark.opus-gold,
+      .tier-mark.opus-gold-filled {
+        color: #a87412;
+      }
+
+      .tier-mark.opus-bronze {
+        color: #7d4f0c;
+      }
+
+      .tier-mark.opus-copper {
+        color: #b0501e;
+      }
+
+      .tier-mark.opus-purple,
+      .tier-mark.opus-purple-filled {
+        color: #7b4bc4;
+      }
+
+      .tier-mark.opus-gold-filled .tier-body {
+        fill: #f2d48a;
+      }
+
+      .tier-mark.opus-purple-filled .tier-body {
+        fill: #ddccf5;
+      }
+
+      .tier-big {
+        display: flex;
+        gap: 2rem;
+      }
+
+      .tier-big-one {
+        margin: 0;
+        text-align: center;
+        font-size: 0.85rem;
+        color: var(--quiet);
+      }
+
+      .tier-big-one .tier-mark {
+        width: 64px;
+        height: 64px;
+        display: block;
+        margin: 0 auto 0.3rem;
+      }
+
+      .tier-grounds {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        margin-top: 1rem;
+      }
+
+      /* The window's white and the panel's grey, as the app has them. */
+      .tier-ground-white {
+        background: var(--page);
+      }
+
+      .tier-ground-grey {
+        background: var(--panel);
+      }
+
+      /* As wide as the window's choice on his Asus; the panel's case inside it as narrow as the panel. */
+      .tier-ground {
+        width: 540px;
+        padding: 0.8rem 1rem;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        font-size: 16.5px;
+      }
+
+      .tier-ground-name {
+        margin: 0 0 0.6rem;
+        font-size: 0.75rem;
+        color: var(--quiet);
+      }
+
+      .tier-case-panel {
+        max-width: 351px;
+      }
+
+      .tier-case + .tier-case {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--line);
+      }
+
+      .tier-heading {
+        margin: 0 0 0.3rem;
+        font-weight: 700;
+      }
+
+      .tier-choice,
+      .tier-check {
+        display: grid;
+        grid-template-columns: auto auto 1fr;
+        align-items: center;
+        column-gap: 0.45em;
+        row-gap: 0.2rem;
+        padding: 0.4rem 0;
+      }
+
+      .tier-words {
+        min-width: 0;
+      }
+
+      .tier-choice input,
+      .tier-check input {
+        margin: 0 0.3em 0 0;
+      }
+
+      .tier-aside {
+        font-size: 0.85em;
+        color: var(--quiet);
+      }
+
+      .tier-aside::before {
+        content: '· ';
+      }
+
+      /* Under the name, a line of its own, set in past the radio and the mark. */
+      .tier-balance,
+      .tier-check-note {
+        grid-column: 3;
+        font-size: 0.85em;
+        color: var(--quiet);
+      }
+
+      .tier-service {
+        display: flex;
+        align-items: center;
+        gap: 0.3em;
+        margin: 0.4rem 0;
+      }
+
+      /* The app's solid button, the mark in the button's own white. */
+      .tier-send {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45em;
+        margin-top: 0.5rem;
+        padding: 0.5rem 1rem;
+        font: inherit;
+        color: white;
+        background: hsl(var(--accent-h) var(--accent-s) 45%);
+        border: none;
+        border-radius: 4px;
+      }
+
+      .tier-send .tier-mark,
+      .tier-send .tier-mark.tier-mark {
+        color: inherit;
+      }
+
+      .tier-send .tier-body {
+        fill: none;
+      }
+
+      .tier-send svg {
+        opacity: 1;
+        color: white;
+      }
+
+      .tier-send svg:last-child {
+        width: 1.05em;
+        height: 1.05em;
+      }
+
+      .tier-sheet {
+        border-collapse: collapse;
+        font-size: 0.85rem;
+      }
+
+      .tier-sheet th,
+      .tier-sheet td {
+        padding: 0.4rem 0.6rem;
+        border: 1px solid var(--line);
+        text-align: left;
+        vertical-align: middle;
+      }
+
+      .tier-strip {
+        display: inline-flex;
+        gap: 0.4rem;
+        padding: 0.3rem 0.45rem;
+        font-size: 17px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sheet-bar">
+      <h1>Znaci za lektore</h1>
+      <div id="sheet-controls"></div>
+    </div>
+    <main id="tier-sheet"></main>
+    <script src="/lektor-tier-marks.js"></script>
+  </body>
+</html>
