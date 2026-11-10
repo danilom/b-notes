@@ -5,6 +5,7 @@
   in every colour. Light or dark as the app's own switch sets it.
 */
 import {
+  ISPRAVKE_MINI,
   ISPRAVKE_PICTURES,
   type MenuPicture,
   PICTURE_COLOURS,
@@ -99,6 +100,7 @@ function buttonPreviews(): HTMLElement {
   const picture = pictureOf('ispravke');
   const colours = chosen.ispravke.colours;
   const candidates: readonly [string, () => SVGSVGElement, string][] = [
+    [ISPRAVKE_MINI.label, () => drawPicture(ISPRAVKE_MINI, 'sheet-button-mini', colours), ''],
     ['vrh strane, u boji', () => drawPicture(picture, 'sheet-button-page-top', colours, '6 2 34 33'), 'sheet-button-with-top'],
     ['cela slika, mala', () => drawPicture(picture, 'sheet-button-icon', colours), ''],
     ['ž na strani, linijom', () => drawLinePageZ('sheet-button-icon'), ''],

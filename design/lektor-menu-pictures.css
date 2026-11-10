@@ -99,3 +99,5 @@
 :root[data-mode='dark'] .lektor-picture-mono-ochre { --mono: #e0b45a; }
 :root[data-mode='dark'] .lektor-picture-mono-teal { --mono: #6cc7c0; }
 .lektor-picture .ic-red-thin { fill: none; stroke: var(--ic-red); stroke-width: 1.3; stroke-dasharray: 2 2.4; }
+.lektor-picture .ic-heavy { stroke-width: 3.2; }
+.lektor-picture .ic-heavy-red { stroke-width: 4.4; }

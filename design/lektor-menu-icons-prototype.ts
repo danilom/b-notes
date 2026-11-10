@@ -461,6 +461,19 @@ export const isPictureColours = (value: unknown): value is PictureColours => typ
 
 /** A picture as an SVG, its parts classed for colour, at the size the class gives it. */
 /**
+ * The ž page's own small version, for "Ispravke…" (Danilo, 2026-11-10): the same page in the same
+ * colours, whole, but nothing on it except one big red ž in the middle; its lines and caret would be
+ * crumbs at a button's size. Drawn heavier than the menu's, so it holds at about 24 pixels.
+ */
+export const ISPRAVKE_MINI: MenuPicture = {
+  label: 'mala strana, samo veliko ž',
+  shapes: [
+    shape('rect', 'ic-paper ic-heavy', { x: 9, y: 3, width: 30, height: 42, rx: 4 }),
+    shape('path', 'ic-red-line ic-heavy-red', { d: 'M16.5 21h15l-15 15h15M18.5 9.5l5.5 5 5.5-5' }),
+  ],
+};
+
+/**
  * A ž on a page in the app's own line (Lucide's 24×24, stroke 2, the button's ink), for "Ispravke…"
  * where a picture is too big (Danilo, 2026-11-10): the page's outline and folded corner, then the ž,
  * which may be the corrections' red.
@@ -498,7 +511,8 @@ export function drawPicture(picture: MenuPicture, className: string, colours: Pi
   for (const part of picture.shapes) {
     const made = document.createElementNS('http://www.w3.org/2000/svg', part.tag);
     for (const [name, value] of Object.entries(part.attrs)) made.setAttribute(name, String(value));
-    made.classList.add(part.part);
+    // A part may carry more than one class ("ic-paper ic-heavy"), space-separated.
+    made.classList.add(...part.part.split(' '));
     svg.append(made);
   }
   return svg;
