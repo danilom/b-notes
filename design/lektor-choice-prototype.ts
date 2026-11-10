@@ -12,7 +12,7 @@ import { type WindowCase, corrections, openCorrectionsWindow, openCorrectionsWin
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
 import { commentFailure, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
-import { ISPRAVKE_PICTURES, type IspravkePicture, UTISAK_PICTURES, type UtisakPicture, drawPicture } from './lektor-menu-icons-prototype.ts';
+import { ISPRAVKE_PICTURES, type IspravkePicture, type PictureColours, UTISAK_PICTURES, type UtisakPicture, drawPicture } from './lektor-menu-icons-prototype.ts';
 import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, button, dollars, el, element, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
 
 /** The menu, then the utisak's own step ('start': who writes it), its wait or failure, the utisak; and the keys. */
@@ -84,13 +84,16 @@ let ispravkePicture: IspravkePicture | 'none' = 'red-pencil';
 const isUtisakPicture = (value: string | boolean): value is UtisakPicture => typeof value === 'string' && Object.hasOwn(UTISAK_PICTURES, value);
 const isIspravkePicture = (value: string | boolean): value is IspravkePicture => typeof value === 'string' && Object.hasOwn(ISPRAVKE_PICTURES, value);
 
+/** In colour, or in one colour, for both pictures alike (His screens' "Boje slika"). */
+let pictureColours: PictureColours = 'colour';
+
 function utisakIcon(className: string): SVGSVGElement[] {
-  return utisakPicture === 'none' ? [] : [drawPicture(UTISAK_PICTURES[utisakPicture], className)];
+  return utisakPicture === 'none' ? [] : [drawPicture(UTISAK_PICTURES[utisakPicture], className, pictureColours)];
 }
 
 /** The corrections' picture at this size, or nothing when the switch says none. */
 function ispravkeIcon(className: string): SVGSVGElement[] {
-  return ispravkePicture === 'none' ? [] : [drawPicture(ISPRAVKE_PICTURES[ispravkePicture], className)];
+  return ispravkePicture === 'none' ? [] : [drawPicture(ISPRAVKE_PICTURES[ispravkePicture], className, pictureColours)];
 }
 
 /** One of the menu's two choices: a big target, its name and a sentence on what it does, and its icon if on. */
@@ -492,6 +495,17 @@ const CONTROLS: readonly PrototypeControl[] = [
     options: [{ value: 'none', label: 'bez slike' }, ...Object.entries(ISPRAVKE_PICTURES).map(([value, picture]) => ({ value, label: picture.label }))],
     value: 'red-pencil',
   },
+  {
+    id: 'picture-colours',
+    label: 'Boje slika',
+    options: [
+      { value: 'colour', label: 'šarene' },
+      { value: 'blue', label: 'jednobojne: plava (Lektorova)' },
+      { value: 'grey', label: 'jednobojne: tamnosiva' },
+      { value: 'warm', label: 'jednobojne: cigla' },
+    ],
+    value: 'colour',
+  },
   { id: 'stale', label: 'Tekst promenjen posle utiska', value: false },
   {
     id: 'comment-title',
@@ -638,6 +652,7 @@ function setControl(id: string, value: string | boolean): void {
   if (id === 'stale') isCommentStale = value === true;
   if (id === 'utisak-picture') utisakPicture = isUtisakPicture(value) ? value : 'none';
   if (id === 'ispravke-picture') ispravkePicture = isIspravkePicture(value) ? value : 'none';
+  if (id === 'picture-colours') pictureColours = value === 'blue' || value === 'grey' || value === 'warm' ? value : 'colour';
   if (id === 'comment-title' && typeof value === 'string') commentTextTitle = ODD_TITLES[value] ?? TEXT_TITLE;
   if (id === 'free-key') keys.saved.free = value === true;
   if (id === 'paid-key') keys.saved.paid = value === true;

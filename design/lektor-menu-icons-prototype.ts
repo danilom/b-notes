@@ -114,12 +114,16 @@ export const ISPRAVKE_PICTURES = {
 export type UtisakPicture = keyof typeof UTISAK_PICTURES;
 export type IspravkePicture = keyof typeof ISPRAVKE_PICTURES;
 
+/** In colour, or in one: the Lektor's blue, the text's ink, or a warm brick red. */
+export type PictureColours = 'colour' | 'blue' | 'grey' | 'warm';
+
 /** A picture as an SVG, its parts classed for colour, at the size the class gives it. */
-export function drawPicture(picture: MenuPicture, className: string): SVGSVGElement {
+export function drawPicture(picture: MenuPicture, className: string, colours: PictureColours = 'colour'): SVGSVGElement {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 48 48');
   svg.setAttribute('aria-hidden', 'true');
   svg.classList.add('lektor-picture', className);
+  if (colours !== 'colour') svg.classList.add('lektor-picture-mono', `lektor-picture-mono-${colours}`);
   for (const part of picture.shapes) {
     const made = document.createElementNS('http://www.w3.org/2000/svg', part.tag);
     for (const [name, value] of Object.entries(part.attrs)) made.setAttribute(name, String(value));

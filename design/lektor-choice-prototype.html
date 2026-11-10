@@ -114,11 +114,14 @@
         align-items: center;
       }
 
-      /* Big, so the picture holds its own beside the privacy warning's weight. */
+      /*
+        Big, so the picture holds its own beside the privacy warning's weight; no bigger, or the
+        Utisak sentence wraps on his Asus (it needs 269px; at 2.8rem it had 262).
+      */
       .lektor-menu-icon {
         grid-row: span 2;
-        width: 2.8rem;
-        height: 2.8rem;
+        width: 2.3rem;
+        height: 2.3rem;
       }
 
       .lektor-to-corrections-icon {
@@ -176,6 +179,38 @@
       .lektor-picture .ic-shine { fill: none; stroke: #fff; stroke-width: 1.6; }
       .lektor-picture .ic-red-line { fill: none; stroke: var(--ic-red); stroke-width: 2.4; }
       .lektor-picture .ic-white-line { fill: none; stroke: #fff; stroke-width: 2.6; }
+
+      /*
+        New, to compare: the same pictures in one colour (His screens' "Boje slika"): its outline in
+        that colour, every fill a light wash of it, the highlights left white. Last, so it wins.
+      */
+      .lektor-picture.lektor-picture-mono * {
+        stroke: var(--mono);
+      }
+
+      .lektor-picture.lektor-picture-mono :is(.ic-paper, .ic-red, .ic-yellow, .ic-blue, .ic-lens, .ic-pink, .ic-green, .ic-wood, .ic-dark) {
+        fill: color-mix(in srgb, var(--mono) 16%, var(--page));
+      }
+
+      /* What was a colour of its own stands out a little more than the paper around it. */
+      .lektor-picture.lektor-picture-mono :is(.ic-red, .ic-green, .ic-dark, .ic-blue) {
+        fill: color-mix(in srgb, var(--mono) 38%, var(--page));
+      }
+
+      .lektor-picture.lektor-picture-mono :is(.ic-handle, .ic-brown, .ic-steam, .ic-red-line) {
+        stroke: var(--mono);
+      }
+
+      .lektor-picture.lektor-picture-mono .ic-white-line,
+      .lektor-picture.lektor-picture-mono .ic-shine {
+        stroke: var(--page);
+      }
+
+      .lektor-picture-mono-blue { --mono: var(--chosen-ink); }
+      .lektor-picture-mono-grey { --mono: var(--ink); }
+      .lektor-picture-mono-warm { --mono: #b65a3c; }
+
+      :root[data-mode='dark'] .lektor-picture-mono-warm { --mono: #e08e6d; }
 
       /* The corrections' mark on "Pređi na ispravke…", before the words, as the menu has it before its name. */
       .lektor-main-action:has(.lektor-to-corrections-icon) {
