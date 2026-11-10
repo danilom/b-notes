@@ -493,10 +493,34 @@ function screenNow(): Step {
   return screen === 'start' ? startScreen() : responseScreen();
 }
 
+/**
+ * Closing the panel while a utisak is being read cancels it, as "Odustani" does (Danilo, 2026-11-10):
+ * a request going on with nothing showing it is more than he will understand. Its text is back at
+ * step 2 for when he opens the panel again; anything else stays as he left it.
+ */
+function closePanel(): void {
+  const isWaiting = (isRequestElsewhere() ? savedScreens[requestSlot] : screen) === 'waiting';
+  if (isWaiting) {
+    stopCommentRun();
+    setRequestScreen('start');
+  }
+  document.body.classList.remove('lektor-open');
+}
+
+/** The bottom bar's "AI Lektor", as in the app: opens the panel, or closes it if open. */
+function togglePanel(): void {
+  if (document.body.classList.contains('lektor-open')) {
+    closePanel();
+    return;
+  }
+  document.body.classList.add('lektor-open');
+  render();
+}
+
 function render(): void {
   settleOnChoiceWithKey();
   const side = element('lektor-side', HTMLElement);
-  const close = button('Zatvori', () => undefined, 'lektor-side-close');
+  const close = button('Zatvori', closePanel, 'lektor-side-close');
   close.append(icon('fold-down'));
   const pinned = pinnedStep();
   const title = el('div', 'lektor-side-title');
@@ -745,6 +769,7 @@ window.prototypeControls = CONTROLS;
 window.prototypeSet = setControl;
 // The window's way to the keys, which are entered in the panel.
 setKeysOpener(openKeys);
+element('prototype-lektor-button', HTMLButtonElement).addEventListener('click', togglePanel);
 
 // His list, clickable: another text opened, as he would, to see the panel stay with a request.
 for (const item of document.querySelectorAll('.prototype-list p')) {

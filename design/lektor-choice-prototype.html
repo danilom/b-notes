@@ -68,6 +68,15 @@
         grid-column: 3;
       }
 
+      /* The panel closed (its Zatvori, or the bottom bar's AI Lektor): the text takes its room, as in the app. */
+      body:not(.lektor-open) #lektor-side {
+        display: none;
+      }
+
+      body:not(.lektor-open) .prototype-text {
+        grid-column: 2 / -1;
+      }
+
       .prototype-list {
         overflow: hidden;
         padding: 0.8rem 1rem;
@@ -1154,7 +1163,7 @@
       <div class="prototype-status">
         <button type="button" class="status-action" disabled>Kopiraj ceo tekst</button>
         <button type="button" class="status-action" disabled>Ranije verzije</button>
-        <button type="button" class="status-action" disabled>AI Lektor</button>
+        <button type="button" class="status-action" id="prototype-lektor-button">AI Lektor</button>
       </div>
     </div>
 
