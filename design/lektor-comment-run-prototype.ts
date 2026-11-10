@@ -6,13 +6,14 @@
 
   Measured (2026-11-09/10): a free utisak on 3.8 took 3–5½ minutes, nearly all of it queued at Google,
   the work itself a few seconds; 3.6 mostly started at once (5–8 Nov) but once queued 41 s and was then
-  refused as busy. Paid (Opus via OpenRouter) took about 18 s, and paid Flash 19 s; the paid utisak is Flash now.
+  refused as busy. Paid (Opus via OpenRouter) took about 18 s, and paid Flash 19 s. The paid utisak is
+  Opus (Danilo, 2026-11-10), a slow free one handed on is paid Flash.
 */
 import { icon } from '../src/ui/icons.ts';
 import { times } from './lektor-corrections-window-prototype.ts';
 import { FREE_LIMIT_WORDS } from './lektor-choice-radios.ts';
 import { keys } from './lektor-keys-prototype.ts';
-import { type Choice, type FreeModel, button, choiceMark, el, problem, state } from './lektor-prototype-pieces.ts';
+import { type Choice, type FreeModel, MODELS, PAID_IF_SLOW_MODEL, button, choiceMark, el, problem, state } from './lektor-prototype-pieces.ts';
 
 export type CommentFailure = 'busy' | 'no-credit' | 'offline';
 
@@ -28,7 +29,8 @@ export const commentRun: CommentRun = { sentTo: 'free', startedAt: 0, failure: n
 
 /** What the run tells the panel: it's over and the comment is there, or it failed. */
 export interface CommentRunEvents {
-  done: (by: Choice) => void;
+  /** Who wrote it, and with which model: on paid, Opus as chosen or Flash where a slow free one was handed on. */
+  done: (by: Choice, model: string) => void;
   failed: () => void;
 }
 
@@ -53,16 +55,16 @@ function fail(failure: CommentFailure, events: CommentRunEvents): void {
   events.failed();
 }
 
-function askPaid(events: CommentRunEvents): void {
+function askPaid(events: CommentRunEvents, model: string = MODELS.paid.comment): void {
   commentRun.sentTo = 'paid';
   if (state.isOffline) return fail('offline', events);
   if (state.isMoneyOut) return fail('no-credit', events);
-  timers.push(window.setTimeout(() => finish('paid', events), workMs('paid')));
+  timers.push(window.setTimeout(() => finish('paid', model, events), workMs('paid')));
 }
 
 /** After free 3.6: paid Flash if he ticked for it, else the utisak has failed as busy. */
 function afterStandIn(events: CommentRunEvents): void {
-  if (commentRun.mayGoToPaid) askPaid(events);
+  if (commentRun.mayGoToPaid) askPaid(events, PAID_IF_SLOW_MODEL);
   else fail('busy', events);
 }
 
@@ -83,12 +85,12 @@ function askFree(model: FreeModel, events: CommentRunEvents): void {
     timers.push(window.setTimeout(next, times().queueLimitMs));
     return;
   }
-  timers.push(window.setTimeout(() => finish('free', events), queueMs + workMs('free')));
+  timers.push(window.setTimeout(() => finish('free', model, events), queueMs + workMs('free')));
 }
 
-function finish(by: Choice, events: CommentRunEvents): void {
+function finish(by: Choice, model: string, events: CommentRunEvents): void {
   stopCommentRun();
-  events.done(by);
+  events.done(by, model);
 }
 
 export function startCommentRun(to: Choice, mayGoToPaid: boolean, events: CommentRunEvents): void {

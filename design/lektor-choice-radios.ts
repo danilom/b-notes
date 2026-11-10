@@ -52,7 +52,8 @@ export function paidIfSlowByDefault(): boolean {
 /**
  * Asked before sending, so a slow or busy free one can be handed to paid Flash without a question
  * minutes in; ticking it is his own choice to pay, which makes acting on it later fair. Its mark and
- * name say who and that it costs; the grey line only when, since "spor" alone leaves that to his guess.
+ * name say who and that it costs; the sentence says when, in one go (Danilo, 2026-11-10): "spor" and a
+ * grey line under it were a jumble, and "čeka" is the word the wait itself uses.
  */
 export function paidIfSlowBox(paidIfSlow: PaidIfSlow, isDisabled: boolean): HTMLElement {
   const box = el('label', 'lektor-preset lektor-check');
@@ -62,11 +63,8 @@ export function paidIfSlowBox(paidIfSlow: PaidIfSlow, isDisabled: boolean): HTML
   input.disabled = isDisabled;
   input.addEventListener('change', () => paidIfSlow.tick(input.checked));
   const words = el('span', 'lektor-check-words');
-  words.append(
-    // His own word, "spor", rather than ours of a queue that won't start; the name after "lektoru", as Serbian sets a name.
-    el('span', '', 'Ako je spor, pošalji plaćenom lektoru „Flash”'),
-    el('span', 'lektor-check-why', `Posle ${FREE_LIMIT_WORDS} čekanja.`),
-  );
+  // The name after "lektoru", as Serbian sets a name.
+  words.append(el('span', '', `Ako čeka duže od ${FREE_LIMIT_WORDS}, pošalji plaćenom lektoru „Flash”`));
   box.append(input, markOf('flash'), words);
   if (isDisabled) box.classList.add('lektor-preset-unavailable');
   return box;

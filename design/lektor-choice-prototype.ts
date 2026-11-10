@@ -13,7 +13,7 @@ import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { type PaidIfSlow, lektorChoice, paidIfSlowByDefault } from './lektor-choice-radios.ts';
 import { commentFailure, commentRun, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
 import { ISPRAVKE_PICTURES, UTISAK_PICTURES, drawPicture } from './lektor-menu-icons-prototype.ts';
-import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, button, dollars, el, element, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
+import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, type Tier, button, dollars, el, element, sendButton, serviceLineOf, spend, state, tierOfModel } from './lektor-prototype-pieces.ts';
 
 /** The menu, then the utisak's own step ('start': who writes it), its wait or failure, the utisak; and the keys. */
 type Screen = 'menu' | 'start' | 'waiting' | 'failed' | 'response' | 'keys';
@@ -155,8 +155,8 @@ function startScreen(): Step {
   // and the equal quality under the heading, read on the way to choosing rather than after it. In the
   // small grey of "mnogo brži", the same kind of thing, and quiet once he knows it (Danilo, 2026-11-10).
   // The corrections choose their own Lektor in the window.
-  // The paid utisak is Flash, the free one's own model without the queue (Danilo, 2026-11-10): the blind
-  // test was a draw and both answer in ~18 s, so Opus cost five times as much for nothing.
+  // The paid utisak is Opus (Danilo, 2026-11-10), as on rework: so the tick box under Besplatni (the
+  // same writer without the queue) and Plaćeni (the better one) are two things, as on every screen.
   const [heading, ...choices] = lektorChoice({ group: 'lektor-level', choose, better: { choice: 'paid', why: 'mnogo brži' }, what: 'comment', paidIfSlow: commentPaidIfSlow });
   return {
     content: [chosenOnMenu(), ...(heading === undefined ? [] : [heading]), el('p', 'lektor-where lektor-choice-lead', 'Oba pišu utisak sličnog kvaliteta.'), ...choices],
@@ -177,11 +177,11 @@ const COMMENT = [
   'U cjelini, ovo je miran, tačan zapis jednog jutra, sa dobrim osjećajem za mjesto i za ljude koji u njemu žive. Kraj, sa vodom koja mijenja boju, lijepo zaokružuje ono što je počelo mirisom soli i kafe.',
 ].join('\n\n');
 
-/** Who wrote the comment shown. */
-let commentBy: Choice = state.choice;
+/** Which of the three wrote the comment shown, by the model that ran. */
+let commentTier: Tier = 'free';
 
-/** What a paid comment costs here: paid Flash, estimated at about a cent from its prices (Opus was ~5 cents, measured 2026-11-09). */
-const COMMENT_COST_USD = 0.01;
+/** What a paid comment costs here: Opus ~5 cents (measured 2026-11-09: $0.03–0.07), paid Flash about 1–3 (estimated). */
+const COMMENT_COST_USD: Readonly<Record<Tier, number | null>> = { free: null, flash: 0.02, opus: 0.05 };
 
 /** Whether "AI može da pogreši" is opened to say what that means, as in the app. */
 let isAboutAiOpen = false;
@@ -281,9 +281,10 @@ function responseScreen(): Step {
   const comment = el('div', 'lektor-response', `${commentOpening()}\n\n${COMMENT}`);
   comment.append(el('span', 'lektor-response-end'));
   // Signed by who wrote it, which stays so when the Lektor is changed afterwards, here or in the window.
-  const signed = serviceLine(commentBy, 'comment');
+  const signed = serviceLineOf(commentTier);
   // A paid one's cost after when, as the corrections' cards have it: a fact once spent.
-  const cost = commentBy === 'paid' ? ` · ${dollars(COMMENT_COST_USD)}` : '';
+  const spent = COMMENT_COST_USD[commentTier];
+  const cost = spent === null ? '' : ` · ${dollars(spent)}`;
   signed.append(el('span', 'lektor-comment-when', ` · upravo sad${cost}`));
   const signature = el('div', 'lektor-comment-notes');
   signature.append(signed, ...aboutAi());
@@ -341,10 +342,10 @@ function askForComment(to: Choice, slot: TextSlot = openSlot): void {
   setRequestScreen('waiting');
   // The tick counts only with the paid key there, as the box is only shown then.
   startCommentRun(to, commentPaidIfSlow.isTicked && keys.saved.paid, {
-    done: (by) => {
+    done: (by, model) => {
       setRequestScreen('response');
-      commentBy = by;
-      if (by === 'paid') spend(COMMENT_COST_USD);
+      commentTier = tierOfModel(by, model);
+      spend(COMMENT_COST_USD[commentTier]);
       isAboutAiOpen = false;
       isReadyElsewhere = isRequestElsewhere();
       render();

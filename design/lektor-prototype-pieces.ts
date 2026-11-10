@@ -25,7 +25,7 @@ export { PRESET_PROMPTS } from '../src/ui/lektor/lektor-presets.ts';
 /** What each choice runs, for the tooltips and the review's line. */
 export const MODELS: Readonly<Record<Choice, Readonly<Record<Preset | 'comment', string>>>> = {
   free: { comment: 'gemini-3.8-flash', letters: 'gemini-3.8-flash', grammar: 'gemini-3.8-flash', wording: 'gemini-3.8-flash', rewrite: 'gemini-3.8-flash' },
-  paid: { comment: 'gemini-3.8-flash', letters: 'gemini-3.8-flash', grammar: 'gemini-3.8-flash', wording: 'claude-opus-5.5', rewrite: 'claude-opus-5.5' },
+  paid: { comment: 'claude-opus-5.5', letters: 'gemini-3.8-flash', grammar: 'gemini-3.8-flash', wording: 'claude-opus-5.5', rewrite: 'claude-opus-5.5' },
 };
 
 /** Only corrections fall back: on rework the quicker model fades and loses his dialect, so he hears it's busy. */
@@ -224,8 +224,13 @@ export function spend(cost: number | null): void {
 
 /** Who did or does it: the Lektor's mark and name, as the app's service line has them. */
 export function serviceLine(by: Choice, what: Work): HTMLElement {
+  return serviceLineOf(tierOf(by, what));
+}
+
+/** The same, for one that is known by the model that ran: a slow free one handed on was paid Flash. */
+export function serviceLineOf(tier: Tier): HTMLElement {
   const line = el('p', 'lektor-service-line');
-  line.append(el('span', '', 'AI Lektor:'), ' ', choiceMark(by, what), el('span', '', tierName(by, what)));
+  line.append(el('span', '', 'AI Lektor:'), ' ', markOf(tier), el('span', '', nameOf(tier)));
   return line;
 }
 
