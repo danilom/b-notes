@@ -140,7 +140,7 @@ function chosenOnMenu(): HTMLElement {
 
 /** Step 2, the utisak's own: who writes it, and sending it; "← Nazad" to the menu. */
 function startScreen(): Step {
-  const send = sendButton(`Pošalji ceo tekst ${state.choice === 'free' ? 'Guglu' : 'OpenRouteru'}`, 'comment', () => askForComment(state.choice), 'status-action lektor-main-action');
+  const send = sendButton(`Pošalji tekst ${state.choice === 'free' ? 'Guglu' : 'OpenRouteru'}`, 'comment', () => askForComment(state.choice), 'status-action lektor-main-action');
   // What paying gives for the comment, as measured (2026-11-09): a draw blind (Opus 3, Flash 2), but
   // about 18 s against 3–5 minutes. So speed, beside Plaćeni as the corrections window gives its reason;
   // and the equal quality under the heading, read on the way to choosing rather than after it. In the

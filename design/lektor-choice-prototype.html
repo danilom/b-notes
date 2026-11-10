@@ -934,9 +934,25 @@
         padding: 0 1rem 0.5rem;
       }
 
+      /*
+        Where the two don't fit side by side (a larger scale, his bigger text), the way back goes above
+        the main button rather than either breaking its words (Danilo, 2026-11-10): each stays whole,
+        the back at the left of its line, the main one at the right of its own.
+      */
       .lektor-side-dock .lektor-side-buttons {
         margin-top: 0;
         align-items: center;
+        flex-wrap: wrap;
+        row-gap: 0.4rem;
+      }
+
+      .lektor-side-dock .lektor-side-buttons > * {
+        white-space: nowrap;
+      }
+
+      /* Alone on its line once wrapped, still at the right: the side the main button always has. */
+      .lektor-side-dock .lektor-side-buttons > :last-child {
+        margin-left: auto;
       }
 
       /* A step back at the strip's left end, the main button staying on the right; the same size as it. */
