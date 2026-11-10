@@ -107,7 +107,7 @@ function menuScreen(): Step {
   // At the very bottom, quiet (Danilo, 2026-11-10): a step the panel needs, but set up once, and
   // after everything he does need; beside the warning, as the keys decide who the text goes to.
   const keysLink = el('div', 'lektor-menu-keys');
-  keysLink.append(button('API ključevi', openKeys, 'lektor-again'));
+  keysLink.append(button('API ključevi', openKeys, 'lektor-menu-keys-link'));
   const options = el('div', 'lektor-menu');
   options.append(
     menuOption('Utisak o tekstu', 'Kratak osvrt na tekst, kao od pažljivog čitaoca.', () => {

@@ -84,13 +84,37 @@
         cursor: pointer;
       }
 
-      /* New: "API ključevi" at the menu's very bottom, small and quiet, as the link it was on the heading line. */
-      .lektor-menu-keys {
-        display: flex;
+      /*
+        New: "API ključevi" at the menu's very bottom, a small link, not a button (Danilo, 2026-11-10).
+        Out of the column's flow, so the warning stays centred in the space under the choices, as it
+        was before the link came; there is room for it below the warning on his Asus.
+      */
+      .lektor-side-body:has(> .lektor-menu-keys) {
+        position: relative;
       }
 
-      .lektor-menu-keys .lektor-again {
+      /* At the right, where the eye arrives last (Danilo, 2026-11-10): less prominent than at the left edge everything starts from. */
+      .lektor-menu-keys {
+        position: absolute;
+        right: 1rem;
+        bottom: 0.6rem;
+      }
+
+      .lektor-side-body .lektor-menu-keys button {
+        min-width: 0;
+        padding: 0;
+        border: none;
+        background: none;
         font-size: var(--lektor-small);
+        color: var(--chosen-ink);
+        text-decoration: underline;
+        text-underline-offset: 0.15em;
+        cursor: pointer;
+      }
+
+      .lektor-side-body .lektor-menu-keys button:hover {
+        background: none;
+        text-decoration-thickness: 2px;
       }
 
       /* New: the panel's first step, two big choices, each its name and a sentence on what it does. */
