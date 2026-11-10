@@ -145,11 +145,13 @@
       /*
         The mini page at the button's left, as far from its left edge as from its top and bottom
         (Danilo, 2026-11-10): its height the button's inside less two insets, its width from its shape.
+        The words a little further off than the maths would put them, to look as far from the page as
+        "…" looks from the right edge: the page's hard edge reads closer than the dots' airy end.
       */
       .sheet-button.sheet-button-with-mini {
         --mini-inset: 0.3em;
         position: relative;
-        padding-left: calc(var(--mini-inset) + (2.1rem - 2 * var(--mini-inset)) * 33.2 / 45.2 + 0.45em);
+        padding-left: calc(var(--mini-inset) + (2.1rem - 2 * var(--mini-inset)) * 33.2 / 45.2 + 0.65em);
       }
 
       .sheet-button .sheet-button-mini {
