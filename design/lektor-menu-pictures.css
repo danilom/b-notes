@@ -21,11 +21,10 @@
   --ic-dark: #4a3f5c;
 }
 
-:root[data-mode='dark'] {
-  --ic-ink: #e4e6ea;
-  --ic-paper: #3c3a36;
-  --ic-lens: #34506b;
-}
+/*
+  The same in dark mode (Danilo, 2026-11-10): ink and paper flipped looked like a negative. Drawn in
+  their own colours they stand on the dark panel as a small picture does, the paper still paper.
+*/
 
 .lektor-picture * {
   stroke: var(--ic-ink);
@@ -106,6 +105,5 @@
 .lektor-picture .ic-mini-light-red { stroke-width: 3.4; }
 /* A page a shade darker than the menu's, to stand off a white button (the mini page in "Ispravke…"). */
 :root { --ic-paper-deep: #f4e8cf; }
-:root[data-mode='dark'] { --ic-paper-deep: #4a453c; }
 .lektor-picture .ic-paper-deep { fill: var(--ic-paper-deep); }
 .lektor-picture.lektor-picture-mono .ic-paper-deep { fill: color-mix(in srgb, var(--mono) 22%, var(--page)); }

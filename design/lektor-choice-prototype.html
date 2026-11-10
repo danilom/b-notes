@@ -397,6 +397,28 @@
         color: #a87412;
       }
 
+      /* Brighter on the dark panel (Danilo, 2026-11-10): the light mode's would sink into it. */
+      :root[data-mode='dark'] .lektor-choice-mark-free {
+        color: #6caef2;
+      }
+
+      :root[data-mode='dark'] .lektor-choice-mark-flash {
+        color: #5cc977;
+      }
+
+      :root[data-mode='dark'] .lektor-choice-mark-opus {
+        color: #e3b04a;
+      }
+
+      :root[data-mode='dark'] .lektor-dead-key svg.lektor-dead-key-mark {
+        color: hsl(358 80% 66%);
+      }
+
+      /* On a filled button still the button's own words' colour, as in light mode. */
+      :root[data-mode='dark'] .lektor-main-action .lektor-choice-mark {
+        color: inherit;
+      }
+
       /* On a filled button the mark takes the button's own words' colour. */
       .lektor-main-action .lektor-choice-mark {
         color: inherit;
