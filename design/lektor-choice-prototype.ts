@@ -92,7 +92,7 @@ function menuScreen(): Step {
   heading.append(el('p', 'lektor-heading', 'Šta želiš?'), button('API ključevi', openKeys, 'lektor-again'));
   const options = el('div', 'lektor-menu');
   options.append(
-    menuOption('Utisak o tekstu', 'AI Lektor čita tekst i kaže šta misli.', () => {
+    menuOption('Utisak o tekstu', 'Kratak osvrt na tekst, kao od pažljivog čitaoca.', () => {
       // A new start of the step, so Besplatni again: nothing is chosen for him from how he left it.
       state.choice = 'free';
       screen = 'start';
