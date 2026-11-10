@@ -282,7 +282,9 @@ export const ISPRAVKE_PICTURES = {
       shape('rect', 'ic-paper', { x: 8, y: 4, width: 30, height: 38, rx: 3 }),
       shape('path', 'ic-line', { d: 'M13 24h20M13 30h20M13 36h12' }),
       shape('path', 'ic-red-line', { d: 'M20.5 13h7l-7 7h7M21.8 8.4 24 10.4l2.2-2' }),
-      shape('path', 'ic-red-line', { d: 'm22 29 2-3.4 2 3.4' }),
+      // A row below the ž's (Danilo, 2026-11-10): apart from the letter it brings, as an editor marks
+      // the place; a little shorter than the others, to clear the line under it.
+      shape('path', 'ic-red-line', { d: 'm22.3 34.2 1.7-2.6 1.7 2.6' }),
     ],
   },
   'page-c-caron-tick': {
