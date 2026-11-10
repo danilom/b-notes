@@ -13,9 +13,9 @@ import { icon } from '../src/ui/icons.ts';
 import { times } from './lektor-corrections-window-prototype.ts';
 import { FREE_LIMIT_WORDS } from './lektor-choice-radios.ts';
 import { keys } from './lektor-keys-prototype.ts';
-import { type Choice, type FreeModel, MODELS, PAID_IF_SLOW_MODEL, button, choiceMark, el, problem, state } from './lektor-prototype-pieces.ts';
+import { type Choice, type FreeModel, HANDED_OVER_BROKE, HANDED_OVER_BROKE_NOTE, MODELS, PAID_IF_SLOW_MODEL, button, choiceMark, el, freeResetWords, problem, state } from './lektor-prototype-pieces.ts';
 
-export type CommentFailure = 'busy' | 'no-credit' | 'offline' | 'bad-key';
+export type CommentFailure = 'busy' | 'no-credit' | 'offline' | 'bad-key' | 'spent';
 
 interface CommentRun {
   sentTo: Choice;
@@ -23,9 +23,11 @@ interface CommentRun {
   failure: CommentFailure | null;
   /** He ticked for a slow free one to go to paid Flash, and has the key for it. */
   mayGoToPaid: boolean;
+  /** Sent free and handed on to paid Flash, as he ticked: then a want of money is said as such. */
+  isHandedOver: boolean;
 }
 
-export const commentRun: CommentRun = { sentTo: 'free', startedAt: 0, failure: null, mayGoToPaid: false };
+export const commentRun: CommentRun = { sentTo: 'free', startedAt: 0, failure: null, mayGoToPaid: false, isHandedOver: false };
 
 /** What the run tells the panel: it's over and the comment is there, or it failed. */
 export interface CommentRunEvents {
@@ -63,10 +65,11 @@ function askPaid(events: CommentRunEvents, model: string = MODELS.paid.comment):
   timers.push(window.setTimeout(() => finish('paid', model, events), workMs('paid')));
 }
 
-/** After free 3.6: paid Flash if he ticked for it, else the utisak has failed as busy. */
-function afterStandIn(events: CommentRunEvents): void {
-  if (commentRun.mayGoToPaid) askPaid(events, PAID_IF_SLOW_MODEL);
-  else fail('busy', events);
+/** After free 3.6: paid Flash if he ticked for it, else the utisak has failed as busy, or as spent for the day. */
+function afterStandIn(events: CommentRunEvents, failure: CommentFailure = 'busy'): void {
+  if (!commentRun.mayGoToPaid) return fail(failure, events);
+  commentRun.isHandedOver = true;
+  askPaid(events, PAID_IF_SLOW_MODEL);
 }
 
 /**
@@ -82,6 +85,8 @@ function askFree(model: FreeModel, events: CommentRunEvents): void {
   const isFirst = model === 'gemini-3.8-flash';
   const next = (): void => (isFirst ? askFree('gemini-3.6-flash', events) : afterStandIn(events));
   if (day === 'busy') return next();
+  // Spent for the day: each model has its own limit, so 3.8's sends it to 3.6; 3.6's is the end of free.
+  if (day === 'spent') return isFirst ? askFree('gemini-3.6-flash', events) : afterStandIn(events, 'spent');
   const queueMs = day === 'slow' ? times().longQueueMs : times().queueMs;
   if ((isFirst || commentRun.mayGoToPaid) && queueMs > times().queueLimitMs) {
     timers.push(window.setTimeout(next, times().queueLimitMs));
@@ -100,6 +105,7 @@ export function startCommentRun(to: Choice, mayGoToPaid: boolean, events: Commen
   commentRun.failure = null;
   commentRun.sentTo = to;
   commentRun.mayGoToPaid = mayGoToPaid;
+  commentRun.isHandedOver = false;
   commentRun.startedAt = performance.now();
   clockTimer = window.setInterval(() => {
     const clock = document.querySelector('.lektor-comment-clock');
@@ -140,6 +146,8 @@ function freeExpect(): string {
 
 /** The window's words for the same failures, and the same shape: the problem, then the way back. */
 export function commentFailure(): HTMLElement {
+  if (commentRun.failure === 'spent') return problem('Besplatni lektor je za danas potrošen.', `Ponovo radi ${freeResetWords()}${keys.saved.paid ? ', ili pošalji plaćenom lektoru' : ''}.`);
+  if (commentRun.failure === 'no-credit' && commentRun.isHandedOver) return problem(HANDED_OVER_BROKE, HANDED_OVER_BROKE_NOTE);
   if (commentRun.failure === 'no-credit') return problem('Plaćeni iznos je potrošen.', keys.saved.free ? 'Možeš da pošalješ besplatnom lektoru, ili neka se uplati još.' : 'Neka se uplati još.');
   if (commentRun.failure === 'offline') return problem('Internet ne radi, a AI Lektoru je potreban.', 'Kad internet proradi, pošalji ponovo.');
   return problem('Gugl je sada zauzet.', keys.saved.paid ? 'Probaj malo kasnije, ili pošalji plaćenom lektoru.' : 'Probaj malo kasnije.');
@@ -148,7 +156,7 @@ export function commentFailure(): HTMLElement {
 /** The other Lektor, only where the trouble was the company's and he has its key; as in the window. */
 export function commentShortcut(send: (to: Choice) => void): HTMLButtonElement | null {
   const to: Choice = commentRun.sentTo === 'free' ? 'paid' : 'free';
-  const isCompanys = commentRun.failure === 'busy' || commentRun.failure === 'no-credit';
+  const isCompanys = commentRun.failure === 'busy' || commentRun.failure === 'spent' || (commentRun.failure === 'no-credit' && !commentRun.isHandedOver);
   if (!isCompanys || !keys.saved[to]) return null;
   const made = button(to === 'free' ? 'Pošalji besplatnom lektoru' : 'Pošalji plaćenom lektoru', () => send(to), 'status-action lektor-main-action lektor-sends');
   made.append(choiceMark(to, 'comment'), icon('move-out'));

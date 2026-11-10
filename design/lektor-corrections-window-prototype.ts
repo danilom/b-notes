@@ -32,6 +32,8 @@ import { deadKeyNotice, keys } from './lektor-keys-prototype.ts';
 import {
   type Choice,
   FALLS_BACK,
+  HANDED_OVER_BROKE,
+  HANDED_OVER_BROKE_NOTE,
   MODELS,
   PAID_IF_SLOW_MODEL,
   PRESET_NAMES,
@@ -48,6 +50,7 @@ import {
   dollars,
   el,
   familyOf,
+  freeResetWords,
   element,
   markOf,
   nameOf,
@@ -66,7 +69,7 @@ import {
 import { FREE_LIMIT_WORDS, type PaidIfSlow, lektorChoice, paidBalance, paidIfSlowBox, paidIfSlowByDefault } from './lektor-choice-radios.ts';
 
 type View = 'choosing' | 'waiting' | 'failed' | 'review';
-type Failure = 'busy' | 'no-credit' | 'offline' | 'bad-key';
+type Failure = 'busy' | 'no-credit' | 'offline' | 'bad-key' | 'spent';
 
 /**
  * Corrections ready to look at. Only while his text is as it was when they were made (trailing
@@ -106,6 +109,8 @@ interface WindowState {
    * so it can go ahead without asking him minutes in. Set afresh each time the window opens (paidIfSlowByDefault).
    */
   isPaidIfSlow: boolean;
+  /** This request was sent free and handed on to paid Flash, as he ticked: then a want of money is said as such. */
+  isHandedOver: boolean;
   /** The stages of the request running, as the services' streams tell them, the last one the current one. */
   stages: Stage[];
   /** How far the writing has got, by its length against his text's. */
@@ -118,7 +123,7 @@ interface WindowState {
  * A stage of the wait: queued at Google (free only), refused by a busy Google, thinking, writing.
  * Each says how long it took once over, so a long queue reads as the queue's, not as the work's.
  */
-type Phase = 'queue' | 'refused' | 'thinking' | 'writing';
+type Phase = 'queue' | 'refused' | 'spent' | 'thinking' | 'writing';
 
 interface Stage {
   phase: Phase;
@@ -142,6 +147,7 @@ export const corrections: WindowState = {
   reworkChoice: 'free',
   sentTo: 'free',
   isPaidIfSlow: false,
+  isHandedOver: false,
   stages: [],
   progress: 0,
   runStartedAt: 0,
@@ -490,11 +496,15 @@ function durationWords(ms: number): string {
 const STAGE_WORDS: Readonly<Record<Phase, [string, string]>> = {
   queue: ['Zahtev čeka u redu…', 'Zahtev je čekao u redu'],
   refused: ['Lektor je zauzet i nije primio zahtev', 'Lektor je zauzet i nije primio zahtev'],
+  spent: ['Besplatni lektor je za danas potrošen', 'Besplatni lektor je za danas potrošen'],
   thinking: ['Lektor razmišlja…', 'Lektor je razmislio'],
   writing: ['Lektor ispravlja tekst…', 'Lektor je ispravio tekst'],
 };
 
 const stageWords = (stage: Stage, isCurrent: boolean): string => STAGE_WORDS[stage.phase][isCurrent ? 0 : 1];
+
+/** Turned away at once, busy or spent for the day: a moment, not a stage that took time. */
+const isTurnedAway = (stage: Stage): boolean => stage.phase === 'refused' || stage.phase === 'spent';
 
 /** Which of the three a stage is by, by the model that ran it. */
 const stageTier = (stage: Stage): Tier => tierOfModel(stage.by, stage.model);
@@ -505,7 +515,7 @@ const stageTier = (stage: Stage): Tier => tierOfModel(stage.by, stage.model);
  */
 function stageMark(stage: Stage, isCurrent: boolean): HTMLElement {
   if (isCurrent) return el('span', 'lektor-stage-mark lektor-reading');
-  if (stage.isGivenUp || stage.phase === 'refused') return el('span', 'lektor-stage-mark lektor-stage-mark-moved', '!');
+  if (stage.isGivenUp || isTurnedAway(stage)) return el('span', 'lektor-stage-mark lektor-stage-mark-moved', '!');
   return el('span', 'lektor-stage-mark', '✓');
 }
 
@@ -559,7 +569,7 @@ function stagesList(): HTMLElement {
     if (before !== undefined && stageTier(before) !== stageTier(stage)) list.append(serviceLineOf(stageTier(stage)));
     const isCurrent = stage.endedAt === null;
     const row = el('div', 'lektor-stage');
-    const took = stage.endedAt === null || stage.phase === 'refused' ? '' : durationWords(stage.endedAt - stage.startedAt);
+    const took = stage.endedAt === null || isTurnedAway(stage) ? '' : durationWords(stage.endedAt - stage.startedAt);
     row.append(stageMark(stage, isCurrent), ...stageText(stageWords(stage, isCurrent), took));
     list.append(row, ...underStage(stage));
   });
@@ -623,13 +633,15 @@ function sendToButton(preset: Preset, to: Choice): HTMLButtonElement {
  */
 function shortcutAfter(preset: Preset): HTMLButtonElement[] {
   const to = other(corrections.sentTo);
-  const isCompanys = corrections.failure === 'busy' || corrections.failure === 'no-credit';
+  const isCompanys = corrections.failure === 'busy' || corrections.failure === 'spent' || (corrections.failure === 'no-credit' && !corrections.isHandedOver);
   return isCompanys && keys.saved[to] ? [sendToButton(preset, to)] : [];
 }
 
 /** What went wrong, in the app's own words, and a line on what can be done. */
 function failureWords(): HTMLElement {
   if (corrections.failure === 'bad-key') return deadKeyNotice();
+  if (corrections.failure === 'spent') return problem('Besplatni lektor je za danas potrošen.', `Ponovo radi ${freeResetWords()}${keys.saved.paid ? ', ili pošalji plaćenom lektoru' : ''}.`);
+  if (corrections.failure === 'no-credit' && corrections.isHandedOver) return problem(HANDED_OVER_BROKE, HANDED_OVER_BROKE_NOTE);
   if (corrections.failure === 'no-credit') return problem('Plaćeni iznos je potrošen.', keys.saved.free ? 'Možeš da pošalješ besplatnom lektoru, ili neka se uplati još.' : 'Neka se uplati još.');
   if (corrections.failure === 'offline') return problem('Internet ne radi, a AI Lektoru je potreban.', 'Kad internet proradi, pošalji ponovo.');
   return problem('Gugl je sada zauzet.', keys.saved.paid ? 'Probaj malo kasnije, ili pošalji plaćenom lektoru.' : 'Probaj malo kasnije.');
@@ -769,8 +781,10 @@ function askPaid(preset: Preset, model: string = MODELS.paid[preset]): void {
  */
 function nextAfter(preset: Preset, model: FreeModel): void {
   if (model === FREE_FIRST && FALLS_BACK.has(preset)) askFree(preset, FREE_STAND_IN);
-  else if (mayGoToPaid()) askPaid(preset, PAID_IF_SLOW_MODEL);
-  else fail('busy');
+  else if (mayGoToPaid()) {
+    corrections.isHandedOver = true;
+    askPaid(preset, PAID_IF_SLOW_MODEL);
+  } else fail('busy');
 }
 
 /** Whether a model still waiting at the limit may be given up for the next: 3.8 for 3.6 where the kind allows it; else only if he ticked. */
@@ -802,6 +816,29 @@ function refusedBy(preset: Preset, model: FreeModel): void {
   const now = performance.now();
   corrections.stages.push({ phase: 'refused', by: 'free', model, startedAt: now, endedAt: now, isGivenUp: true });
   nextAfter(preset, model);
+}
+
+/**
+ * The model's free requests are used up for the day: on to 3.6 where the kind allows it, which has a
+ * limit of its own; else, if he ticked, to paid Flash at once, since waiting won't help (noted as a
+ * line of its own); else failed as spent, with when it works again.
+ */
+function spentFor(preset: Preset, model: FreeModel): void {
+  if (staysFree(preset, model)) {
+    askFree(preset, FREE_STAND_IN);
+    return;
+  }
+  if (!mayGoToPaid()) {
+    fail('spent');
+    return;
+  }
+  const current = corrections.stages.at(-1);
+  if (current !== undefined && current.endedAt === null) current.isGivenUp = true;
+  endStage();
+  const now = performance.now();
+  corrections.stages.push({ phase: 'spent', by: 'free', model, startedAt: now, endedAt: now, isGivenUp: true });
+  corrections.isHandedOver = true;
+  askPaid(preset, PAID_IF_SLOW_MODEL);
 }
 
 /** Still waiting at the limit: given up, on to the next, and nothing of its work is lost since none began. */
@@ -836,6 +873,10 @@ function askFree(preset: Preset, model: FreeModel): void {
     refusedBy(preset, model);
     return;
   }
+  if (day === 'spent') {
+    spentFor(preset, model);
+    return;
+  }
   startStage('queue', 'free', model);
   show('waiting');
   const queueMs = day === 'slow' ? times().longQueueMs : times().queueMs;
@@ -853,6 +894,7 @@ function run(to: Choice): void {
   stopTimers();
   corrections.failure = null;
   corrections.stages = [];
+  corrections.isHandedOver = false;
   corrections.progress = 0;
   corrections.runStartedAt = performance.now();
   startClock();
@@ -1011,7 +1053,7 @@ export function openCorrectionsWindow(): void {
 }
 
 /** A state of the window the harness can open straight away, without sending and waiting for it. */
-export type WindowCase = 'waiting' | 'queued' | 'busy' | 'no-credit' | 'offline' | 'bad-key';
+export type WindowCase = 'waiting' | 'queued' | 'busy' | 'no-credit' | 'offline' | 'bad-key' | 'spent' | 'broke-after-slow';
 
 /** A wait held still at one stage, until "Odustani od zahteva", so it can be looked at. */
 function holdWait(preset: Preset, to: Choice, phase: Phase): void {
@@ -1045,7 +1087,8 @@ export function openCorrectionsWindowAt(windowCase: WindowCase): void {
     return;
   }
   corrections.preset = windowCase === 'no-credit' ? 'rewrite' : 'letters';
-  corrections.sentTo = windowCase === 'no-credit' ? 'paid' : 'free';
-  corrections.failure = windowCase;
+  corrections.sentTo = windowCase === 'no-credit' || windowCase === 'broke-after-slow' ? 'paid' : 'free';
+  corrections.isHandedOver = windowCase === 'broke-after-slow';
+  corrections.failure = windowCase === 'broke-after-slow' ? 'no-credit' : windowCase;
   show('failed');
 }

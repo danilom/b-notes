@@ -575,6 +575,8 @@ const CONTROLS: readonly PrototypeControl[] = [
       { value: 'no-credit', label: '4c. Prozor: nema novca (Dubinska)' },
       { value: 'offline', label: '4d. Prozor: nema interneta (Slova i zarezi)' },
       { value: 'bad-key', label: '4e. Prozor: ključ ne radi pri slanju (Slova i zarezi)' },
+      { value: 'spent', label: '4f. Prozor: besplatni potrošen za danas (Slova i zarezi)' },
+      { value: 'broke-after-slow', label: '4g. Prozor: besplatni spor, plaćeni bez novca' },
       { value: 'dead-key-send', label: '5. Utisak: ključ ne radi pri slanju' },
       { value: 'keys', label: 'API ključevi' },
     ],
@@ -640,6 +642,7 @@ const CONTROLS: readonly PrototypeControl[] = [
       { value: 'ok', label: 'radi' },
       { value: 'slow', label: 'dug red (preko 1 min)' },
       { value: 'busy', label: 'zauzet' },
+      { value: 'spent', label: 'dnevni limit potrošen' },
     ],
     value: 'ok',
   },
@@ -650,6 +653,7 @@ const CONTROLS: readonly PrototypeControl[] = [
       { value: 'ok', label: 'radi' },
       { value: 'slow', label: 'dug red (preko 1 min)' },
       { value: 'busy', label: 'zauzet' },
+      { value: 'spent', label: 'dnevni limit potrošen' },
     ],
     value: 'ok',
   },
@@ -689,7 +693,7 @@ function setKept(value: string | boolean): void {
   if (value === 'both') corrections.kept.letters = letters;
 }
 
-const WINDOW_CASES: readonly WindowCase[] = ['waiting', 'queued', 'busy', 'no-credit', 'offline', 'bad-key'];
+const WINDOW_CASES: readonly WindowCase[] = ['waiting', 'queued', 'busy', 'no-credit', 'offline', 'bad-key', 'spent', 'broke-after-slow'];
 
 function isWindowCase(value: string | boolean): value is WindowCase {
   return WINDOW_CASES.some((one) => one === value);
@@ -726,7 +730,7 @@ function setScreen(value: string | boolean): void {
   else openCorrectionsWindow();
 }
 
-const googleDayOf = (value: string | boolean): GoogleDay => (value === 'slow' || value === 'busy' ? value : 'ok');
+const googleDayOf = (value: string | boolean): GoogleDay => (value === 'slow' || value === 'busy' || value === 'spent' ? value : 'ok');
 
 /** Titles he could have, typed or pasted, for the comment's opening line to cope with. */
 const ODD_TITLES: Readonly<Record<string, string>> = {

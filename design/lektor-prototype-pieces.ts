@@ -59,7 +59,32 @@ export interface PrototypeState {
 
 /** The free tier's two models: 3.8 first, 3.6 standing in for it on Slova i zarezi and Pravopis. */
 export type FreeModel = 'gemini-3.8-flash' | 'gemini-3.6-flash';
-export type GoogleDay = 'ok' | 'slow' | 'busy';
+/**
+ * Sent free, handed on to paid Flash as he ticked, and the account empty (Danilo, 2026-11-10): said
+ * as what happened, since "Plaćeni iznos je potrošen" on what he sent as free would puzzle him. No
+ * shortcut: back to free would only be slow again.
+ */
+// Not "bio spor": it is handed on when spent for the day too; this holds for both.
+export const HANDED_OVER_BROKE = 'Besplatni lektor sada ne može da primi tekst, a za plaćenog nema više novca.';
+export const HANDED_OVER_BROKE_NOTE = 'Probaj ponovo kasnije, ili neka se uplati još.';
+
+/** 'spent': the model's free requests for the day are used up (Google's 429), until its reset. */
+export type GoogleDay = 'ok' | 'slow' | 'busy' | 'spent';
+
+/**
+ * When the free one works again, on his own clock and in 24-hour time (Danilo, 2026-11-10): he
+ * travels with the laptop, so not Serbian time. Google resets the free daily limits at midnight
+ * Pacific time. Worked out as the time left to that midnight, so on the two days a year Pacific time
+ * changes its clocks it can be an hour out; the app should do the same sum with that in mind.
+ */
+export function freeResetWords(now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', hourCycle: 'h23', hour: 'numeric', minute: 'numeric', second: 'numeric' }).formatToParts(now);
+  const part = (type: Intl.DateTimeFormatPartTypes): number => Number(parts.find((one) => one.type === type)?.value ?? 0);
+  const sinceMidnight = part('hour') * 3600 + part('minute') * 60 + part('second');
+  const reset = new Date(now.getTime() + (86_400 - sinceMidnight) * 1000);
+  const time = reset.toLocaleTimeString('sr-Latn', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  return `${reset.toDateString() === now.toDateString() ? 'danas' : 'sutra'} posle ${time}`;
+}
 
 export const state: PrototypeState = {
   choice: 'free',
