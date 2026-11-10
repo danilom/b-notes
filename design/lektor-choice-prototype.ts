@@ -13,7 +13,7 @@ import { type KeyCheck, deadKeyNotice, isAnyKeyDead, keys, keysScreen } from './
 import { type PaidIfSlow, lektorChoice, paidIfSlowByDefault } from './lektor-choice-radios.ts';
 import { type CommentFailure, commentFailure, commentRun, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
 import { ISPRAVKE_PICTURES, UTISAK_PICTURES, drawPicture } from './lektor-menu-icons-prototype.ts';
-import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, type Tier, button, dollars, el, element, lineIcon, sendButton, serviceLineOf, spend, state, tierOfModel } from './lektor-prototype-pieces.ts';
+import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, type Tier, button, dollars, el, element, sendButton, serviceLineOf, spend, state, tierOfModel } from './lektor-prototype-pieces.ts';
 
 /** The menu, then the utisak's own step ('start': who writes it), its wait or failure, the utisak; and the keys. */
 type Screen = 'menu' | 'start' | 'waiting' | 'failed' | 'response' | 'keys';
@@ -401,9 +401,6 @@ function backButton(label: string, onBack: () => void): HTMLButtonElement {
   return back;
 }
 
-/** Lucide's circle-stop: stop, as on every player he has used, drawn as a button; not ✕, which says close. */
-const STOP_PATHS = ['M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20', 'M10 9h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z'];
-
 /**
  * The wait: the app's "čita tekst…" with who and which text, and nothing more, his text beside it to
  * look at meanwhile. Giving up is an escape hatch, not a step back or forward (Danilo, 2026-11-10):
@@ -413,7 +410,8 @@ const STOP_PATHS = ['M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20', 'M10 9h4a1 1 0 0 
  */
 function waitingScreen(): Step {
   const stop = button('', backFromComment, 'lektor-again');
-  stop.append(lineIcon(STOP_PATHS, []), el('span', '', 'Odustani od zahteva'));
+  // The app's ✕ (Danilo, 2026-11-10): under the wait, beside its words, it can't be taken for closing the panel.
+  stop.append(icon('close'), el('span', '', 'Odustani od zahteva'));
   const row = el('div', 'lektor-back-row lektor-stop-row');
   row.append(stop);
   return { content: [commentWaiting(textInWords()), row] };
