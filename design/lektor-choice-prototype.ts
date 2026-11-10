@@ -425,23 +425,24 @@ function failedScreen(): Step {
 }
 
 /**
- * Done while another text is open: said, and the way to that text, plain; not the utisak itself,
- * which quotes a text he can't see and leads to corrections of the wrong one. Plain, not solid blue
- * (Danilo, 2026-11-10): going to another text isn't the next step of his work. "← Nazad" leaves it
- * kept with its text, to be there when he opens it, as any utisak is.
+ * Done while another text is open: said, and the way to that text; not the utisak itself,
+ * which quotes a text he can't see and leads to corrections of the wrong one. Solid blue, as the one
+ * thing to do here (Danilo, 2026-11-10, reversing plain), and right under the line
+ * that says it's done, not in the strip at the foot, a panel's height away, where he didn't see it;
+ * and no "you'll see it when you open that text", which told him to go and look instead of a button
+ * that does (Danilo, 2026-11-10). "← Nazad" leaves it kept with its text, as any utisak is.
  */
 function elsewhereScreen(): Step {
   const open = button('Otvori tekst i utisak', () => {
     isReadyElsewhere = false;
     openTextInPrototype(TEXT_TITLE);
-  }, 'status-action');
+  }, 'status-action lektor-main-action lektor-elsewhere-open');
   const back = backButton('Nazad', () => {
     isReadyElsewhere = false;
     render();
   });
   return {
-    content: [el('p', 'lektor-line', `Utisak o tekstu ${textInWords()} je gotov.`), el('p', 'lektor-where', 'Videćeš ga i kad otvoriš taj tekst.')],
-    main: open,
+    content: [el('p', 'lektor-line', `Utisak o tekstu ${textInWords()} je gotov.`), open],
     back,
   };
 }
