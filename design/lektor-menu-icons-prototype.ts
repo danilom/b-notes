@@ -328,6 +328,37 @@ export const ISPRAVKE_PICTURES = {
       redZ(30, 9.5),
     ],
   },
+  /*
+    The ž on the page's first row, as in "ž u gornjem uglu", but clear of the edges (Danilo,
+    2026-11-10): its háček well under the top, and room at the side; at the left, middle or right.
+  */
+  'page-z-top-left': {
+    label: 'ž gore levo, sa razmakom',
+    shapes: [
+      shape('rect', 'ic-paper', { x: 6, y: 4, width: 36, height: 38, rx: 3 }),
+      shape('path', 'ic-line', { d: 'M22 17h15M11 24h26M11 31h26M11 38h14' }),
+      redCaret(28, 31),
+      redZ(11, 13),
+    ],
+  },
+  'page-z-top-middle': {
+    label: 'ž gore u sredini, sa razmakom',
+    shapes: [
+      shape('rect', 'ic-paper', { x: 6, y: 4, width: 36, height: 38, rx: 3 }),
+      shape('path', 'ic-line', { d: 'M11 17h7M30 17h7M11 24h26M11 31h26M11 38h14' }),
+      redCaret(16, 31),
+      redZ(20.5, 13),
+    ],
+  },
+  'page-z-top-right': {
+    label: 'ž gore desno, sa razmakom',
+    shapes: [
+      shape('rect', 'ic-paper', { x: 6, y: 4, width: 36, height: 38, rx: 3 }),
+      shape('path', 'ic-line', { d: 'M11 17h15M11 24h26M11 31h26M11 38h14' }),
+      redCaret(17, 31),
+      redZ(30, 13),
+    ],
+  },
   'page-z-bottom': {
     label: 'ž u donjem uglu strane',
     shapes: [
