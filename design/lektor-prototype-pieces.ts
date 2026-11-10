@@ -111,12 +111,17 @@ const CHOICE_PATHS: Readonly<Record<Choice, readonly string[]>> = {
 };
 
 export function choiceMark(choice: Choice = state.choice): SVGSVGElement {
+  return lineIcon(CHOICE_PATHS[choice], ['lektor-choice-mark', `lektor-choice-mark-${choice}`]);
+}
+
+/** An icon drawn in the app's line, from Lucide's paths: for the prototype's own marks, which the app's set lacks. */
+export function lineIcon(paths: readonly string[], classes: readonly string[]): SVGSVGElement {
   const made = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   for (const [name, value] of Object.entries({ viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' })) {
     made.setAttribute(name, value);
   }
-  made.classList.add('lektor-choice-mark', `lektor-choice-mark-${choice}`);
-  for (const d of CHOICE_PATHS[choice]) {
+  made.classList.add(...classes);
+  for (const d of paths) {
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('d', d);
     made.append(path);

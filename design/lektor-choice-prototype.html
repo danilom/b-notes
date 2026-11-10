@@ -101,8 +101,36 @@
         white-space: normal;
         border: 1px solid var(--line);
         border-radius: 6px;
-        background-color: var(--panel);
+        /* The app's buttons' own white, so they stand out from the panel as the screen's two ways on. */
+        background-color: var(--page);
         cursor: pointer;
+      }
+
+      /* With an icon: it in a column of its own at the left, the name and sentence beside it. */
+      .lektor-side-body .lektor-menu-option:has(.lektor-menu-icon) {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        column-gap: 0.7rem;
+        align-items: center;
+      }
+
+      .lektor-menu-icon {
+        grid-row: span 2;
+        width: 1.9rem;
+        height: 1.9rem;
+        color: var(--chosen-ink);
+      }
+
+      /* The corrections' mark on "Pređi na ispravke…", before the words, as the menu has it before its name. */
+      .lektor-main-action:has(.lektor-to-corrections-icon) {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45em;
+      }
+
+      .lektor-menu-option:has(.lektor-menu-icon) .lektor-menu-name,
+      .lektor-menu-option:has(.lektor-menu-icon) .lektor-menu-does {
+        grid-column: 2;
       }
 
       .lektor-menu-name {
