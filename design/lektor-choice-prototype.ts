@@ -183,6 +183,11 @@ function aboutAi(): HTMLElement[] {
   toggle.addEventListener('click', () => {
     isAboutAiOpen = !isAboutAiOpen;
     render();
+    // Opened at the panel's foot, the words fell below its edge and he saw nothing happen: brought
+    // into view, gently unless Windows is set to spare him animation.
+    if (!isAboutAiOpen) return;
+    const isStill = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.querySelector('.lektor-about-ai')?.scrollIntoView({ block: 'nearest', behavior: isStill ? 'auto' : 'smooth' });
   });
   const about =
     'AI je program koji je učio iz ogromne količine tekstova i piše ono što zvuči verovatno. Ne razume tekst kao čovek i nema sopstveno iskustvo. Zato ponekad sa sigurnošću kaže nešto netačno: navod, činjenicu, ime. Ovaj komentar je utisak AI programa, a ne stručna kritika.';
