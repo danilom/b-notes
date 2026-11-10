@@ -12,7 +12,7 @@ import { type WindowCase, corrections, openCorrectionsWindow, openCorrectionsWin
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { lektorChoice } from './lektor-choice-radios.ts';
 import { commentFailure, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
-import { ISPRAVKE_PICTURES, type IspravkePicture, type MenuPicture, PICTURE_COLOURS, type PictureColours, UTISAK_PICTURES, type UtisakPicture, drawPicture, isPictureColours } from './lektor-menu-icons-prototype.ts';
+import { ISPRAVKE_PICTURES, type IspravkePicture, PICTURE_COLOURS, type PictureColours, UTISAK_PICTURES, type UtisakPicture, drawPicture, isPictureColours } from './lektor-menu-icons-prototype.ts';
 import { type Choice, type GoogleDay, TEXT_PARAGRAPHS, TEXT_TITLE, button, dollars, el, element, sendButton, serviceLine, spend, state } from './lektor-prototype-pieces.ts';
 
 /** The menu, then the utisak's own step ('start': who writes it), its wait or failure, the utisak; and the keys. */
@@ -95,42 +95,6 @@ function utisakIcon(className: string): SVGSVGElement[] {
 /** The corrections' picture at this size, or nothing when the switch says none. */
 function ispravkeIcon(className: string): SVGSVGElement[] {
   return ispravkePicture === 'none' ? [] : [drawPicture(ISPRAVKE_PICTURES[ispravkePicture], className, ispravkeColours)];
-}
-
-/** Whether the contact sheet is over the page: every picture in every colour, to choose from. */
-let isContactSheetShown = false;
-
-/** One row of the sheet: a colour's name, then each picture in it, the corrections' after a dividing line. */
-function contactSheetRow(colours: PictureColours): HTMLTableRowElement {
-  const row = el('tr');
-  const name = el('th', '', PICTURE_COLOURS[colours]);
-  name.scope = 'row';
-  row.append(name);
-  for (const picture of Object.values(UTISAK_PICTURES)) row.append(sheetCell(picture, colours, false));
-  Object.values(ISPRAVKE_PICTURES).forEach((picture, index) => row.append(sheetCell(picture, colours, index === 0)));
-  return row;
-}
-
-function sheetCell(picture: MenuPicture, colours: PictureColours, startsGroup: boolean): HTMLTableCellElement {
-  const cell = el('td', startsGroup ? 'lektor-sheet-gap' : '');
-  cell.title = picture.label;
-  cell.append(drawPicture(picture, 'lektor-sheet-picture', colours));
-  return cell;
-}
-
-/** The sheet: pictures across, under their names, the utisak's then the corrections'; colours down. */
-function drawContactSheet(): void {
-  document.querySelector('.lektor-contact-sheet')?.remove();
-  if (!isContactSheetShown) return;
-  const head = el('tr');
-  head.append(el('th'));
-  for (const picture of Object.values(UTISAK_PICTURES)) head.append(el('th', '', picture.label));
-  for (const picture of Object.values(ISPRAVKE_PICTURES)) head.append(el('th', '', picture.label));
-  const table = el('table');
-  table.append(head, ...Object.keys(PICTURE_COLOURS).filter(isPictureColours).map(contactSheetRow));
-  const sheet = el('div', 'lektor-contact-sheet');
-  sheet.append(el('p', '', 'Utisak (levo) i ispravke (desno), u svakoj boji. Isključi „Kontakt list slika” da se vratiš na panel.'), table);
-  document.body.append(sheet);
 }
 
 /** One of the menu's two choices: a big target, its name and a sentence on what it does, and its icon if on. */
@@ -539,7 +503,6 @@ const CONTROLS: readonly PrototypeControl[] = [
   },
   { id: 'utisak-colours', label: 'Boje: utisak', options: colourOptions(), value: 'colour' },
   { id: 'ispravke-colours', label: 'Boje: ispravke', options: colourOptions(), value: 'colour' },
-  { id: 'contact-sheet', label: 'Kontakt list slika', value: false },
   { id: 'stale', label: 'Tekst promenjen posle utiska', value: false },
   {
     id: 'comment-title',
@@ -688,8 +651,6 @@ function setControl(id: string, value: string | boolean): void {
   if (id === 'ispravke-picture') ispravkePicture = isIspravkePicture(value) ? value : 'none';
   if (id === 'utisak-colours') utisakColours = isPictureColours(value) ? value : 'colour';
   if (id === 'ispravke-colours') ispravkeColours = isPictureColours(value) ? value : 'colour';
-  if (id === 'contact-sheet') isContactSheetShown = value === true;
-  drawContactSheet();
   if (id === 'comment-title' && typeof value === 'string') commentTextTitle = ODD_TITLES[value] ?? TEXT_TITLE;
   if (id === 'free-key') keys.saved.free = value === true;
   if (id === 'paid-key') keys.saved.paid = value === true;

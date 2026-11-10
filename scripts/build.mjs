@@ -94,6 +94,14 @@ const targets = [
     platform: 'browser',
     format: 'iife',
   },
+  {
+    // A page for choosing the Lektor menu's pictures. Into dist-browser/ only, like the two above.
+    ...shared,
+    entryPoints: ['design/lektor-menu-pictures.ts'],
+    outfile: 'dist-browser/lektor-menu-pictures.js',
+    platform: 'browser',
+    format: 'iife',
+  },
 ];
 
 await mkdir('dist', { recursive: true });
@@ -104,6 +112,8 @@ await cp('src/ui/interface.css', 'dist/interface.css');
 await cp('src/ui/interface.css', 'dist-browser/interface.css');
 await cp('src/ui/lektor/lektor.css', 'dist/lektor.css');
 await cp('src/ui/lektor/lektor.css', 'dist-browser/lektor.css');
+// The Lektor menu's pictures, for the two design pages; not the app's, so not into dist/.
+await cp('design/lektor-menu-pictures.css', 'dist-browser/lektor-menu-pictures.css');
 
 /*
   The mark, to both. The SVG is what the page asks for as its favicon, which is
