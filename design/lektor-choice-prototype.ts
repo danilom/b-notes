@@ -254,14 +254,14 @@ function textInWords(): string {
  * the top, beside the note that says when the text has changed since, which is when it is wanted.
  */
 function responseScreen(): Step {
-  // A small grey link while the utisak is current; a white button once his text has changed since,
-  // when asking again is what the note above it suggests (Danilo, 2026-11-10).
+  // A small grey link while the utisak is current; once his text has changed since, the same size but
+  // white with an edge, as the note above it suggests asking again (Danilo, 2026-11-10).
   const ask = button('', () => {
     screen = 'start';
     // A new start of the step, so Besplatni again, whatever wrote the comment: nothing is chosen for him from how he left it.
     state.choice = 'free';
     render();
-  }, isCommentStale ? 'status-action lektor-again-stale' : 'lektor-again');
+  }, isCommentStale ? 'lektor-again lektor-again-stale' : 'lektor-again');
   ask.append(icon('back'), el('span', '', 'Traži novi utisak'));
   const again = el('div', 'lektor-back-row');
   again.append(ask);
