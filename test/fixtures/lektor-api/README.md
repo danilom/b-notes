@@ -50,6 +50,7 @@ One JSON file per case:
 | `google-models-all.json` | 2026-11-10 17:01 | the whole model list, cut down to the gemini-3.x-flash models (`trimmed` says so) |
 | `google-busy-at-once-gemini-3.8-flash.json` | 2026-11-10 17:01 | free 3.8, streamed: 503 `service_unavailable` "high demand" after 1.4 s, bare JSON |
 | `google-busy-at-once-gemini-3.6-flash.json` | 2026-11-10 17:01 | the same for 3.6 |
+| `google-stream-whole-gemini-3.6-flash.json` | 2026-11-10 17:12 | a whole free streamed utisak on 3.6, untrimmed: three keep-alives 15 s apart, `interaction.created` at 51.5 s, a `thought` step (signature only), the words, `interaction.completed` with usage, `event: done` |
 | `openrouter-wrong-key-completion.json` | 2026-11-10 17:01 | `/chat/completions` with a wrong key: 401 "User not found." |
 | `openrouter-wrong-key-key.json` | 2026-11-10 17:01 | `/key` with a wrong key: the same 401 |
 | `openrouter-key.json` | 2026-11-10 17:01 | `/key` with the real key: the key's cap and its use, **not the account balance** |
@@ -61,10 +62,9 @@ $7,08 in the account.
 
 ## Not here yet
 
-- **A whole free stream** (keep-alives, `interaction.created`, words, `interaction.completed`)
-  and **a mid-stream error event**. Google answered every try with 503 at once while these were
-  recorded. Run `node scripts/record-lektor-api.mts --out <folder> --cases google-stream` at a
-  quieter hour, clean the result, and add a row above.
+- **A whole stream on 3.8, and a mid-stream error event.** Google refused 3.8 at once on every
+  try. Run `node scripts/record-lektor-api.mts --out <folder> --cases google-stream` at a quieter
+  hour, clean the result, and add a row above.
 - **Any OpenRouter completion stream, 402, 429 or 503.** These need a paid call or an empty
   account. Record the first paid stream when the build's own first paid test is run by hand,
   through the same cleaning script.

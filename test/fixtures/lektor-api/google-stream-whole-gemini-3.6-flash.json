@@ -1,0 +1,106 @@
+{
+  "name": "google-stream-whole-gemini-3.6-flash",
+  "recordedAt": "2026-11-10T17:12:23.528Z",
+  "request": {
+    "method": "POST",
+    "url": "https://generativelanguage.googleapis.com/v1beta/interactions?alt=sse",
+    "headers": {
+      "Api-Revision": "2026-05-20",
+      "Content-Type": "application/json",
+      "x-goog-api-key": "<KEY>",
+      "Accept": "text/event-stream"
+    },
+    "body": {
+      "model": "gemini-3.6-flash",
+      "system_instruction": "Ti si pažljiv čitalac ovog teksta, a ne učitelj. Napiši autoru svoj utisak u najviše tri kratka pasusa, obraćajući mu se sa „ti”.\n\nU prvom reci šta ti je ostalo i zašto, i navedi jedno konkretno mesto iz teksta, kratkim navodom.\nU drugom reci gde si zastao ili želeo nešto više, i opet navedi to mesto.\nU trećem reci nešto o celini.\n\nBez opšte hvale, bez ocena i bez spiska saveta. Ne izmišljaj lično iskustvo. Ako nisi siguran u neku činjenicu, nemoj je tvrditi. Piši narečjem kojim je tekst pisan.\nVrati samo te pasuse, običnim tekstom, bez naslova i oznaka.",
+      "input": "Jutros sam izašao rano, pre nego što se grad probudio. Na pijaci su tek postavljali tezge, a miris\nhleba iz pekare na uglu se širio celom ulicom. Kupio sam kilo jabuka i jednu veliku dinju, iako\nznam da je niko u kući neće jesti osim mene.\n\nKod česme sam sreo starog Milutina, koji je ceo život radio na železnici. Pričao mi je o vozovima\nkoji više ne idu, i o stanicama na kojima više niko ne čeka. Rekao je da mu najviše nedostaje zvuk\npištaljke u zoru. Ja nisam znao šta da mu kažem, pa sam samo klimnuo glavom.",
+      "store": false,
+      "stream": true
+    }
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "text/event-stream"
+  },
+  "headersAtMs": 15219,
+  "pieces": [
+    {
+      "atMs": 15219,
+      "text": ": keep-alive\n\n"
+    },
+    {
+      "atMs": 30219,
+      "text": ": keep-alive\n\n"
+    },
+    {
+      "atMs": 45219,
+      "text": ": keep-alive\n\n"
+    },
+    {
+      "atMs": 51547,
+      "text": "event: interaction.created\ndata: {\"interaction\":{\"object\":\"interaction\",\"model\":\"gemini-3.6-flash\"},\"event_type\":\"interaction.created\"}\n\n"
+    },
+    {
+      "atMs": 51553,
+      "text": "event: interaction.status_update\ndata: {\"status\":\"in_progress\",\"event_type\":\"interaction.status_update\"}\n\nevent: step.start\ndata: {\"index\":0,\"step\":{\"type\":\"thought\"},\"event_type\":\"step.start\"}\n\n"
+    },
+    {
+      "atMs": 51554,
+      "text": "event: step.delta\ndata: {\"index\":0,\"delta\":{\"signature\":\"ErUvCrIvAWkUfRO5IcRQm90YN4SbQOcQwvnKDhMR1CSMcp11SIQwmvlxFdasLpLaMIyDXUGt37ZcscKNM7Mi9mI2kRdXo7GmpMKWo0r4tF8/dI10380DARFxP4xRM3Yjvw0CK37GwJcXDzCNz065JeStwzlN/VTobo+nNuxSD9bu9E9ul14fQ1I8Aoh2hFbsa2F99iQ/fRbUMed/pXMHQH5zoCqsZXILDgAjk/4FVYzMmgqxWv1cnC5gioLvg9BJuAxdOP30hJiL9sNQncu+Bp79EOpfT0W+2XpiyXj3blc2qhoJgWfMnRm4/+gAnljW7RyUI8WtVotZtOXMc/5M5wJLxCEgMXIEXx9hlxLyq1FbkQXmIi8F/FOlJPE5JyjmSTuR1jyvhxEYzVxc6DI0vq2x1HMrdzGGr0xCeyT4bncb/NU2R5ucyQAZv4nV+HihmXg6RC7Jva7g68C/yAzMHkLz6Q13O/w5g3aNQJGGDW5ee587Wv3/oLzuzTEaI7rPJ6miU8sU/S6JYEZQPaqx2PPBtJHOQ76m3ILOg4rsFB3xLAHPMOXeukUDaGr181YiuZP12GkYrbYcXDJZuAvF85oCPq6aFpamgx5ArFD5/TuYmTbx88cdOcKbl708kitcgT7OGQrNUYZtTsKwAc/4v3LzcdUQV/57tjrRyGY8+JWASYIwLp/eMHHfLFR3bSQsIYij52Hg4SGuwwHYE4amt6WwxmaJxB9IK77OaJDJUTXG9tc7qk67ClU5X43Bc0pTuJPHr66iRBNmyX/lA574Pr4LZKrLfFasGXQBMx1zvfujoPyunAZKAQz4heVWWfxx32FGx2rTW/U1r+WShRinPvmlldXrUVIMhmUCEyl7YOOkekIma2ZSvAqrvs+IK2Br2egQC70Wt+RxZt6/kM5f3SmTBerLibIWFXXF0AZ6tUAZmJqWM9GyVLAL/z5ugdMS0dA+crFzS8/v1QKutiPSbH/vWlsExML9+5iCh/XCDgwNWWCITo8yFq+inqzblGqmbRn21V+datFn4y12XqqiIaFKKPfQ6X9VmvQml0A/kxbgIJOb2/FavRqqNSrv4DWx9iJcTPEQ/9+BEjKLcE7P1j2nbHfCtX1BlpA3GEoxI8PsGYgSqhi7PC61PSwhrYj6ImE2qkoLOIvGKEmhKK3xZLSw26jOjONSDIcrtza6oZoOaThUHMXdR+jHg5wXJdJC+UyZwAsrvN9IHUnN3WE3IyIJTN5tKGoxxUCH664GLn600dc/ezLy9G4/MS8W/o3QEoyQd1aafAJufpg1KQSIsqbUBf2ZVQBeAflB44HyIXZAXI0"
+    },
+    {
+      "atMs": 51554,
+      "text": "M9NSlkSt4vjTYpWb/3Db13J4y/Yxo4jBtXl91KTrl+jvUaYZxPpz+2nmge2F9lCy1iZgazzluaebqwBuc21CVNikAQafOHtqQItJLEH7i4RjpOmwY6OAIUKv0/T9zCEOIXIajK5riM/pQJO4Xpdqh42QXwR34ne1qxmZehpMayjdiQSpSevNkdas3tieawj7erM+DQplG65ipENFsiwsfzbAZA6M/41ZznMxWTX8vxJXHm/mYq+TCW7BWzNE3f6DhiSJKxPywsQYzPSqhqeYIHxPxNHNWlgFQ1ZX93N1jO9A+0qTHVbWzZ7hGhOoZ4Ykrn0ogCfHk75QyGi7fza2X8+jI2iubKq3JwmqWlwg82YL7YwApWOPDu3mLabJS/lKCfeS5C0dAJyh5tEGvWs07Xxrbxe3/5hlxonhDlk0HBLFRMCcdrk77pK3SizxVfBytJ9MWDNo3QJqTQ0mOZ5Vq9LDhwmteP+WzFxpfL1FufumWpU3kSNOtRpHR2m56tIbGwfa88uQ6DymECYJj2sxlpWAFnzTl8ch7e1530vpq1P2EaqjvWpHF8SXOfJK24Pnpr+u1Gh60IUKyPj85flB/uXe1sQkFqKWTmXmQ3pc2d7SpIa6Jr2QfjaTbjdEwCQPGvGzub7X6IxWjx9VUunbAffPDFkZpGqRDOgaT5oX/Xg0DwMdi+oerwf3oY/8Nr+qMj6X0CqYTWPS9FTMmJXDdZoYg7Y3L5ZDDJIVWUmVALcLJtT0eDkkg7ZO0jFTFxcxNGAfJS6PT2gIF94koBAzPKSR/f1VAlsa2u84h39kvNGtwPqL1IBr113iLf96UnoHB6II8EOeRBG0MpdMX7vWKXAfvRw3Yexrgm4gz46GIRy9KibAVUYZtdqhI9as+rTK833UpB7Y3bzLiIRHWipQ/wJ/6HOYlcJ7/Q6zv1YxHIQAAC63V1l4pddo3ub79DjTCxwiXKtjJ+DzwUHq8LxgmXxRR7yirudAGH0FpGo/y6U4kd4/VLrLH2fn7SjSqItedQVf3+lCevbnRDVAUhJvu1AVrtFx6HI3l8Pt0IC+39Ho2N54mDC1AHHNclTrbDn5E6o2m1NG/kGSx+JX+qaKbOjzDC76iCg1sxvizaINDbDa9WwkP/9/xLlwutyKMQa2bilGZ9cmzDj9D56jcd8jqIPyn5kpIElTkhmUN2cnhMSzMtc2zsEYcSDADRGqytaeCmp0icX4KIuDTEFuej22Vu8rur13SpXdxlGKetOcmMr6/wl88qjQvbPMMtZnw8azzJMywGfKU6so+sPFDF/CSjawYRtz4VzDZpgUw9HHBHOZdnxNWq6f+icQKPXEcNoZ17cTYrxkhOzqpTR1gtPyF9X6tio2VHwoPpUc/Wx8escVqa"
+    },
+    {
+      "atMs": 51554,
+      "text": "tz30KMJ8XSwspdOc24qrTn9FpDriV1GCJtwvA7Q7U5QFZllAgqObRfVSRUxlikgMX8Sa3xNXgvoHHGMtlbqSjfUNpP2JCJDjvzeUQvyFtWaNq2GkmbeLVNWmeNFSuomPjJOtuy//d94TPg4AZ1HGykvtEaKn5R9MSv0hGRewgbepVl9DHx5eDo7bZI/WneE2kEcxjG8Y6ba2TZIfyv6e2p14cPAS4AgjJzXSF6PXbhK1z9C0Foz+xbghaBXJQRKG59fhDgzqyq6yaBXZI7cRjKa+NxOUHgM60eymEUkv8P4NRR4NBhsx7OC5tlxB8cePM9TSApwniBWhQs5PFd3ID0sa3Mup7wxnuiRd+BsFlaOMIrVTwADXLRj9nwbd9nrOglgioMXWrulV25QOKegewQfSM+lRPWObQnYdW6RWApixanQle5PHJfOSku5z1jcyN+PaPO4Exwvu+jKK+B9AhCDOTByoZbvUXjtaxgbN8mBecjMygi+LQRWQjtIn61wG5eMUsJDD0x33tssNEFqr92yuPVsDPZw6ZQ9f9dCiGWbc8cMZjidwhEiiAjD50nvZSgS1R4/PYG5lauhEqN2cvNSdnoNTAG1DLbhid3WMBE64twduX2KqyN1/+X6g5EPnEEEnwmT3zrCGoOXdYz63Jcf84ov4+CQprBTX/7397avo9PuO6rU5EGjA3eTpJZYCcgdWPFXTWHlp3/jFRm8KcX8WBw01+Se2fFQPwOxfuj2yrLxskYl600Z9C/tmu6Hc6u90TKTlJBUN3tS240RLMdy3Omo8mvU1maVUrpTyRXH4q9PUJ1MjZ2rL3fp9ReZp8+VgC9BoAp1dQc8CEW04GiPspgXgojIr/9rOTHBrzOV6idTpJgM1cgKswqythtMf5fw4Ypg2FmKT6R7zZaOscLQoug/7qFq9BHkxOvLxoOrug66Swccs+RmfoCHeczgXBGYk1QuG6Os6PldqxyBYxwKhhzVuDbRY02mkPy3xx7P0tW+PdKtdySe3+O+8/nu6qYptFYxCpYvfDtub6vZSL98RaGlpoC5AG+4/lG5VF23EjGJrpW2mQn88Rvc+GJE8WT4N6B50atjuMRA+k7yOOzp/CgFSWJNnFlCnduMD4A2e8CTw8G+li6ndG+CvNRUXF253eVo/XryFABhrN8fjBHIe/ouQJEcHi38Xg4Tabor+7gfrlH5QlvU5gtSvrrogRknZ8oaP3PkqGbtn6H7GCasBJF7qjDUV5CIHMUG/b6jBRARFNRY72xeA+F/tZQ0kDcHomacbo2+X0aBYBCUQUykjGQoPwkETg9fLnldy74/2doauJRuG1zqwdboMcpu19XvEc/imWuN69g6mPKmrEPpHAkOOij91qzq1Al8XupzJ8k"
+    },
+    {
+      "atMs": 51554,
+      "text": "iZPVL/01UoEH6slQfBbEM5RCEMWvwhMSfSB11lxFLbsWnmKGaukB3bsoj3DVs2jTtQzSYWPXePMjcfyj+R3NdwmemeG5W9WLodBtwmgsQVtkkbQ+XgUpdjx0AGwB+2VKeSdI7N+P65Dz90S3sb5zR610ArMVZAuwOeAEo/i8ZtH6Z1V7JsrJhkgHwsYtvlHqh2MRtUb8k6A0SnBU1N4blYKRrV7+2Z9cEG32zDP51LqBoflRiWHs2G/MMvsrr8HCeJ24XJvnqe4M03oWYcgcMW6Zch2UMIJGR+53RIeV+o5uNH2jsHCRpUTM0nQrQh4aXiFKeK8K2mIvQU+Yv/ZQaJt6hNgd2cZ47jUclJz88Rucbsyziw9TC5QcS78ZRgS09DqsTTjhhbH9s3SBmHjZLTJKd8U11VaJR2CrHExOWb5qeaF6Q2l72NBh8X6mCZ5GzSZznRnghCzhzeftKfHAHvuLcfQ4NzWT58iRQMAUZXifSLjerHT5DpCgtLOy1Hkzdpr6SyckmcmchA97OWTfsySa7dr+vydbHeNrdlOP+E/oHmbkAoau73sXUYl749CRQIUrJ9ydPzw6sQils3m41wxQSsNxZcvym87I7JhIPxqSP7Z3wRK/RzXYXPrKO75wGWn57H3UoBQaCu4vY1TNnGqZlcRfHNMbmdedhtS6TvTP/QnhW70KMoZdH9AX1S26paI/8aV3dj9Ag/PBThjeZnLSPsXS2RWTUd1cWD1tnclRZPiEHwRTbUnCFtyCl1b1mXcTaNj5QkGkmgOeriBFT1ufLpE2QYCS0gm9IP4O+FNKd6cCrhE2rBNJ9PPd8TtxdDDLdSkNPsR/ZuVpKBQVyGefbC5iquZDz1wqTW1nM75hRIdeKGug5EYIP49B4VdCJzxSqoCr2jPJA4HX4ExFMkTALmD7+i5ebXFPVtaWgcEeypl9OLwM8mVZFZ9/3cZa0QCZRdVLvrS8rMa8GJxp/IIIxBA8XN+KgQOuEPyRFXWY9kmO/IpzHon2KV4vIfelbI9ev47lqGttQRNUs6d5fGTNlSdWH7uoCD3gjHnaJURthMksJuTcH166N39W3doOIf5YXI4drb60espCe12o3zcWkWzU7yyx66eEaduzxk4JK3dX4ZEmcjQKQLKClA+mALmITaMDMcQgCsOB+qNUc+4rAFBCSWzB+BtS2DBjTDqZQ+DqKDnQIykHz4xNIaynYlpb8whsRXb6YIYqFWJ3MhyNn4t9edZRkrg3b1OBArGmLbcjvCKQD4C2zApeUfcY2NQj1z0FX+PU07o2qo8H0hSjj6UHTlQ3XcSh1IGRCTA3rVAw9QtL1z9h3nDe8k66PtlrOUvT5/aac1eSrBJNPTdMnbZF/5rrwSbD623EBCEeaT"
+    },
+    {
+      "atMs": 51554,
+      "text": "C9Z+B3xRrXrpvJi4XWk5vjBheVTaxAVLAxF7EqnhuzK/5hA5MJT8K0fyIBgD6o3iOTuXKNGSoAkv6iZh5vD97qrdf8omBnSHPpQaUUGpzHkGDe4z4atxa9Aj9NDWqYafJVTv0lLSIyHGkF/mPy5853MxhCkEX+qKNrvMgM/g87nXM8QWdvKzEvV+flCJrmsEv4v4j5C8oCHO1JQJ1GPamFTMUNZ6cmmWx/cDtT1hkFVvtdzWPKbE59QF5ml1UrIMuTGs5d/nULdBnanozg8yndx1GDvZ7+tlw7WguXwBZBuQaGuGKc16mdPN7QsXfm6x7R5TomMWEwMZBs8lQIoJ71pn05jwcxbicBvXfjlmPUJyojNzh9/O6CbQjZaq5+Sedzlc+xyon6sSQQUYmIZR20pXNUQ71XkW/bFH+mCIsf96js6rSTVrfRdN40sc7MJe28RGfdtN7x0C97mWuQf+d7vkZgdpr1ya3ga7/yjLlam1n3TUG1sIJEiKGxcZvOaR5wjyc3U1AQdPbRBPdy0d2CdZuyXF9fyae5wopN/zpES96DfX3woMYs/X8EkZFtXVWFH44kyADQheAF0ED+uQuVFWDzftqQ5RY4CO9OnZUvqCDxXa//RIRIRWmwka/vta9x3Fp5zRX33jsi9B4dV8UfFr+fVIN/G+89FyH0yufirLPzIA5ND7UtSp85XLwMYLXfi1WPgNSU7wBziSIbmHc0X7rkNlWxH7J5K1kRt78C1Y+wwOkhebqwEeIfYQXP5/2jGqgWqt7IyRlRYpMA9qiX9oDdyNqGsFDPD0s2vBz3UA/g/oUHz/glPN6crODMpr4rVo8zhwXt9pby9NhHhOvuLc5L9ekMsfr1m9x7P6qt0N8IGqUTIJquMvAdmA79kRyHlpVlWqlf2ReHjnLkBKRSESh0iZG5nwvQ29wzxw/uPxO7g/Q4TrnxBIJoLxZZ9nKktrrfIis3CdKw3ch6ttFGcX6xhJj1NiRZGR6XeEcGknbfIpwV682KYCohJ0oAbdY0FVc5FBl2K1CwfUbeMYllGHGdikzhjbpZxI1U9++XtmKveC4d6x0wc55RKLJBpOzKCNHOMF2Hl/R3CcTFoCOuhJcsIkYolxh0HFoaBi3FfZ3QV/OldlsfXHDDG6po21U+Fnz9KwwVqqdv0CJgH3VvPDxpzTJw+VQc7744BQSxaaWOpvQ5Fa/qR7vgagXaDYasE0ONM8n7ExnnmUgFSxEEumKPBcqx7F6M7bsTlxc55H3tI+x7+Z7oxlEcT7uv0oOZcvr7enzBKcsV7Fbr+yAzdCptaWcB1hxvm13Zn8eFJ5tY0huhvXS++itkc5rn2XRBYOASirImJ7HUuhuSssgVDcZW+lAaXuD54nptGbKm6+4h"
+    },
+    {
+      "atMs": 51554,
+      "text": "W/ZeYn8FTBFxjYY7cNKldzoJZ2lVAIkpuyIf5c0fKswKFE6H3bK6qYzEDN7SAzor5CRoaRnPrUVImGvXiQm/7sEkm/Mzit9aEeLWOKVLV/s8zVeDVf5PlJh+hcCmLsgXsEdIbs02zwhb13prDtFwW4d5Fq/VbOJmktCr3J28XJ8Lsb03oCRhWYivnoMq/1cMffhnp2+W3nBjiYBDGKOShNCU1VOw3ltGmptOny10nXjNR2IbeoYwPQwPqWmFg/cQ8AOmKTiMjCH8OQAeUmEW54sP4N4IGDxyNmbD64XzhkHZY0ZhW+h0vJSe4tS2urFeQF1eeRWLw9XlRscWjUyRm11LElrTGI96pssNjyW+JUs9SmRw4QJikiT06/HCbhdvYRAVyuku/BzaYcPK/VrZr2Y8bPGTNzflmdkAyDJUrOd1CyS7tjxRnCSL92cun8djNrVxt1Gxqf7DoOuPEqeYFmPbKpijm588+DnKcx3itS4cyV4q5NUuAE/SNnUxe1jbRKxiWnPR1n8uvDeFYdeC/7urGTHEEpe5DKL6E9wcWJq8j7Xhm872Z7Y3mmv/bobCfkAt9RGnuWzlmllEMmNhJwqWzMRidX3pwaY+7DLbOaCuzMNQD60BGeubQX3TxX3fEgNIHbIDNvqCZFzzYyofOTmp/ruptzqMGnw4MEY32VLOK7+NuqCBvb4f4cw/kJuHICXTcG3QXWqCr9P64dnWkzvAO9iW15EvhwcwF7LjUNpj5qmC32vD8LVEGmuw+AeX/IDzN7+PhTp6TvT2iSVrt3ghIwO4f3z8NZKTBw/XD4IcuTAHG9tJr1nRXI/1oLT+/VRJwOJr9AFjNZtbivQmiLba8K3afLM76sXuvJdDj28uhZJCtWNYFqMoQ9+EDaEDnjZ1jDakYrSArDV6rXXzfTvcJw/aTmjAjy+KGpsso5hUkKqofE9JfSogrGBUJS4B4MhMy8wY8SzWb0TP2im0+xhyKqtikeFwdNRVoIVukCsdjARsQQdri1eljxi0a7/dvppv/KPRusJ4rl6R5LxSKqMSySWS25JUKofDTWflwDhLiIKIKkRJVlF5/UxA+pEKLtmWDYA0QByKB98XecEBmcmUov+yBRTVqkdL/ENnKqYbtZu5fuu8kpUDUWpfmmSpwEBXdUB3OmQVeCyEESSlHKf9pbLGEwe4iaJUhezSxrO9heAw4ZGMk17t2\",\"type\":\"thought_signature\"},\"event_type\":\"step.delta\"}\n\n"
+    },
+    {
+      "atMs": 51555,
+      "text": "event: step.stop\ndata: {\"index\":0,\"event_type\":\"step.stop\"}\n\n"
+    },
+    {
+      "atMs": 51555,
+      "text": "event: step.start\ndata: {\"index\":1,\"step\":{\"type\":\"model_output\"},\"event_type\":\"step.start\"}\n\n"
+    },
+    {
+      "atMs": 51555,
+      "text": "event: step.delta\ndata: {\"index\":1,\"delta\":{\"text\":\"Najviše mi je ostala slika susreta kod česme i tvoja\",\"type\":\"text\"},\"event_type\":\"step.delta\"}\n\nevent: step.delta\ndata: {\"index\":1,\"delta\":{\"text\":\" zabeleška „o stanicama na kojima više niko ne čeka”. Ostala mi je zato što iz te\",\"type\":\"text\"},\"event_type\":\"step.delta\"}\n\nevent: step.delta\ndata: {\"index\":1,\"delta\":{\"text\":\" jedne misli izbija snažan osećaj prolaznosti i tišine koja ostaje za\",\"type\":\"text\"},\"event_type\":\"step.delta\"}\n\nevent: step.delta\ndata: {\"index\":1,\"delta\":{\"text\":\" nekim prošlim vremenima, pa je taj razgovor naglo promenio ton celog tvog jutra\",\"type\":\"text\"},\"event_type\":\"step.delta\"}\n\nevent: step.delta\ndata: {\"index\":1,\"delta\":{\"text\":\".\\n\\nZastao sam na mestu gde kažeš „iako znam da je niko u kući neće\",\"type\":\"text\"},\"event_type\":\"step.delta\"}\n\n"
+    },
+    {
+      "atMs": 51555,
+      "text": "event: step.delta\ndata: {\"index\":1,\"delta\":{\"text\":\" jesti osim mene”. Tu sam poželeo da kažeš nešto više o tvojoj kući i odnosima u njoj, jer\",\"type\":\"text\"},\"event_type\":\"step.delta\"}\n\nevent: step.delta\ndata: {\"index\":1,\"delta\":{\"text\":\" je ta sitnica ostavila utisak neke tihe usamljenosti o kojoj si samo usput namignuo.\\n\\nCelo\",\"type\":\"text\"},\"event_type\":\"step.delta\"}\n\nevent: step.delta\ndata: {\"index\":1,\"delta\":{\"text\":\" ovo tvoje pisanje deluje kao miran, kratak zapis iz zore u kom se kroz jednostavne\",\"type\":\"text\"},\"event_type\":\"step.delta\"}\n\nevent: step.delta\ndata: {\"index\":1,\"delta\":{\"text\":\" radnje prepliću miris novog dana i nostalgija starog čoveka. Priča drži\",\"type\":\"text\"},\"event_type\":\"step.delta\"}\n\nevent: step.delta\ndata: {\"index\":1,\"delta\":{\"text\":\" ujednačen, tih ritam u kom se svakodnevna kupovina lako pretvara u prostor za razmiš\",\"type\":\"text\"},\"event_type\":\"step.delta\"}\n\n"
+    },
+    {
+      "atMs": 51555,
+      "text": "event: step.delta\ndata: {\"index\":1,\"delta\":{\"text\":\"ljanje.\",\"type\":\"text\"},\"event_type\":\"step.delta\"}\n\n"
+    },
+    {
+      "atMs": 51563,
+      "text": "event: step.stop\ndata: {\"index\":1,\"event_type\":\"step.stop\"}\n\n"
+    },
+    {
+      "atMs": 51576,
+      "text": "event: interaction.completed\ndata: {\"interaction\":{\"status\":\"completed\",\"usage\":{\"total_tokens\":2032,\"total_input_tokens\":351,\"input_tokens_by_modality\":[{\"modality\":\"text\",\"tokens\":351}],\"total_cached_tokens\":0,\"total_output_tokens\":244,\"total_tool_use_tokens\":0,\"total_thought_tokens\":1437,\"initial_input_tokens\":351},\"created\":\"2026-11-10T17:13:16Z\",\"updated\":\"2026-11-10T17:13:16Z\",\"service_tier\":\"standard\",\"object\":\"interaction\",\"model\":\"gemini-3.6-flash\"},\"event_type\":\"interaction.completed\"}\n\n"
+    },
+    {
+      "atMs": 51577,
+      "text": "event: done\ndata: [DONE]\n\n"
+    }
+  ],
+  "endAtMs": 51577,
+  "failure": null
+}
