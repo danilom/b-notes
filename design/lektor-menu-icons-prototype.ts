@@ -64,6 +64,38 @@ export const UTISAK_PICTURES = {
       shape('path', 'ic-shine', { d: 'M22.5 24a5 5 0 0 1 3.5-3' }),
     ],
   },
+  owl: {
+    label: 'sova sa naočarima',
+    shapes: [
+      shape('path', 'ic-wood', { d: 'M10 30c0-10 4-17 14-17s14 7 14 17-6 14-14 14-14-4-14-14z' }),
+      shape('path', 'ic-line', { d: 'm13 16 1-7 6 5M35 16l-1-7-6 5' }),
+      shape('circle', 'ic-paper', { cx: 18, cy: 25, r: 5.5 }),
+      shape('circle', 'ic-paper', { cx: 30, cy: 25, r: 5.5 }),
+      shape('path', 'ic-line', { d: 'M23.5 24.5h1' }),
+      shape('circle', 'ic-ink', { cx: 18, cy: 25.5, r: 2 }),
+      shape('circle', 'ic-ink', { cx: 30, cy: 25.5, r: 2 }),
+      shape('path', 'ic-yellow', { d: 'm22 31 2 3 2-3z' }),
+      shape('path', 'ic-line', { d: 'M18 38c3 2.5 9 2.5 12 0' }),
+    ],
+  },
+  lamp: {
+    label: 'lampa nad knjigom',
+    shapes: [
+      shape('path', 'ic-glow', { d: 'M17 21 9 37h30l-8-16z' }),
+      shape('path', 'ic-yellow', { d: 'm15 21 5-11h8l5 11z' }),
+      shape('rect', 'ic-blue', { x: 12, y: 36, width: 24, height: 7, rx: 1.5 }),
+      shape('path', 'ic-line', { d: 'M15 39.5h18' }),
+    ],
+  },
+  bookmark: {
+    label: 'knjiga sa crvenim obeleživačem',
+    shapes: [
+      shape('rect', 'ic-blue', { x: 10, y: 6, width: 26, height: 36, rx: 3 }),
+      shape('path', 'ic-paper', { d: 'M36 9h3v30h-3' }),
+      shape('path', 'ic-line', { d: 'M15 6v36' }),
+      shape('path', 'ic-red', { d: 'M27 6v14l3.5-2.5L34 20V6z' }),
+    ],
+  },
 } as const satisfies Record<string, MenuPicture>;
 
 /** For the corrections: marks on his page, and the tools that make them. */
@@ -109,13 +141,53 @@ export const ISPRAVKE_PICTURES = {
       shape('path', 'ic-pink', { d: 'm22 7 1 2 2 1-2 1-1 2-1-2-2-1 2-1z' }),
     ],
   },
+  nib: {
+    label: 'pero nalivpera',
+    shapes: [
+      shape('path', 'ic-dark', { d: 'M24 4 35 19 24 44 13 19z' }),
+      shape('path', 'ic-yellow', { d: 'M17 19h14l-7 25z' }),
+      shape('path', 'ic-line', { d: 'M24 25v19' }),
+      shape('circle', 'ic-paper', { cx: 24, cy: 24, r: 2.2 }),
+    ],
+  },
+  wrench: {
+    label: 'ključ za popravke',
+    shapes: [
+      shape('path', 'ic-blue', { d: 'M31 6a10 10 0 0 0-9 13L7 34a3.5 3.5 0 0 0 0 5l2 2a3.5 3.5 0 0 0 5 0l15-15a10 10 0 0 0 13-9l-6 6-6-1-1-6z' }),
+      shape('circle', 'ic-paper', { cx: 10.5, cy: 37.5, r: 1.6 }),
+    ],
+  },
+  bandage: {
+    label: 'flaster',
+    shapes: [
+      shape('path', 'ic-wood', { d: 'M9 31 31 9a6.4 6.4 0 0 1 9 9L18 40a6.4 6.4 0 0 1-9-9z' }),
+      shape('path', 'ic-paper', { d: 'm18 24 6-6 6 6-6 6z' }),
+      shape('circle', 'ic-ink', { cx: 14, cy: 33, r: 0.9 }),
+      shape('circle', 'ic-ink', { cx: 34, cy: 15, r: 0.9 }),
+      shape('circle', 'ic-ink', { cx: 16, cy: 37, r: 0.9 }),
+      shape('circle', 'ic-ink', { cx: 36, cy: 11, r: 0.9 }),
+    ],
+  },
 } as const satisfies Record<string, MenuPicture>;
 
 export type UtisakPicture = keyof typeof UTISAK_PICTURES;
 export type IspravkePicture = keyof typeof ISPRAVKE_PICTURES;
 
-/** In colour, or in one: the Lektor's blue, the text's ink, or a warm brick red. */
-export type PictureColours = 'colour' | 'blue' | 'grey' | 'warm';
+/** In colour, or in one: the Lektor's blue, the text's ink, or one of a few muted others. */
+export const PICTURE_COLOURS = {
+  colour: 'šarene',
+  blue: 'plava (Lektorova)',
+  grey: 'tamnosiva',
+  warm: 'cigla',
+  green: 'maslinasta',
+  plum: 'šljiva',
+  ochre: 'oker',
+  teal: 'tirkizna',
+} as const;
+
+export type PictureColours = keyof typeof PICTURE_COLOURS;
+
+export const isPictureColours = (value: unknown): value is PictureColours => typeof value === 'string' && Object.hasOwn(PICTURE_COLOURS, value);
 
 /** A picture as an SVG, its parts classed for colour, at the size the class gives it. */
 export function drawPicture(picture: MenuPicture, className: string, colours: PictureColours = 'colour'): SVGSVGElement {

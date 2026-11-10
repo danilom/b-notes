@@ -176,6 +176,8 @@
       .lektor-picture .ic-brown { fill: none; stroke: var(--ic-brown); stroke-width: 3; }
       .lektor-picture .ic-dark { fill: var(--ic-dark); }
       .lektor-picture .ic-white { fill: #fff; }
+      .lektor-picture .ic-ink { fill: var(--ic-ink); }
+      .lektor-picture .ic-glow { fill: var(--ic-yellow); opacity: 0.3; stroke: none; }
       .lektor-picture .ic-shine { fill: none; stroke: #fff; stroke-width: 1.6; }
       .lektor-picture .ic-red-line { fill: none; stroke: var(--ic-red); stroke-width: 2.4; }
       .lektor-picture .ic-white-line { fill: none; stroke: #fff; stroke-width: 2.6; }
@@ -206,11 +208,67 @@
         stroke: var(--page);
       }
 
+      .lektor-picture.lektor-picture-mono .ic-ink { fill: var(--mono); }
+      .lektor-picture.lektor-picture-mono .ic-glow { fill: var(--mono); opacity: 0.15; }
+
       .lektor-picture-mono-blue { --mono: var(--chosen-ink); }
       .lektor-picture-mono-grey { --mono: var(--ink); }
       .lektor-picture-mono-warm { --mono: #b65a3c; }
+      .lektor-picture-mono-green { --mono: #5f7f3a; }
+      .lektor-picture-mono-plum { --mono: #8b4a7a; }
+      .lektor-picture-mono-ochre { --mono: #a87618; }
+      .lektor-picture-mono-teal { --mono: #2b8580; }
 
       :root[data-mode='dark'] .lektor-picture-mono-warm { --mono: #e08e6d; }
+      :root[data-mode='dark'] .lektor-picture-mono-green { --mono: #a3c47a; }
+      :root[data-mode='dark'] .lektor-picture-mono-plum { --mono: #d39ac4; }
+      :root[data-mode='dark'] .lektor-picture-mono-ochre { --mono: #e0b45a; }
+      :root[data-mode='dark'] .lektor-picture-mono-teal { --mono: #6cc7c0; }
+
+      /* New: the contact sheet, every picture in every colour, over the page while its switch is on. */
+      .lektor-contact-sheet {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        overflow: auto;
+        padding: 0.8rem 1rem;
+        background: var(--page);
+        color: var(--ink);
+        font-family: var(--ui-font);
+        font-size: 12px;
+      }
+
+      .lektor-contact-sheet table {
+        border-collapse: collapse;
+      }
+
+      .lektor-contact-sheet th {
+        padding: 0 0.3rem 0.3rem;
+        font-weight: 400;
+        color: var(--quiet);
+        text-align: center;
+        vertical-align: bottom;
+        max-width: 5.5rem;
+      }
+
+      .lektor-contact-sheet th[scope='row'] {
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .lektor-contact-sheet td {
+        padding: 0.25rem 0.3rem;
+        text-align: center;
+      }
+
+      .lektor-contact-sheet td.lektor-sheet-gap {
+        border-left: 1px solid var(--line);
+      }
+
+      .lektor-contact-sheet .lektor-picture {
+        width: 2.6rem;
+        height: 2.6rem;
+      }
 
       /* The corrections' mark on "Pređi na ispravke…", before the words, as the menu has it before its name. */
       .lektor-main-action:has(.lektor-to-corrections-icon) {
