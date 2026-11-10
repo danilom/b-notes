@@ -106,15 +106,14 @@
         border: none;
         background: none;
         font-size: var(--lektor-small);
-        color: var(--chosen-ink);
-        text-decoration: underline;
-        text-underline-offset: 0.15em;
+        /* Grey and plain (Danilo, 2026-11-10): small print he can pass over; it lights up under the pointer. */
+        color: var(--quiet);
         cursor: pointer;
       }
 
       .lektor-side-body .lektor-menu-keys button:hover {
         background: none;
-        text-decoration-thickness: 2px;
+        color: var(--chosen-ink);
       }
 
       /* New: the panel's first step, two big choices, each its name and a sentence on what it does. */
