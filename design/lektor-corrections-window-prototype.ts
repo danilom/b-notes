@@ -68,11 +68,14 @@ type View = 'choosing' | 'waiting' | 'failed' | 'review';
 type Failure = 'busy' | 'no-credit' | 'offline';
 
 /**
- * Corrections ready to look at. Only while his text is as it was when they were made: on a changed
- * text the app doesn't offer them at all, since the review would offer to undo his own edits.
+ * Corrections ready to look at. Only while his text is as it was when they were made (trailing
+ * whitespace aside): on a changed text they can't be offered, since the review would offer to undo
+ * his own edits. They are then said to be no longer valid, in one grey line, rather than vanishing.
  */
 export interface Kept {
   at: string;
+  /** His text has changed since they were made: no longer offered, only said to be void. */
+  isStale?: boolean;
   /** What the run cost, from OpenRouter's reply; null on free. */
   cost: number | null;
   /** The model that did the work, which on free may be the older one standing in; the usual one when not said. */
@@ -212,12 +215,20 @@ function lektorFor(preset: Preset): Choice {
   return keys.saved[wanted] ? wanted : other(wanted);
 }
 
-function keptFor(preset: Preset): [Choice, Kept][] {
+function keptFor(preset: Preset, isStale = false): [Choice, Kept][] {
   const kept = corrections.kept[preset] ?? {};
   return (['free', 'paid'] as const).flatMap((by) => {
     const one = kept[by];
-    return one === undefined ? [] : [[by, one] as [Choice, Kept]];
+    return one === undefined || (one.isStale === true) !== isStale ? [] : [[by, one] as [Choice, Kept]];
   });
+}
+
+/** The prototype's "text changed": every set kept so far goes void, or back to valid when unticked. */
+export function setCorrectionsStale(isStale: boolean): void {
+  for (const both of Object.values(corrections.kept)) {
+    for (const one of Object.values(both)) one.isStale = isStale;
+  }
+  redrawWindowIfOpen();
 }
 
 function pick(preset: Preset): void {
@@ -285,6 +296,18 @@ function readyCard(preset: Preset, by: Choice, kept: Kept): HTMLElement {
   return card;
 }
 
+/**
+ * Where a card was, once his text has changed: what they were, and that they no longer hold, so
+ * suggestions he may have paid for don't simply vanish (Danilo, 2026-11-10). Nothing to click.
+ */
+function staleLine(preset: Preset, by: Choice, kept: Kept): HTMLElement {
+  const tier = tierOfModel(by, kept.model ?? MODELS[by][preset]);
+  const when = kept.at === JUST_NOW ? '' : ` od ${kept.at}`;
+  return el('p', 'lektor-where lektor-stale-kept', `Predlozi lektora\u00a0${familyOf(tier)}${when} više ne važe: tekst je promenjen.`);
+}
+
+const staleLines = (preset: Preset): HTMLElement[] => keptFor(preset, true).map(([by, kept]) => staleLine(preset, by, kept));
+
 function readyDetail(preset: Preset): HTMLElement[] {
   const again = button('Novi zahtev za ispravke…', () => {
     corrections.isAskingAgain = true;
@@ -293,6 +316,7 @@ function readyDetail(preset: Preset): HTMLElement[] {
   return [
     el('p', 'lektor-window-kind-title', PRESET_NAMES[preset]),
     ...keptFor(preset).map(([by, kept]) => readyCard(preset, by, kept)),
+    ...staleLines(preset),
     again,
   ];
 }
@@ -417,9 +441,11 @@ function promptPart(preset: Preset): HTMLElement[] {
   return [toggle, group];
 }
 
+/** The request; with nothing valid kept, any void sets said above it, where their cards would be. */
 function requestDetail(preset: Preset): HTMLElement[] {
   return [
     el('p', 'lektor-window-kind-title', PRESET_NAMES[preset]),
+    ...(keptFor(preset).length === 0 ? staleLines(preset) : []),
     ...lektorPart(preset),
     ...lastCost(preset),
     ...promptPart(preset),

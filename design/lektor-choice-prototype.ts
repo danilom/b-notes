@@ -8,7 +8,7 @@
   classes and icons, piece for piece as lektor-sidebar.ts builds its screens.
 */
 import { icon } from '../src/ui/icons.ts';
-import { type WindowCase, corrections, openCorrectionsWindow, openCorrectionsWindowAt, redrawWindowIfOpen } from './lektor-corrections-window-prototype.ts';
+import { type WindowCase, corrections, openCorrectionsWindow, setCorrectionsStale, openCorrectionsWindowAt, redrawWindowIfOpen } from './lektor-corrections-window-prototype.ts';
 import { type KeyCheck, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { type PaidIfSlow, lektorChoice, paidIfSlowByDefault } from './lektor-choice-radios.ts';
 import { commentFailure, commentRun, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
@@ -569,6 +569,7 @@ const CONTROLS: readonly PrototypeControl[] = [
     ],
     value: 'none',
   },
+  { id: 'corrections-stale', label: 'Tekst promenjen posle predloga', value: false },
   {
     id: 'google-38',
     label: 'Gugl, 3.8',
@@ -677,6 +678,7 @@ function setControl(id: string, value: string | boolean): void {
   if (id === 'money-out') state.isMoneyOut = value === true;
   if (id === 'offline') state.isOffline = value === true;
   if (id === 'letters-kept') setKept(value);
+  if (id === 'corrections-stale') setCorrectionsStale(value === true);
   // The app's own switch, as the diff prototype sets it.
   if (id === 'dark') document.documentElement.dataset['mode'] = value === true ? 'dark' : 'light';
   render();
