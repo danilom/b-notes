@@ -87,6 +87,9 @@
         border-color: transparent;
         background: transparent;
         box-shadow: none;
+        /* Back by the plate's padding and edge (interface.css, .stepper), so the first button, and
+           not the plate no longer drawn, starts where the change does. */
+        margin-left: calc(-0.4rem - 1px);
       }
 
       /* As the Lektor's window sizes the lines above its text (lektor.css, .lektor-window .review-body). */
