@@ -937,29 +937,39 @@ function choosingPanel(): HTMLElement {
 
 /**
  * The first of two lines, what came back: the kind, who made it, when, on paid what it cost, as
- * OpenRouter's reply stated it, and how much it changed (the numbers made up). The model only in the
- * tooltip on who made it (Danilo, 2026-11-10): on this line it was cryptic and crowded it, and the
- * wait, where it does least harm, has already shown it.
+ * OpenRouter's reply stated it, and how much it changed. Each part with a tooltip that says what it
+ * is, in full (Danilo, 2026-11-11): the line itself is bare, as "Izgled izmena" took its room, and
+ * "Vrsta ispravke:" went to the tooltip. The model only in the tooltip on who made it: on this line it
+ * was cryptic and crowded it, and the wait, where it does least harm, has already shown it.
  */
 function reviewWhoLine(preset: Preset, by: Choice, kept: Kept | undefined): HTMLElement {
-  const said = strings('sr').lektor.review;
   const model = kept?.model ?? MODELS[by][preset];
-  const lektor = el('span', 'lektor-review-who');
   // Who made it, by the model that ran: a slow free rework handed on was paid Flash, not Opus.
   const tier = tierOfModel(by, model);
+  const when = kept?.at ?? JUST_NOW;
+  const lektor = explained('lektor-review-who', `AI Lektor koji je napisao ispravke: ${nameOf(tier)} (Model: ${model})`);
   lektor.append(markOf(tier), el('span', '', nameOf(tier)));
-  lektor.title = `Model: ${model}${model === FREE_STAND_IN ? ' (stariji, rezervni)' : ''}`;
-  const who = el('p', 'lektor-service-line');
-  // Named as the wait names it, so the kind reads as what was asked rather than as a heading.
-  who.append(
-    el('span', 'lektor-review-kind', `Vrsta ispravke: ${PRESET_NAMES[preset]}`),
-    ' · ',
+  const large = PROPOSAL_PIECES.filter((piece) => piece.kind === 'change').length;
+  const small = PROPOSAL_PIECES.filter((piece) => piece.kind === 'tidy').length;
+  const parts = [
+    explained('lektor-review-kind', `Vrsta ispravke: ${PRESET_NAMES[preset]}`, PRESET_NAMES[preset]),
     lektor,
-    el('span', '', ` · ${kept?.at ?? JUST_NOW}${paidWords(kept?.cost)} · ${said.counts(12, 31)}`),
-  );
+    explained('', `Vreme kad su ispravke napisane: ${when}`, when),
+    ...(kept?.cost == null ? [] : [explained('', `Plaćeno za sve napisane predloge: ${dollars(kept.cost)}`, `plaćeno ${dollars(kept.cost)}`)]),
+    explained('', `Broj izmena: veće promene ${large}, sitne popravke ${small}`, `veće promene: ${large}, sitne popravke: ${small}.`),
+  ];
+  const who = el('p', 'lektor-service-line');
+  parts.forEach((part, at) => who.append(...(at > 0 ? [' · '] : []), part));
   const line = el('div', 'lektor-review-row');
   line.append(who);
   return line;
+}
+
+/** A part of the review's header line, with a tooltip saying in full what it is. */
+function explained(className: string, tooltip: string, words = ''): HTMLElement {
+  const part = el('span', className, words);
+  part.title = tooltip;
+  return part;
 }
 
 /*

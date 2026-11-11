@@ -433,7 +433,10 @@ function textGoneScreen(): Step {
     screen = 'menu';
     render();
   });
-  return { content: [problem(`Tekst ${textInWords()} je obrisan.`, 'Zato utisak o njemu neće stići.')], back };
+  // Plain lines, no alarm (Danilo, 2026-11-11): deleting it was his own act, not a fault of the app's.
+  const said = el('div', 'lektor-text-gone');
+  said.append(el('p', 'lektor-line', `Tekst ${textInWords()} je obrisan.`), el('p', 'lektor-where', 'Zato utisak o njemu neće stići.'));
+  return { content: [said], back };
 }
 
 /** What the app does when the text a utisak is being read for is deleted: stops it, and says so. */

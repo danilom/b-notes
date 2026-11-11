@@ -82,7 +82,9 @@ function keyField(which: Choice, isChecking: boolean, save: () => void): HTMLEle
   box.value = keys.drafts[which];
   box.disabled = isChecking;
   // The key itself is never shown again: the box says only whether there is one, and pasting over it replaces it.
-  box.placeholder = keys.saved[which] ? 'Sačuvan' : 'Zalepi ključ ovde';
+  // A dead key isn't "Sačuvan" (Danilo, 2026-11-11): over "Ovaj ključ više ne radi" that read as all well; it asks for a paste, as an empty box does.
+  const isWorking = keys.saved[which] && !keys.dead[which];
+  box.placeholder = isWorking ? 'Sačuvan' : 'Zalepi ključ ovde';
   box.addEventListener('input', () => {
     keys.drafts[which] = box.value;
   });
