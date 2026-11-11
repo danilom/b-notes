@@ -7,26 +7,29 @@ import { describeError, type Log } from '../../platform/logging.ts';
   nothing else. In b-notes' folder, so one paste serves every machine he has.
 
   Never to be logged: these are keys, one of them spending someone's money.
+
+  `anthropicKey`, from the days the paid Lektor was Anthropic direct, is left in the file and
+  never read again: a 0.8 build on another machine may still want it.
 */
 
-export type RealLevel = 'free' | 'thorough';
-
 export interface LektorSettings {
+  /** Google's free tier. */
   googleKey: string;
-  anthropicKey: string;
+  /** OpenRouter, for the paid Lektors and a slow free request handed on. */
+  openRouterKey: string;
 }
 
 const FILE = 'lektor.json';
 
-export const NO_LEKTOR_SETTINGS: LektorSettings = { googleKey: '', anthropicKey: '' };
+export const NO_LEKTOR_SETTINGS: LektorSettings = { googleKey: '', openRouterKey: '' };
 
 /** Every field falls back on its own, and any other key in the file is left alone when writing. */
 export function lektorSettingsFrom(raw: unknown): LektorSettings {
   if (typeof raw !== 'object' || raw === null) return NO_LEKTOR_SETTINGS;
-  const { googleKey, anthropicKey } = raw as Record<string, unknown>;
+  const { googleKey, openRouterKey } = raw as Record<string, unknown>;
   return {
     googleKey: typeof googleKey === 'string' ? googleKey : '',
-    anthropicKey: typeof anthropicKey === 'string' ? anthropicKey : '',
+    openRouterKey: typeof openRouterKey === 'string' ? openRouterKey : '',
   };
 }
 

@@ -7,18 +7,16 @@ import { describeError, type Log } from '../../platform/logging.ts';
   delete. A file per text, named by a hash: his names are hostile, and this needn't be readable.
 */
 
-/** What a set of corrections was asked for: the same again needn't be sent again. */
-export interface CorrectionChoice {
+/** A set of corrections he hasn't taken: the latest of its kind, whichever Lektor made it. */
+export interface KeptProposal {
   preset: string;
-  /** The Lektor that made them: a free reply must not take the place of a paid one. */
-  level: string;
-  note: string;
-}
-
-export interface KeptProposal extends CorrectionChoice {
   proposed: string;
-  /** What made them, which may not be what would make them today. */
+  /** What made them, by the model that ran, which may not be what would make them today. */
   model: string;
+  /** When they were made, for "od pre 3 dana"; 0 when that isn't known, as from an older version. */
+  madeAt: number;
+  /** What they cost on paid, as the reply stated it; null on free or when not known. */
+  cost: number | null;
 }
 
 export interface KeptResults {
@@ -26,12 +24,22 @@ export interface KeptResults {
   /** The text as the Lektor last read it. */
   readText: string;
   readAt: number;
-  /** Which Lektor wrote the comment. Empty when that isn't known, as from an older version. */
+  /**
+   * Who wrote the comment, by the model that ran. An older version kept the Lektor's level
+   * instead (`free`, `thorough`); empty when that isn't known.
+   */
   readBy: string;
-  /** The corrections he hasn't taken, one for each kind and Lektor. */
+  /** What the comment cost on paid; null on free or when not known. */
+  commentCost: number | null;
+  /** The corrections he hasn't taken: one set per kind, the latest. */
   proposals: KeptProposal[];
   /** The text they were all made from: they apply to that and to nothing else. */
   proposalsFor: string;
+  /**
+   * What each kind last cost when it was paid for on this text, for "Prošli put za ovaj tekst".
+   * Kept apart from the sets, so it outlives a newer set, a changed text and the sets being taken.
+   */
+  paidCosts: Partial<Record<string, number>>;
 }
 
 const FOLDER = 'lektor-kept';
@@ -42,21 +50,29 @@ export const isSameText = (one: string, other: string): boolean => one.trimEnd()
 /** Corrections with the text's own ending, so that the review doesn't offer to change it back. */
 export const withEndingOf = (text: string, proposed: string): string => proposed.trimEnd() + text.slice(text.trimEnd().length);
 
-const isSameChoice = (one: CorrectionChoice, other: CorrectionChoice): boolean =>
-  one.preset === other.preset && one.level === other.level && one.note.trim() === other.note.trim();
+type Proposals = Pick<KeptResults, 'proposals' | 'proposalsFor' | 'paidCosts'>;
 
-/** The corrections already made for just this, if any: against any other text, the review would offer to undo his edits. */
-export function savedCorrections({ proposals, proposalsFor }: Pick<KeptResults, 'proposals' | 'proposalsFor'>, text: string, choice: CorrectionChoice): KeptProposal | null {
+/** The set of this kind he can look at now: none on a text that has changed since, where the review would offer to undo his edits. */
+export function keptSet({ proposals, proposalsFor }: Pick<KeptResults, 'proposals' | 'proposalsFor'>, text: string, preset: string): KeptProposal | null {
   if (!isSameText(text, proposalsFor)) return null;
-  return proposals.find((kept) => isSameChoice(kept, choice)) ?? null;
+  return proposals.find((kept) => kept.preset === preset) ?? null;
 }
 
-/** With a new set added: it replaces the same kind from the same Lektor, and a changed text leaves none of the others standing. */
-export function withCorrections({ proposals, proposalsFor }: Pick<KeptResults, 'proposals' | 'proposalsFor'>, text: string, kept: KeptProposal): Pick<KeptResults, 'proposals' | 'proposalsFor'> {
+/** Whether there were sets, now void because his text has changed: said in one line, however many. */
+export const areSetsVoid = ({ proposals, proposalsFor }: Pick<KeptResults, 'proposals' | 'proposalsFor'>, text: string): boolean =>
+  proposals.length > 0 && !isSameText(text, proposalsFor);
+
+/**
+ * With a new set added: it replaces the one of the same kind, whoever made either, even a free one
+ * after a paid one (spec §8). A changed text leaves none of the others standing. A paid set's cost
+ * is remembered for its kind.
+ */
+export function withCorrections({ proposals, proposalsFor, paidCosts }: Proposals, text: string, kept: KeptProposal): Proposals {
   const stillFitting = isSameText(text, proposalsFor) ? proposals : [];
   return {
-    proposals: [...stillFitting.filter((other) => other.preset !== kept.preset || other.level !== kept.level), kept],
+    proposals: [...stillFitting.filter((other) => other.preset !== kept.preset), kept],
     proposalsFor: text,
+    paidCosts: kept.cost === null ? paidCosts : { ...paidCosts, [kept.preset]: kept.cost },
   };
 }
 
@@ -72,10 +88,24 @@ function hashOf(text: string): string {
 
 const fileFor = (appFolder: string, textName: string): string => `${appFolder}/${FOLDER}/${hashOf(textName)}.json`;
 
-function isKeptProposal(stored: unknown): stored is KeptProposal {
-  if (typeof stored !== 'object' || stored === null) return false;
-  const { preset, level, note, proposed, model } = stored as Record<string, unknown>;
-  return typeof preset === 'string' && typeof level === 'string' && typeof note === 'string' && typeof proposed === 'string' && typeof model === 'string';
+const numberOr = <T>(value: unknown, otherwise: T): number | T => (typeof value === 'number' && Number.isFinite(value) ? value : otherwise);
+
+/** A set as stored, checked; an older version's has no time or cost, and its level and note are no longer read. */
+function keptProposalFrom(stored: unknown): KeptProposal | null {
+  if (typeof stored !== 'object' || stored === null) return null;
+  const { preset, proposed, model, madeAt, cost } = stored as Record<string, unknown>;
+  if (typeof preset !== 'string' || typeof proposed !== 'string' || typeof model !== 'string') return null;
+  return { preset, proposed, model, madeAt: numberOr(madeAt, 0), cost: numberOr(cost, null) };
+}
+
+/** One set per kind: of an older version's two of one kind (one from each Lektor), the later stored stands. */
+function onePerKind(proposals: readonly KeptProposal[]): KeptProposal[] {
+  return [...new Map(proposals.map((kept) => [kept.preset, kept])).values()];
+}
+
+function paidCostsFrom(stored: unknown): Partial<Record<string, number>> {
+  if (typeof stored !== 'object' || stored === null) return {};
+  return Object.fromEntries(Object.entries(stored).filter((entry): entry is [string, number] => typeof entry[1] === 'number' && Number.isFinite(entry[1])));
 }
 
 /**
@@ -85,12 +115,13 @@ function isKeptProposal(stored: unknown): stored is KeptProposal {
  */
 export function keptResultsFrom(stored: unknown, textName: string): KeptResults | null {
   if (typeof stored !== 'object' || stored === null) return null;
-  const { name, feedback, readText, readAt, readBy: storedBy, proposals, proposalsFor } = stored as Record<string, unknown>;
+  const { name, feedback, readText, readAt, readBy: storedBy, commentCost, proposals, proposalsFor, paidCosts } = stored as Record<string, unknown>;
   if (name !== textName) return null;
   if (typeof feedback !== 'string' || typeof readText !== 'string' || typeof readAt !== 'number') return null;
-  const readBy = typeof storedBy === 'string' ? storedBy : '';
-  if (!Array.isArray(proposals) || typeof proposalsFor !== 'string') return { feedback, readText, readAt, readBy, proposals: [], proposalsFor: '' };
-  return { feedback, readText, readAt, readBy, proposals: proposals.filter(isKeptProposal), proposalsFor };
+  const comment = { feedback, readText, readAt, readBy: typeof storedBy === 'string' ? storedBy : '', commentCost: numberOr(commentCost, null), paidCosts: paidCostsFrom(paidCosts) };
+  if (!Array.isArray(proposals) || typeof proposalsFor !== 'string') return { ...comment, proposals: [], proposalsFor: '' };
+  const believed = proposals.map(keptProposalFrom).filter((kept): kept is KeptProposal => kept !== null);
+  return { ...comment, proposals: onePerKind(believed), proposalsFor };
 }
 
 export async function readKeptResults(files: FileSystem, appFolder: string, textName: string, log: Log): Promise<KeptResults | null> {

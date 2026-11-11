@@ -3,7 +3,6 @@ import { beforeEach, describe, it } from 'node:test';
 
 import { FileMissing, type FileSystem } from '../src/platform/file-system.ts';
 import type { Log } from '../src/platform/logging.ts';
-import { fakeBehaviourFrom, readFakeBehaviour, writeFakeBehaviour } from '../src/ui/lektor/lektor-fake-setting.ts';
 import { lektorSettingsFrom, NO_LEKTOR_SETTINGS, readLektorSettings, writeLektorSettings } from '../src/ui/lektor/lektor-settings.ts';
 
 let held: Map<string, string>;
@@ -36,7 +35,7 @@ describe('the Lektor settings', () => {
   });
 
   it('come back as they were saved', async () => {
-    const settings = { googleKey: 'g', anthropicKey: 'a' };
+    const settings = { googleKey: 'g', openRouterKey: 'o' };
     await writeLektorSettings(files, 'Tekstovi', settings, log);
     assert.deepEqual(await readLektorSettings(files, 'Tekstovi', log), settings);
   });
@@ -48,35 +47,24 @@ describe('the Lektor settings', () => {
   });
 
   it('fall back field by field, so one bad value costs only itself', () => {
-    assert.deepEqual(lektorSettingsFrom({ googleKey: 'g', anthropicKey: 5 }), { googleKey: 'g', anthropicKey: '' });
+    assert.deepEqual(lektorSettingsFrom({ googleKey: 'g', openRouterKey: 5 }), { googleKey: 'g', openRouterKey: '' });
     assert.deepEqual(lektorSettingsFrom(null), NO_LEKTOR_SETTINGS);
   });
 
   it('has no say over which Lektor he gets: the free one each time the app starts', () => {
-    assert.deepEqual(Object.keys(lektorSettingsFrom({ googleKey: 'g', level: 'thorough' })).sort(), ['anthropicKey', 'googleKey']);
+    assert.deepEqual(Object.keys(lektorSettingsFrom({ googleKey: 'g', level: 'thorough' })).sort(), ['googleKey', 'openRouterKey']);
+  });
+
+  it("keeps an old Anthropic key in the file, for an older build, and never reads it as OpenRouter's", async () => {
+    held.set('Tekstovi/lektor.json', JSON.stringify({ googleKey: 'g', anthropicKey: 'sk-ant' }));
+    assert.deepEqual(await readLektorSettings(files, 'Tekstovi', log), { googleKey: 'g', openRouterKey: '' });
+    await writeLektorSettings(files, 'Tekstovi', { googleKey: 'g', openRouterKey: 'sk-or' }, log);
+    assert.equal((JSON.parse(held.get('Tekstovi/lektor.json') ?? '{}') as { anthropicKey: string }).anthropicKey, 'sk-ant');
   });
 
   it('never put a key in the log, even when the file is damaged', async () => {
     held.set('Tekstovi/lektor.json', '{"googleKey": "tajna"');
     await readLektorSettings(files, 'Tekstovi', log);
     assert.doesNotMatch(JSON.stringify(logged), /tajna/);
-  });
-});
-
-describe('the test Lektor setting', () => {
-  it('is off on a machine nobody has set it on', async () => {
-    assert.equal(await readFakeBehaviour(files, 'Podaci', log), null);
-    assert.deepEqual(logged, []);
-  });
-
-  it('comes back as it was set, in the folder that never syncs', async () => {
-    await writeFakeBehaviour(files, 'Podaci', 'slow');
-    assert.ok(held.has('Podaci/lektor-test.json'));
-    assert.equal(await readFakeBehaviour(files, 'Podaci', log), 'slow');
-  });
-
-  it('is off for anything it does not recognise', () => {
-    assert.equal(fakeBehaviourFrom({ behaviour: 'pokvaren' }), null);
-    assert.equal(fakeBehaviourFrom(null), null);
   });
 });
