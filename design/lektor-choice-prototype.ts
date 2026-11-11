@@ -8,7 +8,7 @@
   classes and icons, piece for piece as lektor-sidebar.ts builds its screens.
 */
 import { icon } from '../src/ui/icons.ts';
-import { type ReviewTitle, type WindowCase, corrections, openCorrectionsReview, openCorrectionsWindow, setCorrectionsStale, setKeysOpener, openCorrectionsWindowAt, redrawWindowIfOpen, setReviewHighlight, setReviewLook, setReviewSample, setReviewTitle } from './lektor-corrections-window-prototype.ts';
+import { type ReviewTitle, type WindowCase, corrections, openCorrectionsReview, openCorrectionsWindow, setCorrectionsStale, setKeysOpener, openCorrectionsWindowAt, redrawWindowIfOpen, setReviewHighlight, setReviewLook, setReviewSample, setReviewTitle, setTitleSplit } from './lektor-corrections-window-prototype.ts';
 import { type KeyCheck, deadKeyNotice, isAnyKeyDead, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { type PaidIfSlow, lektorChoice, paidIfSlowByDefault } from './lektor-choice-radios.ts';
 import { type CommentFailure, commentFailure, commentRun, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
@@ -665,25 +665,26 @@ const CONTROLS: readonly PrototypeControl[] = [
     id: 'review-look',
     label: 'Prikaz teksta u pregledu',
     options: [
-      { value: 'side', label: 'jedno pored drugog' },
       { value: 'stacked', label: 'jedno ispod drugog' },
+      { value: 'side', label: 'jedno pored drugog' },
       { value: 'checkbox', label: 'kvadratić (kao sada)' },
     ],
-    value: 'side',
+    value: 'stacked',
   },
   {
     id: 'review-title',
     label: 'Naslov prikaza',
     options: [
+      { value: 'Izgled izmena:', label: '„Izgled izmena:”' },
       { value: 'Prikaz izmena:', label: '„Prikaz izmena:”' },
       { value: 'Prikaži izmene:', label: '„Prikaži izmene:”' },
-      { value: 'Izgled izmena:', label: '„Izgled izmena:”' },
       { value: 'Izmene:', label: '„Izmene:”' },
       { value: 'Prikaži:', label: '„Prikaži:”' },
       { value: 'none', label: 'bez naslova' },
     ],
-    value: 'Prikaz izmena:',
+    value: 'Izgled izmena:',
   },
+  { id: 'review-title-split', label: 'Naslov prikaza u dva reda', value: true },
   {
     id: 'review-sample',
     label: 'Uzorak u prikazu',
@@ -840,8 +841,9 @@ function setControl(id: string, value: string | boolean): void {
   if (id === 'offline') state.isOffline = value === true;
   if (id === 'letters-kept') setKept(value);
   if (id === 'corrections-stale') setCorrectionsStale(value === true);
-  if (id === 'review-look') setReviewLook(value === 'stacked' || value === 'checkbox' ? value : 'side');
-  if (id === 'review-title') setReviewTitle(isReviewTitle(value) ? value : 'Prikaz izmena:');
+  if (id === 'review-look') setReviewLook(value === 'side' || value === 'checkbox' ? value : 'stacked');
+  if (id === 'review-title') setReviewTitle(isReviewTitle(value) ? value : 'Izgled izmena:');
+  if (id === 'review-title-split') setTitleSplit(value === true);
   if (id === 'review-sample') setReviewSample(value === 'blurred' ? value : 'word');
   if (id === 'review-highlight') setReviewHighlight(value === 'blue' || value === 'none' ? value : 'grey');
   // The app's own switch, as the diff prototype sets it.

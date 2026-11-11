@@ -519,6 +519,15 @@
         color: var(--quiet);
       }
 
+      /* Split, a word to a line, right-aligned, each word level with a row: as tall as the rows, a half to each. */
+      .lektor-view-title.is-split {
+        align-self: stretch;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        align-items: flex-end;
+      }
+
       .lektor-view-options {
         display: flex;
         gap: 0;
@@ -575,12 +584,15 @@
         cursor: pointer;
       }
 
-      /* Old and new a little apart, as they stand in the text. */
       .lektor-view-sample {
         display: inline-flex;
         align-items: baseline;
-        gap: 0.25em;
         white-space: nowrap;
+      }
+
+      /* Old and new as near as in the text, a little nearer still for the smaller words: 3px there at 19px, 2px here. */
+      .lektor-view-sample .diff-new {
+        margin-left: 2px;
       }
 
       /*

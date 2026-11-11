@@ -981,9 +981,12 @@ export type ReviewSample = 'word' | 'blurred';
 /** How the row chosen is marked besides its radio: a grey wash, the window's soft blue, or not at all. */
 export type ReviewHighlight = 'grey' | 'blue' | 'none';
 
-// Side by side, Danilo's pick (2026-11-11).
-let reviewLook: ReviewLook = 'side';
-let reviewTitle: ReviewTitle = 'Prikaz izmena:';
+// Stacked, Danilo's pick (2026-11-11): one under the other is plainly a choice of two, with radios.
+let reviewLook: ReviewLook = 'stacked';
+// Danilo's wording (2026-11-11): "Prikaz" implies more than a look, and the choice is only the look.
+let reviewTitle: ReviewTitle = 'Izgled izmena:';
+/** The title on two lines, beside the two rows, or on one. */
+let isTitleSplit = true;
 let reviewSample: ReviewSample = 'word';
 let reviewHighlight: ReviewHighlight = 'grey';
 
@@ -995,6 +998,24 @@ export function setReviewLook(look: ReviewLook): void {
 export function setReviewTitle(title: ReviewTitle): void {
   reviewTitle = title;
   if (corrections.view === 'review') draw();
+}
+
+export function setTitleSplit(isSplit: boolean): void {
+  isTitleSplit = isSplit;
+  if (corrections.view === 'review') draw();
+}
+
+/** The title's words, on two lines at its first space when split, so each sits beside a row. */
+function viewTitle(words: string): HTMLElement {
+  const title = el('span', 'lektor-view-title');
+  const at = words.indexOf(' ');
+  if (!isTitleSplit || at < 0) {
+    title.textContent = words;
+    return title;
+  }
+  title.append(el('span', '', words.slice(0, at)), el('span', '', words.slice(at + 1)));
+  title.classList.add('is-split');
+  return title;
 }
 
 export function setReviewSample(sample: ReviewSample): void {
@@ -1088,7 +1109,7 @@ function viewChoice(): HTMLElement {
   const group = el('div', `lektor-view-choice is-${reviewLook} highlight-${reviewHighlight}`);
   group.setAttribute('role', 'radiogroup');
   group.setAttribute('aria-label', 'Prikaz izmena');
-  if (reviewTitle !== 'none') group.append(el('span', 'lektor-view-title', reviewTitle));
+  if (reviewTitle !== 'none') group.append(viewTitle(reviewTitle));
   const options = el('div', 'lektor-view-options');
   options.append(
     viewOption(false, 'izmene označene', [sampleWord('diff-gone diff-struck'), sampleWord('diff-new')]),
