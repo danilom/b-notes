@@ -131,6 +131,21 @@ function reachToTheEdges(box: HTMLElement, band: HTMLElement): void {
   band.style.setProperty('--reach-right', `${Math.floor(left + box.clientWidth - own.right)}px`);
 }
 
+const JOIN = '--band-join';
+
+/**
+ * How far above its words what the bar is for must reach to meet the band: the line's own
+ * spacing, between the band's bottom and the top of the words. Set on the box, for a look that
+ * draws the change hanging from the band, its background reaching up that far.
+ */
+export function measureJoin(box: HTMLElement, band: HTMLElement, over: Element): void {
+  // Taken off first: a reach set before is in the measure, as the top of the change's padding.
+  box.style.removeProperty(JOIN);
+  const words = over.getClientRects()[0];
+  if (words === undefined) return;
+  box.style.setProperty(JOIN, `${Math.max(0, words.top - band.getBoundingClientRect().bottom)}px`);
+}
+
 /** Whether this is the first line's band, drawn in the box's padding and taking no space. */
 export const isDrawnInPadding = (band: HTMLElement): boolean => band.style.marginTop !== '';
 

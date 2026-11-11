@@ -1,5 +1,5 @@
 import type { ChangeCandidate } from '../notes/text-diff.ts';
-import { closeBarBand, isDrawnInPadding, openBarBand, seatBarAt } from './diff-bar-band.ts';
+import { closeBarBand, isDrawnInPadding, measureJoin, openBarBand, seatBarAt } from './diff-bar-band.ts';
 import { icon } from './icons.ts';
 
 /**
@@ -407,6 +407,7 @@ export function createDiffChangeBar(
     onLinesMoved();
     const line = over.getClientRects()[0];
     if (band === null || line === undefined) return;
+    measureJoin(box, band, over);
     seatBarAt(box, band, bar, wantedLeft(over, line));
     const taken = stepperTaken();
     const frame = framed.getBoundingClientRect();

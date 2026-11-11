@@ -248,26 +248,32 @@ try {
 showBandLook();
 bandLook.addEventListener('change', showBandLook);
 
-const BAR_ON_BAND_KEY = 'diff-prototype:bar-on-band';
-
-/** The buttons straight on the band or on their own plate, drawn by the page's styles from this mark. */
-function showBarOnBand(): void {
-  view.toggleAttribute('data-bar-on-band', barOnBand.checked);
+/**
+ * A switch for one of the band's looks, which the page's styles draw from a mark on the view,
+ * remembered across visits. On unless turned off.
+ */
+function lookSwitch(box: HTMLInputElement, mark: string): void {
+  const key = `diff-prototype:${mark}`;
+  const show = (): void => {
+    view.toggleAttribute(`data-${mark}`, box.checked);
+    try {
+      localStorage.setItem(key, box.checked ? 'on' : 'off');
+    } catch (error) {
+      console.warn(`Whether ${mark} could not be remembered`, error);
+    }
+  };
   try {
-    localStorage.setItem(BAR_ON_BAND_KEY, barOnBand.checked ? 'on' : 'off');
+    box.checked = localStorage.getItem(key) !== 'off';
   } catch (error) {
-    console.warn('Whether the buttons stand on the band could not be remembered', error);
+    console.warn(`Whether ${mark} could not be read back`, error);
   }
+  show();
+  box.addEventListener('change', show);
 }
 
-try {
-  // On unless turned off: the look chosen (Danilo, 2026-11-11).
-  barOnBand.checked = localStorage.getItem(BAR_ON_BAND_KEY) !== 'off';
-} catch (error) {
-  console.warn('Whether the buttons stand on the band could not be read back', error);
-}
-showBarOnBand();
-barOnBand.addEventListener('change', showBarOnBand);
+// The buttons straight on the band, chosen; the change on it too, asked for to try (Danilo, 2026-11-11).
+lookSwitch(barOnBand, 'bar-on-band');
+lookSwitch(element('change-on-band', HTMLInputElement), 'change-on-band');
 
 element('swap', HTMLButtonElement).addEventListener('click', () => {
   [current.value, proposed.value] = [proposed.value, current.value];

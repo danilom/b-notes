@@ -92,6 +92,16 @@
         margin-left: calc(-0.4rem - 1px);
       }
 
+      /*
+        The change the bar is for on the band's own grey, hanging from it: its background
+        reaches up through the line's spacing (measured, --band-join) to meet the band, and
+        down to its dotted line. Its own background, so under its words and their marks.
+      */
+      #view[data-change-on-band] .review-text:has(.diff-bar-band) .diff-bar-over {
+        background-color: var(--wash);
+        padding-top: var(--band-join, 0px);
+      }
+
       /* As the Lektor's window sizes the lines above its text (lektor.css, .lektor-window .review-body). */
       .lektor-review-head {
         margin-bottom: 0.75rem;
@@ -329,6 +339,10 @@
           <label title="Dugmad stoje pravo na pojasu, bez bele ploče oko njih">
             <input type="checkbox" id="bar-on-band" checked />
             Dugmad na pojasu
+          </label>
+          <label title="Izmena nad kojom je traka dobija istu pozadinu kao pojas, spojenu s njim">
+            <input type="checkbox" id="change-on-band" checked />
+            Izmena na pojasu
           </label>
           <label class="prototype-pick" title="Kako izgleda prostor otvoren za traku">
             <span>Izgled pojasa</span>
