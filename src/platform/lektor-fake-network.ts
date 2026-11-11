@@ -163,7 +163,14 @@ const STOPPED: LektorResponse = { status: LEKTOR_STOPPED, reply: null };
 const isCorrection = (request: LektorRequest): boolean => /Return the whole text/.test(request.system);
 
 const FAKE_UTISAK =
-  'Probni utisak, bez pravog AI. Najviše mi je ostao početak, gde se mesto oseti pre nego što se išta desi.\n\nZastao sam kod sredine, gde bih voleo nešto više o ljudima.\n\nU celini, miran i tačan zapis.';
+  'Probni utisak, bez pravog AI. Najviše mi je ostao početak, gde se mesto oseti pre nego što se išta desi: ' +
+  '„ulica je mirisala na kišu koja još nije pala”. Ta rečenica me je odmah uvela u priču, i posle nje sam čitao ' +
+  'sporije, pažljivije, kao da hodam tom ulicom zajedno s tobom.\n\n' +
+  'Zastao sam kod sredine, gde se iz sećanja na kuću prelazi na ljude koji su u njoj živeli. Tu bih voleo nešto ' +
+  'više o njima: kako su govorili, čega su se plašili, šta su jedni drugima prećutali. Pominješ ih s mnogo ' +
+  'topline, ali ih ne vidim dovoljno jasno da bih ih upamtio kao što sam upamtio ulicu.\n\n' +
+  'U celini, ovo je miran i tačan zapis, bez suvišnih reči. Završetak se ne žuri i ne objašnjava previše, ' +
+  'pa ostavlja prostora čitaocu da sam oseti ono što je ostalo neizrečeno.';
 
 /** A made-up correction of the text: every seventh word in capitals, which the review shows as larger changes. */
 export function fakeCorrectionOf(text: string): string {
