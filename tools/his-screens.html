@@ -250,12 +250,15 @@
           const label = document.createElement('label');
           if (Array.isArray(control.options)) {
             const select = document.createElement('select');
+            // Not restored by the browser on a reload: the prototype starts afresh, so the switch must too.
+            select.autocomplete = 'off';
             for (const option of control.options) select.append(new Option(option.label, option.value, false, option.value === control.value));
             select.addEventListener('change', () => view.prototypeSet?.(control.id, select.value));
             label.append(control.label, select);
           } else {
             const box = document.createElement('input');
             box.type = 'checkbox';
+            box.autocomplete = 'off';
             box.checked = control.value === true;
             box.addEventListener('change', () => view.prototypeSet?.(control.id, box.checked));
             label.append(box, control.label);
