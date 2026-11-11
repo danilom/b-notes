@@ -24,8 +24,8 @@ What the Lektor mockup on branch `lektor-openrouter` decided (sessions of 2026-1
 - **DESIGN.md:** changes as listed at the end; bring it in line in the same work.
 
 **Ground rules, unchanged.** These come from CLAUDE.md and DESIGN.md:
-- **v1 is in his hands.** Build on `lektor-openrouter`, where the Lektor, the prototype and the fixtures are
-  (`main` has no Lektor). Publish only with `npm run release` (pre-release), and never `--live`.
+- **v1 is in his hands.** Build on a new branch off `lektor-openrouter` (`lektor-openrouter-build`), where the
+  Lektor, the prototype and the fixtures are (`main` has no Lektor). Publish only with `npm run release` (pre-release), and never `--live`.
 - **No test spends AI credits.**
 - **Keys are never printed, logged or committed.**
 - **LF line endings, one small commit per finished change, no attribution lines.**
@@ -1000,7 +1000,7 @@ questions this section first raised are listed at its end, and are written into 
 
 The questions this section raised, and his answers. Each is also written where it applies above.
 
-1. **Branch:** build on `lektor-openrouter`, not from `main`.
+1. **Branch:** build on a new branch off `lektor-openrouter`, not from `main`.
 2. **Anthropic direct:** removed.
 3. **The test Lektor:** removed. The saved real replies move into the fake network (§17.5).
 4. **Opening:** the key checks double as the internet check; with no keys, a keyless check. An offline screen with
