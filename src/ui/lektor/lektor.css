@@ -471,10 +471,6 @@ body.lektor-open #lektor-side {
   gap: 0.4rem;
 }
 
-.lektor-main-action .lektor-service-mark {
-  filter: drop-shadow(1px 0 0 var(--on-chosen)) drop-shadow(-1px 0 0 var(--on-chosen)) drop-shadow(0 1px 0 var(--on-chosen)) drop-shadow(0 -1px 0 var(--on-chosen));
-}
-
 .lektor-link {
   align-self: flex-start;
   padding: 0;
@@ -523,12 +519,6 @@ body.lektor-open #lektor-side {
   font-size: var(--lektor-small);
   font-style: italic;
   opacity: 1;
-}
-
-/* Reassurance rather than an instruction, so small print; what he types in the box above stays full size, since it is his own and he checks it as he goes. */
-.lektor-reassurance {
-  color: var(--quiet);
-  font-size: var(--lektor-small);
 }
 
 /* His writing's own font, at a size the narrow column can carry: this is something to read, not chrome. */
@@ -673,24 +663,6 @@ body.lektor-open #lektor-side {
   opacity: 0.6;
 }
 
-.lektor-preset-unavailable .lektor-service-mark {
-  filter: grayscale(1);
-}
-
-/* About the height of the words beside it, and no more: it should not compete with the one blue button. */
-.lektor-service-mark {
-  flex: none;
-  width: 1.05em;
-  height: 1.05em;
-}
-
-/* Drawn smaller in a box of the same size: it is a dense shape, and at the same size looks heavier than the others. */
-.lektor-service-mark-thorough,
-.lektor-service-mark-fake {
-  padding: 0.09em;
-  box-sizing: border-box;
-}
-
 /* As far below the header's line as the header's words are above it, and in line with the note under it. */
 .lektor-panel > .lektor-service-line {
   flex: none;
@@ -737,12 +709,6 @@ body.lektor-open #lektor-side {
   cursor: pointer;
 }
 
-.lektor-service-line .lektor-service-mark {
-  display: inline-block;
-  margin-right: 0.3em;
-  vertical-align: -0.17em;
-}
-
 /* Plain, unlike the italic example in the notes box: this states a fact about the field rather than suggesting what to write. */
 .lektor-key::placeholder {
   color: var(--hint);
@@ -755,11 +721,6 @@ body.lektor-open #lektor-side {
   margin-top: 0.35rem;
   padding: 0.1rem 0.45rem;
   font-size: var(--lektor-small);
-}
-
-/* Not a section of its own, but what follows from the choice above: plain words, right against their box. */
-.lektor-side-body > .lektor-prompt-label {
-  margin-bottom: -0.35rem;
 }
 
 /* Read-only, and looking it beside the white box he can type in: no fill of its own, smaller type, an ordinary arrow. */
@@ -804,31 +765,6 @@ body.lektor-open #lektor-side {
   justify-content: flex-end;
   color: var(--quiet);
   font-size: var(--lektor-small);
-}
-
-/* Means nothing to him and needn't, but what his text is going to should be written down. */
-.lektor-model {
-  color: var(--quiet);
-  font-size: var(--lektor-small);
-}
-
-/* What the choice runs on, at the panel's own margin, with the way to the keys at the other end of the row. */
-.lektor-choice-foot {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.4rem;
-  margin-bottom: 0.3rem;
-  font-size: var(--lektor-small);
-}
-
-.lektor-choice-foot .lektor-model {
-  margin: 0;
-}
-
-/* A button split over two lines reads as two things: the model's name may wrap instead. */
-.lektor-choice-foot .lektor-again {
-  white-space: nowrap;
 }
 
 /* Some steps start under a small button that gives them room; the rest, whatever they start with, are given the same. */
