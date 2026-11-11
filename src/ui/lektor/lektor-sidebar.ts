@@ -115,7 +115,8 @@ export interface Lektor {
   listChanged(isListed: (key: NoteHandle) => boolean): void;
 }
 
-const REVEAL_MS = 5_000;
+/** A steady pace, whatever the length: a long utisak takes longer, as reading it does. */
+const MS_PER_WORD = 50;
 const FOLLOWING_SLACK_PX = 40;
 /** Under this there is nothing for a reader to respond to: a title or a stray line, though not a short poem. */
 const FEWEST_WORDS = 10;
@@ -565,7 +566,7 @@ export function createLektor(parts: LektorParts): Lektor {
       box.textContent = `${opening}\n\n${pieces.slice(0, shown).join('')}`;
       if (isFollowing) scroller.scrollTop = scroller.scrollHeight;
       if (shown >= pieces.length) finish();
-    }, (REVEAL_MS / Math.max(1, pieces.length)) * 2);
+    }, MS_PER_WORD);
     return box;
   }
 
