@@ -130,6 +130,19 @@
         background-image: none;
       }
 
+      /*
+        The filled buttons in exactly the colours of the wordings in the text, not dimmed short
+        of them (Danilo, 2026-11-12: a fainter shade of the same colour looked off). With nothing
+        held back to light up to, the pointer darkens the colour instead.
+      */
+      #view[data-button-look='filled'][data-choice-full] .diff-bar .diff-bar-choice {
+        --choice-shown: var(--choice-fill);
+      }
+
+      #view[data-button-look='filled'][data-choice-full] .diff-bar .diff-bar-choice:hover:not(:disabled) {
+        --choice-shown: color-mix(in oklch, var(--choice-fill) 82%, black);
+      }
+
       /* An ordinary button, its colour a stripe along the bottom; thicker for the one in effect. */
       #view[data-button-look='underlined'] .diff-bar .diff-bar-choice {
         --choice-shown: var(--panel);
@@ -536,6 +549,10 @@
           </label>
         </div>
         <div class="prototype-column">
+          <label title="Pune boje dugmadi iste kao boje izmena u tekstu, ne bleđe; pod mišem tamnije">
+            <input type="checkbox" id="choice-full" checked />
+            Boje kao u tekstu
+          </label>
           <label class="prototype-pick" title="Kako izgledaju Vrati staro, Prihvati i Izmeni">
             <span>Izgled dugmadi</span>
             <select id="button-look">
