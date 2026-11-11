@@ -1,0 +1,211 @@
+{
+  "name": "openrouter-stream-gemini-3.8-flash",
+  "recordedAt": "2026-11-11T07:53:08.682Z",
+  "request": {
+    "method": "POST",
+    "url": "https://openrouter.ai/api/v1/chat/completions",
+    "headers": {
+      "Authorization": "<KEY>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "model": "google/gemini-3.8-flash",
+      "stream": true,
+      "messages": [
+        {
+          "role": "system",
+          "content": "Ti si pažljiv čitalac ovog teksta, a ne učitelj. Napiši autoru svoj utisak u najviše tri kratka pasusa, obraćajući mu se sa „ti”.\n\nU prvom reci šta ti je ostalo i zašto, i navedi jedno konkretno mesto iz teksta, kratkim navodom.\nU drugom reci gde si zastao ili želeo nešto više, i opet navedi to mesto.\nU trećem reci nešto o celini.\n\nBez opšte hvale, bez ocena i bez spiska saveta. Ne izmišljaj lično iskustvo. Ako nisi siguran u neku činjenicu, nemoj je tvrditi. Piši narečjem kojim je tekst pisan.\nVrati samo te pasuse, običnim tekstom, bez naslova i oznaka."
+        },
+        {
+          "role": "user",
+          "content": "Jutros sam izašao rano, pre nego što se grad probudio. Na pijaci su tek postavljali tezge, a miris\nhleba iz pekare na uglu se širio celom ulicom. Kupio sam kilo jabuka i jednu veliku dinju, iako\nznam da je niko u kući neće jesti osim mene.\n\nKod česme sam sreo starog Milutina, koji je ceo život radio na železnici. Pričao mi je o vozovima\nkoji više ne idu, i o stanicama na kojima više niko ne čeka. Rekao je da mu najviše nedostaje zvuk\npištaljke u zoru. Ja nisam znao šta da mu kažem, pa sam samo klimnuo glavom."
+        }
+      ]
+    }
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "text/event-stream"
+  },
+  "headersAtMs": 2893,
+  "pieces": [
+    {
+      "atMs": 2894,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\"**Gauging the Request**\\n\\nI'm reviewing the core requirements here. My primary focus is on understanding the exact constraints for generating the output, particularly regarding the persona, length, and formatting. I'm prioritizing clarity on how to address the user and the specific structure expected for each update.\\n\\n\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"**Gauging the Request**\\n\\nI'm reviewing the core requirements here. My primary focus is on understanding the exact constraints for generating the output, particularly regarding the persona, length, and formatting. I'm prioritizing clarity on how to address the user and the specific structure expected for each update.\\n\\n\",\"format\":\"google-gemini-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 3256,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 3676,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 4088,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 4366,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\"**Processing User Input**\\n\\nI'm currently dissecting the provided text, identifying key elements and emotional resonances. My focus is on distilling the essence of the \\\"why\\\" behind certain passages and pinpointing areas that evoke contemplation or a desire for elaboration. I'm also considering how to synthesize these observations into a cohesive reflection on the overall piece.\\n\\n\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"**Processing User Input**\\n\\nI'm currently dissecting the provided text, identifying key elements and emotional resonances. My focus is on distilling the essence of the \\\"why\\\" behind certain passages and pinpointing areas that evoke contemplation or a desire for elaboration. I'm also considering how to synthesize these observations into a cohesive reflection on the overall piece.\\n\\n\",\"format\":\"google-gemini-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 4785,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 5204,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 5623,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 5851,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\"**Refining the Narrative**\\n\\nI'm zeroing in on the specifics of the text, particularly the poignant melon detail and Milutin's understated reactions. I'm also exploring the lingering questions about the train station metaphor and how best to convey that contemplative pause.\\n\\n\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"**Refining the Narrative**\\n\\nI'm zeroing in on the specifics of the text, particularly the poignant melon detail and Milutin's understated reactions. I'm also exploring the lingering questions about the train station metaphor and how best to convey that contemplative pause.\\n\\n\",\"format\":\"google-gemini-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6270,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 6692,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 7108,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 7528,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 7948,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 8055,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\"**Feeling the Unspoken**\\n\\nI'm contemplating the abrupt silence and the desire to understand what transpired within you during that quietude. I want to convey a longing to perceive your internal state, perhaps through a glance at him or the melon you carry, reflecting the impact of that pause.\\n\\n\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"**Feeling the Unspoken**\\n\\nI'm contemplating the abrupt silence and the desire to understand what transpired within you during that quietude. I want to convey a longing to perceive your internal state, perhaps through a glance at him or the melon you carry, reflecting the impact of that pause.\\n\\n\",\"format\":\"google-gemini-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8472,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 8893,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 9311,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 9731,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 9974,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\"**Distilling the Essence**\\n\\nI'm now focused on how to convey the deeper meaning behind the text, particularly the juxtaposition of the mundane with the weight of unspoken history. I'm aiming for a concise reflection that captures the shift from personal quietude to the echo of lost worlds.\\n\\n\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"**Distilling the Essence**\\n\\nI'm now focused on how to convey the deeper meaning behind the text, particularly the juxtaposition of the mundane with the weight of unspoken history. I'm aiming for a concise reflection that captures the shift from personal quietude to the echo of lost worlds.\\n\\n\",\"format\":\"google-gemini-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10394,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 10813,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 11232,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 11586,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Najviše mi je ostao\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 11789,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" detalj o dinji: „iako znam da je niko u kući neće jesti osim mene”. U tom\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 11987,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" jednom postupku vidi se neka tvoja tiha navika i mala usamljenost unutar doma, još pre nego što\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 12186,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" se uopšte desi susret kod česme.\\n\\nZastao sam na mestu gde kažeš: „Ja\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 12407,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" nisam znao šta da mu kažem, pa sam samo klimnuo glavom.” Tu mi je zatrebalo nešto\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 12636,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" više – ne nužno reči koje bi izgovorio Milutinu, već slika onoga što radiš\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 12834,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" u tom času ili kako ga posmatraš dok ćutiš, jer se prizor naglo povukao pred\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 13036,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" tom tišinom.\\n\\nKao celina, tekst se kreće od jednostavnog, čulnog bu\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 13244,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"đenja grada ka jednom tuđem, ugašenom svetu. Spoj obične jutarnje nabavke i Milutinov\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 13451,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ih napuštenih stanica daje ovom zapisu težinu vremena koje prolazi, a da se ritam sam\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 13644,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"og jutra zapravo ne poremeti.\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 14145,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":null,\"reasoning_details\":[{\"type\":\"reasoning.encrypted\",\"data\":\"AY89a19k9KRhInd5uD0OBO5/uTiIdrzFy2QeoL57yl4yN6VvFnahbAEXixctkvOmKWNRGAke/elPDhYJAXAsp4n10EYzzj6Qg/d/oN7YkYIUFjaM25ICEk4lds8d7+S35Tr44mST2J6uyPgjxqmhoj8FmAhXDE908aAxPCqE1ob8215bsZfUmKyziPRpUa3mdkVxySsrFdPlpxPVA6r7n03GxyjjVyG/jZcA0k3jCRsIJ7zDcbOCN0iPzPP42rMSMQkva58qQP4CsvmfQDaG6bJzI3zB+Bjj4KoyLLCojYcDZpaV4OGZ5EKS+7pyJ5yJZn8l2CJw2a6b7NFh/UdRiWnyWvcvjtoiQixGbeIAQIisRD8I+GLfCr4snaOO8rD/bjG5Oa4vXSByp8VEeOfVfzC+bdmgBdFnAhOp57CqoItKsS5tbiXfcys7mHMdXRWgtT0YldHZGyA+sIfUZW9fpfBLCrM/WitnvFMKtHSUvBWbZOovPNPMqZ5fY/3Cz0DecaKAdCxqmNzjtM0FcNSo9Rg0bIGhBmJUjeen6fq23FNCKOBgkSt0L/Py9FTWoU3Nuih8jJIn6vd+T+TuwRS9FVn2lxlDkcdoK0zqGwpfjFengzaUJmJcfoHkdd5AJhyGUathqkbL+CDhjPdb9HVQMvaKCEE/abhLI2Fv8o4xJpeC7SgZHVzT7q7CNJWAftleXOFwYWts0+73xhR2a6W2/3NAJTDXPzmwPBe1tOvCI9Ce2GtpZIhr6S84mbBjGkGhu9l8Kf3PuqjA32+ZmNOckS9Ic5ogD90YPHOiY8VzKASXlu3D3+XqPWw+EsaVc9XW/ldS3h8NLvV2eNwLKBUT6/Lvh5P23MZcdUGCP3Im3TtBbntwN9lYR93h1A3Tdc/Zih+jUysCKO5F7tB/IcSZQwMBjk6p+4kwz3WbBx8q5NXoGkNwbNPJ5oNznWwltvB8rlVyFh/e21gKHnMcKtRsSjL9fQ39fSAs0dFOq3prj8n2syw2n9K10RoIMOUdwQnnB0dFq/h7u8FiKUi0Cu8fgNqfIcAvaHXGpk/QGtTyk1"
+    },
+    {
+      "atMs": 14145,
+      "text": "5qbObbWj3NqvmvkjGpCNzguSasR4V2ni7tBTcoLeP/6aSkKLTYVl3Zj1ZHuND43VScBVo7tBJaFwDVvOU9J0n8aHaoo/HU78/tRs6CWuE1hxZOSwR5oqR7/rH+k39pXx7Fmep1YpyVpQqLrqQgIvo0aOkXlvdFdlgwHEZhnJvTy/z7XZsvsOOogRA6LqnJsHTYhF8yKe9mEM5FzgQGgFoN3IDtBc+E0lswKkKxHj+UyN5NGCWrWQ6W6bp+HYbqMBxeDl8yvrX8nhd3K2Drwa6uims1RCb8c/JbCEYuoCVdPz0ez+9aUYFnfn1nmeRh65l1F8d8Y5d8JRmGzaG1WDEvZgYaseJs/yXtaw0udXfuGhfCLWut76Yf7N6IDY/HjYB6AX+fJhHYT4qjGLZB5/OyHvxvmGpdFOK1woU6QujdrNQMzZ2slWEqW+iyN7DQ214kU0iHTf9cJCBRY/fUtULVb0MaZYKfVKGXgEe/UWxbTa6HanclOg9H8BXTbyd8v3aJjDb6YEwfvkmsSvZG9KZJlFnVjl15Ts2amDm67F/rvM6jYTZ+YHJMZyyFZjamIu8z8dt0UbhG17+Kf78ZZx3V1bmuhhpEfeyjef3NjmAOUMPA3BeRdmxu9d7hNwePMD4SW7o/GSj4NxcVfe0per1oTbDYciJH3jrLIKM7LlNH2udnjrJNLk51Fd0lrwOeTqTrRqyRX0acqM1DTiW7HjrW0TOjWVhhQD59/gjeGtHP+FOSR4+K1fP1cca4gVvR6FHnfcaG9mKiciD1SKsPVnCZF71EqwYnBQmM5+dsbRJ/v21eMuF9H7mZG8zgfJUNo+dT88g0ZAPSBHqivC4NTlPY56BvwSjrEeOUrFEsfSWALlI+ceyHcAb5O8bnF/NPb167hbEd4SIMmGNGaU0y+2j4eA9UwjgQxkqvAllRps0GsdAbZNfTA+E8VYVzaUxLvxv1vp/JI2KQctp31mKIlwsHDg8a1UiKawZnVIGxT6cm73jqln2DFbMeWoMuZHWJsYeMAfZiy5VXRa48tNpa8CsFXCU0oBa9YnY6TR/7HnJZWjEZnaA5dTNLTpQbmFylu28qoGzUspYShzD8cD3zFrZMT9EO15WhbuP56xjajHi5k6snCNe1lLq8Jm9gG9HKYbuLVrl3db38RnTNOxq+EwRnReIhsScAmP/MrMH0k/bJZY0rJbFKTKC2ranK/eoVAJoRfcEKxZdwqYxouRdhVvFJirjF6px4WLuS6KFhcmzvM6+gTknGNyQvLB8A0wmHpqCYMNjPUSshE+FAaX93YIwrB3KYaMaF2L4mCMtuO+K8nooQcYzQPz66nUJsI9GPMte8wJKFS5EzBFdRltPGFxTG1Pu"
+    },
+    {
+      "atMs": 14146,
+      "text": "9/jG351pJH4GRdH6bSBOwnqKHbG2LhbGVbp/MSD1v3ynzUwwS27jL1XWd3tvjuElRXZqg7frycG+c1MXbaFF+kxslNDM8DKTEp2lTvdFsKwkHZI7BRW9x8Qew5IT8/FFETuRjwkCv9cX5ymZ1vuT4nSQFNRelJsc08/DpXqkdcPLIieJq2Qjzzba3sxfqV8i6xjZp6a81H/E8BAPDBHiyr05xgNbK2ZSPvFYzy6FdHjMAAsSAHErB6LxsAdhF8oLg2KnTPYRjD3y5zdnmObbAERPw8qslCiw8mB1zT/CCIg/Ov2NecrQNwg1VZsrSPmLlWylEUleWcgALfuO/Ks6KzBYbfG4Z2+PgybfXMZxxZiDqCWRQr5LGChcApeDeOeLB5OCPizVs9YXhmKLIQcA8xF5Ly+LLAYIZFn/zTyZqelZWVFs4OSesM94AUleSXeikmrWNdWQtyKkS6gzQ1GujfiBcbYxJeiKBS0cOlaExmK9dFSJAq6BJRk35uDJD5NyoS4krgeudRN4ywF5+vZVIjKwTVYssj6B840jjCKFH5Qdezm2AUDQKwHNtAMg2xNAX9AMDJXePZFDQ6mB73aejlrwlZEgZGHhuexiSQrVke5MieqyWl9uDwWIXhpHKFHG0qT/1SjGL9fjhlDn9szEFZVJpdz4gd9lEcUjt/F2IJTZfwCzEpfn1vyjQrBMhI2q6xcCNNoyh1sCemggYSORiPQe7fTUcatFAWkJAA1DRAVqsODxZ8LTc/UMPcd7XdTPTstuDHkC45cLpqEc1VdTlgWJ5M5q1u6WF0u0krRAjRY5pYKIvgSlQjuyW2/Co8howz/6FICIXFSnUhFjLPDtdq5CEXWmm/LbBIIpnVZS/WmtlBWXkya6ZGb0BHQX3Aj4rZUvlUaeklOJ7oO2kMAnwUVqQwDa1HHr3wIsUAHW7cVDWF0rwfPZkWXtcslnqISIqH/7yIN5GkvR9xi/EdFWT0L6R8r/rcBXECXtbgylrQIybiSjgTIVmZ0Qyk+guQeZRnCa2Cg2mos0SBXAxJ040t+lRXNHmfYfGgzkgl2IQjALMBW8QTfkpHk86Fxg69z5W04ELrKhoeTYpGswVjPx9BBIrlK4gQev1iR4akjmPx4zN5u3nGlucql4Q2WQOs74UPbZaikyykXHtoFOVlZGfDeiZNu+dtL5p4MAFMY0zmicGF2wnzZiivpXr2PEfR9vGNfIhQkmcJ1iXM9ZqLFGdL475ecFCB8IO/OEyCOqU3fjBEYvQiyWZA46lOjZHaOdVzyhN/VlV9ywQCQKV3YVRbFipWhkaRj93XEPRfwUkgqkqJZAHrUlmSPNvhpFr2kunH2h5WPcPKkvlZJ+YQaRh17ph"
+    },
+    {
+      "atMs": 14146,
+      "text": "bwApK7OkO5TehoiGdDgm1jgg7UaMG08K855P7xtjKJ4vuRgK/IIzXgTDMBGKWPSRuZogoGglDKDMBT9kRg13xAKuxHg2cl0v78064STseVyOqoHHa7M7KoDgdzWkFubi6jUYlPCFj4Jc0XT3holcb3BlOuhUwPDu65Fiy1MwHixZqlNj3bwPIGuEdSoTQwE5rLgp+0BdcDdKmNjeGxM5auQqwt4dCDuRa3eI/DeUs3cHeCNGwSm9VZ+aUXZG1UfsrntKFxVM45n9zvsjUErH2iuT4uVScanxDfApiPuVB0qGKvrO44D/+WN1Prgo4HAyWSsPV7xg6pyA1Pgy2cKDI5IzgqJsnqHomMaQU79r0x9z7e/eW4K9jok8QdJxuUqYgKsUWslAVmtTCWhg7bgJJzcXpqwv5eX6mKuZnqCWOv2z6mn4ZcGN6OEBFKFLPz8XiffO+IMHQ4mXQ9rBHGfiuFoZfuyweO5R/QHoq121oxWCnOByRxOSlcGPuCgjlhG1/RkGUQpcbCdw/11qoswzIdS0vUaWwxf9cZf9VmtybNkGNWUevz6m69wYzyCzcYh5Ja0iuV7dU5gVvIxz1+RocWNww5OTnFKz1jF0UbsS1DXH+SqK7GHw99+77RxzRca0GhyvPPfPyuAY84dNaaepF5ua/xhuCvbc7gsC5jaof8Gd70bNL/usRyeRwxxqdEQJ59bAoZS5ymVRF9njharkKTQYt7S1HRifVWAlzFsosYr21F3mEbL/drKXEIQ3Yon8bv5GSPpChKN03XBy5/XI8pTru9qN5Kckhh+Ajhtiz8+rpYIBZ3sVpIUpInVMY+RkRnIMUIrfN/lzR+i/HxY1hcwFT1U5PfCuMZEWYvgHsC3f8s6JUMViwq9BA52vbLB1oE2BK5konD7mFeKPv79VmtfJ1t4WQImva5wiVs9zUvVB1/Z1hTY0mQwe6NNhZxQIKLSvUvKvjwhKubMkfPJyk3HZOn2g2uVPDxy2oEZX9FHZTxtEGBIhb4gBF3ht4G/11emhrGWdL0UrHX0+ggiIKvswebAjXAFQO4NOF9tRDfW7/hoCf0U0CdBS3ygW20pt3/S3WCDVWSin25stdLM7uUAwYmCVbvZWg8vD5JWyJR0NKjaVA+prCYET/26te2Rnu4kb46BPS5nou14gQPfyf0dwtskxcadmtDwHOoZWcEmSelXxBFNMw7SxyZYYjz8EZyRzUyDOrgP+6/3XkPrLNS5ZBwNBB20/GEWeq5RdsqqFxT9zKDkcsV4rd/as8dpG2Bjal0DyKWHTH0iiukVeVtbSKiSGOYyMM9p9JjKkKBRF34tOJhxOKrltjk9KS4FpQOnvr51tnnFwvb19d5LYOdwmX"
+    },
+    {
+      "atMs": 14146,
+      "text": "81WPc1qhKX9UEFtaYaCsEMCKJ+poFPhb7u90m3UuxrxhF4qYveCGcVurDNWhJ92vSsQtH/Z/3AYPaT1yOuDPqpHGKpTKLyZh7naeu78bsOUGEeSimIBb400buSpMqS6x8auTW79YHtxWELtx5v8Fpq3WR9SiCDJrk6KvgPLVLSa7yXLTU66gq2BhhNClZSDzZYBzvQup/CwfZeyrJ3DbOCKWk24p66yGi7e8IzHjRcC/FAL5HUeIxPvVIINrZf9aP5nPTELVx58lK4lfQYIOOut4MeZCYku5GsZ4hjNnKRbLgfKowKtw5xCqmnzXQcBHDhHjUPAsKnxNdgIL3pymZkaOZY7AY5Uk2cWSmElsjFG/cH7eRiltnfr+XpJ1VbWJkEpkrH5/ScP778Hr87Cjdlvm2H9+Mo9zjJ+6voE0iqUMWOkDwjhQJCIk3myqONM3fxdf+qtehUIrrz6uAOO4F25h1RINLLZifVV5xu8qY2lTofjrhGGQxJ3sVtDAc4kWoJh95Sr/TcTGmVdmjNBi3aSLhButUqI8vZq/bLwUhzbACq8734Q8GSbdACKjG/4GG5DOr0NYYsfZJ/+Xl5pniHtdfdU5j9j7W+ZGi/+RIJuF869enZeHL93A3yUsoJvf/unhz3FOfVrUtY6dJZEUJNUUDZ2DXuiGPDNEYs6Sx9t5Nw8QgVC8qUCjgrETx9Abtpo1uqnMERXa7hVisTIYB6SzCX/klwPfAzwKz/2bx1U6Hk0n1tp0xBBuyrNyQhBgYcUMSST4Ol8uFyDiK+o2joSOm78bWqDF5CdpyncZbwNKcFRypHpMhbcZpIeCw39MhqfElWetRzC2N694/O9OI4hJndKeO+Qz/wa7xjJ7955FyN8RfmZAwX/Sy72LnaCbronDq3wy2SlLzatw6LUruhkSjQK9dzRgc7qK+KwHg4L/m4T4XTEcqUeSUsr0xQPIoEpV1TdNG6SYFBUADduNGy6du8ktXP9nKGpP2WNxg5nPM2/Lm+NE0OvR/aIPM2mYDwSNF2NKOge713cWVp15sCH5rKEhK3JfM0ICdTD/a4jBY5kI0uw9jduaZQpN4Iy5wRVqGT7FroS2FwlOdeeefgoFmNktUvPHY2/2wbc/kBBEWiaaSos6+LKcV/8ca0iwUsUo8V8qvgbYKspMKO5Y9n1mbf3M3ThnUWor1ozDK4Ntq/czBtm0s7CGP0ko6OmHKAUuHznKkUHIp4N0cnlBPh1Wkdc75OS+kzAook4/Azi2DFzLTy6sa7E8UYPpahW6zz1qLAAkTPosDxZI1+31sei/fPl1DWvBKiQkKnwglftZzTyp7qBrFB9IH9776GizFUjFXxjQuNiCoDHCUqFAnKN4/"
+    },
+    {
+      "atMs": 14146,
+      "text": "RWU7lUTeo5rRfgnMRxol4JTTUTgMyq5Fj0zdK/aZV3ml0bkeqChA0dR6Q8vJS0EZ03TjKDl7DoYy1HDy0WDWUWV33JN/ee6hIInSwbN7DnRbIxLPq9+EFe4US0Qv5eWNj2GNv0eBLIGCxvcpAqim7vSfVWnBhJIWK6lucXWrJld/5zupZdurqueRaXGpH/Yj8WxSLt3tdXa5vm+6uiyQqKEJS/oE1Wv2GJCmYCAk+sdsZnsKdQwCQEC9eV173pjL70EJPjLYEIE2RpEpoyFqa6JQOONlQJ3we8RMTVNb+eC+jvnKOW0dhoAiEwUx31GWNccfDxOUyxBFiVlbyJfESVMRuinVbTCqJ62tnL2+RuAIaASNbvwfe7h9NHUhr1Y3fm17zbwRh3cQBjPhFiLVk2tMAWdT1tSBl0njTG/rAuG8tnTMMjU5RTQ7O1mpc6YEaFpnGH0jc8ZHuUlW0ydgef3cP4WsWsCqYyBl4fi9VJrW2ueAj2VFAmIICt3+9Wd+mySbvptW0fPZfxvCk1mu68B36bqnfhlDJO32cW7HPr7CLVPTNMx+f87/IYF6eXGKQTO8XDcd18ik8RhpnttXM6tD2bAfL3jQHRqyFP66MZjcD8ejF/tVFBG8iUjYim8W9CDRG54C5SErlKzFgfC9mzvfnWp2R2j4yAVQq+mQWh1ABhFoHVHx111SG7ByzYOS/2aEbZCTo0SnmFjg/tsf3vMSA5zoZmpF0f6T+yNsXqrBFinoyM5nmTCRMDu3pAobBI9+PGyDF6Bzlcyfxe8Y+vg5ppWOMjgUSvRttqcVThW8PNbJPRpCg+4BS0ugtGQRRSXow616n+R/G83+pv82hv8es4eInleOcJk6ubLW8dgTDJvNtrEh6HaK9rIovx9XaXa3GOiVwUYo9zyEvq81wqFWMXMK3iYRSQDX1g5d4gcVWjJM0IMvH2Iiki5n84fGK7DeIxrfBdOTNFC+NP0vTo+nl4Y8aV2zyIaVzXHjGA0kVslvQWtKEM0tOvjF9r7FHBY1/3XHJ9/FUVNIvdmYP5Rk273Y81cZG0x0WRqZdnn6dqeuNNHvkkponZM1msKMt4WAHWVvWPAvB/M1kGTYCxCutWRxSYKOE8Gud0iuHbMvQYNfEKe2CfBeHafmsP3ONdzIKNrddVaKBvANQOWndNVjeWaY9c79ApY0OitPOXkz0SyyTWC24fFqh/XXDQAT6uT0uLoXiaWK6ET74hFtiyzpRPpaXh3R0qk9T44kAat+pMJNn6cIW15ONLDGaA8dy1Finuulgqw/IH7Uwk9r1S504Md9gaTYrSCqxV30T7qm/31qHhIer91aQGgh8ko4u+H7rbikBD5q213n2DQbC0BTX"
+    },
+    {
+      "atMs": 14146,
+      "text": "eBJIxC4U4jHhedLQx+FHp3sUhQmuOMSRAZvoFW6ECqoNGTJzvrcX24iiDUtPgo+/0mZdBXtw/XmtqEcfEt4pjyVMq7C3LPj+00CtwtFcp8u1xx1tBFjsT52IUsshGV5SKxYJkwhuvsoiP0h3jDTKw8wculUHnRH2HR14M2GCISicWBtRakYA3V8iaX7AqaSZpZKv2p1jnj5FafhGR5aGRicYAL/tMeyu1Qm2YGSM1YivrcJRgc4XbcBsL85tt4lmhfMwZDB+slp27SZ4rNxQd7Cdmn4fuh/LTr7eEiqGAsHLCta+SPP+AEJe+IEwaPs8oznPd/S7lqhTqt5JPIDXdAekKXKRh9FnY5qcZjRlTwYVED873J56NNMBeSpWSXeoO90VICWUXpJoZN0L3q5jRyBDEKRtaERt8ypRAIiujtXMggoOU79ODzVZtx1UOQLO9N6nk5iXJ28BARL+Un0GSj56s6ngW1mXLh1bSkSZZUGK7OIeXQJMMqiJJCO3ge/AeoKzvacrluvdzMzuFdfoYYyJXmu3Tt9bF1tqE2Z6dLzC1WLlXoo62L9dRffDV1pheQx4gMqe2B/EiELeq9/zn1MT1D6C7qMA5mNZ0IhN9ZxZ/w8S3VlRse5dVTaNRPyFwyDZN8chARZsCxpo=\",\"format\":\"google-gemini-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 14156,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":null},\"finish_reason\":\"stop\",\"native_finish_reason\":\"STOP\"}]}\n\n"
+    },
+    {
+      "atMs": 14156,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"service_tier\":\"provisioned\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\"},\"finish_reason\":\"stop\",\"native_finish_reason\":\"STOP\"}],\"usage\":{\"prompt_tokens\":349,\"completion_tokens\":1746,\"total_tokens\":2095,\"cost\":0.00680925,\"is_byok\":false,\"prompt_tokens_details\":{\"cached_tokens\":0,\"cache_write_tokens\":0,\"audio_tokens\":0,\"video_tokens\":0},\"cost_details\":{\"upstream_inference_cost\":0.00680925,\"upstream_inference_prompt_cost\":0.00026175,\"upstream_inference_completions_cost\":0.0065475},\"completion_tokens_details\":{\"reasoning_tokens\":1506,\"image_tokens\":0,\"audio_tokens\":0}}}\n\n"
+    },
+    {
+      "atMs": 14161,
+      "text": "data: [DONE]\n\n"
+    }
+  ],
+  "endAtMs": 14162,
+  "failure": null
+}

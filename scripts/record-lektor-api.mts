@@ -6,7 +6,10 @@
  *   one of his), for each model named;
  * - Google with a wrong key and with none, and the model list with the real key;
  * - OpenRouter with a wrong key (a completion refused at the door, so nothing runs), and `/key`
- *   and `/credits` with the real key. No completion is ever asked with the real OpenRouter key.
+ *   and `/credits` with the real key.
+ * - `openrouter-stream`, the one case that spends money (a few cents, asked for only by name): a
+ *   streamed utisak from paid Flash and from Opus at medium effort, Flash cut short by a tiny
+ *   `max_tokens` (the cut-off's shape), and a request no host can take (refused before any model runs).
  *
  *   node scripts/record-lektor-api.mts --out <folder> [--cases google-stream,google-errors,openrouter]
  *        [--models gemini-3.8-flash,gemini-3.6-flash]
@@ -40,7 +43,7 @@ const MADE_UP_TEXT = [
   'pištaljke u zoru. Ja nisam znao šta da mu kažem, pa sam samo klimnuo glavom.',
 ].join('\n');
 
-type CaseName = 'google-stream' | 'google-errors' | 'openrouter';
+type CaseName = 'google-stream' | 'google-errors' | 'openrouter' | 'openrouter-stream';
 
 interface Piece {
   /** Milliseconds from sending, by `performance.now()`. */
@@ -175,6 +178,38 @@ function openRouterAsks(key: string): Ask[] {
   ];
 }
 
+/** A streamed OpenRouter utisak, as the app asks for one: no provider rules, Opus at medium effort, Flash at its default. */
+function openRouterStreamAsk(name: string, key: string, model: string, extra: Record<string, unknown> = {}): Ask {
+  const reasoning = model.startsWith('anthropic/') ? { reasoning: { effort: 'medium' } } : {};
+  return {
+    name,
+    method: 'POST',
+    url: `${OPENROUTER}/chat/completions`,
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: {
+      model,
+      stream: true,
+      ...reasoning,
+      messages: [
+        { role: 'system', content: FEEDBACK_INSTRUCTION },
+        { role: 'user', content: MADE_UP_TEXT },
+      ],
+      ...extra,
+    },
+    limitMs: STREAM_LIMIT_MS,
+  };
+}
+
+function openRouterStreamAsks(key: string): Ask[] {
+  return [
+    openRouterStreamAsk('openrouter-stream-gemini-3.8-flash', key, 'google/gemini-3.8-flash'),
+    openRouterStreamAsk('openrouter-stream-claude-opus-5.5', key, 'anthropic/claude-opus-5.5'),
+    openRouterStreamAsk('openrouter-stream-cut-off', key, 'google/gemini-3.8-flash', { max_tokens: 40 }),
+    // No such host: refused before any model runs, so it costs nothing.
+    openRouterStreamAsk('openrouter-no-host', key, 'google/gemini-3.8-flash', { provider: { only: ['no-such-host'], allow_fallbacks: false } }),
+  ];
+}
+
 async function asksFor(cases: CaseName[], models: string[]): Promise<Ask[]> {
   const asks: Ask[] = [];
   if (cases.includes('google-stream') || cases.includes('google-errors')) {
@@ -183,10 +218,13 @@ async function asksFor(cases: CaseName[], models: string[]): Promise<Ask[]> {
     if (cases.includes('google-errors')) asks.push(...googleErrorAsks(googleKey));
   }
   if (cases.includes('openrouter')) asks.push(...openRouterAsks(await keyFrom('open-router-key.txt')));
+  if (cases.includes('openrouter-stream')) asks.push(...openRouterStreamAsks(await keyFrom('open-router-key.txt')));
   return asks;
 }
 
-const KNOWN_CASES: readonly CaseName[] = ['google-stream', 'google-errors', 'openrouter'];
+const KNOWN_CASES: readonly CaseName[] = ['google-stream', 'google-errors', 'openrouter', 'openrouter-stream'];
+/** What runs when no case is named: everything free. The paid stream only when asked for by name. */
+const FREE_CASES: readonly CaseName[] = ['google-stream', 'google-errors', 'openrouter'];
 
 function casesFrom(list: string): CaseName[] {
   const names = list.split(',').map((name) => name.trim());
@@ -199,7 +237,7 @@ async function main(): Promise<void> {
   const { values } = parseArgs({
     options: {
       out: { type: 'string' },
-      cases: { type: 'string', default: KNOWN_CASES.join(',') },
+      cases: { type: 'string', default: FREE_CASES.join(',') },
       models: { type: 'string', default: 'gemini-3.8-flash,gemini-3.6-flash' },
     },
   });

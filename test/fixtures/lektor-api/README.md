@@ -55,6 +55,10 @@ One JSON file per case:
 | `openrouter-wrong-key-key.json` | 2026-11-10 17:01 | `/key` with a wrong key: the same 401 |
 | `openrouter-key.json` | 2026-11-10 17:01 | `/key` with the real key: the key's cap and its use, **not the account balance** |
 | `openrouter-credits.json` | 2026-11-10 17:01 | `/credits` with the real (ordinary) key: 200, `total_credits` and `total_usage` |
+| `openrouter-stream-gemini-3.8-flash.json` | 2026-11-11 | paid Flash, a whole streamed utisak: `: OPENROUTER PROCESSING` comments, `reasoning_details` (`reasoning.text` and `reasoning.encrypted`), the words in `delta.content`, `finish_reason: "stop"`, then a last chunk repeating it with `usage.cost` ($0.0068), then `data: [DONE]` |
+| `openrouter-stream-claude-opus-5.5.json` | 2026-11-11 | Opus at medium effort, the same utisak: `reasoning.text` only, 157 pieces, `native_finish_reason: "end_turn"`, cost $0.0158 |
+| `openrouter-stream-cut-off.json` | 2026-11-11 | paid Flash with `max_tokens: 40`: thinking only, no words, `finish_reason: "length"` |
+| `openrouter-no-host.json` | 2026-11-11 | a request no host may take (`provider.only` an unknown host): 404 "No allowed providers…", plain JSON, refused before any model ran |
 
 The balances in `openrouter-key.json` and `openrouter-credits.json` are the real ones from that
 day. They're kept because they show the two disagreeing: $12,08 left on the key's cap against
@@ -65,7 +69,6 @@ $7,08 in the account.
 - **A whole stream on 3.8, and a mid-stream error event.** Google refused 3.8 at once on every
   try. Run `node scripts/record-lektor-api.mts --out <folder> --cases google-stream` at a quieter
   hour, clean the result, and add a row above.
-- **Any OpenRouter completion stream, 402, 429 or 503.** These need a paid call or an empty
-  account. Record the first paid stream when the build's own first paid test is run by hand,
-  through the same cleaning script.
+- **OpenRouter 402, 429, 503 and a mid-stream error.** These need an empty account or a bad day.
+  The streams above were recorded with `--cases openrouter-stream` (about 2.3 cents for all four).
 - **Google 429 `quota_exceeded`.** It needs the day's free quota used up.

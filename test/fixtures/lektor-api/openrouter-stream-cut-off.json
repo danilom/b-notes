@@ -1,0 +1,56 @@
+{
+  "name": "openrouter-stream-cut-off",
+  "recordedAt": "2026-11-11T07:53:08.770Z",
+  "request": {
+    "method": "POST",
+    "url": "https://openrouter.ai/api/v1/chat/completions",
+    "headers": {
+      "Authorization": "<KEY>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "model": "google/gemini-3.8-flash",
+      "stream": true,
+      "messages": [
+        {
+          "role": "system",
+          "content": "Ti si pažljiv čitalac ovog teksta, a ne učitelj. Napiši autoru svoj utisak u najviše tri kratka pasusa, obraćajući mu se sa „ti”.\n\nU prvom reci šta ti je ostalo i zašto, i navedi jedno konkretno mesto iz teksta, kratkim navodom.\nU drugom reci gde si zastao ili želeo nešto više, i opet navedi to mesto.\nU trećem reci nešto o celini.\n\nBez opšte hvale, bez ocena i bez spiska saveta. Ne izmišljaj lično iskustvo. Ako nisi siguran u neku činjenicu, nemoj je tvrditi. Piši narečjem kojim je tekst pisan.\nVrati samo te pasuse, običnim tekstom, bez naslova i oznaka."
+        },
+        {
+          "role": "user",
+          "content": "Jutros sam izašao rano, pre nego što se grad probudio. Na pijaci su tek postavljali tezge, a miris\nhleba iz pekare na uglu se širio celom ulicom. Kupio sam kilo jabuka i jednu veliku dinju, iako\nznam da je niko u kući neće jesti osim mene.\n\nKod česme sam sreo starog Milutina, koji je ceo život radio na železnici. Pričao mi je o vozovima\nkoji više ne idu, i o stanicama na kojima više niko ne čeka. Rekao je da mu najviše nedostaje zvuk\npištaljke u zoru. Ja nisam znao šta da mu kažem, pa sam samo klimnuo glavom."
+        }
+      ],
+      "max_tokens": 40
+    }
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "text/event-stream"
+  },
+  "headersAtMs": 1820,
+  "pieces": [
+    {
+      "atMs": 1820,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\"**Gauging Author's Intent**\\n\\nI'm currently examining how the author's word choices and phrasing signal their underlying assumptions and the intended audience for this piece. My focus is on discerning the subtle nuances that reveal their perspective.\\n\\n\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"**Gauging Author's Intent**\\n\\nI'm currently examining how the author's word choices and phrasing signal their underlying assumptions and the intended audience for this piece. My focus is on discerning the subtle nuances that reveal their perspective.\\n\\n\",\"format\":\"google-gemini-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 1873,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":null,\"reasoning_details\":[{\"type\":\"reasoning.encrypted\",\"data\":\"AY89a18ax7LySBFffTumqt0IkVpIIEDi+nPTokTCTHP7ebgAo14/cyleOQw0iR53zc1Agy+JUlWKkpHptBj4HNNvs94g+HMwmSF1QttvqjVo0oHfwEpA2KDZmDPwiFTYA1CnyN2hqm4Sfe6POni1YnCRu4HmqPlCamK5QhZTD2E0QYECkdpFttzYVhBBaHAWQdNExolVWbyDSCsvnNqY2GmYMb1tYyYjOshlLMFALfLHVnAvnSGS6xuxZIDfOkBcNC6zsC4Oz3WKt7QxCdp6cKP/enLGQeUL1EilXQwvISmyW8Tg34CAThv/2Tb5V3mTtS/dego702+WbF/qmylT3EwC9A==\",\"format\":\"google-gemini-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 1874,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":null},\"finish_reason\":\"length\",\"native_finish_reason\":\"MAX_TOKENS\"}]}\n\n"
+    },
+    {
+      "atMs": 1875,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"google/gemini-3.8-flash\",\"provider\":\"Google\",\"service_tier\":\"default\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\"},\"finish_reason\":\"length\",\"native_finish_reason\":\"MAX_TOKENS\"}],\"usage\":{\"prompt_tokens\":349,\"completion_tokens\":36,\"total_tokens\":385,\"cost\":0.00039675,\"is_byok\":false,\"prompt_tokens_details\":{\"cached_tokens\":0,\"cache_write_tokens\":0,\"audio_tokens\":0,\"video_tokens\":0},\"cost_details\":{\"upstream_inference_cost\":0.00039675,\"upstream_inference_prompt_cost\":0.00026175,\"upstream_inference_completions_cost\":0.000135},\"completion_tokens_details\":{\"reasoning_tokens\":36,\"image_tokens\":0,\"audio_tokens\":0}}}\n\n"
+    },
+    {
+      "atMs": 1876,
+      "text": "data: [DONE]\n\n"
+    }
+  ],
+  "endAtMs": 1876,
+  "failure": null
+}

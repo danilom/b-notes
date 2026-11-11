@@ -1,0 +1,666 @@
+{
+  "name": "openrouter-stream-claude-opus-5.5",
+  "recordedAt": "2026-11-11T07:53:08.767Z",
+  "request": {
+    "method": "POST",
+    "url": "https://openrouter.ai/api/v1/chat/completions",
+    "headers": {
+      "Authorization": "<KEY>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "model": "anthropic/claude-opus-5.5",
+      "stream": true,
+      "reasoning": {
+        "effort": "medium"
+      },
+      "messages": [
+        {
+          "role": "system",
+          "content": "Ti si pažljiv čitalac ovog teksta, a ne učitelj. Napiši autoru svoj utisak u najviše tri kratka pasusa, obraćajući mu se sa „ti”.\n\nU prvom reci šta ti je ostalo i zašto, i navedi jedno konkretno mesto iz teksta, kratkim navodom.\nU drugom reci gde si zastao ili želeo nešto više, i opet navedi to mesto.\nU trećem reci nešto o celini.\n\nBez opšte hvale, bez ocena i bez spiska saveta. Ne izmišljaj lično iskustvo. Ako nisi siguran u neku činjenicu, nemoj je tvrditi. Piši narečjem kojim je tekst pisan.\nVrati samo te pasuse, običnim tekstom, bez naslova i oznaka."
+        },
+        {
+          "role": "user",
+          "content": "Jutros sam izašao rano, pre nego što se grad probudio. Na pijaci su tek postavljali tezge, a miris\nhleba iz pekare na uglu se širio celom ulicom. Kupio sam kilo jabuka i jednu veliku dinju, iako\nznam da je niko u kući neće jesti osim mene.\n\nKod česme sam sreo starog Milutina, koji je ceo život radio na železnici. Pričao mi je o vozovima\nkoji više ne idu, i o stanicama na kojima više niko ne čeka. Rekao je da mu najviše nedostaje zvuk\npištaljke u zoru. Ja nisam znao šta da mu kažem, pa sam samo klimnuo glavom."
+        }
+      ]
+    }
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "text/event-stream"
+  },
+  "headersAtMs": 952,
+  "pieces": [
+    {
+      "atMs": 1361,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 1780,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 2192,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 2608,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 3024,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 3443,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 3816,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\"I'm writing in\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"I'm writing in\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 3920,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\" Ekavian\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" Ekavian\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\" Serbian, in\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" Serbian, in\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\" Latin script, addressing\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" Latin script, addressing\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"ob"
+    },
+    {
+      "atMs": 3920,
+      "text": "ject\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\" the\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" the\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\" re\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" re\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\"ader as \\\"ti,\\\"\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"ader as \\\"ti,\\\"\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 3955,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\" with\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" with\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 3956,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\" three short paragraphs and\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" three short paragraphs and\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 4252,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\" concrete quotes from\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" concrete quotes from\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 4252,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\" the text.\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" the text.\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 4252,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\"\\n\\n\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"\\n\\n\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 4676,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 5087,
+      "text": ": OPENROUTER PROCESSING\n\n"
+    },
+    {
+      "atMs": 5150,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\"I'm still weighing wh\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"I'm still weighing wh\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\"ether the dinja line hints\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"ether the dinja line hints\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5150,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\" at the household, and I'\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" at the household, and I'\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\"d like more on\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"d like more on\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\" that. For the third paragra\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" that. For the third paragra\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"i"
+    },
+    {
+      "atMs": 5151,
+      "text": "d\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\"ph I'm thinking about\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"ph I'm thinking about\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5152,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\" the qu\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" the qu\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\"iet morning and\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"iet morning and\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5152,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\" the two halves, and\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" the two halves, and\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5152,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\" whether the early rising ech\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" whether the early rising ech\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\"oes the whistle at d\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"oes the whistle at d\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5155,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\"awn, but I want\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"awn, but I want\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5157,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\" to be\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" to be\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\" careful not to read\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" careful not to read\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\" too\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" too\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5157,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\" much into it.\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" much into it.\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5157,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":\"\\n\\n\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"\\n\\n\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5157,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"signature\":\"CAQSqgkKEAgTGAI4AUIIdGhpbmtpbmcSDEJ1FoemE6PqeDiUnhoMSnGm2j2h4H8cpcxfIjCXtOyEFx4IcQjZHqiosrFz1Uy13JR52UqLO4nlUOjSi4jD03SgbozE7nMJAlkLv+8qxwj6P9qGsxc8pSJI3I6G7ULNWpm4dn6/0DZj9elw7gkEm4QNO+PHw2EoxRDbr6v3IxvqTlXgx8eHAlpPGwk1gX+pMA71L5sq06405m7EXVzQOaySqb1ebYa7NqETTdR0GhbUOmJw3TBOhekcPI3kAhnaNMulcJBpGdZIwnGNpdgxpQAW4FtmwFRkFKC1Xic7pt4PO1zjQntydxwwlSSUEaAnfyNnzOEPtoZTHJ6wHyk9cGT4i7H6f8VJaw9zvJStyX8XQM/sBD0elS6VqU+BdfkE95I+7UZDlkLbkdgQTwNP6bRdkRUpUiKyO1U4GkAOSeJb9PaBiN1jGvTuCe/BqFdcXUszMKX//2VMSxKu8pfjyHglYboSvZ7zFwiB7TXlu8mbVQEPkXOlZ96UfLizGXTNQPmDO22mJ2TrjgbGq/h+odultctO0wsCmJMk5GSTC+8X8EGVris7bHEKLFOf7fYuB6R6Ondu2RwvJc6Woqm5rfV7EnzGPS9x6p82bK4QQtgIl3l1gmK8QNN1AKSHVJbCYESCNGUAKSONet5V3F8gB2xIz1NVTH7Y7H7T6+fUtEjFLuGfT9XZQIShRX5dGQcLAs+9/It1EqnhdO4dKr5W2yT9cc2hCF+Mfsl3p9UVqkBugcmmKQHwz9A6H+cZs82pAJDjUJUGn62zFppdGpCcDWegN3BEmXYP7j7RbHbxvPHG4vwFTiLHsS2PAk0VKnCn+gUNkibXeSWShFVkln/8oVd+AMg+5yZFdra6DnbdWh02LanmJ1vtmkZ+ez6hxM2It+x9XV409aw04+C+QP10Hwk0uuSow027LyK8H0A+G/tpy5nuZpkC8P/HXbQDNmSE53uy1Mc1dK+ostiwEv0So2DIVNi4OselQxyBuScToL4GnDQIBzA3Px637fFGi1vU7gVugjxr6D"
+    },
+    {
+      "atMs": 5158,
+      "text": "SJdLzM7YGow0yncIBPC56lX3sEYWiTqFmP5sYswWSwfZ4SUBP48fZeURQABy5QjmXyIRdOXusEAGjo9AJDQhgI5GWtcfre9h1LGVjoHtEKM8mT4SA5yniDJ82NeLjBq5EB/tcPOdjKOBeiSKyO5tHtcEiAO1FtLT5rdq8fwcPOSqdXULH/aYB7QGWz3wl3EEF37iILbq+h0iUiBJJRAyO7lpvWeXJXB05UKlRNYMwDlQ0Kl2OXqQxHET89zqToqTfZSVn6KxIOILfAW7izbdRZ7M9/WUvzm75jzsaIl/G4RtX5RJH7cy5Ea3W+vmohhWYArtPWys3Ae7CRn3m5opOT8CiEJrvFVC9u4kJsAlhESudu1e432XMoEpzse/JpW/uj/ZCY98TDViNJCs3wxADo7M72Hn9hgcMfirj3x2jSCU9t5xwii6Opr5ZqWGaozR+ewjz3idj18WC0kN/FAvIyUU4yMuIonl5oEPnakO1WGV9/C68Ju9Kwmh+12wmD1Clu6Wl80k9QbOdcSgcbJRkYAQ==.eyJlbmRwb2ludF9zbHVnIjoiYW50aHJvcGljL2NsYXVkZS1vcHVzLTUuNS0yMDI2MDkyMXxjbGF1ZGUtb24tYXdzIn0\",\"format\":\"anthropic-claude-v1\",\"index\":0}]},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5158,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Ostala\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5159,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" mi je dinja.\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" R\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5159,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ečen\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ica „iako znam da je\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5159,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" niko u kući neće j\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5162,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"esti osim mene” k\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"aže mnogo više n\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5162,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ego što iz\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5162,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"gleda: u\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" nj\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"oj je\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" c\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5412,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ela j\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5413,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"edna kuća i\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5413,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" neka t\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"i\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5413,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ha us\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"amljenost,\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5449,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" a\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5499,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" da\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5548,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" je\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5596,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" n\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5646,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ig\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5697,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"de ne imenu\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5745,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ješ. U\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5795,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"z\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5846,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" nju m\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5897,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"i je ostala i\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5947,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" Milutinova pišta\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 5996,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ljka „\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6048,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"u zoru”,\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6097,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" jer se l\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6147,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"epo sp\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6195,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"a\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6246,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ja sa tvojim j\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6295,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"utrom\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6346,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" p\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6395,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"re nego što se grad prob\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6448,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"udio.\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6501,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" Ob\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6545,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"oj\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6594,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ica \",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6645,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ste bud\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6694,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ni\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6743,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" u sat\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6792,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"u ko\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6843,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ji dr\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6892,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ugi ne prim\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6942,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"eć\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 6994,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"uju.\\n\\nZastao\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7044,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" sam k\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7093,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"od „Ja nisam\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7145,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" znao šta da mu k\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7195,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ažem, pa sam sam\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7244,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"o klimnuo glav\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7296,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"om.\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7345,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"” Tu tekst sta\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7396,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"je ba\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7446,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"š k\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7494,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ad\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7545,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" sam h\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7594,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"te\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7644,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"o da \",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7695,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ost\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7745,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"anem s\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7795,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" tobom još tr\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7843,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"enutak,\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7893,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" da vidim šta se u\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7948,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" tebi p\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 7998,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"om\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8044,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"er\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8096,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ilo d\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8143,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ok si\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8194,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" \",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8240,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ć\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8291,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ut\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8342,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ao. Is\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8393,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"to me\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8444,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" je\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8498,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" z\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8544,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"an\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8590,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"imal\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8643,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"o i\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8690,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" \",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8737,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ko\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8788,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" su\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8842,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" ti „\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8899,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"niko u kući”.\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8950,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" \",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 8990,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Ta\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9036,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" r\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9090,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ečenica ot\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9140,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"vori v\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9187,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"rata, p\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9237,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"a ih br\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9290,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"zo zatvori.\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9338,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\\n\\nCelina m\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9387,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"i de\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9438,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"luje kao j\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9488,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"edno m\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9540,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"irno jutro i\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9588,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"z dva dela,\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9638,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" pijaca\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9691,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" p\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9738,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"a česma. \",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9790,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Ono što se\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9839,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" \",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9887,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ne iz\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9941,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"g\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 9990,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ovori n\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10045,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"osi više tež\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10092,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ine od on\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10135,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"o\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10186,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ga što se k\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10236,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"aže:\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10287,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" jabuke, dinja\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10337,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" i kl\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10390,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"iman\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10437,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"je glav\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10487,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"om govore o teb\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10537,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"i, a Milutinove\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10586,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" stanice na\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10639,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" kojima „\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10689,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"više niko ne čeka\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10737,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"” od\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10789,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"j\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10838,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ek\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10887,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"uju i\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10940,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" n\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 10990,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"az\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 11038,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ad,\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 11087,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" pr\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 11137,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ema to\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 11159,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"j kući.\",\"role\":\"assistant\"},\"finish_reason\":null,\"native_finish_reason\":null}]}\n\n"
+    },
+    {
+      "atMs": 11174,
+      "text": "data: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\",\"reasoning\":null},\"finish_reason\":\"stop\",\"native_finish_reason\":\"end_turn\"}]}\n\ndata: {\"id\":\"REDACTED_ID\",\"object\":\"chat.completion.chunk\",\"created\":1794383588,\"model\":\"anthropic/claude-opus-5.5\",\"provider\":\"Claude Platform on AWS\",\"service_tier\":\"default\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\",\"role\":\"assistant\"},\"finish_reason\":\"stop\",\"native_finish_reason\":\"end_turn\"}],\"usage\":{\"prompt_tokens\":546,\"completion_tokens\":681,\"total_tokens\":1227,\"cost\":0.015804,\"is_byok\":false,\"prompt_tokens_details\":{\"cached_tokens\":0,\"cache_write_tokens\":0,\"audio_tokens\":0,\"video_tokens\":0},\"cost_details\":{\"upstream_inference_cost\":0.015804,\"upstream_inference_prompt_cost\":0.002184,\"upstream_inference_completions_cost\":0.01362},\"completion_tokens_details\":{\"reasoning_tokens\":228,\"image_tokens\":0,\"audio_tokens\":0}}}\n\n"
+    },
+    {
+      "atMs": 11178,
+      "text": "data: [DONE]\n\n"
+    }
+  ],
+  "endAtMs": 11178,
+  "failure": null
+}

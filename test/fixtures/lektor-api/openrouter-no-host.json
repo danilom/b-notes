@@ -1,0 +1,50 @@
+{
+  "name": "openrouter-no-host",
+  "recordedAt": "2026-11-11T07:53:08.772Z",
+  "request": {
+    "method": "POST",
+    "url": "https://openrouter.ai/api/v1/chat/completions",
+    "headers": {
+      "Authorization": "<KEY>",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "model": "google/gemini-3.8-flash",
+      "stream": true,
+      "messages": [
+        {
+          "role": "system",
+          "content": "Ti si pažljiv čitalac ovog teksta, a ne učitelj. Napiši autoru svoj utisak u najviše tri kratka pasusa, obraćajući mu se sa „ti”.\n\nU prvom reci šta ti je ostalo i zašto, i navedi jedno konkretno mesto iz teksta, kratkim navodom.\nU drugom reci gde si zastao ili želeo nešto više, i opet navedi to mesto.\nU trećem reci nešto o celini.\n\nBez opšte hvale, bez ocena i bez spiska saveta. Ne izmišljaj lično iskustvo. Ako nisi siguran u neku činjenicu, nemoj je tvrditi. Piši narečjem kojim je tekst pisan.\nVrati samo te pasuse, običnim tekstom, bez naslova i oznaka."
+        },
+        {
+          "role": "user",
+          "content": "Jutros sam izašao rano, pre nego što se grad probudio. Na pijaci su tek postavljali tezge, a miris\nhleba iz pekare na uglu se širio celom ulicom. Kupio sam kilo jabuka i jednu veliku dinju, iako\nznam da je niko u kući neće jesti osim mene.\n\nKod česme sam sreo starog Milutina, koji je ceo život radio na železnici. Pričao mi je o vozovima\nkoji više ne idu, i o stanicama na kojima više niko ne čeka. Rekao je da mu najviše nedostaje zvuk\npištaljke u zoru. Ja nisam znao šta da mu kažem, pa sam samo klimnuo glavom."
+        }
+      ],
+      "provider": {
+        "only": [
+          "no-such-host"
+        ],
+        "allow_fallbacks": false
+      }
+    }
+  },
+  "status": 404,
+  "headers": {
+    "content-type": "application/json",
+    "x-openrouter-error-origin": "client"
+  },
+  "headersAtMs": 209,
+  "pieces": [
+    {
+      "atMs": 221,
+      "text": "{\"error\":{\"message\":\"No allowed providers are available for the selected model. Providers se"
+    },
+    {
+      "atMs": 223,
+      "text": "rving google/gemini-3.8-flash-20260902: google-ai-studio, google-vertex, but your request's provider.only preference permits only: no-such-host.\",\"code\":404,\"metadata\":{\"available_providers\":[\"google-ai-studio\",\"google-vertex\"],\"requested_providers\":[\"no-such-host\"],\"routing_funnel\":[{\"step\":\"Initial Endpoints\",\"endpoint_count\":7},{\"step\":\"Filter by Regional Surcharge\",\"endpoint_count\":6},{\"step\":\"Filter by Tier Endpoint Rows\",\"endpoint_count\":2,\"reason\":\"Excluded tier endpoint rows the request did not opt into\"}],\"failed_routing_step\":\"Filter by Allowed Providers\"}}}"
+    }
+  ],
+  "endAtMs": 225,
+  "failure": null
+}
