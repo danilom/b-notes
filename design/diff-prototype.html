@@ -192,10 +192,37 @@
         standard round radios.
       */
       /* No fill of its own, so the band's grey shows through: the same grey (Danilo, 2026-11-12). */
+      #view[data-button-look='side-bar'] .diff-bar {
+        --side-bar: 7px;
+        --between: 0.6rem;
+        gap: var(--between);
+      }
+
+      /* Each button's target reaches half the way to the next, so the wider space between
+         them still has no gap a click falls into; past the thick edge on the left. */
+      #view[data-button-look='side-bar'] .diff-bar button::before {
+        right: calc(var(--between) / -2 - 1px);
+        left: calc(var(--between) / -2 - 1px);
+      }
+
+      #view[data-button-look='side-bar'] .diff-bar .diff-bar-choice::before {
+        left: calc(var(--between) / -2 - var(--side-bar));
+      }
+
+      #view[data-button-look='side-bar'] .diff-bar > .diff-bar-choice:first-child::before {
+        left: calc(-0.4rem - var(--side-bar));
+      }
+
+      /* The X has a little margin of its own before it (interface.css), which its reach covers too. */
+      #view[data-button-look='side-bar'] .diff-bar > button:last-child::before {
+        right: calc(-0.4rem - 1px);
+        left: calc(var(--between) / -2 - 1px - 0.2rem);
+      }
+
       #view[data-button-look='side-bar'] .diff-bar .diff-bar-choice {
         --choice-shown: transparent;
         border: 1px solid var(--choice-fill);
-        border-left-width: 5px;
+        border-left-width: var(--side-bar);
         background-color: transparent;
         color: var(--choice-fill);
       }
