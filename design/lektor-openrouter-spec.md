@@ -360,9 +360,8 @@ marked like Ranije verzije's open row. All are locked while a request runs.
     - **What it does:** choosing a row draws **every** change that way, and forgets which ones he opened or closed by
       hand. He can still open a single change afterwards. Clicking the row already chosen applies it again, so it
       closes what he has opened since.
-    - **The one exception:** a change he has decided stays closed in both views, showing what goes in (the legend's
-      "biće uneto"). Opened, its wordings are drawn alike and his pick shows only on the bar, so the text would stop
-      saying what he chose.
+    - **Decided changes too** (Danilo, 2026-11-11): "izmene označene" opens the changes he has decided as well. His
+      choice stays, and shows on the change's bar.
     - Dubinska prerada opens on "samo rezultat", as today; the others on "izmene označene". Built in `createDiffReview` (`src/ui/diff-review.ts`), already
       done and tested on `lektor-openrouter` (commit ba6d1fe).
   - **Footer:** "← Nazad" at the far left, solid-blue "Unesi sve izmene u tekst" (the app's hop/confetti stays), and
@@ -468,7 +467,7 @@ per model, not the service. Real recorded replies to build the fakes from are in
 - **Opening:** offline with and without keys saved (no keys: the keyless check), on the utisak when there is one.
 - **Void suggestions:** trailing whitespace doesn't void them; any other change does; one line however many.
 - **The review's view:** done in `test/diff-review.test.ts`: every change follows it, his own opening forgotten,
-  decided ones stay closed, setting it again applies again.
+  decided ones too, keeping his choice; setting it again applies again.
 - **The utisak's title line:** empty, spaces, his own quotes, long, control characters.
 - **Requests and texts:** request for the open text, for another text, text deleted while waiting, failure on
   another text (its shortcut resends that text), only one request at a time.

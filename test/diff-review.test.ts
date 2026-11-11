@@ -128,14 +128,15 @@ describe('showing only the new text', () => {
     assert.deepEqual([isOpen(0), isOpen(1), isOpen(2)], [false, false, false]);
   });
 
-  it('keeps a decided change collapsed when the changes are shown as old and new', () => {
-    const review = createDiffReview(pieces, nothing, true);
+  it('opens a decided change too when the changes are shown as old and new, keeping his choice', () => {
+    const review = createDiffReview(pieces, nothing, false);
     review.editing().onChoose(1, 'old');
-    review.editing().onOpen(1);
+    const text = review.textNow();
     review.setShowsOnlyNew(false);
     const isOpen = (at: number): boolean => review.editing().choiceOf(at).isOpen;
-    assert.deepEqual([isOpen(0), isOpen(1), isOpen(2)], [true, false, true]);
+    assert.deepEqual([isOpen(0), isOpen(1), isOpen(2)], [true, true, true]);
     assert.equal(review.editing().choiceOf(1).chosen, 'old');
+    assert.equal(review.textNow(), text);
   });
 
   it('collapses again a change he opened when the view is set to what it already is', () => {

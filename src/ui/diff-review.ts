@@ -15,8 +15,8 @@ export interface DiffReview {
   /** Whether the changes are shown collapsed to what goes in, as last set for all of them. */
   showsOnlyNew: () => boolean;
   /**
-   * Shows every change one way, forgetting which he opened or collapsed himself; those he has
-   * decided stay collapsed either way. Chooses nothing. Setting it as it already is applies it again.
+   * Shows every change one way, decided or not, forgetting which he opened or collapsed himself.
+   * Chooses nothing. Setting it as it already is applies it again.
    */
   setShowsOnlyNew: (only: boolean) => void;
 }
@@ -32,9 +32,8 @@ type Shown = 'opened' | 'collapsed';
  * Whether it is open is his to say, a change at a time: clicking one opens it, and
  * choosing a wording collapses it. Setting the view ("Izgled izmena") is a statement about
  * all of them: it forgets what he opened or collapsed and shows every change that way, so
- * the view he sees chosen is what the page shows. Except that a change he has decided stays
- * collapsed, showing what goes in: opened, its wordings are drawn alike and his decision
- * shows only on the bar, so the text would no longer say what he chose.
+ * the view he sees chosen is what the page shows. That includes the changes he has decided
+ * (Danilo, 2026-11-11): reopened, a decided change keeps his choice, which then shows on its bar.
  *
  * @param pieces The proposal as compared, tidied and merged; choices go by place in this list.
  * @param redraw Called after anything he does, for the view to be drawn again.
@@ -53,8 +52,8 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
   let settling: ChangeSettling | null = null;
 
   const choiceAt = (at: number): ChangeChoice => choices.get(at) ?? { chosen: 'proposed' };
-  const byView = (at: number): Shown => (isOnlyNew || choices.has(at) ? 'collapsed' : 'opened');
-  const isCollapsed = (at: number): boolean => (shownByHim.get(at) ?? byView(at)) === 'collapsed';
+  const byView = (): Shown => (isOnlyNew ? 'collapsed' : 'opened');
+  const isCollapsed = (at: number): boolean => (shownByHim.get(at) ?? byView()) === 'collapsed';
   const collapsedNow = (): Set<number> => new Set(changePieces.flatMap((_, at) => (isCollapsed(at) ? [at] : [])));
   const piecesNow = (): TextPiece[] => piecesAfter(pieces, { changes: choices, letters, collapsed: collapsedNow() });
 
