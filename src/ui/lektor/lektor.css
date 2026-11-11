@@ -842,3 +842,1179 @@ body.lektor-open #lektor-side {
   height: var(--lektor-radio);
   margin: 0;
 }
+
+/*
+  The Lektor with OpenRouter (design/lektor-openrouter-spec.md), as the mockup drew it
+  (design/lektor-choice-prototype.html and lektor-menu-pictures.css), which is the source for its
+  look. After the rules above, as it sat on them there, so what it changes it changes the same way.
+*/
+
+/* The menu's two pictures: their own warm colours, kept in dark mode too (spec §6). */
+:root {
+  --ic-ink: #3a3d44;
+  --ic-paper: #fffaf0;
+  --ic-red: #e2584c;
+  --ic-yellow: #f2b53a;
+  --ic-blue: #6ea8e6;
+  --ic-lens: #d6ebfc;
+  --ic-pink: #f3a0b5;
+  --ic-green: #47ab73;
+  --ic-wood: #f1d29b;
+  --ic-brown: #9c6236;
+  --ic-dark: #4a3f5c;
+}
+
+/*
+  The same in dark mode (Danilo, 2026-11-10): ink and paper flipped looked like a negative. Drawn in
+  their own colours they stand on the dark panel as a small picture does, the paper still paper.
+*/
+
+.lektor-picture * {
+  stroke: var(--ic-ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lektor-picture .ic-line,
+.lektor-picture .ic-steam { fill: none; }
+.lektor-picture .ic-steam { stroke: var(--ic-brown); opacity: 0.7; }
+.lektor-picture .ic-paper { fill: var(--ic-paper); }
+.lektor-picture .ic-red { fill: var(--ic-red); }
+.lektor-picture .ic-red { fill: var(--ic-red); }
+.lektor-picture .ic-yellow { fill: var(--ic-yellow); stroke-width: 1.5; }
+.lektor-picture .ic-handle { fill: none; stroke: var(--ic-yellow); stroke-width: 5; }
+.lektor-picture .ic-blue { fill: var(--ic-blue); }
+.lektor-picture .ic-lens { fill: var(--ic-lens); }
+.lektor-picture .ic-pink { fill: var(--ic-pink); }
+.lektor-picture .ic-green { fill: var(--ic-green); }
+.lektor-picture .ic-wood { fill: var(--ic-wood); }
+.lektor-picture .ic-brown { fill: none; stroke: var(--ic-brown); stroke-width: 3; }
+.lektor-picture .ic-dark { fill: var(--ic-dark); }
+.lektor-picture .ic-white { fill: #fff; }
+.lektor-picture .ic-ink { fill: var(--ic-ink); }
+.lektor-picture .ic-glow { fill: var(--ic-yellow); opacity: 0.3; stroke: none; }
+.lektor-picture .ic-shine { fill: none; stroke: #fff; stroke-width: 1.6; }
+.lektor-picture .ic-red-line { fill: none; stroke: var(--ic-red); stroke-width: 2.4; }
+.lektor-picture .ic-white-line { fill: none; stroke: #fff; stroke-width: 2.6; }
+.lektor-picture .ic-green-line { fill: none; stroke: var(--ic-green); stroke-width: 4; }
+
+
+/*
+  New: "API ključevi" at the menu's very bottom, a small link, not a button (Danilo, 2026-11-10).
+  Out of the column's flow, so the warning stays centred in the space under the choices, as it
+  was before the link came; there is room for it below the warning on his Asus.
+*/
+.lektor-side-body:has(> .lektor-menu-keys) {
+  position: relative;
+}
+
+/* At the right, where the eye arrives last (Danilo, 2026-11-10): less prominent than at the left edge everything starts from. */
+.lektor-menu-keys {
+  position: absolute;
+  right: 1rem;
+  bottom: 0.6rem;
+}
+
+/* The colour and size "AI može da pogreši" takes from the utisak's notes (.lektor-comment-notes); the button is its own class. */
+.lektor-menu-keys {
+  color: color-mix(in srgb, var(--quiet) 85%, var(--page));
+  font-size: var(--lektor-small);
+}
+
+/* New: the menu's choice repeated at the top of its step, laid out as its card, without the card. */
+.lektor-step-what {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.7rem;
+  align-items: center;
+  /* At the column's left edge, as the step's title (Danilo, 2026-11-10), not inset as the menu's card was. */
+  padding: 0.6rem 0 0.2rem;
+}
+
+.lektor-step-what .lektor-menu-name,
+.lektor-step-what .lektor-menu-does {
+  grid-column: 2;
+}
+
+/* Close under the heading, as part of the question it asks, not a paragraph of its own. */
+.lektor-side-body > .lektor-choice-lead {
+  margin-top: -0.4rem;
+}
+
+/* The choice that follows a little apart from what it is for, so the two read as heading and step. */
+.lektor-step-what + .lektor-heading {
+  margin-top: 0.6rem;
+}
+
+/* New: the panel's first step, two big choices, each its name and a sentence on what it does. */
+.lektor-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.lektor-side-body .lektor-menu-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  white-space: normal;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  /* The app's buttons' own white, so they stand out from the panel as the screen's two ways on. */
+  background-color: var(--page);
+  cursor: pointer;
+}
+
+/* With an icon: it in a column of its own at the left, the name and sentence beside it. */
+.lektor-side-body .lektor-menu-option:has(.lektor-menu-icon) {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.7rem;
+  align-items: center;
+}
+
+/*
+  Big, so the picture holds its own beside the privacy warning's weight; no bigger, or the
+  Utisak sentence wraps on his Asus (it needs 269px; at 2.8rem it had 262).
+*/
+.lektor-menu-icon {
+  grid-row: span 2;
+  width: 2.3rem;
+  height: 2.3rem;
+}
+
+/*
+  "Ispravke…" plain, no picture (Danilo, 2026-11-10), but kept wide, about as wide as with the
+  picture it was tried with: the strip is a row of its own with room to spare. Within the strip,
+  lektor.css's .lektor-side-buttons .status-action sets its own padding, hence both classes.
+*/
+.lektor-side-buttons .lektor-to-corrections {
+  padding-inline: 2em;
+}
+
+/* A little lower, off the panel's title line (Danilo, 2026-11-10). */
+.lektor-comment-head > .lektor-stale {
+  margin-top: 2px;
+}
+
+.lektor-menu-option:has(.lektor-menu-icon) .lektor-menu-name,
+.lektor-menu-option:has(.lektor-menu-icon) .lektor-menu-does {
+  grid-column: 2;
+}
+
+.lektor-menu-name {
+  font-size: var(--lektor-text);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.lektor-menu-does {
+  font-size: var(--lektor-small);
+  color: var(--quiet);
+  line-height: 1.35;
+}
+
+/* New: the heading on the left and the way to the keys on the right, on one baseline. */
+.lektor-choice-with-keys {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.lektor-choice-with-keys > .lektor-heading {
+  margin: 0;
+}
+
+/*
+  New: radios set in a little from their heading, as Windows sets them, now there is room; and
+  what is said under a radio starts where its words or mark do: the radio, then the 0.4rem gap
+  .lektor-preset puts after it.
+*/
+:root {
+  --lektor-radio-indent: 0.5rem;
+  --lektor-after-radio: calc(var(--lektor-radio) + 0.4rem);
+}
+
+/*
+  Up into the first and last rows' padding, so a list sits as close to its heading and to what
+  follows as before the rows grew: the padding is for the hand, not more space for the eye.
+*/
+.lektor-choice-options,
+.lektor-kind-list {
+  /* Less at the top: tall rows under a heading need a little air below it. */
+  margin-top: -0.25rem;
+  margin-bottom: -0.45rem;
+}
+
+/* A little more before the warning than between the lines above it: it is the last thing before sending. */
+/*
+  The first step's warning (the only foot block in the prototype), centred in the space left under
+  the choice (Danilo, 2026-11-10). Where room is short the margins come to nothing and the column's
+  own gap still keeps it apart.
+*/
+.lektor-side-body > .lektor-side-foot {
+  margin-block: auto;
+}
+
+/* More room above a heading than under it, so each heading reads as starting what follows. */
+.lektor-side-body > .lektor-choice-with-keys,
+.lektor-window-side > .lektor-heading:not(:first-child) {
+  margin-top: 0.4rem;
+}
+
+.lektor-choice-options {
+  display: flex;
+  flex-direction: column;
+  padding-left: var(--lektor-radio-indent);
+}
+
+/*
+  New: each choice a target about as tall as a button and as wide as its column, for an old
+  man's hand: the space between the rows is the rows' own padding, so all of it can be clicked.
+*/
+.lektor-choice-options .lektor-preset,
+.lektor-kind .lektor-preset {
+  /* Out to the column's edge, under the heading's first letter, and padded back in, so the radio stays set in while the target and its tint reach the margin. */
+  margin: 0 0 0 calc(-1 * var(--lektor-radio-indent));
+  /* Above and below, what a row of his list has, so the two are as tall. */
+  padding: 0.5rem 0.35rem 0.5rem var(--lektor-radio-indent);
+  border-radius: 4px;
+  /* A line said about the choice (the balance, "Spremno") wraps onto a line of its own inside the row. */
+  flex-wrap: wrap;
+  row-gap: 0.2rem;
+}
+
+/* Under the words or mark, a column with them; the radio stays on the first line. */
+.lektor-preset > .lektor-kind-about {
+  flex-basis: 100%;
+  margin: 0 0 0 var(--lektor-after-radio);
+}
+
+/*
+  The tick box for a slow free one under Besplatni, set in to its name, as part of it (Danilo,
+  2026-11-10); close under it, so it reads as Besplatni's, not as a third choice.
+*/
+.lektor-choice-options .lektor-check-nested {
+  padding-top: 0.1rem;
+  padding-left: calc(var(--lektor-radio-indent) + var(--lektor-after-radio));
+}
+
+/* The tick box's sentence wraps in its place, beside the box and the coin, rather than dropping below them. */
+/* The box and the coin with its name, the first line, not halfway down its grey explanation. */
+.lektor-choice-options .lektor-check {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+
+/* Centred on that first line (20px at his size): the box is 13px, the coin about 17px. */
+.lektor-choice-options .lektor-check > input {
+  margin-top: 0.2rem;
+  margin-bottom: 0;
+}
+
+.lektor-choice-options .lektor-check > .lektor-choice-mark {
+  margin-top: 0.08rem;
+}
+
+.lektor-choice-options .lektor-check > span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The app's own hover, the wash a row of his list gets, so the whole target shows; not on one that can't be chosen. */
+.lektor-choice-options .lektor-preset:has(input:enabled):hover,
+.lektor-kind .lektor-preset:has(input:enabled):hover {
+  background-image: linear-gradient(var(--wash), var(--wash));
+}
+
+.lektor-choice-with-keys .lektor-again {
+  font-size: var(--lektor-small);
+  /* Taller than the heading's words: hanging below them, it would push the choices down here and not in the window. */
+  margin-bottom: -0.2rem;
+}
+
+/* New: the balance, small and quiet, in Plaćeni's row. */
+/*
+  The paid account's balance on a line of its own under the choice: both paid Lektors' and the
+  tick box's, so no one row's (Danilo, 2026-11-10). Apart from the rows by a short line above it
+  and by starting at the heading's edge rather than with the choices' names.
+*/
+.lektor-balance {
+  margin: 0.4rem 0 0;
+  font-size: var(--lektor-small);
+  color: var(--quiet);
+}
+
+.lektor-balance::before {
+  content: '';
+  display: block;
+  width: 3rem;
+  margin-bottom: 0.35rem;
+  /* Darker than the line colour, which vanishes on the panel's grey; as quiet as the words under it, half as strong. */
+  border-top: 1px solid color-mix(in srgb, var(--quiet) 50%, transparent);
+}
+
+/* New: where the text goes and, if shown, what it costs, beside the send button. */
+.lektor-where {
+  font-size: var(--lektor-small);
+  color: var(--quiet);
+}
+
+/* New: a balance under $1 in the app's red, with "malo" after it: the only warning about money. */
+.lektor-balance-low {
+  color: var(--danger);
+}
+
+/* New: the three Lektors' marks, beside the choice and on the buttons that send, the size of the service marks. */
+.lektor-choice-mark {
+  flex: none;
+  width: 1.05em;
+  height: 1.05em;
+}
+
+/* The app's accent hue, as light as the gold (luminance about 0.21), so no mark looks the weightier. */
+.lektor-choice-mark-free {
+  color: #3380d6;
+}
+
+/* Paid Flash's coin green, as in "fine to use": it costs about a cent (Danilo, 2026-11-10). */
+.lektor-choice-mark-paid-flash {
+  color: #2f8a3e;
+}
+
+/* Opus's gem gold: the premium one. */
+.lektor-choice-mark-paid-opus {
+  color: #a87412;
+}
+
+/* Brighter on the dark panel (Danilo, 2026-11-10): the light mode's would sink into it. */
+:root[data-mode='dark'] .lektor-choice-mark-free {
+  color: #6caef2;
+}
+
+:root[data-mode='dark'] .lektor-choice-mark-paid-flash {
+  color: #5cc977;
+}
+
+:root[data-mode='dark'] .lektor-choice-mark-paid-opus {
+  color: #e3b04a;
+}
+
+:root[data-mode='dark'] .lektor-dead-key svg.lektor-dead-key-mark {
+  color: hsl(358 80% 66%);
+}
+
+/* On a filled button still the button's own words' colour, as in light mode. */
+:root[data-mode='dark'] .lektor-main-action .lektor-choice-mark {
+  color: inherit;
+}
+
+/* On a filled button the mark takes the button's own words' colour. */
+.lektor-main-action .lektor-choice-mark {
+  color: inherit;
+}
+
+/*
+  The review's header: two lines, what came back and how the text below is shown, in the
+  dialog's own font and size (as its title's note and buttons), spaced as Ranije verzije; only
+  the text in the box below is his, and set as his. Everything starts at one left edge; what is
+  on the right (the model, "Prikaži tekst kakav će biti") ends at one right edge.
+*/
+/* As tight as Ranije verzije's lines over its box, measured there: the same size, spacing and gaps. */
+.lektor-window .review-body > :not(.review-text) {
+  margin: 0 0 0.45rem;
+  font-family: var(--ui-font);
+  font-size: calc(var(--ui-size) * 0.85);
+  line-height: normal;
+}
+
+/* The box with equal space above and below it, so it sits balanced between its lines and the footer's. */
+.lektor-window .review-body > :not(.review-text):has(+ .review-text) {
+  margin-bottom: 0.75rem;
+}
+
+.lektor-window:has(.review-text) > footer {
+  margin-top: 0.75rem;
+}
+
+/* The review's text keeps its own size: it is drawn inside a slot, so a choice redraws it alone. */
+.lektor-review-text-slot {
+  display: contents;
+}
+
+.lektor-window .review-body > :not(.review-text, .lektor-review-text-slot) * {
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* Each line: what is said on the left, its companion at the right, on one baseline. */
+.lektor-review-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.lektor-review-row > * {
+  margin: 0;
+}
+
+.lektor-review-row > .lektor-where {
+  color: var(--quiet);
+  white-space: nowrap;
+}
+
+/*
+  New, to try: in place of the checkbox, the way to show the text at the right of the two lines
+  above it, so it costs no height: two radio rows, each a sample of what it shows, drawn as the
+  legend draws its samples. The rows touch, with no dead space between them: the whole of each
+  is its target, and its highlight. The one chosen marked by the harness's pick: a grey wash, the
+  window's soft blue (one more colour on the page, competing), or the radio alone.
+*/
+.lektor-review-head {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.lektor-review-lines {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.lektor-view-choice {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lektor-view-title {
+  color: var(--quiet);
+}
+
+.lektor-view-options {
+  display: flex;
+  gap: 0;
+}
+
+.lektor-view-options {
+  flex-direction: column;
+}
+
+.lektor-view-option {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.2rem 0.6rem 0.2rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.lektor-view-option:hover {
+  background-color: var(--wash);
+}
+
+.lektor-view-option:has(input:checked) {
+  border-color: var(--line);
+  background-color: var(--toolbar);
+}
+
+/* Hovering the one already chosen changes nothing, so it doesn't look like a second action. */
+.lektor-view-option:has(input:checked):hover {
+  background-color: transparent;
+}
+
+.lektor-view-option:has(input:checked):hover {
+  background-color: var(--toolbar);
+}
+
+.lektor-view-option input {
+  margin: 0;
+  cursor: pointer;
+}
+
+.lektor-view-sample {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+/* Old and new as near as in the text, a little nearer still for the smaller words: 3px there at 19px, 2px here. */
+.lektor-view-sample .diff-new {
+  margin-left: 2px;
+}
+
+/*
+  New: the corrections window in two columns: his decisions on the left, what belongs to the kind
+  picked on the right. The window keeps the review's size, so it doesn't jump when the review comes.
+*/
+.lektor-window-side,
+.lektor-window-detail {
+  /* Room under the header's line, so the first heading starts the choices rather than continuing the title. */
+  padding-top: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  overflow-y: auto;
+  /*
+    The Lektor's own three, and no others: its words at this size, headings the same size in
+    bold, and its small print in grey. Near-equal sizes side by side read as carelessness.
+  */
+  font-size: var(--lektor-text);
+}
+
+.lektor-window-side {
+  flex: none;
+  width: 20rem;
+}
+
+/*
+  New: the kind picked marked as Ranije verzije marks the version open (.row-open), the stripe
+  and the soft blue, the radio kept since these are fixed choices; square, as those rows are,
+  since a stripe on a rounded corner looks broken.
+*/
+.lektor-kind .lektor-preset {
+  border-radius: 0;
+}
+
+.lektor-kind .lektor-preset:has(input:checked) {
+  box-shadow: inset 3px 0 0 var(--chosen);
+  background-color: var(--chosen-soft);
+}
+
+.lektor-window-detail {
+  flex: 1;
+  min-width: 0;
+  padding-left: 1rem;
+  border-left: 1px solid var(--line);
+}
+
+/* No gap between the columns: the kind picked runs right up to the dividing line, as a tab into what it opens. */
+.lektor-window .review-panes:has(> .lektor-window-detail) {
+  gap: 0;
+}
+
+/* No weight of its own (:where), so a piece shared with the panel, as the balance's indent, keeps its own margins. */
+:where(.lektor-window-side > *, .lektor-window-detail > *, .lektor-kind > *) {
+  margin: 0;
+}
+
+/* The kinds in a list of their own, spaced only by their padding; set in like the Lektor choice, so the window's two groups of radios look alike. */
+.lektor-kind-list {
+  display: flex;
+  flex-direction: column;
+  padding-left: var(--lektor-radio-indent);
+}
+
+/*
+  Read-only, and looking it beside his white note box. In the panel that is done by no fill, the
+  panel being grey; in the white window it is the other way round, the panel's grey as its fill
+  and no frame, so it reads as something shown, not a box to type in. It takes the room the
+  column has to spare, so as much of the instruction shows as fits, and scrolls past that;
+  never more than its words, so no empty grey under them.
+*/
+/*
+  Four lines, whatever the kind, scrolling past them: the same every time, so nothing below
+  moves with it, and the column fits on his Asus even with the Lektor choice above it. None at
+  the foot, as in the panel: a sliver of a fifth line would read as text cut off.
+*/
+/* New: "▸ Uputstvo za AI", folded until he opens it; a link-like line, not a button. */
+.lektor-window-detail .lektor-prompt-toggle {
+  align-self: flex-start;
+  /* Down by the send button, as small print is, rather than up among what he chooses: it seldom matters. */
+  margin-top: auto;
+  min-width: 0;
+  padding: 0.15rem 0;
+  display: flex;
+  gap: 0.35rem;
+  align-items: baseline;
+  border: none;
+  background: none;
+  font-size: var(--lektor-small);
+  color: var(--quiet);
+  cursor: pointer;
+}
+
+/* No underline: it opens a part of the window, not a page, so it lights up as the app's quiet buttons do. */
+.lektor-window-detail .lektor-prompt-toggle:hover {
+  color: var(--chosen-ink);
+}
+
+.lektor-prompt-arrow {
+  display: inline-block;
+  width: 0.8em;
+}
+
+/* New: what the fold opens, one whole: a line down its side from under the arrow, close under the line that opened it. */
+.lektor-prompt-group {
+  margin: -0.3rem 0 0 0.3rem;
+  padding-left: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-left: 2px solid var(--line);
+}
+
+/* The fold has taken the free space above it, so the send row follows at the column's own gap. */
+.lektor-prompt-toggle ~ .lektor-window-actions {
+  margin-top: 0;
+}
+
+/* The instruction is a paragraph: without its own margins, so it sits under its label as his box does under his. */
+.lektor-prompt-group .lektor-prompt {
+  margin: 0;
+}
+
+/* Its parts' labels, at the heading's own quiet level, so neither reads as a heading of the column. */
+.lektor-prompt-sub {
+  margin: 0;
+  font-size: var(--lektor-small);
+  color: var(--quiet);
+}
+
+/* A little apart from the instruction above it; no more, or with Plaćeni's tick box the column would scroll on his Asus. */
+.lektor-prompt-group .lektor-prompt-sub:not(:first-child) {
+  margin-top: 0.2rem;
+}
+
+/* New: the tick box's short name, and what it means in grey under it, both part of the target. */
+.lektor-check-words {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.lektor-check-why {
+  font-size: var(--lektor-small);
+  color: var(--quiet);
+}
+
+.lektor-window-detail .lektor-prompt {
+  flex: none;
+  box-sizing: content-box;
+  height: calc(4 * 1.4em);
+  padding-bottom: 0;
+  overflow-y: auto;
+  border-color: transparent;
+  background: var(--panel);
+}
+
+/* His own box keeps its three lines: where room is short, the instruction scrolls, not what he writes. */
+.lektor-window-detail .lektor-note {
+  flex: none;
+}
+
+/*
+  Bold and at the top, no size of its own; in the colour the window's title gives the name of
+  what it is about (.heading-name), since this names what the right side is about, and ties it
+  to the blue of the kind picked.
+*/
+.lektor-window-kind-title {
+  font-weight: 600;
+  color: var(--chosen-ink);
+}
+
+/* New: under a kind's name, how far it goes: small and quiet, part of the row's target. */
+/* The Lektor's small print: there to read the first time, out of the way of the names by the twentieth. */
+.lektor-kind-about {
+  font-size: var(--lektor-small);
+  line-height: 1.35;
+  color: var(--quiet);
+}
+
+/* What of his text stays his, on a line of its own, which sets it apart enough: down the list these lines are the scale he chooses on. */
+.lektor-kind-keeps {
+  display: block;
+}
+
+/* New: a thin line before Dubinska prerada, a pause rather than a box: it replaces his text where the others fix it. */
+/*
+  Short of the line between the columns, so it reads as a pause in the list and not as part of the
+  window's frame; drawn as the panel's line over its main button, so the Lektor has one such line.
+*/
+.lektor-kind-divider {
+  align-self: stretch;
+  margin: 0.45rem 1rem 0.45rem 0;
+  border: none;
+  border-top: 1.5px solid color-mix(in srgb, var(--quiet) 45%, var(--line));
+}
+
+/* New: in grey after a choice's name, a word on why one might pick it; on the name's baseline, a space after it. */
+.lektor-recommended {
+  margin-left: 0.15em;
+  font-size: var(--lektor-small);
+  color: var(--quiet);
+}
+
+/* New: corrections ready for the kind picked, one card each: whose, from when, what it cost, and the way in. */
+.lektor-ready-card {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+/* In the colour of the kinds' names, not grey: it is what he came to open. */
+.lektor-ready-words {
+  color: inherit;
+}
+
+.lektor-ready-card button {
+  margin-left: auto;
+}
+
+/* Asking again past ready corrections: plain, the way past rather than the way on; it opens the form, sends nothing. */
+.lektor-ask-again {
+  align-self: flex-start;
+  margin-top: 0.4rem;
+}
+
+/* New: sending, at the foot of the right column, at its right, as a window's main button stands. */
+.lektor-window-actions {
+  margin-top: auto;
+  padding-bottom: 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+/*
+  The column's buttons as far above the footer's line as Zatvori is below it: the footer's own
+  space above (1rem) less the 0.2rem the row keeps for the focus ring, to match its 0.7rem below.
+*/
+.lektor-window:has(.lektor-window-actions) > footer {
+  margin-top: 0.5rem;
+}
+
+/*
+  A header with only the title (the review): the ✕, taller than the title, would hold the header
+  open below it; centred on the title and overhanging, it leaves the title's own height.
+*/
+.lektor-window header:not(:has(.review-note)) .close {
+  align-self: center;
+  margin-block: -0.4rem;
+}
+
+/* What sending does, in small print on its own line just over the buttons, so they keep their one line. */
+.lektor-window-actions:has(.lektor-send-note) {
+  flex-wrap: wrap;
+  row-gap: 0.4rem;
+}
+
+/* Its own line over the buttons: "▸ Uputstva za AI" at the left while folded, what sending does at the right. */
+.lektor-send-line {
+  order: -1;
+  flex-basis: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.lektor-send-note {
+  max-width: none;
+  margin: 0 0 0 auto;
+  text-align: right;
+}
+
+/* On the send line, not taking the free space above as it does when it heads the open instructions. */
+.lektor-window-detail .lektor-send-line .lektor-prompt-toggle {
+  /*
+    Its padding taken back in margin: the line lines up the button's edge, not its words, so the
+    padding put them 2.6px under the note's. The target keeps its size.
+  */
+  margin-block: -0.15rem;
+}
+
+.lektor-window-actions button {
+  white-space: nowrap;
+}
+
+.lektor-window-actions .lektor-back-to-ready {
+  margin-right: auto;
+}
+
+/*
+  Every button in the window the size of the dialog's own (.panel footer button), so all are one
+  height and one size of words. Looking at corrections and sending are the Lektor's solid blue
+  (.lektor-main-action), as its next step is in the panel; the rest as the dialog has them.
+*/
+.lektor-window-detail button {
+  min-width: 6.5rem;
+  padding: 0.5rem 1rem;
+  /* The dialog's own size (.panel), not the column's or the big panel's they sit in. */
+  font-size: calc(var(--ui-size) * 0.85);
+  /* The Lektor's solid style lays its words out as a row (for a mark beside them); at the dialog's least width they'd sit at the left. */
+  justify-content: center;
+}
+
+.lektor-window-ways {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+
+/* Nothing chosen yet: the right side only points left. */
+/* Both classes: it borrows the big panel's centring, not its size; set as the kinds' names are, so no fourth style. */
+.lektor-window-big.lektor-window-empty {
+  color: inherit;
+  font-size: var(--lektor-text);
+}
+
+/* New: the wait and a failure fill the right column, centred and large: while either lasts it is all there is. */
+.lektor-window-big {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.lektor-window-big > * {
+  margin: 0;
+}
+
+/*
+  New: the wait, in four styles and no more: the Lektor's words (the kind, the stages), a heading
+  in bold at that size (the text's name), its small grey print (times, model, notes), and the
+  clock, big, as the one thing to glance at.
+*/
+/*
+  Pinned to the top, where the form's title was: a new stage adds a line below and nothing he has
+  read moves. Centred top to bottom, each new line shifted the whole block up.
+*/
+.lektor-window-wait {
+  justify-content: flex-start;
+  padding: 0;
+  font-size: var(--lektor-text);
+  color: var(--ink);
+}
+
+/* One column, one left edge, narrow enough that each stage's time sits near its words. */
+.lektor-wait-column {
+  width: min(22rem, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.lektor-wait-column > * {
+  margin: 0;
+}
+
+.lektor-wait-column .lektor-stages {
+  width: 100%;
+  /* No room of its own below: the clock's spacing alone decides it, the same whatever the last stage shows. */
+  margin-bottom: 0;
+}
+
+.lektor-wait-name {
+  color: var(--chosen-ink);
+}
+
+/*
+  The clock's room, the same whatever comes before it (the queue's note, the bar, a stage), and
+  a little more below than above to look even: a big face has room of its own above its capitals,
+  and its lowercase letters sit heavy at the bottom.
+*/
+.lektor-wait-column .lektor-window-clock {
+  margin: 0.5rem 0 0.95rem;
+}
+
+.lektor-window-clock {
+  font-size: 2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.lektor-wait-small {
+  max-width: 28rem;
+  font-size: var(--lektor-small);
+  color: var(--quiet);
+}
+
+/* The stages as a list, each with its mark and, once over, how long it took. */
+.lektor-stages {
+  width: min(28rem, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0.4rem 0;
+  text-align: left;
+}
+
+/* Where it was handed to another Lektor, that one's "AI Lektor:" line, a little apart from the stages before it. */
+.lektor-stages > .lektor-service-line {
+  margin: 0.35rem 0 0;
+}
+
+/*
+  The marks hang out in the margin, so every line of text, the bar and the notes share one left
+  edge, and the marks make a column of their own beside it.
+*/
+/* The mark, the words, a row of small dots leading the eye to the time at the right, the time. */
+.lektor-stage {
+  display: grid;
+  grid-template-columns: 1.4em auto minmax(1.5rem, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: calc(-1.4em - 0.5rem);
+}
+
+.lektor-stage-leader {
+  align-self: stretch;
+  background: radial-gradient(circle, var(--quiet) 0.9px, transparent 1.3px) left 0.95em / 6px 4px repeat-x;
+  opacity: 0.7;
+}
+
+.lektor-stage-mark {
+  display: flex;
+  justify-content: center;
+  color: var(--chosen-ink);
+}
+
+/* New: a step given up or refused while the request goes on: a quiet "!" in a ring, not a cross. */
+.lektor-stage-mark.lektor-stage-mark-moved {
+  justify-self: center;
+  align-self: center;
+  width: 1.05em;
+  height: 1.05em;
+  align-items: center;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  font-size: var(--lektor-small);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--quiet);
+}
+
+.lektor-stage-time {
+  font-size: var(--lektor-small);
+  color: var(--quiet);
+  white-space: nowrap;
+}
+
+/* Said about the stage going on, under its words, gone when it ends: the queue's why and its limit. */
+/* No paragraph space below: it would push the clock down only while the queue lasts. */
+.lektor-stage-note {
+  margin: -0.2rem 0 0;
+}
+
+/* The bar under the stage it measures, at the shared edge, so it can't be read as the whole wait's. */
+.lektor-stage-progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* New: how far the writing has got, a plain bar in the app's blue. */
+.lektor-progress {
+  width: 100%;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.lektor-progress-done {
+  height: 100%;
+  background: var(--chosen);
+  transition: width 0.3s;
+}
+
+.lektor-window-big .lektor-problem {
+  max-width: 28rem;
+  text-align: left;
+}
+
+.lektor-window-big .lektor-problem p {
+  font-size: 1.15rem;
+}
+
+.lektor-window-big .lektor-problem .lektor-where {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.lektor-window-big .lektor-problem svg {
+  width: 2em;
+  height: 2em;
+}
+
+/* New: the way to a utisak finished while another text was open, right under the line saying so, as wide as its words. */
+.lektor-side-body > .lektor-elsewhere-open {
+  align-self: flex-start;
+  margin-top: 0.4rem;
+  /* As tall as the strip's buttons (lektor.css's .lektor-side-buttons .status-action), not a small one in the text. */
+  min-height: 2.1rem;
+  padding-inline: 0.8rem;
+}
+
+/*
+  New: a key that no longer works, a screen of its own: its mark big, a key in the problem's red
+  drawn as a line like the app's icons (not the red disc, which says the Lektor failed), and two
+  short lines under it, in the middle of the space, as the window's big notices are.
+*/
+.lektor-dead-key {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  margin: auto 0;
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+/* In the middle of the panel's height, as the first step's warning is; the body's own top margin rule would win otherwise. */
+.lektor-side-body > .lektor-dead-key {
+  margin-block: auto;
+}
+
+.lektor-dead-key p {
+  margin: 0;
+}
+
+.lektor-dead-key svg.lektor-dead-key-mark {
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 0.5rem;
+  color: hsl(358 60% 50%);
+  stroke-width: 1.8;
+}
+
+.lektor-dead-key-title {
+  font-size: 1.15em;
+  font-weight: 600;
+}
+
+/* New: the main button in a strip of its own at the panel's foot, always in view, with what scrolls above it. */
+/*
+  Under the button as much room as over it (the strip's 0.5rem below its line, lektor.css), so it
+  sits evenly between that line and the bottom bar's edge under the panel.
+*/
+.lektor-side-dock {
+  flex: none;
+  padding: 0 1rem 0.5rem;
+}
+
+/*
+  Where the two don't fit side by side (a larger scale, his bigger text), the way back goes above
+  the main button rather than either breaking its words (Danilo, 2026-11-10): each stays whole,
+  the back at the left of its line, the main one at the right of its own.
+*/
+.lektor-side-dock .lektor-side-buttons {
+  margin-top: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  row-gap: 0.4rem;
+  /*
+    Its line above whatever it holds: the app draws it only over the solid-blue button, and with
+    none (the utisak's white "Ispravke…", the wait's "Odustani") the text ran into the strip.
+  */
+  padding-top: 0.5rem;
+  border-top: 1.5px solid color-mix(in srgb, var(--quiet) 45%, var(--line));
+}
+
+.lektor-side-dock .lektor-side-buttons > * {
+  white-space: nowrap;
+}
+
+/* Alone on its line once wrapped, still at the right: the side the main button always has. */
+.lektor-side-dock .lektor-side-buttons > :last-child {
+  margin-left: auto;
+}
+
+/* But "← Nazad" alone in the strip stays at the left, where it always is, not pulled to the middle. */
+.lektor-side-dock .lektor-side-buttons > .lektor-side-back:last-child {
+  margin-left: 0;
+}
+
+/* A step back at the strip's left end, the main button staying on the right; the same size as it. */
+.lektor-side-dock .lektor-side-back {
+  margin-right: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+}
+
+.lektor-side-back svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+/* The gift and coin in the "AI Lektor:" line, spaced and set on the line as the app sets its service marks there. */
+.lektor-service-line .lektor-choice-mark {
+  display: inline-block;
+  margin-right: 0.3em;
+  vertical-align: -0.17em;
+}
+
+/* New on the keys screen: each key named after the choice it opens, with its mark, and a saved key said in words. */
+/* Room above each key's name, so each key reads as a group: its name, its box and its line. */
+.lektor-key-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  margin-top: 0.6rem;
+}
+
+/* What the box says about itself, in italics so it can't be taken for a key that's there. */
+.lektor-key::placeholder {
+  font-style: italic;
+}
+
+.lektor-key-state {
+  margin-top: -0.35rem;
+  font-size: var(--lektor-small);
+  color: var(--quiet);
+}
+
+/* Back to the choices, at the footer's far left, the dialog's size like the others. */
+.lektor-window footer .lektor-footer-back {
+  margin-right: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3em;
+}
+
+.lektor-footer-back svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+.lektor-window .lektor-sends {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35em;
+}
+
+/*
+  Hovered too: lektor.css sizes these at 1.1em under :hover:not(:disabled), which outweighs this rule
+  alone, so the icons grew and the button widened by a pixel and a half under the pointer.
+*/
+.lektor-window .lektor-sends svg,
+.lektor-window .lektor-sends:hover:not(:disabled) svg {
+  width: 1.05em;
+  height: 1.05em;
+}

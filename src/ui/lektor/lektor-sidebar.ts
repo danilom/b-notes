@@ -4,70 +4,78 @@ import { NO_NOTE } from '../../notes/note-handle.ts';
 import { titleFrom } from '../../notes/note-title.ts';
 import { countWords } from '../../notes/word-count.ts';
 import type { FileSystem } from '../../platform/file-system.ts';
+import type { LektorProgress } from '../../platform/lektor-progress.ts';
 import type { LektorRequest, LektorResponse } from '../../platform/lektor-remote.ts';
 import { describeError, type Log } from '../../platform/logging.ts';
-import { titleOf } from '../dialogs/dialog-heading.ts';
-import { showAsModal } from '../dialogs/modal.ts';
 import { icon } from '../icons.ts';
-import { flashToast } from '../toast.ts';
-import { createClaudeAi } from './lektor-claude-ai.ts';
-import { dailyCapSentence } from './lektor-daily-cap.ts';
-import { openLektorDialog } from './lektor-dialog.ts';
-import { elapsedLine } from './lektor-elapsed-time.ts';
-import { createFakeAi } from './lektor-fake-ai.ts';
-import type { FakeBehaviour } from './lektor-fake-setting.ts';
-import { createGeminiAi } from './lektor-gemini-ai.ts';
-import { withHisFilingMarks } from './lektor-instructions.ts';
+import { paidIfSlowByDefault } from './lektor-balance.ts';
+import { lektorChoice, type PaidIfSlow } from './lektor-choice.ts';
 import { standingOf } from './lektor-comment-standing.ts';
-import { type KeptProposal, readKeptResults, savedCorrections, withCorrections, withEndingOf, writeKeptResults } from './lektor-kept-results.ts';
-import { PRESET_ORDER, PRESET_PROMPTS } from './lektor-presets.ts';
-import { type LektorFailure, type LektorService, LektorServiceError, type PresetId } from './lektor-service.ts';
-import type { LektorServiceParts } from './lektor-service-call.ts';
-import { serviceLine, serviceMark } from './lektor-service-mark.ts';
-import { type LektorSettings, NO_LEKTOR_SETTINGS, readLektorSettings, type RealLevel, writeLektorSettings } from './lektor-settings.ts';
+import { createLektorConnection, type Opening } from './lektor-connection.ts';
+import { openCorrectionsWindow } from './lektor-corrections-window.ts';
+import { freeResetTime } from './lektor-daily-reset.ts';
+import { failureView } from './lektor-failures.ts';
+import { nameForHeading } from './lektor-heading-name.ts';
+import { FEEDBACK_INSTRUCTION } from './lektor-instructions.ts';
+import { type KeptResults, readKeptResults, writeKeptResults } from './lektor-kept-results.ts';
+import { type KeyNote, keysScreen } from './lektor-keys-screen.ts';
+import { ispravkePicture, utisakPicture } from './lektor-menu-pictures.ts';
+import { ChainError, type ChainFailure, isStopped } from './lektor-model-chain.ts';
+import { backButton, button, deadKeyNoticeOf, el, elapsedWords, type LektorWords, MAIN_ACTION, type ProblemParts, problemBox, sendButton, sendTooltip, serviceLineOf, tierFor } from './lektor-pieces.ts';
+import { type Choice, LektorServiceError } from './lektor-service.ts';
+import { tierOfModel } from './lektor-tiers.ts';
 
 /*
-  The AI Lektor beside his text. Nothing else in the app depends on it: it is handed what it
-  needs, and anything that goes wrong in here stays in here. See "AI Lektor" in DESIGN.md.
+  The AI Lektor beside his text (spec §6). Nothing else in the app depends on it: it is handed what
+  it needs, and anything that goes wrong in here stays in here. Its screens are the mockup's
+  (design/lektor-choice-prototype.ts), which is the source for their words and look; the
+  corrections are in a window of their own (lektor-corrections-window.ts).
+
+  One request at a time, and nothing runs out of sight: closing the panel cancels a utisak being
+  read. A utisak being read goes on while he opens another text, and the panel stays with it.
 */
-
-/** Which Lektor he has chosen, in words about what it means for him rather than whose it is. */
-type Level = RealLevel | 'fake';
-
-type Screen = 'connecting' | 'offline' | 'start' | 'key' | 'reading' | 'failed' | 'response' | 'corrections';
-
-/** What has become of a key in its box. */
-type KeyNote = 'checking' | 'refused' | 'offline' | 'unavailable' | null;
 
 type TextKey = NoteHandle | NoNote;
 
-interface TextState {
-  isOpen: boolean;
-  screen: Screen;
-  failure: LektorFailure | null;
-  /** Said when it happened, and kept: another text's failure must not change what this one's says. */
-  finalSentence: string;
+/** A text's own steps: the menu, the utisak's Lektor, its wait, its failure, the utisak. */
+type TextScreen = 'menu' | 'start' | 'reading' | 'failed' | 'response';
+
+/** Steps of the panel's own, which come before any text's: looking, offline, a dead key, the keys. */
+type PanelScreen = 'connecting' | 'offline' | 'dead-key' | 'no-keys' | 'keys' | null;
+
+interface Failed {
+  failure: ChainFailure;
+  side: Choice;
   serviceSaid: string;
-  feedback: string;
-  /** Whether the response has finished appearing, so it isn't played again on coming back. */
+  /** Who it was sent to, for "Pokušaj ponovo". */
+  sentTo: Choice;
+}
+
+interface TextState extends KeptResults {
+  screen: TextScreen;
+  failed: Failed | null;
+  /** Whether the utisak has finished appearing, so it isn't played again on coming back. */
   isRevealed: boolean;
-  /** The text as the Lektor last read it. */
-  readText: string;
-  readAt: number;
-  /** Which Lektor wrote the comment. Empty when that isn't known. */
-  readBy: string;
-  /** The corrections he hasn't taken, one for each kind and Lektor. */
-  proposals: KeptProposal[];
-  /** The text they were made from: against any other, the review would offer to undo his edits. */
-  proposalsFor: string;
-  /** Whether what was kept from an earlier day has been looked for. */
   isKeptRead: boolean;
   /** Whether the comment was written while the app has been open, rather than read back from an earlier run. */
   isCommentFromThisRun: boolean;
   /** Whether he has put corrections in since the comment, which ends what it was for. */
   hasTakenCorrections: boolean;
-  preset: PresetId;
+  /** What he added for the corrections, kept while the app is open. */
   note: string;
+}
+
+/** A utisak being read, or just read or failed for a text no longer open. */
+interface Request {
+  key: TextKey;
+  title: string;
+  /** Its file's name, for keeping what comes back. */
+  name: string | null;
+  input: string;
+  controller: AbortController | null;
+  startedAt: number;
+  sentTo: Choice;
+  mayHandOver: boolean;
 }
 
 /** What the Lektor is handed, which is all it can reach. */
@@ -83,24 +91,19 @@ export interface LektorParts {
   notesFolder: string;
   appFolder: string;
   log: Log;
-  askService: (request: LektorRequest, stop: AbortSignal) => Promise<LektorResponse>;
+  askService: (request: LektorRequest, stop: AbortSignal, onProgress: (progress: LektorProgress) => void) => Promise<LektorResponse>;
   copyToClipboard: (text: string) => Promise<void>;
   languageNow: () => Language;
   /** Which text is open, as something that stays the same while it is. */
   textNow: () => TextKey;
   /** Where it lives now, or null before it has a file. */
   textNameNow: () => string | null;
-  /**
-   * Gets the text ready to be sent: on disk with his last words, and brought over from Resoph
-   * if it was still there. False if that couldn't be done, and then nothing is sent.
-   */
+  /** Opens a text in the list, for "Otvori tekst i utisak". */
+  openText: (key: NoteHandle) => void;
+  /** Gets the text ready to be sent: on disk with his last words, and brought over from Resoph. False if that couldn't be done. */
   prepareToSend: () => Promise<boolean>;
   /** Makes these corrections his text, a version kept first. False if that couldn't be done, and then nothing changed. */
   applyCorrections: (text: string) => Promise<boolean>;
-  /** How the test Lektor behaves, or null where it isn't on offer, as on his machines. */
-  fakeBehaviour: FakeBehaviour | null;
-  /** A real service's saved corrections of this text, for the test Lektor to return; absent where there are none to have. */
-  realReply?: (text: string, preset: PresetId) => Promise<string | null>;
 }
 
 export interface Lektor {
@@ -108,126 +111,66 @@ export interface Lektor {
   openTextChanged(): void;
   /** Nothing has been said about what is in front of him: a new text, or none. */
   startedNewText(): void;
+  /** The list was read again: a text being read that is no longer in it was deleted or archived. */
+  listChanged(isListed: (key: NoteHandle) => boolean): void;
 }
 
 const REVEAL_MS = 10_000;
 const FOLLOWING_SLACK_PX = 40;
-/** When to say a wait has gone on. The thorough one writes for minutes on end when all is well. */
-const WAITS: Readonly<Record<Level, { readingLongS: number; correctingLongS: number; veryLongS: number }>> = {
-  free: { readingLongS: 30, correctingLongS: 90, veryLongS: 120 },
-  // Its comment takes about a minute, though its corrections take several: told sooner when that runs over.
-  thorough: { readingLongS: 90, correctingLongS: 300, veryLongS: 480 },
-  fake: { readingLongS: 30, correctingLongS: 90, veryLongS: 120 },
-};
 /** Under this there is nothing for a reader to respond to: a title or a stray line, though not a short poem. */
 const FEWEST_WORDS = 10;
-/** Past this it is no longer something to read out over the telephone. */
-const LONGEST_SERVICE_WORDS = 300;
-const REAL_LEVELS: readonly RealLevel[] = ['free', 'thorough'];
-
-/** The one button that takes him on to the next step. Never trying again after a failure: by then he may rather be leaving. */
-const MAIN_ACTION = 'status-action lektor-main-action';
-
-const KEY_FIELD: Readonly<Record<RealLevel, 'googleKey' | 'anthropicKey'>> = { free: 'googleKey', thorough: 'anthropicKey' };
-
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, text = ''): HTMLElementTagNameMap[K] {
-  const made = document.createElement(tag);
-  made.className = className;
-  made.textContent = text;
-  return made;
-}
-
-function button(label: string, onClick: () => void, className = ''): HTMLButtonElement {
-  const made = el('button', className, label);
-  made.type = 'button';
-  made.addEventListener('click', onClick);
-  return made;
-}
-
-/** The arrow is a shape as well as the colour, for a washed-out or warm screen. Not on saving, which goes nowhere new. */
-function nextStepButton(label: string, onClick: () => void, tooltip = ''): HTMLButtonElement {
-  const made = windowButton(label, onClick, tooltip);
-  made.append(icon('move-out'));
-  return made;
-}
-
-/** The main button where it opens the corrections window: no arrow, which means the next step in the panel, and plain like every other button in the app that opens a window. */
-function windowButton(label: string, onClick: () => void, tooltip = ''): HTMLButtonElement {
-  const made = button(label, onClick, MAIN_ACTION);
-  made.title = tooltip;
-  return made;
-}
 
 export function createLektor(parts: LektorParts): Lektor {
-  const { side, opener, dialog, editor, log } = parts;
-
-  const words = (): ReturnType<typeof strings>['lektor'] => strings(parts.languageNow()).lektor;
+  const { side, opener, editor, log } = parts;
+  const words = (): LektorWords => strings(parts.languageNow()).lektor;
+  const problemParts: ProblemParts = { words, copyToClipboard: parts.copyToClipboard, toast: parts.toast, log };
+  const connection = createLektorConnection({ askService: parts.askService, files: parts.files, notesFolder: parts.notesFolder, log });
 
   const states = new Map<TextKey, TextState>();
   let openKey: TextKey = parts.textNow();
-  // Read when he first opens the Lektor, so that a man who never does pays nothing for it.
-  let settings: LektorSettings = NO_LEKTOR_SETTINGS;
-  let isSettingsRead = false;
-  // Remembered only while the app is open: the free one each time it starts, so the paid one is never spent on by habit.
-  let level: Level = parts.fakeBehaviour === null ? 'free' : 'fake';
-  const keyDrafts: Record<RealLevel, string> = { free: '', thorough: '' };
-  const keyNotes: Record<RealLevel, KeyNote> = { free: null, thorough: null };
-  /** What each service said about its key. */
-  const keyServiceSaid: Record<RealLevel, string> = { free: '', thorough: '' };
+  let isOpen = false;
+  let panelScreen: PanelScreen = null;
+  /** Where the keys screen goes back to. */
+  let keysCameFrom: PanelScreen = null;
+  let choice: Choice = 'free';
+  let isTicked = false;
+  let request: Request | null = null;
+  let isReadyElsewhere = false;
+  let isFailedElsewhere = false;
+  /** A text deleted while its utisak was being read: said, until he goes back. */
+  let goneTitle: string | null = null;
   let isKeyJustSaved = false;
   let isAboutAiOpen = false;
-  let lastFailureDetail = '';
-  let lastServiceSaid = '';
-  let lastFinalSentence = '';
-  let readingSince = 0;
-  let waitNoteTimer: ReturnType<typeof setInterval> | null = null;
-  let working: AbortController | null = null;
+  let checking: AbortController | null = null;
+  const keyState = { drafts: { free: '', paid: '' }, notes: { free: null, paid: null } as Record<Choice, KeyNote>, serviceSaid: { free: '', paid: '' } };
   let revealTimer: ReturnType<typeof setInterval> | null = null;
+  let clockTimer: ReturnType<typeof setInterval> | null = null;
   let waitingToRedraw: ReturnType<typeof setTimeout> | null = null;
+  let lastDrawn = '';
 
-  const serviceParts = (key: () => string): LektorServiceParts => ({
-    ask: parts.askService,
-    keyNow: key,
-    noCreditSentence: () => words().noCredit,
-    warn: (message, detail) => log.warn(message, detail),
-  });
-  const services: Readonly<Record<Level, LektorService>> = {
-    free: createGeminiAi({ ...serviceParts(() => settings.googleKey), dailyCapWords: () => words() }),
-    thorough: createClaudeAi(serviceParts(() => settings.anthropicKey)),
-    fake: createFakeAi(parts.fakeBehaviour ?? 'ok', {
-      noCredit: () => words().noCredit,
-      dailyCap: (said) => dailyCapSentence(said, new Date(), words()),
-      realReply: parts.realReply,
-    }),
-  };
-
-  const ai = (): LektorService => services[level];
-  const recipient = (service = ai()): string => words().recipient[service.company];
   const wordsInText = (): number => countWords(editor.value);
 
-  function stateNow(): TextState {
-    const existing = states.get(openKey);
+  function stateOf(key: TextKey): TextState {
+    const existing = states.get(key);
     if (existing !== undefined) return existing;
     const fresh: TextState = {
-      isOpen: false,
-      screen: 'start',
-      failure: null,
-      finalSentence: '',
-      serviceSaid: '',
+      screen: 'menu',
+      failed: null,
       feedback: '',
-      isRevealed: false,
       readText: '',
       readAt: 0,
       readBy: '',
+      commentCost: null,
       proposals: [],
       proposalsFor: '',
+      paidCosts: {},
+      isRevealed: false,
       isKeptRead: false,
       isCommentFromThisRun: false,
       hasTakenCorrections: false,
-      preset: 'letters',
       note: '',
     };
-    states.set(openKey, fresh);
+    states.set(key, fresh);
     return fresh;
   }
 
@@ -243,55 +186,9 @@ export function createLektor(parts: LektorParts): Lektor {
     state.isRevealed = true;
   }
 
-  /** Under the name it has after being brought over, so asked for only once it has been. */
-  function keepResults(name: string | null, { feedback, readText, readAt, readBy, proposals, proposalsFor }: TextState): void {
+  function keepResults(name: string | null, { feedback, readText, readAt, readBy, commentCost, proposals, proposalsFor, paidCosts }: TextState): void {
     if (name === null) return;
-    void writeKeptResults(parts.files, parts.appFolder, name, { feedback, readText, readAt, readBy, proposals, proposalsFor }, log);
-  }
-
-  async function readSettingsOnce(): Promise<void> {
-    if (isSettingsRead) return;
-    isSettingsRead = true;
-    settings = await readLektorSettings(parts.files, parts.notesFolder, log);
-  }
-
-  /** A failure is logged and costs only having to paste it on another day: it works for now, from memory. */
-  function saveSettings(): void {
-    writeLektorSettings(parts.files, parts.notesFolder, settings, log).catch((error: unknown) => {
-      log.warn('The Lektor settings could not be saved', describeError(error));
-    });
-  }
-
-  /** On the buttons that send something, and only those: it sets them apart from the ones that only move him along, and says where it goes. */
-  function withWhereItGoes(made: HTMLButtonElement): HTMLButtonElement {
-    made.insertBefore(serviceMark(level), made.querySelector('svg'));
-    made.classList.add('lektor-sends');
-    return made;
-  }
-
-  /** For whoever is looking into what ran, which he needn't be: only on hovering, where it is out of his way. */
-  const modelTooltip = (model: string): string => `${words().model(model)}${words().modelPrice[level]}`;
-  const hasKeyFor = (option: Level): boolean => option === 'fake' || settings[KEY_FIELD[option]] !== '';
-  const hasKey = (): boolean => hasKeyFor(level);
-
-  /**
-   * One key is enough. Without a key for the level he is on, he moves to one he has one for, which
-   * can only mean the paid one when Google's is missing, and the choice on screen says so. Asking
-   * for the missing key instead left him on a screen where saving led straight back to it.
-   */
-  function settleOnLevelWithKey(): void {
-    if (hasKey()) return;
-    level = REAL_LEVELS.find(hasKeyFor) ?? level;
-  }
-
-  function stopWorking(): void {
-    working?.abort();
-    working = null;
-  }
-
-  function stopWaitNote(): void {
-    if (waitNoteTimer !== null) clearInterval(waitNoteTimer);
-    waitNoteTimer = null;
+    void writeKeptResults(parts.files, parts.appFolder, name, { feedback, readText, readAt, readBy, commentCost, proposals, proposalsFor, paidCosts }, log);
   }
 
   function stopRevealing(): void {
@@ -299,378 +196,337 @@ export function createLektor(parts: LektorParts): Lektor {
     revealTimer = null;
   }
 
-  /**
-   * What he is told while waiting, in words that change with time: it isn't stuck, it
-   * isn't his doing, and he needn't decide anything. By what has passed rather than a
-   * forecast, because the wait hardly depends on the text and varies threefold regardless.
-   */
-  function waitingLine(doing: string, firstNote: string, since: number, longS: number): HTMLElement {
-    stopWaitNote();
-    const note = el('p', 'lektor-wait-note', firstNote);
-    const clock = el('p', 'lektor-wait-clock');
-    const { veryLongS } = WAITS[level];
-    const update = (): void => {
-      const seconds = (Date.now() - since) / 1000;
-      clock.textContent = elapsedLine(seconds, words().elapsed);
-      if (seconds >= veryLongS) note.textContent = words().waitVeryLong;
-      else if (seconds >= longS) note.textContent = words().waitLong;
-    };
-    update();
-    waitNoteTimer = setInterval(update, 1000);
-    const line = el('div', 'lektor-waiting');
-    // Who first, then what it is doing: read together, the two make the sentence.
-    line.append(...serviceLine(level, words().shortLevels, words().serviceLabel), el('p', 'lektor-reading', doing), clock, note);
-    return line;
+  function stopClock(): void {
+    if (clockTimer !== null) clearInterval(clockTimer);
+    clockTimer = null;
   }
 
-  function failedWith(error: unknown, service = ai()): LektorFailure | null {
-    if (error instanceof DOMException && error.name === 'AbortError') return null;
-    if (error instanceof LektorServiceError) {
-      log.warn('The Lektor did not get an answer', { failure: error.failure, detail: error.detail });
-      lastFailureDetail = error.detail;
-      // Named now: he may choose the other Lektor before coming back to read this.
-      lastServiceSaid = error.serviceSaid === '' ? '' : `${words().whoseWords[service.company]}: ${error.serviceSaid}`;
-      lastFinalSentence = error.finalSentence;
-      return error.failure;
-    }
-    log.error('The Lektor failed', describeError(error));
-    lastFailureDetail = String(error);
-    lastServiceSaid = '';
-    lastFinalSentence = '';
-    return 'overloaded';
-  }
+  /** The text named for a sentence: quoted, or "bez naslova" in words. */
+  const textInWords = (title: string): string => {
+    const name = nameForHeading(title);
+    return name === null ? words().untitled : words().quoted(name);
+  };
 
-  function showReadFailure(state: TextState, failure: LektorFailure): void {
-    state.failure = failure;
-    state.finalSentence = lastFinalSentence;
-    state.serviceSaid = lastServiceSaid;
-    state.screen = failure === 'bad-key' ? 'key' : 'failed';
-    if (failure === 'bad-key') {
-      // The test Lektor has no key of its own, and acts this out on the first box.
-      const which = level === 'fake' ? 'free' : level;
-      keyNotes[which] = 'refused';
-      keyServiceSaid[which] = lastServiceSaid;
-    }
-  }
+  /* Opening: the internet, the keys, the balance (spec §4). */
 
-  async function read(): Promise<void> {
-    const state = stateNow();
-    const service = ai();
-    const readBy = level;
-    stopWorking();
+  async function checkOpening(): Promise<void> {
+    checking?.abort();
     const controller = new AbortController();
-    working = controller;
-    isKeyJustSaved = false;
-    readingSince = Date.now();
-    state.screen = 'reading';
+    checking = controller;
+    panelScreen = 'connecting';
     render();
+    let opening: Opening;
     try {
-      if (!(await parts.prepareToSend())) throw new LektorServiceError('not-brought-over', 'not on disk');
-      const name = parts.textNameNow();
-      const text = editor.value;
-      log.info('The Lektor was asked to read a text', { level, model: service.commentModel });
-      const answer = await service.feedback(text, controller.signal);
-      state.feedback = answer;
-      state.readText = text;
-      state.readAt = Date.now();
-      state.isCommentFromThisRun = true;
-      state.hasTakenCorrections = false;
-      state.readBy = readBy;
-      state.isRevealed = false;
-      state.screen = 'response';
-      keepResults(name, state);
+      opening = await connection.checkOpening(controller.signal);
     } catch (error) {
-      const failure = failedWith(error, service);
-      if (failure === null) return;
-      showReadFailure(state, failure);
+      if (isStopped(error)) return;
+      log.error('The Lektor could not look at the connection', describeError(error));
+      opening = 'offline';
     }
-    if (working === controller) working = null;
+    if (checking !== controller) return;
+    checking = null;
+    log.info('Opened the Lektor', { opening });
+    panelScreen = opening === 'ready' ? null : opening;
     render();
   }
 
-  /** Before anything else on opening: there is no point in his choosing anything he can't send. */
-  async function checkConnection(): Promise<void> {
-    const state = stateNow();
-    stopWorking();
-    const controller = new AbortController();
-    working = controller;
-    state.screen = 'connecting';
+  function offlineScreen(): Step {
+    return { content: [problemBox(problemParts, words().offline)], main: button(words().tryAgain, () => void checkOpening(), MAIN_ACTION) };
+  }
+
+  /* Keys. */
+
+  function openKeys(): void {
+    keysCameFrom = panelScreen;
+    panelScreen = 'keys';
+    log.info('Opened the Lektor keys');
     render();
+  }
+
+  function keysGoBack(): void {
+    for (const which of ['free', 'paid'] as const) keyState.notes[which] = null;
+    panelScreen = connection.isAnyDead() ? 'dead-key' : keysCameFrom === 'dead-key' ? null : keysCameFrom;
+    render();
+  }
+
+  async function checkOneKey(which: Choice, signal: AbortSignal): Promise<void> {
     try {
-      await ai().connectionCheck(controller.signal);
-      state.screen = 'start';
+      await connection.takeKey(which, keyState.drafts[which], signal);
+      keyState.drafts[which] = '';
+      keyState.notes[which] = null;
     } catch (error) {
-      if (failedWith(error) === null) return;
-      state.screen = 'offline';
+      if (!(error instanceof LektorServiceError)) throw error;
+      keyState.notes[which] = error.failure === 'bad-key' ? 'refused' : error.failure === 'offline' ? 'offline' : 'unavailable';
+      keyState.serviceSaid[which] = error.serviceSaid;
     }
-    if (working === controller) working = null;
-    render();
-  }
-
-  function offlineScreen(): HTMLElement[] {
-    return [problem(words().failures.offline), footer([], button(words().tryAgain, () => void checkConnection(), 'status-action'))];
-  }
-
-  function connectingScreen(): HTMLElement[] {
-    return [el('p', 'lektor-reading', words().connecting)];
-  }
-
-  function keyNoteOf(failure: LektorFailure): KeyNote {
-    if (failure === 'bad-key') return 'refused';
-    return failure === 'offline' ? 'offline' : 'unavailable';
-  }
-
-  /** One key, with its own answer: a refused one must not stop the other being saved. Returns false if he stopped it all. */
-  async function checkOneKey(which: RealLevel, signal: AbortSignal): Promise<boolean> {
-    const service = services[which];
-    try {
-      await service.keyCheck(keyDrafts[which], signal);
-      settings = { ...settings, [KEY_FIELD[which]]: keyDrafts[which] };
-      keyDrafts[which] = '';
-      keyNotes[which] = null;
-      saveSettings();
-      log.info('A Lektor key was saved', { service: service.company });
-    } catch (error) {
-      const failure = failedWith(error, service);
-      if (failure === null) return false;
-      keyNotes[which] = keyNoteOf(failure);
-      keyServiceSaid[which] = lastServiceSaid;
-    }
-    return true;
   }
 
   /** A key only counts once its service has taken it, and what was pasted stays in the box until then. */
-  async function checkPastedKeys(): Promise<void> {
-    const state = stateNow();
-    stopWorking();
-    const controller = new AbortController();
-    working = controller;
-    const pasted = REAL_LEVELS.filter((which) => keyDrafts[which] !== '');
-    for (const which of pasted) keyNotes[which] = 'checking';
+  async function saveKeys(): Promise<void> {
+    const pasted = (['free', 'paid'] as const).filter((which) => {
+      keyState.drafts[which] = keyState.drafts[which].replace(/\s/g, '');
+      return keyState.drafts[which] !== '';
+    });
+    // With nothing pasted there is nothing to check, and saving is simply going back.
+    if (pasted.length === 0) {
+      if (panelScreen === 'keys') keysGoBack();
+      return;
+    }
+    for (const which of pasted) keyState.notes[which] = 'checking';
     render();
-    const finished = await Promise.all(pasted.map((which) => checkOneKey(which, controller.signal)));
-    if (finished.includes(false)) return;
-    if (pasted.every((which) => keyNotes[which] === null)) {
+    const signal = new AbortController().signal;
+    try {
+      await Promise.all(pasted.map((which) => checkOneKey(which, signal)));
+    } catch (error) {
+      log.error('A Lektor key could not be checked', describeError(error));
+      for (const which of pasted) keyState.notes[which] = 'unavailable';
+    }
+    if (pasted.every((which) => keyState.notes[which] === null)) {
       isKeyJustSaved = true;
-      state.failure = null;
-      state.screen = 'start';
+      void connection.rereadBalance().then(render);
+      panelScreen = connection.isAnyDead() ? 'dead-key' : null;
     }
-    if (working === controller) working = null;
     render();
   }
 
-  /** For sending on to whoever helps him. The whole of it, however much of it is shown. */
-  function copyMessageButton(message: string): HTMLButtonElement {
-    const copy = button(words().copyMessage, () => {
-      parts.copyToClipboard(message).then(
-        () => {
-          // A toast can't be seen over a dialog, which sits above everything else on the page; the button says so there.
-          if (copy.closest('dialog') === null) flashToast(parts.toast, words().copied, words().copiedHow);
-          else copy.textContent = words().copiedInDialog;
-        },
-        (error: unknown) => {
-          log.warn('The Lektor message could not be copied', describeError(error));
-          copy.textContent = words().notCopied;
-        },
-      );
-    }, 'lektor-copy-message');
-    return copy;
+  /* The menu (spec §6). */
+
+  function menuOption(name: string, does: string, picture: SVGSVGElement, onPick: () => void): HTMLButtonElement {
+    const option = button('', onPick, 'lektor-menu-option');
+    option.append(picture, el('span', 'lektor-menu-name', name), el('span', 'lektor-menu-does', does));
+    return option;
   }
 
-  /**
-   * Something didn't work: recognisable by its icon before a word of it is read. A remote
-   * service's own words go beneath, small and grey, with no need for him to follow them: he can
-   * read them to whoever helps him, who has no other way of knowing what a stranger's server said.
-   * Our own details stay under the pointer: those are ours to fix, and are in the log.
-   */
-  function problem(sentence: string, serviceSaid = ''): HTMLElement {
-    const box = el('div', 'lektor-problem');
-    box.setAttribute('role', 'alert');
-    const lines = el('div', 'lektor-problem-words');
-    lines.append(el('p', 'lektor-line', sentence));
-    if (serviceSaid === '') {
-      box.title = lastFailureDetail;
-    } else {
-      const said = el('p', 'lektor-service-said', serviceSaid.slice(0, LONGEST_SERVICE_WORDS));
-      said.lang = 'en';
-      lines.append(said, copyMessageButton(`${sentence}\n${serviceSaid}`));
-    }
-    box.append(icon('problem'), lines);
-    return box;
-  }
-
-  /**
-   * What a screen ends with: what to do here. Right after the content rather than at
-   * the sidebar's foot, so a sentence about a button stays against that button on a
-   * tall screen too. Where the content runs long, he scrolls down to it.
-   */
-  function footer(lines: HTMLElement[], main: HTMLButtonElement, afterMain: HTMLElement[] = []): HTMLElement {
-    const buttons = el('div', 'lektor-side-buttons');
-    buttons.append(main);
-    const made = el('div', 'lektor-side-foot');
-    made.append(...lines, buttons, ...afterMain);
-    return made;
-  }
-
-  function privacyWarning(): HTMLElement {
+  function privacyFoot(): HTMLElement {
     const heading = el('p', 'lektor-warning-heading');
     heading.append(icon('privacy'), document.createTextNode(words().privacyHeading));
     const warning = el('div', 'lektor-warning');
     warning.setAttribute('role', 'note');
-    warning.append(
-      heading,
-      el('p', 'lektor-line', words().privacyWhole(strings(parts.languageNow()).wordCount(wordsInText()), recipient())),
-      el('p', 'lektor-line', words().privacyWhat),
+    warning.append(heading, el('p', 'lektor-line', words().privacyWhole(strings(parts.languageNow()).wordCount(wordsInText()))), el('p', 'lektor-line', words().privacyWhat));
+    const foot = el('div', 'lektor-side-foot');
+    foot.append(warning);
+    return foot;
+  }
+
+  function toStepTwo(): void {
+    // A new start of the step, so Besplatni again: nothing is chosen for him from how he left it.
+    choice = 'free';
+    isTicked = paidIfSlowByDefault(connection.hasKey().paid, connection.balance());
+    stateOf(openKey).screen = 'start';
+    log.info('Chose the utisak');
+    render();
+    // The balance is read again whenever step 2 shows (spec §9); the tick box follows it if it moves.
+    void connection.rereadBalance().then(() => {
+      isTicked = paidIfSlowByDefault(connection.hasKey().paid, connection.balance());
+      render();
+    });
+  }
+
+  function menuScreen(): Step {
+    const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', words().keyWorksSaved)] : [];
+    isKeyJustSaved = false;
+    const keys = button('', openKeys, 'lektor-fallible');
+    keys.append(el('span', '', words().keysLink));
+    const keysLink = el('div', 'lektor-menu-keys');
+    keysLink.append(keys);
+    const options = el('div', 'lektor-menu');
+    options.append(
+      menuOption(words().utisak, words().utisakDoes, utisakPicture(), toStepTwo),
+      menuOption(words().ispravke, words().ispravkeDoes, ispravkePicture(), openWindow),
     );
-    return warning;
+    return { content: [...saved, el('p', 'lektor-line', words().blurb), el('p', 'lektor-heading', words().whatDoYouWant), options, privacyFoot(), keysLink] };
   }
 
-  /** The other choice, under the main button where he is deciding. No arrow: that means the next step, and this is the way out of taking it. */
-  function plainButtonRow(label: string, onClick: () => void, tooltip = ''): HTMLElement {
-    const row = el('div', 'lektor-side-buttons');
-    const made = button(label, onClick, 'status-action');
-    made.title = tooltip;
-    row.append(made);
-    return row;
+  /* Step 2: the utisak's Lektor. */
+
+  const tickBox: PaidIfSlow = {
+    get isTicked() {
+      return isTicked;
+    },
+    tick: (ticked) => {
+      isTicked = ticked;
+      render();
+    },
+  };
+
+  const mayHandOver = (to: Choice): boolean => to === 'free' && isTicked && connection.hasKey().paid;
+
+  /** One key is enough: on a choice without one he moves to the other. */
+  function settleOnChoiceWithKey(): void {
+    const has = connection.hasKey();
+    const other = choice === 'free' ? 'paid' : 'free';
+    if (!has[choice] && has[other]) choice = other;
   }
 
-  function chooseLevel(chosen: Level): void {
-    level = chosen;
-    log.info('Chose a Lektor', { level: chosen });
+  function startScreen(): Step {
+    settleOnChoiceWithKey();
+    const what = el('div', 'lektor-step-what');
+    what.append(utisakPicture(), el('span', 'lektor-menu-name', words().utisak), el('span', 'lektor-menu-does', words().utisakDoes));
+    const [heading, ...choices] = lektorChoice({
+      words: words(),
+      group: 'lektor-level',
+      work: 'comment',
+      chosen: choice,
+      choose: (chosen) => {
+        choice = chosen;
+        log.info('Chose a Lektor', { choice: chosen });
+        render();
+      },
+      why: { free: words().why.commentFree, paid: words().why.commentPaid },
+      hasKey: connection.hasKey(),
+      paidIfSlow: tickBox,
+      balance: connection.balance(),
+      isLocked: false,
+    });
+    const send = sendButton(words().sendToLektor, tierFor(choice, 'comment'), () => void readComment(choice), MAIN_ACTION, sendTooltip(words(), choice, 'comment', mayHandOver(choice)));
+    send.disabled = wordsInText() < FEWEST_WORDS;
+    if (send.disabled) send.title = words().tooShort;
+    return {
+      content: [what, ...(heading === undefined ? [] : [heading]), el('p', 'lektor-where lektor-choice-lead', words().bothAlike), ...choices],
+      main: send,
+      back: backButton(words().back, () => {
+        stateOf(openKey).screen = 'menu';
+        render();
+      }),
+    };
+  }
+
+  /* Reading. */
+
+  async function readComment(to: Choice, key: TextKey = openKey, again: Request | null = null): Promise<void> {
+    if (request?.controller !== null && request !== null) return;
+    const state = stateOf(key);
+    const controller = new AbortController();
+    const isOpenText = key === openKey;
+    request = {
+      key,
+      title: again?.title ?? titleFrom(editor.value),
+      name: again?.name ?? parts.textNameNow(),
+      input: again?.input ?? editor.value,
+      controller,
+      startedAt: performance.now(),
+      sentTo: to,
+      mayHandOver: mayHandOver(to),
+    };
+    const sent = request;
+    isReadyElsewhere = false;
+    isFailedElsewhere = false;
+    state.failed = null;
+    state.screen = 'reading';
+    render();
+    try {
+      if (isOpenText && again === null && !(await parts.prepareToSend())) throw new LektorServiceError('not-brought-over', 'not on disk');
+      // The name it has once brought over from Resoph.
+      if (isOpenText && again === null) sent.name = parts.textNameNow();
+      log.info('The Lektor was asked to read a text', { choice: to, mayHandOver: sent.mayHandOver });
+      const reply = await connection.run({ work: 'comment', choice: to, mayHandOver: sent.mayHandOver, system: FEEDBACK_INSTRUCTION, input: sent.input }, () => {}, controller.signal);
+      Object.assign(state, {
+        feedback: reply.words.trim(),
+        readText: sent.input,
+        readAt: Date.now(),
+        readBy: reply.model,
+        commentCost: reply.cost,
+        isCommentFromThisRun: true,
+        hasTakenCorrections: false,
+        isRevealed: false,
+        screen: 'response',
+      });
+      isAboutAiOpen = false;
+      keepResults(sent.name, state);
+      void connection.rereadBalance();
+      isReadyElsewhere = key !== openKey;
+    } catch (error) {
+      if (isStopped(error) || request !== sent) return;
+      void connection.rereadBalance();
+      state.failed = failedFrom(error, to);
+      state.screen = 'failed';
+      if (state.failed.failure === 'bad-key') connection.dead[state.failed.side] = true;
+      isFailedElsewhere = key !== openKey;
+    }
+    sent.controller = null;
+    if (!isReadyElsewhere && !isFailedElsewhere) request = null;
+    stopClock();
     render();
   }
 
-  function levelOption(option: Level): HTMLElement {
-    const label = el('label', 'lektor-preset');
-    const radio = el('input', '');
-    radio.type = 'radio';
-    radio.name = 'lektor-level';
-    radio.checked = level === option;
-    radio.disabled = !hasKeyFor(option);
-    label.classList.toggle('lektor-preset-unavailable', radio.disabled);
-    label.title = radio.disabled ? words().levelWithoutKey : '';
-    radio.addEventListener('change', () => chooseLevel(option));
-    label.append(radio, serviceMark(option), el('span', '', words().levels[option]));
-    return label;
-  }
-
-  /** On the first step only: he won't be changing his mind midway, and every other screen is simpler for it. */
-  function levelChoice(): HTMLElement[] {
-    const test = parts.fakeBehaviour === null ? [] : [levelOption('fake')];
-    return [el('p', 'lektor-heading', words().whichLektor), levelOption('free'), levelOption('thorough'), ...test];
-  }
-
-  /**
-   * What the choice runs on, and the way to the keys that decide which choices there are: both about
-   * the choice, so under it, and small. The keys on the right, out of the reading path, but not up
-   * in the corner where the ways between steps are.
-   */
-  function choiceFoot(): HTMLElement {
-    const keys = el('button', 'lektor-again', words().keysLink);
-    keys.type = 'button';
-    keys.addEventListener('click', () => goTo('key'));
-    const row = el('div', 'lektor-choice-foot');
-    row.append(el('p', 'lektor-model', words().model(ai().commentModel)), keys);
-    return row;
-  }
-
-  function startScreen(): HTMLElement[] {
-    const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', words().keyWorks)] : [];
-    const send = withWhereItGoes(nextStepButton(words().send(recipient()), () => void read()));
-    send.disabled = wordsInText() < FEWEST_WORDS;
-    send.title = send.disabled ? words().tooShort : modelTooltip(ai().commentModel);
-    // Having come here to send again, he may think better of it: the comment he has is still there.
-    const existing = stateNow().feedback === '' ? [] : [plainButtonRow(words().existingComment, () => goTo('response'))];
-    return [
-      ...saved,
-      el('p', 'lektor-line', words().blurb),
-      ...levelChoice(),
-      choiceFoot(),
-      footer([privacyWarning()], send, existing),
-    ];
-  }
-
-  function keyNoteElement(which: RealLevel): HTMLElement[] {
-    const note = keyNotes[which];
-    if (note === null) return [];
-    if (note === 'checking') return [el('p', 'lektor-reading', words().keyChecking)];
-    return [problem(words().keyNotes[note], keyServiceSaid[which])];
-  }
-
-  /** With nothing pasted there is nothing to check, and saving is simply going back. */
-  function saveKeys(): void {
-    for (const which of REAL_LEVELS) keyDrafts[which] = keyDrafts[which].replace(/\s/g, '');
-    if (REAL_LEVELS.some((which) => keyDrafts[which] !== '')) {
-      void checkPastedKeys();
-      return;
+  function failedFrom(error: unknown, to: Choice): Failed {
+    if (error instanceof ChainError) {
+      log.warn('The Lektor did not get an answer', { failure: error.failure, side: error.side, detail: error.detail });
+      return { failure: error.failure, side: error.side, serviceSaid: error.serviceSaid, sentTo: to };
     }
-    for (const which of REAL_LEVELS) keyNotes[which] = null;
-    goTo('start');
+    if (error instanceof LektorServiceError) {
+      log.warn('The Lektor did not get an answer', { failure: error.failure, detail: error.detail });
+      return { failure: error.failure, side: to, serviceSaid: error.serviceSaid, sentTo: to };
+    }
+    log.error('The Lektor failed', describeError(error));
+    return { failure: 'busy', side: to, serviceSaid: '', sentTo: to };
   }
 
-  function keyField(which: RealLevel, name: string, isChecking: boolean): HTMLElement[] {
-    const box = el('input', 'lektor-key');
-    box.type = 'text';
-    box.autocomplete = 'off';
-    box.spellcheck = false;
-    box.value = keyDrafts[which];
-    box.disabled = isChecking;
-    // Not the key: it is never shown again. Pasting over this replaces it.
-    box.placeholder = settings[KEY_FIELD[which]] === '' ? '' : words().keySaved;
-    box.addEventListener('input', () => {
-      keyDrafts[which] = box.value;
+  /** Giving up on the request, or closing on it: its text back to step 2 as he left it. */
+  function giveUp(): void {
+    if (request === null) return;
+    request.controller?.abort();
+    stateOf(request.key).screen = 'start';
+    request = null;
+    stopClock();
+    log.info('Gave up a utisak being read');
+    // A paid request may be charged for work begun.
+    void connection.rereadBalance();
+    render();
+  }
+
+  function waitingScreen(sent: Request): Step {
+    const expect = sent.sentTo === 'free' ? `${words().expectFree}${sent.mayHandOver ? ` ${words().expectHandOver}` : ''}` : words().expectPaid;
+    const waiting = el('div', 'lektor-waiting');
+    waiting.append(el('p', 'lektor-reading', words().reading(textInWords(sent.title))), el('p', '', expect), el('p', 'lektor-comment-clock', elapsedWords(sent.startedAt, performance.now(), words().elapsed)));
+    const stop = button('', giveUp, 'lektor-again');
+    // The app's ✕: under the wait, beside its words, it can't be taken for closing the panel.
+    stop.append(icon('close'), el('span', '', words().giveUp));
+    const row = el('div', 'lektor-back-row lektor-stop-row');
+    row.append(stop);
+    if (clockTimer === null) {
+      clockTimer = setInterval(() => {
+        const clock = side.querySelector('.lektor-comment-clock');
+        if (clock !== null) clock.textContent = elapsedWords(sent.startedAt, performance.now(), words().elapsed);
+      }, 1000);
+    }
+    return { content: [waiting, row] };
+  }
+
+  /* Failures (spec §10). */
+
+  function failedScreen(key: TextKey, failed: Failed, title: string): Step {
+    const back = backButton(words().back, () => {
+      stateOf(key).screen = 'start';
+      stateOf(key).failed = null;
+      isFailedElsewhere = false;
+      request = null;
+      render();
     });
-    box.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') saveKeys();
-    });
-    return [el('label', 'lektor-label', name), box, ...keyNoteElement(which)];
+    // Found only on sending: the dead-key screen, with the way back as well.
+    if (failed.failure === 'bad-key') return { content: [deadKeyNoticeOf(words())], main: button(words().keysLink, openKeys, MAIN_ACTION), back };
+    const viewed = failureView({ failure: failed.failure, side: failed.side, hasKey: connection.hasKey(), resetTime: freeResetTime(new Date()) }, words());
+    const whose = failed.side === 'free' ? words().whoseWords.google : words().whoseWords.openrouter;
+    const which = key !== openKey ? [el('p', 'lektor-line', words().failedElsewhere(textInWords(title)))] : [];
+    const content = [...which, problemBox(problemParts, viewed.sentence, viewed.wayOn, failed.serviceSaid === '' ? '' : `${whose}: ${failed.serviceSaid}`)];
+    // Its shortcut resends that text, not the open one.
+    const resend = (to: Choice): void => void readComment(to, key, key === openKey ? null : request);
+    if (viewed.shortcut !== null) {
+      const to = viewed.shortcut;
+      const shortcut = sendButton(to === 'free' ? words().sendToFree : words().sendToPaid, tierFor(to, 'comment'), () => resend(to), MAIN_ACTION, sendTooltip(words(), to, 'comment', false));
+      return { content, main: shortcut, back };
+    }
+    if (viewed.isRetried) return { content, main: button(words().tryAgain, () => resend(failed.sentTo), MAIN_ACTION), back };
+    return { content, back };
   }
 
-  function keyScreen(): HTMLElement[] {
-    const isChecking = REAL_LEVELS.some((which) => keyNotes[which] === 'checking');
-    const saveButton = button(words().save, saveKeys, MAIN_ACTION);
-    saveButton.disabled = isChecking;
-    return [
-      el('p', 'lektor-line', words().keyIntro),
-      ...keyField('free', words().keyGoogle, isChecking),
-      ...keyField('thorough', words().keyAnthropic, isChecking),
-      footer([], saveButton),
-    ];
-  }
+  /* The utisak. */
 
-  function readingScreen(): HTMLElement[] {
-    return [
-      waitingLine(words().reading, words().waits[level].reading, readingSince, WAITS[level].readingLongS),
-      footer(
-        [],
-        button(words().stop, () => {
-          stopWorking();
-          stateNow().screen = 'start';
-          render();
-        }, 'status-action'),
-      ),
-    ];
-  }
-
-  function failedScreen(): HTMLElement[] {
-    const { failure, finalSentence, serviceSaid } = stateNow();
-    const top = el('div', 'lektor-back-row');
-    top.append(backButton(words().back, 'start'));
-    // Once the day's tries or the money are gone, trying again can only fail again.
-    if (finalSentence !== '') return [top, problem(finalSentence, serviceSaid)];
-    return [
-      top,
-      problem(words().failures[failure ?? 'overloaded'], serviceSaid),
-      footer([], button(words().tryAgain, () => void read(), 'status-action')),
-    ];
-  }
-
-  /** The response word by word; a click anywhere on it shows the rest. */
-  function revealed(state: TextState): HTMLElement {
+  /** The utisak word by word; a click anywhere on it shows the rest. */
+  function revealed(state: TextState, opening: string): HTMLElement {
     const box = el('div', 'lektor-response');
-    // Without it there is a moment of wondering whether the AI has more to say.
     const showAll = (): void => {
-      box.textContent = state.feedback;
+      box.textContent = `${opening}\n\n${state.feedback}`;
       box.append(el('span', 'lektor-response-end'));
     };
     if (state.isRevealed) {
@@ -679,91 +535,35 @@ export function createLektor(parts: LektorParts): Lektor {
     }
     const pieces = state.feedback.split(/(\s+)/);
     let shown = 0;
-    // Everything on the screen is already there, so no redraw: it would jump the scroll position.
     const finish = (): void => {
       stopRevealing();
       state.isRevealed = true;
       showAll();
     };
     box.addEventListener('click', finish);
+    box.textContent = opening;
     revealTimer = setInterval(() => {
       const scroller = box.closest('.lektor-side-body');
       // Only if he was at the bottom: having scrolled up to read, he stays there.
       const isFollowing = scroller !== null && scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < FOLLOWING_SLACK_PX;
       shown += 2;
-      box.textContent = pieces.slice(0, shown).join('');
-      // Holds the button under it still on the screen once the comment has reached it.
+      box.textContent = `${opening}\n\n${pieces.slice(0, shown).join('')}`;
       if (isFollowing) scroller.scrollTop = scroller.scrollHeight;
       if (shown >= pieces.length) finish();
-    }, (REVEAL_MS / pieces.length) * 2);
+    }, (REVEAL_MS / Math.max(1, pieces.length)) * 2);
     return box;
   }
 
-  function standingNow(state: TextState): ReturnType<typeof standingOf> {
-    const { readText, isCommentFromThisRun: isFromThisRun, hasTakenCorrections, readAt } = state;
-    return standingOf({ readText, text: editor.value, isFromThisRun, hasTakenCorrections, readAt, now: Date.now() });
-  }
-
-  /**
-   * Only after a big change: one that is always there becomes decoration. A number, because a
-   * sentence that never changes reads as furniture too. A tip rather than a warning, so a line
-   * and not a box: nothing of his is at risk, only the comment is behind his text.
-   */
+  /** Only after a big change, with how many words changed (spec §6). */
   function staleNote(state: TextState): HTMLElement[] {
-    const standing = standingNow(state);
-    // Also when he chose to look at an outdated one from the first step: it is as far from his text there.
+    const standing = standingOf({ readText: state.readText, text: editor.value, isFromThisRun: state.isCommentFromThisRun, hasTakenCorrections: state.hasTakenCorrections, readAt: state.readAt, now: Date.now() });
     if (standing.kind === 'current') return [];
-    const count = strings(parts.languageNow()).wordCount(standing.wordsChanged);
     const note = el('p', 'lektor-stale');
-    note.append(icon('info'), el('span', '', words().changedSince(count)));
+    note.append(icon('info'), el('span', '', words().changedSince(strings(parts.languageNow()).wordCount(standing.wordsChanged))));
     return [note];
   }
 
-  function presetChoice(state: TextState, onChange: () => void): HTMLElement[] {
-    const prompt = el('p', 'lektor-prompt', PRESET_PROMPTS[state.preset]);
-    const options = PRESET_ORDER.map((preset) => {
-      const label = el('label', 'lektor-preset');
-      const radio = el('input', '');
-      radio.type = 'radio';
-      radio.name = 'lektor-preset';
-      radio.checked = state.preset === preset;
-      radio.addEventListener('change', () => {
-        state.preset = preset;
-        prompt.textContent = PRESET_PROMPTS[preset];
-        onChange();
-      });
-      label.append(radio, document.createTextNode(words().presets[preset]));
-      return label;
-    });
-    const note = el('textarea', 'lektor-note');
-    note.rows = 2;
-    note.placeholder = words().notePlaceholder;
-    note.value = state.note;
-    // As tall as what he has written, so he sees all of it: the box above gives way first, then the button moves down.
-    const fitNote = (): void => {
-      note.style.height = 'auto';
-      note.style.height = `${note.scrollHeight + note.offsetHeight - note.clientHeight}px`;
-    };
-    note.addEventListener('input', () => {
-      state.note = note.value;
-      fitNote();
-      onChange();
-    });
-    // Once it is on the page, which is the first moment it has a height to measure.
-    requestAnimationFrame(fitNote);
-    const noteLabel = el('label', 'lektor-label', `${words().noteLabel} `);
-    noteLabel.append(el('span', 'lektor-label-aside', words().noteOptional));
-    return [
-      el('p', 'lektor-heading', words().whatToCorrect),
-      ...options,
-      el('p', 'lektor-prompt-label', words().promptLabel),
-      prompt,
-      noteLabel,
-      note,
-    ];
-  }
-
-  /** Closed until he asks: an explanation repeated every time is one nobody reads. */
+  /** "AI može da pogreši", which opens to a few plain sentences on what an AI is, brought into view. */
   function aboutAi(): HTMLElement[] {
     const toggle = el('button', 'lektor-fallible');
     toggle.type = 'button';
@@ -772,295 +572,229 @@ export function createLektor(parts: LektorParts): Lektor {
     toggle.addEventListener('click', () => {
       isAboutAiOpen = !isAboutAiOpen;
       render();
+      // Opened at the panel's foot, the words fell below its edge and he saw nothing happen (v1's bug).
+      if (!isAboutAiOpen) return;
+      const isStill = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      side.querySelector('.lektor-about-ai')?.scrollIntoView({ block: 'nearest', behavior: isStill ? 'auto' : 'smooth' });
     });
     return isAboutAiOpen ? [toggle, el('p', 'lektor-about-ai', words().aboutAi)] : [toggle];
   }
 
-  /** Ours rather than the AI's, like everything around its words: how old this is, the way to a newer one, and what to make of it. */
-  /** Above the comment, only what bears on reading it: whether his text has moved on since, and the way to a new one, always in the same corner. */
-  function commentHead(state: TextState): HTMLElement {
-    const head = el('div', 'lektor-comment-head');
-    const way = el('div', 'lektor-back-row');
-    way.append(backButton(words().askForNewComment, 'start'));
-    head.append(...staleNote(state), way);
-    return head;
-  }
-
-  /** Who wrote it and when, after it, as a letter is signed: there to be found, not read first. */
-  function commentSignature(state: TextState): HTMLElement {
+  /** Signed by who wrote it, by the model that ran, when, and on paid what it cost. */
+  function signature(state: TextState): HTMLElement {
     const when = describeWhen(state.readAt, parts.languageNow());
-    const who = serviceLine(state.readBy, words().shortLevels, words().serviceLabel);
-    const signed = who[0];
-    if (signed !== undefined) signed.append(el('span', 'lektor-comment-when', ` · ${when}`));
-    const signature = el('div', 'lektor-comment-notes');
-    // A comment from before the app said who wrote it has only its time to sign with.
-    signature.append(...(signed === undefined ? [el('p', '', words().writtenWhen(when))] : [signed]), ...aboutAi());
-    return signature;
+    const tier = tierOfModel(state.readBy);
+    const cost = state.commentCost === null ? '' : ` · ${words().dollars(state.commentCost)}`;
+    const signed = tier === null ? el('p', 'lektor-service-line') : serviceLineOf(words(), tier);
+    signed.append(el('span', 'lektor-comment-when', `${tier === null ? '' : ' · '}${when}${cost}`));
+    const notes = el('div', 'lektor-comment-notes');
+    notes.append(signed, ...aboutAi());
+    return notes;
   }
 
-  function goTo(screen: Screen): void {
-    isAboutAiOpen = false;
-    stateNow().screen = screen;
-    render();
-  }
-
-  /** One thing at a time: the comment is all there is to read here, and what comes next is his to choose. */
-  function responseScreen(): HTMLElement[] {
-    const state = stateNow();
-    const head = commentHead(state);
-    const response = revealed(state);
-    const signature = commentSignature(state);
-    // There from the start: he needn't sit through the comment appearing to move on.
-    const onward = nextStepButton(words().toCorrections, () => {
+  function responseScreen(state: TextState): Step {
+    const ask = button('', toStepTwo, 'lektor-again');
+    ask.append(icon('back'), el('span', '', words().askForNewComment));
+    const again = el('div', 'lektor-back-row');
+    again.append(ask);
+    const head = el('div', 'lektor-comment-head');
+    head.append(...staleNote(state), again);
+    const opening = words().commentOpening(textInWords(titleFrom(state.readText)));
+    const toCorrections = button(words().toCorrections, () => {
       state.isRevealed = true;
-      goTo('corrections');
-    });
-    return [head, response, signature, footer([], onward)];
+      openWindow();
+    }, 'status-action lektor-to-corrections');
+    return { content: [head, revealed(state, opening), signature(state)], main: toCorrections };
   }
 
-  /** The small grey button that goes back a step, in the one place on the screen it is ever found. */
-  function backButton(label: string, screen: Screen): HTMLButtonElement {
-    const back = el('button', 'lektor-again');
-    back.type = 'button';
-    back.append(icon('back'), el('span', '', label));
-    back.addEventListener('click', () => goTo(screen));
-    return back;
-  }
+  /* Another text. */
 
-  /**
-   * What the buttons offer follows from what he has chosen. With corrections already made for just
-   * this, looking at them is the step on, and costs nothing. Sending again stays possible, because
-   * the same request can come back much better, but it is no longer what happens by habit.
-   */
-  function correctionsFoot(state: TextState): HTMLElement {
-    const choice = { preset: state.preset, level, note: state.note };
-    const saved = savedCorrections(state, editor.value, choice);
-    // True either way, so it stays still when the buttons change. Where the text goes was said on the first step, the only place he can change that.
-    const reassurance = [el('p', 'lektor-line lektor-reassurance', words().correctionsFoot)];
-    const sendsNow = modelTooltip(ai().correctionModel(state.preset));
-    if (saved === null) return footer(reassurance, withWhereItGoes(windowButton(words().sendForCorrections, () => void correct(), sendsNow)));
-    const see = windowButton(words().seeCorrections, () => review(editor.value, withEndingOf(editor.value, saved.proposed), saved.level, choice.preset), modelTooltip(saved.model));
-    const again = plainButtonRow(words().newRequest, () => void correct(), sendsNow);
-    again.querySelectorAll('button').forEach(withWhereItGoes);
-    return footer(reassurance, see, [again]);
-  }
-
-  function correctionsScreen(): HTMLElement[] {
-    const state = stateNow();
-    const top = el('div', 'lektor-back-row');
-    top.append(backButton(words().backToComment, 'response'));
-    let foot = correctionsFoot(state);
-    const refreshFoot = (): void => {
-      const fresh = correctionsFoot(state);
-      foot.replaceWith(fresh);
-      foot = fresh;
+  /** Done while another text is open: said, and the way to that text, right under it. */
+  function elsewhereScreen(done: Request): Step {
+    const open = button(words().openTextAndComment, () => {
+      isReadyElsewhere = false;
+      request = null;
+      if (done.key !== NO_NOTE) parts.openText(done.key);
+    }, `${MAIN_ACTION} lektor-elsewhere-open`);
+    return {
+      content: [el('p', 'lektor-line', words().readyElsewhere(textInWords(done.title))), open],
+      back: backButton(words().back, () => {
+        isReadyElsewhere = false;
+        request = null;
+        render();
+      }),
     };
-    return [top, ...presetChoice(state, refreshFoot), foot];
   }
 
-  const SCREENS: Readonly<Record<Screen, () => HTMLElement[]>> = {
-    connecting: connectingScreen,
-    offline: offlineScreen,
-    start: startScreen,
-    key: keyScreen,
-    reading: readingScreen,
-    failed: failedScreen,
-    response: responseScreen,
-    corrections: correctionsScreen,
-  };
+  function goneScreen(title: string): Step {
+    const said = el('div', 'lektor-text-gone');
+    said.append(el('p', 'lektor-line', words().textGone(textInWords(title))), el('p', 'lektor-where', words().textGoneWhy));
+    return {
+      content: [said],
+      back: backButton(words().back, () => {
+        goneTitle = null;
+        stateOf(openKey).screen = 'menu';
+        render();
+      }),
+    };
+  }
 
-  /* Nothing added on failure: the fault is the service's, not his, and the message below says what happened. */
-  function titleOfScreen(screen: Screen): string {
-    const { titles } = words();
-    switch (screen) {
-      case 'start':
-        return titles.start;
-      case 'key':
-        return titles.key;
-      case 'reading':
-        return titles.reading;
-      // Whose impression and whose corrections, as much as what they are.
-      case 'response':
-        return titles.response;
-      case 'corrections':
-        return titles.corrections;
+  /** What the panel shows for a request on another text: its wait, its failure, or that it is ready. */
+  function pinnedStep(): Step | null {
+    if (goneTitle !== null) return goneScreen(goneTitle);
+    if (request === null || request.key === openKey) return null;
+    const its = stateOf(request.key);
+    if (its.screen === 'reading') return waitingScreen(request);
+    if (isFailedElsewhere && its.failed !== null) return failedScreen(request.key, its.failed, request.title);
+    return isReadyElsewhere ? elsewhereScreen(request) : null;
+  }
+
+  /* The window. */
+
+  function openWindow(): void {
+    const state = stateOf(openKey);
+    const name = parts.textNameNow();
+    openCorrectionsWindow(
+      {
+        ...problemParts,
+        dialog: parts.dialog,
+        confirmPane: parts.confirmPane,
+        connection,
+        languageNow: parts.languageNow,
+        log,
+        prepareToSend: parts.prepareToSend,
+        applyCorrections: async (text) => {
+          const isApplied = await parts.applyCorrections(text);
+          if (isApplied) state.hasTakenCorrections = true;
+          return isApplied;
+        },
+        openKeysInPanel: openKeys,
+        // The panel stays open, on the screen the window was opened from (spec §8).
+        onClosed: render,
+        savedNoteFor: (model) => (model.startsWith('saved/') ? words().review.savedReplyNote : null),
+      },
+      {
+        text: editor.value,
+        title: titleFrom(editor.value),
+        proposals: () => state,
+        keep: (next) => {
+          Object.assign(state, next);
+          keepResults(parts.textNameNow() ?? name, state);
+        },
+        note: () => state.note,
+        setNote: (note) => {
+          state.note = note;
+        },
+      },
+    );
+  }
+
+  /* Drawing. */
+
+  interface Step {
+    content: HTMLElement[];
+    main?: HTMLButtonElement;
+    back?: HTMLButtonElement | null;
+  }
+
+  function panelStep(): Step | null {
+    switch (panelScreen) {
+      case 'connecting':
+        return { content: [el('p', 'lektor-reading', words().connecting)] };
+      case 'offline':
+        return offlineScreen();
+      case 'dead-key':
+        return { content: [deadKeyNoticeOf(words())], main: button(words().keysLink, openKeys, MAIN_ACTION) };
+      case 'no-keys':
+      case 'keys': {
+        // With no keys at all, no Nazad: there is nothing to go back to.
+        const goBack = panelScreen === 'no-keys' ? null : keysGoBack;
+        const shown = keysScreen(words(), problemParts, { ...keyState, hasKey: connection.hasKey(), dead: connection.dead, balance: connection.balance() }, () => void saveKeys(), goBack);
+        return { content: shown.content, main: shown.main, back: shown.back };
+      }
       default:
-        return titles.plain;
+        return null;
     }
+  }
+
+  function textStep(): Step {
+    const state = stateOf(openKey);
+    if (state.screen === 'reading' && request !== null && request.key === openKey) return waitingScreen(request);
+    if (state.screen === 'failed' && state.failed !== null) return failedScreen(openKey, state.failed, titleFrom(editor.value));
+    if (state.screen === 'response' && state.feedback !== '') return responseScreen(state);
+    if (state.screen === 'start') return startScreen();
+    return menuScreen();
+  }
+
+  function titleNow(): string {
+    if (panelScreen === 'keys' || panelScreen === 'no-keys') return words().titles.keys;
+    const screen = stateOf(openKey).screen;
+    if (pinnedStep() !== null || (panelScreen === null && screen !== 'menu')) return words().titles.comment;
+    return words().titles.plain;
   }
 
   function render(): void {
     stopRevealing();
-    stopWaitNote();
-    const state = stateNow();
-    document.body.classList.toggle('lektor-open', state.isOpen);
-    opener.setAttribute('aria-pressed', String(state.isOpen));
+    document.body.classList.toggle('lektor-open', isOpen);
+    opener.setAttribute('aria-pressed', String(isOpen));
     // Never while open: he may have emptied the text with the Lektor still beside it, and this is a way to close it.
-    const isTooShort = wordsInText() < FEWEST_WORDS;
-    opener.disabled = isTooShort && !state.isOpen;
+    opener.disabled = wordsInText() < FEWEST_WORDS && !isOpen;
     opener.title = opener.disabled ? words().tooShort : '';
-    if (!state.isOpen) {
+    if (!isOpen) {
+      stopClock();
       side.replaceChildren();
       return;
     }
-    settleOnLevelWithKey();
-    if (state.screen === 'start' && !hasKey()) state.screen = 'key';
-    const body = el('div', 'lektor-side-body');
-    body.append(...SCREENS[state.screen]());
+    const step = pinnedStep() ?? panelStep() ?? textStep();
+    if (request === null || request.controller === null) stopClock();
+    const drawnAs = `${panelScreen ?? ''}/${stateOf(openKey).screen}/${String(openKey)}`;
+    const keptScroll = drawnAs === lastDrawn ? (side.querySelector('.lektor-side-body')?.scrollTop ?? 0) : 0;
+    lastDrawn = drawnAs;
     const title = el('div', 'lektor-side-title');
     const close = button(words().close, goAway, 'lektor-side-close');
     close.append(icon('fold-down'));
-    title.append(icon('lektor'), el('span', '', titleOfScreen(state.screen)), close);
-    side.replaceChildren(title, body);
+    title.append(icon('lektor'), el('span', '', titleNow()), close);
+    const body = el('div', 'lektor-side-body');
+    body.append(...step.content);
+    const buttons = el('div', 'lektor-side-buttons');
+    buttons.append(...[step.back, step.main].filter((one): one is HTMLButtonElement => one !== undefined && one !== null));
+    const dock = el('div', 'lektor-side-dock');
+    dock.append(buttons);
+    side.replaceChildren(title, body, ...(buttons.childElementCount > 0 ? [dock] : []));
+    body.scrollTop = keptScroll;
   }
 
-  /** He wants it gone: whatever it was doing stops, and nothing brings it back but him. */
+  /** He wants it gone: a utisak being read stops (spec §7), and the screen to come back to is step 2. */
   function goAway(): void {
-    const state = stateNow();
-    settleWhatWasUnderway(state);
-    isKeyJustSaved = false;
-    state.isOpen = false;
-    render();
-  }
-
-  /** Whatever was underway stops, and what is left to come back to is a screen that doesn't depend on it. */
-  function settleWhatWasUnderway(state: TextState): void {
+    if (request?.controller !== null && request !== null) giveUp();
+    checking?.abort();
+    checking = null;
+    isOpen = false;
     isAboutAiOpen = false;
-    if (state.screen === 'reading' || state.screen === 'connecting') {
-      stopWorking();
-      state.screen = state.feedback === '' ? 'start' : 'response';
-    }
-    if (state.screen === 'key') {
-      stopWorking();
-      for (const which of REAL_LEVELS) {
-        if (keyNotes[which] === 'checking') keyNotes[which] = null;
-      }
-      settleOnLevelWithKey();
-      if (hasKey()) state.screen = 'start';
-    }
-  }
-
-  /** A dialog panel with only a sentence and a way out, for while there is nothing to review yet. */
-  function plainPanel(content: HTMLElement, buttons: HTMLButtonElement[]): HTMLElement {
-    const panel = el('div', 'panel review-panel lektor-panel');
-    panel.setAttribute('role', 'dialog');
-    panel.setAttribute('aria-modal', 'true');
-    const top = document.createElement('header');
-    top.append(titleOf({ mark: 'lektor', label: words().review.title, name: titleFrom(editor.value) }));
-    const middle = el('div', 'review-panes');
-    const body = el('div', 'review-text review-text-empty');
-    body.append(content);
-    middle.append(body);
-    const bottom = document.createElement('footer');
-    bottom.append(...buttons);
-    panel.append(top, middle, bottom);
-    return panel;
-  }
-
-  function showCorrectionFailure(failure: LektorFailure): void {
-    const finalSentence = lastFinalSentence;
-    const retry = (): void => {
-      failed.close();
-      void correct();
-    };
-    const failed = showAsModal(
-      dialog,
-      plainPanel(problem(finalSentence === '' ? words().failures[failure] : finalSentence, lastServiceSaid), [
-        ...(finalSentence === '' ? [button(words().tryAgain, retry, 'keep')] : []),
-        button(words().close, () => failed.close()),
-      ]),
-      () => failed.close(),
-    );
-  }
-
-  /** Opened at once, because the dialog is what keeps the text still while the corrections are made. */
-  async function correct(): Promise<void> {
-    const state = stateNow();
-    const service = ai();
-    const chosenLevel = level;
-    const controller = new AbortController();
-    const leave = (): void => controller.abort();
-    const waitingPanel = plainPanel(waitingLine(words().correcting, words().waits[level].correcting, Date.now(), WAITS[level].correctingLongS), [button(words().stop, leave)]);
-    const waiting = showAsModal(dialog, waitingPanel, leave);
-    try {
-      if (!(await parts.prepareToSend())) throw new LektorServiceError('not-brought-over', 'not on disk');
-      const name = parts.textNameNow();
-      const text = editor.value;
-      const model = service.correctionModel(state.preset);
-      log.info('The Lektor was asked for corrections', { level, preset: state.preset, model });
-      const { preset, note } = state;
-      const asked = { text, preset, instruction: PRESET_PROMPTS[preset], note };
-      const proposed = withHisFilingMarks(text, await service.corrections(asked, controller.signal));
-      Object.assign(state, withCorrections(state, text, { preset, level: chosenLevel, note, proposed, model }));
-      keepResults(name, state);
-      stopWaitNote();
-      waiting.close();
-      review(text, proposed, chosenLevel, preset);
-    } catch (error) {
-      stopWaitNote();
-      waiting.close();
-      const failure = failedWith(error, service);
-      if (failure !== null) showCorrectionFailure(failure);
-    }
-  }
-
-  /** What he took goes in with a version kept first; if that can't be done nothing changes, and the proposal is still there. */
-  async function apply(result: string, state: TextState): Promise<void> {
-    if (!(await parts.applyCorrections(result))) {
-      render();
-      return;
-    }
-    // Taken, so nothing is left to come back to. The comment was about the text before them, and says so when he next looks.
-    state.proposals = [];
-    state.proposalsFor = '';
-    state.hasTakenCorrections = true;
-    keepResults(parts.textNameNow(), state);
-    log.info('Corrections from the Lektor were put in the text');
-    finishWithReview(state);
-    flashToast(parts.toast, words().applied, words().appliedHow);
+    log.info('Closed the Lektor');
+    render();
   }
 
   /**
-   * The job he came for is over either way, and his text is what is in front of him. A sidebar left
-   * asking him to send it again would look like one more thing he has to do.
+   * What it opens on (spec §6): the utisak whenever this text has one, however much the text has
+   * changed since; otherwise the menu, or step 2 for a text whose utisak was cancelled by closing.
    */
-  function finishWithReview(state: TextState): void {
-    state.screen = 'start';
-    state.isOpen = false;
-    render();
-  }
-
-  function review(text: string, proposed: string, madeBy: string, preset: PresetId): void {
-    const state = stateNow();
-    const proposal = { title: titleFrom(text), current: text, proposed, testNote: madeBy === 'fake' ? words().review.testNote : null, madeBy: serviceLine(madeBy, words().levels, words().serviceLabel), kind: words().presets[preset], showsOnlyNew: preset === 'rewrite' };
-    const close = openLektorDialog(dialog, parts.confirmPane, proposal, parts.languageNow(), {
-      onApply: (result) => {
-        close();
-        void apply(result, state);
-      },
-      onClose: () => {
-        close();
-        finishWithReview(state);
-      },
-    });
-  }
-
   async function openSidebar(): Promise<void> {
-    const state = stateNow();
-    await readSettingsOnce();
+    await connection.readSettingsOnce();
+    const state = stateOf(openKey);
     await readKeptOnce(state);
-    // Never something that depends on how he last left it: what the Lektor said, or the step that asks it,
-    // when it has said nothing yet or what it said is about a text he has since changed a lot and come back to.
-    if (state.feedback !== '') state.screen = standingNow(state).kind === 'outdated' ? 'start' : 'response';
-    state.isOpen = true;
-    log.info('Opened the Lektor', { level });
-    // A response he already has needs no internet to read.
-    if (state.feedback === '') void checkConnection();
-    else render();
+    if (state.feedback !== '') state.screen = 'response';
+    else if (state.screen !== 'start') state.screen = 'menu';
+    isOpen = true;
+    if (request !== null) {
+      render();
+      return;
+    }
+    await checkOpening();
   }
 
   opener.addEventListener('click', () => {
-    if (stateNow().isOpen) {
+    if (isOpen) {
       goAway();
       return;
     }
@@ -1069,12 +803,12 @@ export function createLektor(parts: LektorParts): Lektor {
 
   /* Back online while he is looking at the message. */
   window.addEventListener('online', () => {
-    if (stateNow().isOpen && stateNow().screen === 'offline') void checkConnection();
+    if (isOpen && panelScreen === 'offline') void checkOpening();
   });
 
   editor.addEventListener('input', () => {
     if (waitingToRedraw !== null) clearTimeout(waitingToRedraw);
-    // A beat after he stops, and never while the response is still appearing.
+    // A beat after he stops, and never while the utisak is still appearing.
     waitingToRedraw = setTimeout(() => {
       if (revealTimer === null) render();
     }, 500);
@@ -1091,14 +825,39 @@ export function createLektor(parts: LektorParts): Lektor {
         render();
         return;
       }
-      settleWhatWasUnderway(stateNow());
       openKey = now;
+      isAboutAiOpen = false;
+      // Back on the text whose utisak was pinned: it is shown in its own place now.
+      if (request !== null && request.key === openKey) {
+        isReadyElsewhere = false;
+        isFailedElsewhere = false;
+        if (request.controller === null) request = null;
+      }
+      const state = stateOf(openKey);
+      if (isOpen) {
+        void readKeptOnce(state).then(() => {
+          if (state.feedback !== '' && state.screen === 'menu') state.screen = 'response';
+          render();
+        });
+      }
       render();
     },
     startedNewText(): void {
-      settleWhatWasUnderway(stateNow());
       states.delete(NO_NOTE);
       openKey = NO_NOTE;
+      render();
+    },
+    listChanged(isListed): void {
+      if (request === null || request.key === NO_NOTE || isListed(request.key)) return;
+      // The text was deleted or archived while its utisak was being read: stopped at once, and said so.
+      const wasReading = request.controller !== null;
+      request.controller?.abort();
+      if (wasReading) goneTitle = request.title;
+      states.delete(request.key);
+      request = null;
+      isReadyElsewhere = false;
+      isFailedElsewhere = false;
+      log.info('A text being read by the Lektor was put away', { wasReading });
       render();
     },
   };

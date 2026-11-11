@@ -1083,7 +1083,7 @@ function onlyNewCheckbox(): HTMLElement {
   box.type = 'checkbox';
   box.checked = review.showsOnlyNew();
   box.addEventListener('change', () => review.setShowsOnlyNew(box.checked));
-  only.append(box, strings('sr').lektor.review.onlyNew);
+  only.append(box, 'Prikaži tekst kakav će biti');
   return only;
 }
 

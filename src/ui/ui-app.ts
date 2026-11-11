@@ -975,6 +975,8 @@ async function reload(): Promise<void> {
   // over the telephone — and it costs one line per delete or restore.
   log.info('The list now holds', { texts: notes.length, deleted: putAway.countNow() });
   draw();
+  // A text the Lektor is reading may have been deleted or archived: it stops, and says so.
+  tellLektor((it) => it.listChanged((handle) => notes.some((note) => note.handle === handle)));
 }
 
 
@@ -1274,8 +1276,7 @@ export async function startApp(runningOn: Host): Promise<void> {
       textNameNow: openName,
       prepareToSend: prepareForLektor,
       applyCorrections: applyLektorCorrections,
-      fakeBehaviour: fakeLektor,
-      realReply: host.realLektorReply ?? ((text, preset) => savedTestReply(host.files, host.appFolder, log, text, preset)),
+      openText: (key) => void open(key),
     });
   } catch (error: unknown) {
     // His writing is what this window is for, and the app starts without the Lektor rather than not at all.

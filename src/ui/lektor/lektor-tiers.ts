@@ -31,7 +31,8 @@ export const freeModelsFor = (work: Work): readonly string[] => (fallsBack(work)
  * what older versions kept: `free` (Gemini direct) and `thorough` (Opus direct).
  */
 export function tierOfModel(model: string): Tier | null {
-  if (model.startsWith('anthropic/') || model.startsWith('claude') || model === 'thorough') return 'paid-opus';
+  // `saved/…`: a real Opus reply the browser build's fake network gives back for a sample text.
+  if (model.startsWith('anthropic/') || model.startsWith('claude') || model.startsWith('saved/') || model === 'thorough') return 'paid-opus';
   if (model.startsWith('google/')) return 'paid-flash';
   if (model.startsWith('gemini') || model === 'free') return 'free';
   return null;
