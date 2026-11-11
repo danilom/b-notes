@@ -287,6 +287,7 @@ function responseScreen(): Step {
     screen = 'start';
     // A new start of the step, so Besplatni again, whatever wrote the comment: nothing is chosen for him from how he left it.
     state.choice = 'free';
+    commentPaidIfSlow.isTicked = paidIfSlowByDefault();
     render();
   }, 'lektor-again');
   ask.append(icon('back'), el('span', '', 'Traži novi utisak'));
@@ -798,7 +799,10 @@ function setScreen(value: string | boolean): void {
     return;
   }
   // Opening the first step afresh, as he would: on Besplatni.
-  if (value === 'start') state.choice = 'free';
+  if (value === 'start') {
+    state.choice = 'free';
+    commentPaidIfSlow.isTicked = paidIfSlowByDefault();
+  }
   if (!isWindow) return;
   render();
   if (isWindowCase(value)) openCorrectionsWindowAt(value);
