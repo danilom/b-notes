@@ -3,6 +3,7 @@ import { createServer } from 'node:http';
 import path from 'node:path';
 
 import { askLektorService, lektorLogDetail, lektorRequestFrom } from '../src/platform/lektor-remote.ts';
+import { PRESET_PROMPTS } from '../src/ui/lektor/lektor-presets.ts';
 
 /** The browser build, which is the one carrying the mock store. */
 const root = path.resolve('dist-browser');
@@ -70,8 +71,8 @@ async function readDiffSamples() {
 }
 
 /*
-  A real service's corrections of a sample text, for the test Lektor to hand back instead of its
-  own made-up ones, so the review can be tried on what a real one sends. Kept beside the text as
+  A real service's corrections of a sample text, for the browser build's fake network to hand back
+  instead of its own made-up ones, so the review can be tried on what a real one sends. Kept beside the text as
   `<name>.lektor-<preset>.txt`, in testdata/ like the rest, and found by the text's title, as
   the app finds its own: a text changed to try something else still gets them. Null when there
   are none.
@@ -93,10 +94,13 @@ async function readRealReply(text, preset) {
   return null;
 }
 
+/** Which kind of correction an instruction asks for, by the preset's own words in it. */
+const presetOf = (system) => Object.entries(PRESET_PROMPTS).find(([, prompt]) => system.includes(prompt))?.[0] ?? '';
+
 async function serveRealReply(request, response) {
   try {
-    const { text, preset } = await bodyOf(request);
-    const proposed = typeof text === 'string' && typeof preset === 'string' ? await readRealReply(text, preset) : null;
+    const { text, system } = await bodyOf(request);
+    const proposed = typeof text === 'string' && typeof system === 'string' ? await readRealReply(text, presetOf(system)) : null;
     response.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     response.end(JSON.stringify({ proposed }));
   } catch (error) {

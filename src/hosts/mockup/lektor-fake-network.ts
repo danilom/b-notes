@@ -54,8 +54,51 @@ export interface FakeDay {
   balance?: number | null;
   /** By model, in turn; the last is repeated. Unnamed models answer after a short queue. */
   turns?: Readonly<Record<string, readonly FakeTurn[]>>;
-  /** A real reply saved for this text, to come back as the correction instead of a made-up one. */
-  savedCorrection?: (text: string) => Promise<string | null>;
+  /** A real reply saved for this text and this kind (by its instruction), to come back as the correction instead of a made-up one. */
+  savedCorrection?: (text: string, system: string) => Promise<string | null>;
+}
+
+/** Where the browser build looks for a day, in its pretend files' app folder. */
+export const FAKE_DAY_FILE = 'lektor-fake-network.json';
+
+/** The model a saved reply comes back as: real Opus words, marked as saved so the review says so. */
+export const SAVED_REPLY_MODEL = 'saved/anthropic/claude-opus-5.5';
+
+const TURN_KINDS: readonly FakeTurn['kind'][] = ['answer', 'busy', 'busy-after-queue', 'daily-limit', 'queue-forever', 'no-credit', 'cut-off', 'declined', 'no-host'];
+
+function answerFrom(turn: Record<string, unknown>): FakeTurn {
+  const answer: Extract<FakeTurn, { kind: 'answer' }> = { kind: 'answer' };
+  for (const name of ['queueMs', 'thinkMs', 'writeMs', 'cost'] as const) {
+    const value = turn[name];
+    if (typeof value === 'number') answer[name] = value;
+  }
+  if (typeof turn['words'] === 'string') answer.words = turn['words'];
+  return answer;
+}
+
+function turnFrom(raw: unknown): FakeTurn | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const turn = raw as Record<string, unknown>;
+  const kind = TURN_KINDS.find((known) => known === turn['kind']);
+  if (kind === undefined) return null;
+  if (kind === 'busy-after-queue') return { kind, queueMs: typeof turn['queueMs'] === 'number' ? turn['queueMs'] : 30_000 };
+  return kind === 'answer' ? answerFrom(turn) : { kind };
+}
+
+/** A day as a test wrote it, checked: anything it doesn't recognise is left out, and anything but an object gives null. */
+export function fakeDayFrom(raw: unknown): FakeDay | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const { isOffline, deadKeys, balance, turns } = raw as Record<string, unknown>;
+  const day: { -readonly [K in keyof FakeDay]: FakeDay[K] } = {};
+  if (typeof isOffline === 'boolean') day.isOffline = isOffline;
+  if (Array.isArray(deadKeys)) day.deadKeys = deadKeys.filter((one): one is FakeProvider => one === 'gemini' || one === 'openrouter');
+  if (typeof balance === 'number' || balance === null) day.balance = balance;
+  if (typeof turns === 'object' && turns !== null) {
+    day.turns = Object.fromEntries(
+      Object.entries(turns).flatMap(([model, list]) => (Array.isArray(list) ? [[model, list.map(turnFrom).filter((turn): turn is FakeTurn => turn !== null)]] : [])),
+    );
+  }
+  return day;
 }
 
 /* Copied from test/fixtures/lektor-api/, where they were recorded. */
@@ -138,10 +181,12 @@ export function createFakeNetwork(day: FakeDay, clock: FakeClock = BROWSER_CLOCK
       stop.addEventListener('abort', onStop, { once: true });
     });
 
-  async function wordsFor(request: LektorRequest, turn: Extract<FakeTurn, { kind: 'answer' }>): Promise<string> {
-    if (turn.words !== undefined) return turn.words;
-    if (!isCorrection(request)) return FAKE_UTISAK;
-    return (await day.savedCorrection?.(request.input)) ?? fakeCorrectionOf(request.input);
+  /** The words, and the model they come back as: a saved reply is real Opus, said to be saved. */
+  async function wordsFor(request: LektorRequest, turn: Extract<FakeTurn, { kind: 'answer' }>): Promise<{ words: string; model: string }> {
+    if (turn.words !== undefined) return { words: turn.words, model: request.model };
+    if (!isCorrection(request)) return { words: FAKE_UTISAK, model: request.model };
+    const saved = (await day.savedCorrection?.(request.input, request.system)) ?? null;
+    return saved === null ? { words: fakeCorrectionOf(request.input), model: request.model } : { words: saved, model: SAVED_REPLY_MODEL };
   }
 
   async function answer(request: LektorRequest, turn: Extract<FakeTurn, { kind: 'answer' }>, stop: AbortSignal, onProgress: (progress: LektorProgress) => void): Promise<LektorResponse> {
@@ -150,14 +195,14 @@ export function createFakeNetwork(day: FakeDay, clock: FakeClock = BROWSER_CLOCK
     onProgress({ kind: 'started', model: request.model });
     onProgress({ kind: 'thinking' });
     await wait(turn.thinkMs ?? 1000, stop);
-    const words = await wordsFor(request, turn);
+    const { words, model } = await wordsFor(request, turn);
     for (const share of [0.25, 0.5, 0.75, 1]) {
       onProgress({ kind: 'writing', characters: Math.round(words.length * share) });
       await wait((turn.writeMs ?? 1000) / 4, stop);
     }
-    if (isFree) return { status: 200, reply: { text: words, status: 'completed', model: request.model, usage: null, error: null } };
+    if (isFree) return { status: 200, reply: { text: words, status: 'completed', model, usage: null, error: null } };
     const cost = turn.cost ?? (request.model.startsWith('anthropic/') ? 0.05 : 0.01);
-    return { status: 200, reply: { text: words, finish: 'stop', model: request.model, cost, usage: null, error: null } };
+    return { status: 200, reply: { text: words, finish: 'stop', model, cost, usage: null, error: null } };
   }
 
   async function refuse(request: LektorRequest, turn: FakeTurn, stop: AbortSignal): Promise<LektorResponse> {

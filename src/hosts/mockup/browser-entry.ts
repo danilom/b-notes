@@ -1,7 +1,9 @@
+import { FileMissing } from '../../platform/file-system.ts';
 import type { ChosenPlaces, Host } from '../../platform/host.ts';
 import type { Log } from '../../platform/logging.ts';
 import { startApp } from '../../ui/ui-app.ts';
-import { askThroughDevServer } from './lektor-through-dev-server.ts';
+import { FAKE_DAY_FILE, createFakeNetwork, type FakeNetwork, fakeDayFrom } from './lektor-fake-network.ts';
+import { askThroughDevServer, savedReplyFromDevServer } from './lektor-through-dev-server.ts';
 import { mockFileList } from './mock-file-list.ts';
 import { createMockOtherEditors, pretendRunning, pretendTray } from './mock-other-editors.ts';
 import {
@@ -31,24 +33,6 @@ const consoleLog: Log = {
  */
 function setZoom(factor: number): void {
   document.documentElement.style.zoom = String(factor);
-}
-
-/** A real reply the dev server keeps for this text, or null: none saved, or no dev server to ask. */
-async function realReplyFromDevServer(text: string, preset: string): Promise<string | null> {
-  try {
-    const response = await fetch('/lektor-real-reply', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, preset }),
-    });
-    if (!response.ok) throw new Error(`The dev server answered ${String(response.status)}`);
-    const body: unknown = await response.json();
-    const proposed = typeof body === 'object' && body !== null && 'proposed' in body ? body.proposed : null;
-    return typeof proposed === 'string' ? proposed : null;
-  } catch (error) {
-    console.warn('No real Lektor reply to show; the test Lektor makes its own', error);
-    return null;
-  }
 }
 
 /** What the interface asked to have run before the window goes. */
@@ -119,6 +103,29 @@ function offerTheTestHelpers(): void {
 }
 
 /**
+ * The fake network, where a GUI test (or someone trying the Lektor out) has written a day for it
+ * into the pretend files: `Podaci/lektor-fake-network.json`, a `FakeDay`. A text with a saved Opus
+ * reply in testdata gets that reply, through the dev server.
+ */
+async function fakeNetworkIfSet(): Promise<FakeNetwork | null> {
+  let raw: string;
+  try {
+    raw = await createMockFileSystem().read(`${MOCK_APP_FOLDER}/${FAKE_DAY_FILE}`);
+  } catch (error) {
+    // Absent everywhere but where a test or a person put it: the ordinary answer, not worth a line.
+    if (error instanceof FileMissing) return null;
+    throw error;
+  }
+  const day = fakeDayFrom(JSON.parse(raw));
+  if (day === null) {
+    console.warn('The fake network day could not be read; the dev server is used instead');
+    return null;
+  }
+  console.info('The Lektor talks to the fake network');
+  return createFakeNetwork({ ...day, savedCorrection: savedReplyFromDevServer });
+}
+
+/**
  * The browser's host, where the interface is developed.
  *
  * It provides the same capabilities the packaged app does, backed by a pretend
@@ -126,6 +133,7 @@ function offerTheTestHelpers(): void {
  */
 async function main(): Promise<void> {
   await seedIfEmpty();
+  const fakeNetwork = await fakeNetworkIfSet();
 
   const host: Host = {
     runMode: 'browser',
@@ -143,9 +151,9 @@ async function main(): Promise<void> {
       uses Electron's instead of this.
     */
     copyToClipboard: (text: string) => navigator.clipboard.writeText(text),
-    // Through the dev server, standing in for the main process: the page may not reach those addresses itself.
-    askLektorService: askThroughDevServer,
-    realLektorReply: realReplyFromDevServer,
+    // Through the dev server, standing in for the main process: the page may not reach those addresses
+    // itself. Or, where a test has set a day for it, the fake network, which reaches nothing.
+    askLektorService: fakeNetwork?.ask ?? askThroughDevServer,
     logsFolder: `${MOCK_APP_FOLDER}/logs`,
     /*
       Nothing here can show a folder or ask for one: a browser tab has no

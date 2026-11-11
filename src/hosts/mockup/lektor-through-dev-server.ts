@@ -35,6 +35,23 @@ export async function readLektorLines(body: ReadableStream<Uint8Array>, onProgre
   return answer;
 }
 
+/**
+ * A real reply the dev server keeps in testdata for a sample text with this one's title, for the
+ * kind of correction the instruction asks for; null when there is none, or no dev server to ask.
+ */
+export async function savedReplyFromDevServer(text: string, system: string): Promise<string | null> {
+  try {
+    const response = await fetch('/lektor-real-reply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, system }) });
+    if (!response.ok) throw new Error(`The dev server answered ${String(response.status)}`);
+    const body: unknown = await response.json();
+    const proposed = typeof body === 'object' && body !== null && 'proposed' in body ? body.proposed : null;
+    return typeof proposed === 'string' ? proposed : null;
+  } catch (error) {
+    console.warn('No saved Lektor reply to give back; the fake network makes its own', error);
+    return null;
+  }
+}
+
 /** Answers rather than rejects, as the packaged app's does. */
 export async function askThroughDevServer(request: LektorRequest, stop: AbortSignal, onProgress: (progress: LektorProgress) => void): Promise<LektorResponse> {
   try {
