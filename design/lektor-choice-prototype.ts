@@ -8,7 +8,7 @@
   classes and icons, piece for piece as lektor-sidebar.ts builds its screens.
 */
 import { icon } from '../src/ui/icons.ts';
-import { type ReviewTitle, type WindowCase, corrections, openCorrectionsWindow, setCorrectionsStale, setKeysOpener, openCorrectionsWindowAt, redrawWindowIfOpen, setReviewHighlight, setReviewLook, setReviewSample, setReviewTitle } from './lektor-corrections-window-prototype.ts';
+import { type ReviewTitle, type WindowCase, corrections, openCorrectionsReview, openCorrectionsWindow, setCorrectionsStale, setKeysOpener, openCorrectionsWindowAt, redrawWindowIfOpen, setReviewHighlight, setReviewLook, setReviewSample, setReviewTitle } from './lektor-corrections-window-prototype.ts';
 import { type KeyCheck, deadKeyNotice, isAnyKeyDead, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { type PaidIfSlow, lektorChoice, paidIfSlowByDefault } from './lektor-choice-radios.ts';
 import { type CommentFailure, commentFailure, commentRun, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
@@ -602,10 +602,11 @@ const CONTROLS: readonly PrototypeControl[] = [
       { value: 'broke-after-slow', label: '4g. Prozor: besplatni spor, plaćeni bez novca' },
       { value: 'text-gone', label: '6. Utisak: tekst obrisan dok AI Lektor čita' },
       { value: 'dead-key-send', label: '5. Utisak: ključ ne radi pri slanju' },
+      { value: 'review', label: '4h. Prozor: pregled ispravki (Slova i zarezi)' },
       { value: 'keys', label: 'API ključevi' },
     ],
-    // Where the work is now: the panel's new first step.
-    value: 'menu',
+    // Where the work is now: the review's way to show the changes.
+    value: 'review',
   },
   { id: 'stale', label: 'Tekst promenjen posle utiska', value: false },
   {
@@ -782,7 +783,7 @@ function setScreen(value: string | boolean): void {
   // A screen picked here is the open text's, from a clean start: no request pinning the panel.
   requestSlot = openSlot;
   isReadyElsewhere = false;
-  const isWindow = value === 'window' || isWindowCase(value);
+  const isWindow = value === 'window' || value === 'review' || isWindowCase(value);
   const named: Screen = value === 'keys' ? 'keys' : value === 'start' ? 'start' : 'menu';
   screen = value === 'response' || isWindow ? 'response' : named;
   if (value === 'dead-key-send') {
@@ -800,6 +801,7 @@ function setScreen(value: string | boolean): void {
   if (!isWindow) return;
   render();
   if (isWindowCase(value)) openCorrectionsWindowAt(value);
+  else if (value === 'review') openCorrectionsReview();
   else openCorrectionsWindow();
 }
 
@@ -867,5 +869,5 @@ for (const item of document.querySelectorAll('.prototype-list p')) {
 }
 // On the Panel switch's default, so the page and the switch agree.
 openTextInPrototype(TEXT_TITLE);
-setScreen('menu');
+setScreen('review');
 render();

@@ -1203,6 +1203,12 @@ export function openCorrectionsWindow(): void {
   draw();
 }
 
+/** The harness's straight way to the review, of Slova i zarezi from the free Lektor, as Pogledaj opens it. */
+export function openCorrectionsReview(): void {
+  openCorrectionsWindow();
+  openReview('letters', 'free');
+}
+
 /** A state of the window the harness can open straight away, without sending and waiting for it. */
 export type WindowCase = 'waiting' | 'queued' | 'busy' | 'no-credit' | 'offline' | 'bad-key' | 'spent' | 'broke-after-slow';
 
