@@ -35,9 +35,7 @@ import { openConfirmDialog } from './dialogs/confirm-dialog.ts';
 import { createCtrlCard } from './ctrl-card.ts';
 import { type FindInText, createFindInText } from './find-in-text.ts';
 import { icon } from './icons.ts';
-import { readFakeBehaviour } from './lektor/lektor-fake-setting.ts';
 import { type Lektor, createLektor } from './lektor/lektor-sidebar.ts';
-import { savedTestReply } from './lektor/lektor-test-replies.ts';
 import { type KeptCopiesView, createKeptCopies } from './versions/kept-copies.ts';
 import { showLostTexts } from './lost-texts.ts';
 import { untilOtherEditorsClose } from './other-editors-gate.ts';
@@ -1149,7 +1147,6 @@ export async function startApp(runningOn: Host): Promise<void> {
   // effect next time the app opens, which is when whoever edited it is there.
   const advanced = await readAdvanced(host.files, host.appFolder);
   const testModeOn = await testModeIsOn(host);
-  const fakeLektor = await readFakeBehaviour(host.files, host.appFolder, log);
   if (testModeOn) testMode = startTestMode(host, listPane, (said, how) => flashToast(toast, said, how));
   createCtrlCard({
     within: writingBox,
@@ -1170,7 +1167,6 @@ export async function startApp(runningOn: Host): Promise<void> {
     settingsNow: () => settings,
     advancedNow: () => advanced,
     testModeNow: () => testModeOn,
-    fakeLektorNow: () => fakeLektor,
     preview: (appearance) => {
       showAppearanceOf(appearance);
       // Everything else in the panel is a stylesheet away. This one is a
