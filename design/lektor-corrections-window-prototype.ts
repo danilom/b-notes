@@ -964,15 +964,26 @@ function reviewWhoLine(preset: Preset, by: Choice, kept: Kept | undefined): HTML
 
 /*
   New, to try (2026-11-11): the checkbox "Prikaži tekst kakav će biti" was too easy to miss, small at
-  the far end of the legend's line. The harness's "Prikaz teksta u pregledu" switches between it and
-  the ways proposed in its place, so they can be judged side by side on a real diff.
+  the far end of the legend's line. In its place, two radio rows, each showing what it shows, drawn
+  as the legend draws its samples: the change as old and new, or the text as it will be. At the right
+  of the two lines above the text, where there was room, so it costs no height. The harness switches
+  between stacked and side by side, a title or none, and the old checkbox, to judge them together.
+  Tried and dropped the same day: two joined buttons on a line of their own (a line of height, and
+  words alone too subtle), and a phone's on/off switch.
 */
-export type ReviewLook = 'checkbox' | 'two-buttons' | 'switch';
+export type ReviewLook = 'stacked' | 'side' | 'checkbox';
+export type ReviewTitle = 'none' | 'above' | 'left';
 
-let reviewLook: ReviewLook = 'two-buttons';
+let reviewLook: ReviewLook = 'stacked';
+let reviewTitle: ReviewTitle = 'left';
 
 export function setReviewLook(look: ReviewLook): void {
   reviewLook = look;
+  if (corrections.view === 'review') draw();
+}
+
+export function setReviewTitle(title: ReviewTitle): void {
+  reviewTitle = title;
   if (corrections.view === 'review') draw();
 }
 
@@ -1006,10 +1017,9 @@ function redrawReviewText(): void {
       { showTidied: true, editing: review.editing() },
     ),
   );
-  // The view control says which way it is shown, so it follows the review's own state.
-  for (const control of document.querySelectorAll<HTMLElement>('[data-only-new]')) {
-    const isOnlyNew = control.dataset['onlyNew'] === 'true';
-    control.setAttribute(control.getAttribute('role') === 'switch' ? 'aria-checked' : 'aria-pressed', String(isOnlyNew === review.showsOnlyNew()));
+  // The view control follows the review's own state, which outlives the drawing of the window.
+  for (const one of document.querySelectorAll<HTMLInputElement>('input[data-only-new]')) {
+    one.checked = (one.dataset['onlyNew'] === 'true') === review.showsOnlyNew();
   }
   const box = document.querySelector<HTMLInputElement>('.lektor-only-new input');
   if (box !== null) box.checked = review.showsOnlyNew();
@@ -1026,45 +1036,58 @@ function onlyNewCheckbox(): HTMLElement {
   return only;
 }
 
-/**
- * Two buttons, one always pressed, as the app's Izgled settings choose: both ways named, so neither is
- * hidden behind a box he must think to tick, and the pressed one filled, which he already knows.
- */
-function onlyNewButtons(): HTMLElement {
-  const group = el('div', 'lektor-view-choice');
-  group.setAttribute('role', 'group');
+/** A word drawn with the marks the text itself uses, at the legend's size. */
+function sampleWord(word: string, marks: string): HTMLElement {
+  return el('span', marks, word);
+}
+
+/** One way to show the text: a radio, then a sample of what it looks like, the whole row one target. */
+function viewOption(isOnlyNew: boolean, name: string, samples: readonly HTMLElement[]): HTMLElement {
+  const option = el('label', 'lektor-view-option');
+  const input = el('input');
+  input.type = 'radio';
+  input.name = 'lektor-view';
+  input.dataset['onlyNew'] = String(isOnlyNew);
+  input.checked = isOnlyNew === review.showsOnlyNew();
+  input.setAttribute('aria-label', name);
+  input.addEventListener('change', () => review.setShowsOnlyNew(isOnlyNew));
+  const shown = el('span', 'lektor-view-sample');
+  shown.append(...samples);
+  option.append(input, shown);
+  return option;
+}
+
+/** The two ways, each said by a sample rather than in words; named for a screen reader only. */
+function viewChoice(): HTMLElement {
+  const group = el('div', `lektor-view-choice is-${reviewLook} title-${reviewTitle}`);
+  group.setAttribute('role', 'radiogroup');
   group.setAttribute('aria-label', 'Prikaži tekst');
-  const way = (isOnlyNew: boolean, label: string): HTMLButtonElement => {
-    const one = button(label, () => review.setShowsOnlyNew(isOnlyNew), 'choice');
-    one.dataset['onlyNew'] = String(isOnlyNew);
-    one.setAttribute('aria-pressed', String(isOnlyNew === review.showsOnlyNew()));
-    return one;
-  };
-  const ways = el('div', 'choices');
-  ways.append(way(false, 'sa izmenama'), way(true, 'kakav će biti'));
-  group.append(el('span', 'lektor-view-choice-label', 'Prikaži tekst:'), ways);
+  if (reviewTitle !== 'none') group.append(el('span', 'lektor-view-title', 'Prikaži:'));
+  const options = el('div', 'lektor-view-options');
+  options.append(
+    viewOption(false, 'sa izmenama', [sampleWord('staro', 'diff-gone diff-struck'), sampleWord('novo', 'diff-new')]),
+    viewOption(true, 'kakav će biti', [sampleWord('novo', 'diff-resolved')]),
+  );
+  group.append(options);
   return group;
 }
 
-/** A switch, as a phone has: bigger than the checkbox, and on or off at a glance. */
-function onlyNewSwitch(): HTMLElement {
-  const label = el('label', 'lektor-view-switch');
-  const toggle = button('', () => review.setShowsOnlyNew(!review.showsOnlyNew()), 'lektor-switch');
-  toggle.setAttribute('role', 'switch');
-  toggle.dataset['onlyNew'] = 'true';
-  toggle.setAttribute('aria-checked', String(review.showsOnlyNew()));
-  toggle.append(el('span', 'lektor-switch-knob'));
-  label.append(toggle, strings('sr').lektor.review.onlyNew);
-  return label;
-}
-
-/** The second line, how the text below is shown: what its marks mean, and, for the checkbox and the switch, the control beside them. */
+/** The legend's line, with today's checkbox at its right when that is the look being tried. */
 function reviewViewLine(legend: HTMLElement): HTMLElement {
   const line = el('div', 'lektor-review-row');
   line.append(legend);
   if (reviewLook === 'checkbox') line.append(onlyNewCheckbox());
-  if (reviewLook === 'switch') line.append(onlyNewSwitch());
   return line;
+}
+
+/** Who made them and what the marks mean, on the left; the way to show the text at their right. */
+function reviewHead(who: HTMLElement, legend: HTMLElement): HTMLElement {
+  const lines = el('div', 'lektor-review-lines');
+  lines.append(who, reviewViewLine(legend));
+  const head = el('div', 'lektor-review-head');
+  head.append(lines);
+  if (reviewLook !== 'checkbox') head.append(viewChoice());
+  return head;
 }
 
 /** His text in the review's own box, with the proposal's changes marked, drawn by the app's own diff view. */
@@ -1095,10 +1118,7 @@ function reviewPanel(preset: Preset): HTMLElement {
   );
   const body = el('div', 'review-body lektor-body');
   body.append(
-    reviewWhoLine(preset, by, kept),
-    // The buttons on a line of their own, before the legend: how the text is shown comes first, then what its marks mean.
-    ...(reviewLook === 'two-buttons' ? [onlyNewButtons()] : []),
-    reviewViewLine(legend),
+    reviewHead(reviewWhoLine(preset, by, kept), legend),
     reviewTextBox(),
   );
   const panes = el('div', 'review-panes');
