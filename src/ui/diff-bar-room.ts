@@ -65,43 +65,31 @@ export function removeBarRoom(box: HTMLElement): void {
   }
 }
 
+/** How much shorter the gap is than the bar, at top and bottom alike: a little, so the bar stands on it. */
+const SHORTER_THAN_BAR_PX = 2;
+
 /**
- * Makes room above the line `over` is on, as much as `needed` lacks of what is already
- * there. Nothing on the first line, where the box's own padding is the room.
+ * Opens a gap above the line `over` is on, as tall as the bar less a little, between that line
+ * and the one above, each keeping its usual spacing: the gap is the space added, shaded, and the
+ * bar sits centred on it. Nothing on the first line, where the box's own padding is the room.
  *
- * @param needed The height the bar takes above the line, its gap included.
+ * @returns The gap, for the bar to be centred on, or null where none was made.
  */
-export function makeBarRoom(box: HTMLElement, over: Element, needed: number): void {
+export function makeBarRoom(box: HTMLElement, over: Element, barHeight: number): HTMLElement | null {
   removeBarRoom(box);
   const line = over.getClientRects()[0];
-  if (line === undefined) return;
+  if (line === undefined) return null;
   const { start, aboveBottom } = lineStart(box, over, line.top);
-  if (aboveBottom === null) return;
-  // Even where there is room enough already, a gap of nothing goes in, to carry the shading.
-  const height = Math.max(0, Math.ceil(needed - (line.top - aboveBottom)));
+  if (aboveBottom === null) return null;
+  const height = Math.max(0, Math.round(barHeight - 2 * SHORTER_THAN_BAR_PX));
 
   const room = document.createElement('span');
   room.className = ROOM_CLASS;
   room.style.height = `${height}px`;
   if (start === null) over.before(room);
   else placeBefore(start, room);
-  shadeBetweenTheLines(room, over, aboveBottom);
   box.scrollTop += height;
-}
-
-/** Clear of the letters on either side, which a band right up to them would seem to touch. */
-const SHADE_CLEARANCE_PX = 2;
-
-/**
- * The shading reaches past the gap, up to the line above and down to the line the bar is
- * over, so the whole of the space the bar sits in is one band. Measured before the box scrolls.
- */
-function shadeBetweenTheLines(room: HTMLElement, over: Element, aboveBottom: number): void {
-  const gap = room.getBoundingClientRect();
-  const lineTop = over.getClientRects()[0]?.top ?? gap.bottom;
-  const up = Math.max(0, gap.top - aboveBottom - SHADE_CLEARANCE_PX);
-  const down = Math.max(0, lineTop - gap.bottom - SHADE_CLEARANCE_PX);
-  room.style.clipPath = `inset(-${up}px -100vmax -${down}px)`;
+  return room;
 }
 
 /**

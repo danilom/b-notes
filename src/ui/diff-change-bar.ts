@@ -202,6 +202,8 @@ export function createDiffChangeBar(
 
   let current: HTMLElement | null = null;
   let shownOver: Element | null = null;
+  /** The gap opened for the bar above its line, which it is centred on, if one was. */
+  let room: HTMLElement | null = null;
   let isEditing = false;
   /** Between a choice and the drawing it leads to: a second click then would choose twice. */
   let isLeaving = false;
@@ -356,10 +358,17 @@ export function createDiffChangeBar(
     const isLetter = over.classList.contains('diff-tidied-letter');
     const wanted = isLetter ? (line.left + line.right) / 2 - bar.offsetWidth / 2 : line.left;
     const left = Math.max(0, Math.min(wanted - frame.left, frame.width - bar.offsetWidth));
-    const top = line.top - frame.top - bar.offsetHeight - GAP_ABOVE_PX;
+    const top = topOver(line) - frame.top;
     const clear = clearOfStepper(left, top, line.bottom - frame.top + GAP_ABOVE_PX);
     bar.style.left = `${clear.left}px`;
     bar.style.top = `${clear.top}px`;
+  }
+
+  /** Centred on the gap opened for it, if there is one; otherwise just above the line. */
+  function topOver(line: DOMRect): number {
+    const gap = room?.isConnected === true ? room.getBoundingClientRect() : null;
+    if (gap === null) return line.top - bar.offsetHeight - GAP_ABOVE_PX;
+    return (gap.top + gap.bottom) / 2 - bar.offsetHeight / 2;
   }
 
   /**
@@ -397,7 +406,7 @@ export function createDiffChangeBar(
   function makeRoom(over: Element): void {
     if (editing.makesRoom !== true) return;
     bar.hidden = false;
-    makeBarRoom(box, over, bar.offsetHeight + 2 * GAP_ABOVE_PX);
+    room = makeBarRoom(box, over, bar.offsetHeight);
     onLinesMoved();
   }
 
@@ -407,6 +416,7 @@ export function createDiffChangeBar(
     for (const marked of box.querySelectorAll(`.${BAR_OVER}`)) marked.classList.remove(BAR_OVER);
     if (editing.makesRoom !== true) return;
     removeBarRoom(box);
+    room = null;
     onLinesMoved();
   }
 

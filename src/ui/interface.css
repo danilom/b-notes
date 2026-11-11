@@ -2855,7 +2855,7 @@ dialog::backdrop {
   The gap opened above the line the bar is over; its height is set where it is made. A shade
   darker, from edge to edge of the text area, so it is not taken for a blank line in his text:
   a shadow spread all round reaches the edges without widening the box, which would scroll
-  sideways. How far it reaches up and down, to the lines either side, is cut where it is made.
+  sideways, and is cut off at the gap's own top and bottom.
 */
 .diff-bar-room {
   display: block;
