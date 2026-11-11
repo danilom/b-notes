@@ -24,6 +24,10 @@ const preamble = element('preamble', HTMLInputElement);
 const barRoom = element('bar-room', HTMLInputElement);
 const bandLook = element('band-look', HTMLSelectElement);
 const barOnBand = element('bar-on-band', HTMLInputElement);
+const bandMotion = element('band-motion', HTMLInputElement);
+
+/** How long the band takes to open and close when it is asked to move slowly: short, a slide and not a show. */
+const BAND_MOTION_MS = 150;
 const view = element('view', HTMLElement);
 
 /** A sample of how the changes are drawn, at the legend's size, with the legend's own word. */
@@ -135,7 +139,7 @@ function render(): void {
       review.piecesNow(),
       { previous: words.changePrevious, next: words.changeNext, at: words.changeAt },
       // Without the editing, the view only shows: no bar, nothing decided, a click only makes a change current.
-      readOnly.checked ? { showTidied: tidying.value === 'coloured' } : { showTidied: tidying.value === 'coloured', editing: { ...review.editing(), makesRoom: barRoom.checked } },
+      readOnly.checked ? { showTidied: tidying.value === 'coloured' } : { showTidied: tidying.value === 'coloured', editing: { ...review.editing(), makesRoom: barRoom.checked, bandMotionMs: bandMotion.checked ? BAND_MOTION_MS : 0 } },
     ),
   );
   view.replaceChildren(column);
@@ -284,6 +288,22 @@ function lookSwitch(box: HTMLInputElement, mark: string): void {
 // The buttons straight on the band, chosen; the change on it too, asked for to try (Danilo, 2026-11-11).
 lookSwitch(barOnBand, 'bar-on-band');
 lookSwitch(element('change-on-band', HTMLInputElement), 'change-on-band');
+
+const BAND_MOTION_KEY = 'diff-prototype:band-motion';
+try {
+  // Off unless turned on: still to be seen (Danilo, 2026-11-12).
+  bandMotion.checked = localStorage.getItem(BAND_MOTION_KEY) === 'on';
+} catch (error) {
+  console.warn('Whether the band moves slowly could not be read back', error);
+}
+bandMotion.addEventListener('change', () => {
+  try {
+    localStorage.setItem(BAND_MOTION_KEY, bandMotion.checked ? 'on' : 'off');
+  } catch (error) {
+    console.warn('Whether the band moves slowly could not be remembered', error);
+  }
+  renderKeepingPlace();
+});
 
 element('swap', HTMLButtonElement).addEventListener('click', () => {
   [current.value, proposed.value] = [proposed.value, current.value];

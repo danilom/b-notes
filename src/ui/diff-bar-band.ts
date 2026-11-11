@@ -59,19 +59,80 @@ function lineStart(box: HTMLElement, over: Element, lineTop: number): { start: T
   return { start, isFirstLine: true };
 }
 
+/** How the band opens and closes: at once, or over `ms`, with something to do after each step. */
+export interface BandMotion {
+  ms?: number;
+  /** Lines moved: what is placed beside them goes again. */
+  onStep?: () => void;
+}
+
+/** The next step of each band moving now, and its sure end, to be cancelled if it is moved again. */
+const moving = new WeakMap<HTMLElement, { step: number; end: ReturnType<typeof setTimeout> }>();
+
+/** Past the motion's time, the end comes by a timer: where frames are held back, as for a window out of sight, it would never come. */
+const SURE_END_SLACK_MS = 60;
+
 /**
- * Takes the band out, and gives back the scroll it took. The bar goes back to `home`, hidden.
+ * Sets the band's height, and scrolls the box by as much as that changed, where the band was
+ * made to scroll it: so the line under it stays where it is and what is above moves.
  */
-export function closeBarBand(box: HTMLElement, bar: HTMLElement, home: HTMLElement): void {
+function setBandHeight(box: HTMLElement, band: HTMLElement, height: number): void {
+  const before = Number.parseFloat(band.style.height) || 0;
+  band.style.height = `${height}px`;
+  if (band.dataset['inPadding'] === 'true') band.style.marginTop = `-${height}px`;
+  if (band.dataset['scrolls'] === 'true') box.scrollTop += height - before;
+}
+
+/** From its height now to `to`, over `ms`, slowing at the end; at once where `ms` is nothing. */
+function moveBand(box: HTMLElement, band: HTMLElement, to: number, { ms = 0, onStep }: BandMotion, done?: () => void): void {
+  const before = moving.get(band);
+  if (before !== undefined) {
+    cancelAnimationFrame(before.step);
+    clearTimeout(before.end);
+  }
+  const from = Number.parseFloat(band.style.height) || 0;
+  const startedAt = performance.now();
+  const frame = (now: number): void => {
+    const share = ms <= 0 ? 1 : Math.min(1, (now - startedAt) / ms);
+    const eased = 1 - (1 - share) ** 3;
+    setBandHeight(box, band, from + (to - from) * eased);
+    onStep?.();
+    const going = moving.get(band);
+    if (share < 1 && going !== undefined) {
+      going.step = requestAnimationFrame(frame);
+      return;
+    }
+    if (going !== undefined) {
+      cancelAnimationFrame(going.step);
+      clearTimeout(going.end);
+    }
+    moving.delete(band);
+    done?.();
+  };
+  // The first step at once, which asks for the next: one chain of frames, and the timer behind it.
+  if (ms > 0) moving.set(band, { step: 0, end: setTimeout(() => frame(startedAt + ms), ms + SURE_END_SLACK_MS) });
+  frame(startedAt);
+}
+
+/**
+ * Takes the band out, and gives back the scroll it took, at once or shrinking over the motion's
+ * time. The bar goes back to `home`, hidden, at once.
+ */
+export function closeBarBand(box: HTMLElement, bar: HTMLElement, home: HTMLElement, motion: BandMotion = {}): void {
   for (const band of box.querySelectorAll<HTMLElement>(`.${BAND_CLASS}`)) {
     if (band.contains(bar)) {
       bar.hidden = true;
+      // Back to being placed from the top, as it is outside a band.
+      bar.style.bottom = '';
       home.append(bar);
     }
-    const parent = band.parentNode;
-    band.remove();
-    parent?.normalize();
-    box.scrollTop -= Number(band.dataset['scrolledBy'] ?? 0);
+    if (band.dataset['closing'] === 'true') continue;
+    band.dataset['closing'] = 'true';
+    moveBand(box, band, 0, motion, () => {
+      const parent = band.parentNode;
+      band.remove();
+      parent?.normalize();
+    });
   }
 }
 
@@ -81,6 +142,9 @@ export function closeBarBand(box: HTMLElement, bar: HTMLElement, home: HTMLEleme
  *
  * On the first line the box's own padding is the room already, so the band is drawn there,
  * pulled up by as much as it is tall: it takes no space and the line does not move.
+ *
+ * Over the motion's time the band grows from nothing, the box scrolling with it, while the bar
+ * stands where it ends up from the start: it hangs from the band's bottom, which stays at the line.
  *
  * @param home Where the bar goes back to when the band closes.
  * @param options.mayDrawInPadding False where the padding is taken, by the stepper with no
@@ -92,9 +156,9 @@ export function openBarBand(
   over: Element,
   bar: HTMLElement,
   home: HTMLElement,
-  { mayDrawInPadding = true } = {},
+  { mayDrawInPadding = true, ...motion }: { mayDrawInPadding?: boolean } & BandMotion = {},
 ): HTMLElement | null {
-  closeBarBand(box, bar, home);
+  closeBarBand(box, bar, home, motion);
   const line = over.getClientRects()[0];
   if (line === undefined) return null;
   const { start, isFirstLine } = lineStart(box, over, line.top);
@@ -104,18 +168,17 @@ export function openBarBand(
   // A span made a block: it may go in among the spans of the text.
   const band = document.createElement('span');
   band.className = BAND_CLASS;
-  band.style.height = `${height}px`;
-  if (isFirstLine && mayDrawInPadding) band.style.marginTop = `-${height}px`;
+  band.style.height = '0px';
+  if (isFirstLine && mayDrawInPadding) band.dataset['inPadding'] = 'true';
+  // Not on the first line: scrolled back, its band would go up under the stepper it was moved to clear.
+  if (!isFirstLine) band.dataset['scrolls'] = 'true';
   if (start === null) over.before(band);
   else placeBefore(start, band);
-  bar.style.top = `-${SHORTER_THAN_BAR_PX}px`;
+  bar.style.top = '';
+  bar.style.bottom = `-${SHORTER_THAN_BAR_PX}px`;
   band.append(bar);
   reachToTheEdges(box, band);
-  // Not on the first line: scrolled back, its band would go up under the stepper it was moved to clear.
-  if (!isFirstLine) {
-    box.scrollTop += height;
-    band.dataset['scrolledBy'] = String(height);
-  }
+  moveBand(box, band, height, motion);
   return band;
 }
 
@@ -159,7 +222,7 @@ export function measureJoin(box: HTMLElement, change: Element): void {
 }
 
 /** Whether this is the first line's band, drawn in the box's padding and taking no space. */
-export const isDrawnInPadding = (band: HTMLElement): boolean => band.style.marginTop !== '';
+export const isDrawnInPadding = (band: HTMLElement): boolean => band.dataset['inPadding'] === 'true';
 
 /**
  * The bar along its band: from `wantedLeft` on the screen, kept inside the box.

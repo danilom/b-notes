@@ -1,5 +1,5 @@
 import type { ChangeCandidate } from '../notes/text-diff.ts';
-import { closeBarBand, isDrawnInPadding, measureJoin, openBarBand, seatBarAt } from './diff-bar-band.ts';
+import { type BandMotion, closeBarBand, isDrawnInPadding, measureJoin, openBarBand, seatBarAt } from './diff-bar-band.ts';
 import { icon } from './icons.ts';
 
 /**
@@ -66,6 +66,8 @@ export interface DiffEditing {
   onCurrent: (changeAt: number) => void;
   /** Opens a gap above the line the bar is over, instead of covering the line above. Being tried in the diff prototype. */
   makesRoom?: boolean;
+  /** How long the gap takes to open and close, the text above sliding rather than jumping. Being tried in the diff prototype. */
+  bandMotionMs?: number;
 }
 
 const GAP_ABOVE_PX = 3;
@@ -388,6 +390,12 @@ export function createDiffChangeBar(
     bar.style.top = `${clear.top}px`;
   }
 
+  /** Over the time asked for, unless he has asked his computer for less movement; the arrow beside the line kept with it. */
+  function bandMotion(): BandMotion {
+    const isStill = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return { ms: isStill ? 0 : (editing.bandMotionMs ?? 0), onStep: onLinesMoved };
+  }
+
   /** The stepper's box, in the frame's own pixels, or null when it is not showing. */
   function stepperTaken(): { left: number; top: number; bottom: number } | null {
     const steps = framed.querySelector('.review-steps');
@@ -417,7 +425,7 @@ export function createDiffChangeBar(
    * from the box's padding to a gap of its own below it, another line's by scrolling the text.
    */
   function openBand(over: Element, mayDrawInPadding = true): void {
-    band = openBarBand(box, over, bar, framed, { mayDrawInPadding });
+    band = openBarBand(box, over, bar, framed, { mayDrawInPadding, ...bandMotion() });
     onLinesMoved();
     const line = over.getClientRects()[0];
     if (band === null || line === undefined) return;
@@ -453,7 +461,7 @@ export function createDiffChangeBar(
     shownOver = null;
     for (const marked of box.querySelectorAll(`.${BAR_OVER}`)) marked.classList.remove(BAR_OVER);
     if (band === null) return;
-    closeBarBand(box, bar, framed);
+    closeBarBand(box, bar, framed, bandMotion());
     band = null;
     onLinesMoved();
   }
