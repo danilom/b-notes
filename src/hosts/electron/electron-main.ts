@@ -1,4 +1,4 @@
-import { BrowserWindow, Menu, app, clipboard, dialog, ipcMain, screen, shell } from 'electron';
+import { BrowserWindow, type IpcMainInvokeEvent, Menu, app, clipboard, dialog, ipcMain, screen, shell } from 'electron';
 import { hostname, homedir } from 'node:os';
 import path from 'node:path';
 
@@ -6,7 +6,7 @@ import { BUILD_STAMP } from '../../platform/build-info.ts';
 import { LOG_LEVELS, createFileLogger } from './log-file.ts';
 import { createFileSystem } from './disk-file-system.ts';
 import { absenceReply } from '../../platform/file-system.ts';
-import { askLektorService, lektorRequestFrom } from '../../platform/lektor-remote.ts';
+import { askLektorService, lektorLogDetail, lektorRequestFrom } from '../../platform/lektor-remote.ts';
 import { logsFolderFor, notesFolderFor, readChosenFolders, whereToOpen, writeChosenFolders } from './chosen-folders.ts';
 import { findResophFolder } from './resoph-config.ts';
 import { createOtherEditors } from './windows-editors.ts';
@@ -137,10 +137,10 @@ function isMissingFile(error: unknown): boolean {
   );
 }
 
-function handle(channel: string, handler: (args: unknown[]) => Promise<unknown>): void {
-  ipcMain.handle(channel, async (_event, ...args: unknown[]) => {
+function handle(channel: string, handler: (args: unknown[], event: IpcMainInvokeEvent) => Promise<unknown>): void {
+  ipcMain.handle(channel, async (event, ...args: unknown[]) => {
     try {
-      return await handler(args);
+      return await handler(args, event);
     } catch (error) {
       // Still thrown to the caller, which is the only side that knows whether
       // an absent file matters. Only the log level is softened: settings and
@@ -233,26 +233,29 @@ handle('app:copyToClipboard', async (args) => {
 });
 /*
   The Lektor's way to an AI service. Here because the page may not reach those addresses,
-  and logged here for what it did and never what it said: not his text, not a key. Token
-  counts, because they are how any idea of the cost can be checked.
+  and logged here for what it did and never what it said: not his text, not a key. The model
+  that answered and what a paid request cost, as the reply stated them.
+
+  While a request runs, how it is getting on goes back to the window as messages of its own,
+  numbered as the request is: the answer itself can only come once, at the end.
 */
 const lektorInFlight = new Map<number, AbortController>();
-handle('lektor:request', async (args) => {
+handle('lektor:request', async (args, event) => {
   const id = asNumber(args[0], 'id');
   const request = lektorRequestFrom(args[1]);
   const controller = new AbortController();
   lektorInFlight.set(id, controller);
-  const started = Date.now();
+  const started = performance.now();
+  // Named so, as everywhere else here: the boundaries test pairs `webContents.send` with the preload's listeners.
+  const webContents = event.sender;
   try {
-    const response = await askLektorService(request, controller.signal);
-    log.info('Asked a Lektor service', {
-      provider: request.provider,
-      action: request.action,
-      model: request.model,
-      status: response.status,
-      ms: Date.now() - started,
-      usage: typeof response.reply === 'object' && response.reply !== null ? (response.reply as { usage?: unknown }).usage : undefined,
+    const response = await askLektorService(request, {
+      stop: controller.signal,
+      onProgress: (progress) => {
+        if (!webContents.isDestroyed()) webContents.send('lektor:progress', id, progress);
+      },
     });
+    log.info('Asked a Lektor service', lektorLogDetail(request, response, Math.round(performance.now() - started)));
     return response;
   } finally {
     lektorInFlight.delete(id);

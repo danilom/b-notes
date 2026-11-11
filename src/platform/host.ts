@@ -1,4 +1,5 @@
 import type { FileSystem } from './file-system.ts';
+import type { LektorProgress } from './lektor-progress.ts';
 import type { LektorRequest, LektorResponse } from './lektor-remote.ts';
 import type { Log } from './logging.ts';
 import type { OtherEditors } from './other-editors.ts';
@@ -98,8 +99,10 @@ export interface Host {
    * The host's job because the page may not reach those addresses itself, and in the
    * app the key and the connection belong to the main process. Answers rather than
    * rejects: see `askLektorService`.
+   *
+   * @param onProgress Told as a sent request moves on: begun, thinking, writing.
    */
-  readonly askLektorService: (request: LektorRequest, stop: AbortSignal) => Promise<LektorResponse>;
+  readonly askLektorService: (request: LektorRequest, stop: AbortSignal, onProgress: (progress: LektorProgress) => void) => Promise<LektorResponse>;
   /**
    * A real service's saved corrections of this exact text, for the test Lektor to return in place
    * of its made-up ones; null when none are saved. Only the browser build has any, from the dev

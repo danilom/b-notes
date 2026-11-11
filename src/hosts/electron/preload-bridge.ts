@@ -89,6 +89,12 @@ const copyToClipboard = (text: string): Promise<void> => ipcRenderer.invoke('app
  */
 const lektorRequest = (id: number, request: LektorRequest): Promise<LektorResponse> => ipcRenderer.invoke('lektor:request', id, request);
 const lektorStop = (id: number): Promise<void> => ipcRenderer.invoke('lektor:stop', id);
+/** How each running request is getting on, by its number; the window sorts them out. Checked there, as anything from across the bridge is. */
+const onLektorProgress = (listener: (id: number, progress: unknown) => void): void => {
+  ipcRenderer.on('lektor:progress', (_event, id: unknown, progress: unknown) => {
+    if (typeof id === 'number') listener(id, progress);
+  });
+};
 
 const log = {
   info: (message: string, detail?: unknown) => ipcRenderer.send('log:write', 'info', message, detail),
@@ -121,6 +127,7 @@ contextBridge.exposeInMainWorld('openFolder', openFolder);
 contextBridge.exposeInMainWorld('copyToClipboard', copyToClipboard);
 contextBridge.exposeInMainWorld('lektorRequest', lektorRequest);
 contextBridge.exposeInMainWorld('lektorStop', lektorStop);
+contextBridge.exposeInMainWorld('onLektorProgress', onLektorProgress);
 contextBridge.exposeInMainWorld('onBeforeClose', onBeforeClose);
 contextBridge.exposeInMainWorld('chooseFolder', chooseFolder);
 contextBridge.exposeInMainWorld('rememberFolders', rememberFolders);

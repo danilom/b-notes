@@ -2,7 +2,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import path from 'node:path';
 
-import { askLektorService, lektorRequestFrom } from '../src/platform/lektor-remote.ts';
+import { askLektorService, lektorLogDetail, lektorRequestFrom } from '../src/platform/lektor-remote.ts';
 
 /** The browser build, which is the one carrying the mock store. */
 const root = path.resolve('dist-browser');
@@ -108,10 +108,13 @@ async function serveRealReply(request, response) {
 /*
   The browser build's way to an AI service, for what the main process does in the app:
   the page may not reach those addresses itself. The same code as the app's. Logs no text.
+
+  Answered in lines of JSON (NDJSON), one per line: `{ progress }` as the request moves on, so
+  the wait can tell queued from working, then `{ status, reply }` last, which is the answer.
 */
 const LARGEST_REQUEST_BYTES = 4 * 1024 * 1024;
-// Replaceable so that the test of this route talks to a stand-in and spends nothing.
-const LEKTOR_ADDRESSES = { claude: process.env['LEKTOR_CLAUDE_URL'] };
+// Replaceable so that the test of this route talks to stand-ins and spends nothing.
+const LEKTOR_ADDRESSES = { gemini: process.env['LEKTOR_GOOGLE_URL'], openrouter: process.env['LEKTOR_OPENROUTER_URL'] };
 
 async function bodyOf(request) {
   const chunks = [];
@@ -131,24 +134,26 @@ async function serveLektorAi(request, response) {
     response.writeHead(403).end('Forbidden');
     return;
   }
-  const answer = (status, body) => {
-    response.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-    response.end(JSON.stringify(body));
-  };
+  response.writeHead(200, { 'content-type': 'application/x-ndjson; charset=utf-8' });
+  const line = (body) => response.write(`${JSON.stringify(body)}\n`);
   try {
     const asked = lektorRequestFrom(await bodyOf(request));
-    const started = Date.now();
+    const started = performance.now();
     const stop = new AbortController();
-    // He pressed Prekini, which the page shows the server by going away.
+    // He gave up, which the page shows the server by going away.
     response.on('close', () => {
       if (!response.writableEnded) stop.abort();
     });
-    const { status, reply } = await askLektorService(asked, stop.signal, LEKTOR_ADDRESSES);
-    console.log('Lektor AI', asked.provider, asked.action, asked.model, status, `${Date.now() - started} ms`);
-    answer(status, reply);
+    const answered = await askLektorService(asked, {
+      stop: stop.signal,
+      addresses: LEKTOR_ADDRESSES,
+      onProgress: (progress) => line({ progress }),
+    });
+    console.log('Lektor AI', lektorLogDetail(asked, answered, Math.round(performance.now() - started)));
+    response.end(`${JSON.stringify({ status: answered.status, reply: answered.reply })}\n`);
   } catch (error) {
     console.error('Lektor AI could not be asked:', error.name);
-    answer(400, { error: { message: error.name } });
+    response.end(`${JSON.stringify({ status: 400, reply: { error: { message: error.name } } })}\n`);
   }
 }
 

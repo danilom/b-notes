@@ -1,5 +1,6 @@
 import type { FileSystem } from '../../platform/file-system.ts';
 import type { ChosenPlaces, Host, RunMode } from '../../platform/host.ts';
+import { type LektorProgress, lektorProgressFrom } from '../../platform/lektor-progress.ts';
 import type { LektorRequest, LektorResponse } from '../../platform/lektor-remote.ts';
 import type { Log } from '../../platform/logging.ts';
 import type { OtherEditors } from '../../platform/other-editors.ts';
@@ -21,6 +22,7 @@ declare global {
     copyToClipboard?: (text: string) => Promise<void>;
     lektorRequest?: (id: number, request: LektorRequest) => Promise<LektorResponse>;
     lektorStop?: (id: number) => Promise<void>;
+    onLektorProgress?: (listener: (id: number, progress: unknown) => void) => void;
     onBeforeClose?: (finish: () => Promise<void>) => void;
     chooseFolder?: (from: string) => Promise<string | null>;
     rememberFolders?: (next: ChosenPlaces) => Promise<void>;
@@ -32,6 +34,8 @@ declare global {
 }
 
 let lastLektorRequest = 0;
+/** Who wants to hear how each running request is getting on, by its number. */
+const lektorListeners = new Map<number, (progress: LektorProgress) => void>();
 
 /**
  * The packaged app's host: everything here comes across the preload bridge.
@@ -48,6 +52,7 @@ async function main(): Promise<void> {
     copyToClipboard,
     lektorRequest,
     lektorStop,
+    onLektorProgress,
     onBeforeClose,
     chooseFolder,
     rememberFolders,
@@ -63,6 +68,7 @@ async function main(): Promise<void> {
     copyToClipboard === undefined ||
     lektorRequest === undefined ||
     lektorStop === undefined ||
+    onLektorProgress === undefined ||
     onBeforeClose === undefined ||
     chooseFolder === undefined ||
     rememberFolders === undefined ||
@@ -76,6 +82,11 @@ async function main(): Promise<void> {
 
   // Only the main process knows where Windows put his Documents folder, so the
   // locations come across the bridge rather than being worked out here.
+  onLektorProgress((id, raw) => {
+    const progress = lektorProgressFrom(raw);
+    if (progress !== null) lektorListeners.get(id)?.(progress);
+  });
+
   const where = await folders();
 
   const host: Host = {
@@ -93,12 +104,17 @@ async function main(): Promise<void> {
     logsFolder: where.logs,
     openFolder,
     copyToClipboard,
-    askLektorService: (request, stop) => {
+    askLektorService: async (request, stop, onProgress) => {
       lastLektorRequest += 1;
       const id = lastLektorRequest;
       // A signal can't cross the bridge, so the stop goes over as a message of its own.
       stop.addEventListener('abort', () => void lektorStop(id), { once: true });
-      return lektorRequest(id, request);
+      lektorListeners.set(id, onProgress);
+      try {
+        return await lektorRequest(id, request);
+      } finally {
+        lektorListeners.delete(id);
+      }
     },
     onBeforeClose,
     chooseFolder,
