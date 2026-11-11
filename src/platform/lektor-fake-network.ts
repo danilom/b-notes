@@ -172,13 +172,41 @@ const FAKE_UTISAK =
   'U celini, ovo je miran i tačan zapis, bez suvišnih reči. Završetak se ne žuri i ne objašnjava previše, ' +
   'pa ostavlja prostora čitaocu da sam oseti ono što je ostalo neizrečeno.';
 
-/** A made-up correction of the text: every seventh word in capitals, which the review shows as larger changes. */
+/** Words he types without their diacritics, as a proofreader would give them back. */
+const DIACRITICS_RESTORED: Readonly<Record<string, string>> = {
+  sto: 'što', sta: 'šta', zasto: 'zašto', cak: 'čak', ce: 'će', cu: 'ću', ces: 'ćeš', kaze: 'kaže', kazu: 'kažu',
+  rijec: 'riječ', rec: 'reč', covjek: 'čovjek', covek: 'čovek', cuti: 'ćuti', cutao: 'ćutao', sutnja: 'šutnja',
+  casa: 'čaša', vise: 'više', zivot: 'život', zena: 'žena', dosao: 'došao', reci: 'reći', moze: 'može',
+  mozda: 'možda', prica: 'priča', pricu: 'priču', vec: 'već', kuca: 'kuća', noc: 'noć', dje: 'đe', medju: 'među', izmedju: 'između', vidis: 'vidiš',
+};
+
+const restoreDiacritics = (word: string): string => {
+  const restored = DIACRITICS_RESTORED[word.toLowerCase()];
+  if (restored === undefined) return word;
+  return word.charAt(0) === word.charAt(0).toUpperCase() ? restored.charAt(0).toUpperCase() + restored.slice(1) : restored;
+};
+
+/** Commas, spaces and line ends, which the review counts as small fixes. */
+const tidySpacing = (text: string): string =>
+  text
+    .replace(/[ \t]+$/gm, '')
+    .replace(/(\p{L}) {2,}(?=\p{L})/gu, '$1 ')
+    .replace(/ +([,.;:!?])/g, '$1')
+    .replace(/([,;])(?=\p{L})/gu, '$1 ')
+    .replace(/(\p{L}) (a|ali|pa|nego) /gu, '$1, $2 ');
+
+/**
+ * A made-up correction of the text. Every seventh word goes into capitals, which the review shows
+ * as larger changes. Common words get their diacritics back, and commas, spaces and line ends are
+ * tidied, all of which the review counts as small fixes.
+ */
 export function fakeCorrectionOf(text: string): string {
   let word = 0;
-  return text.replace(/\p{L}+/gu, (found) => {
+  const worded = text.replace(/\p{L}+/gu, (found) => {
     word += 1;
-    return word % 7 === 0 ? found.toUpperCase() : found;
+    return word % 7 === 0 ? found.toUpperCase() : restoreDiacritics(found);
   });
+  return tidySpacing(worded);
 }
 
 class Stopped extends Error {}

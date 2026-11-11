@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { createFakeNetwork, GOOGLE_BUSY, GOOGLE_WRONG_KEY, OPENROUTER_WRONG_KEY } from '../src/platform/lektor-fake-network.ts';
+import { diffTexts, separateTidying } from '../src/notes/text-diff.ts';
+import { createFakeNetwork, fakeCorrectionOf, GOOGLE_BUSY, GOOGLE_WRONG_KEY, OPENROUTER_WRONG_KEY } from '../src/platform/lektor-fake-network.ts';
 import { lektorLogDetail } from '../src/platform/lektor-remote.ts';
 import { recorded } from './lektor-api-fixtures.ts';
 
@@ -20,6 +21,19 @@ describe('the fake network', () => {
       assert.deepEqual(copy, JSON.parse(recorded(name).body));
     });
   }
+
+  it('corrects with small fixes of every sort besides the larger changes, so the review shows both', () => {
+    const text = 'Sto je bilo tu a ja cu reci,vidis.   \nNije vise  bilo ,pa niko ga ne trazi';
+    const pieces = separateTidying(diffTexts(text, fakeCorrectionOf(text)));
+    const tidied = pieces.flatMap((piece) => (piece.kind === 'tidy' ? [piece] : []));
+    const has = (sort: string, test: (fix: { removed: string; added: string }) => boolean): void =>
+      assert.ok(tidied.some(test), `${sort} in ${JSON.stringify(tidied)}`);
+    has('a diacritic', ({ removed, added }) => removed === 'vise' && added === 'više');
+    has('a comma', ({ removed, added }) => !removed.includes(',') && added.includes(','));
+    has('a space', ({ removed, added }) => /^\s+$/.test(removed) && added === ' ');
+    has('a line end', ({ removed, added }) => removed === '   \n' && added === '\n');
+    assert.ok(pieces.some((piece) => piece.kind === 'change'));
+  });
 
   it('sends nothing on an empty key, as the real network does', async () => {
     const network = createFakeNetwork({});
