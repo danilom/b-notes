@@ -78,6 +78,16 @@
         background: color-mix(in srgb, var(--chosen-soft) 70%, transparent);
       }
 
+      /*
+        The buttons straight on the band, with no panel of their own: the bar keeps its size, so
+        the band is made as tall as ever, and only its white plate, edge and halo go.
+      */
+      #view[data-bar-on-band] .diff-bar-band > .diff-bar {
+        border-color: transparent;
+        background: transparent;
+        box-shadow: none;
+      }
+
       /* As the Lektor's window sizes the lines above its text (lektor.css, .lektor-window .review-body). */
       .lektor-review-head {
         margin-bottom: 0.75rem;
@@ -311,6 +321,10 @@
           <label title="Traka nad izmenom razmakne redove umesto da pokrije red iznad">
             <input type="checkbox" id="bar-room" checked />
             Prostor za traku
+          </label>
+          <label title="Dugmad stoje pravo na pojasu, bez bele ploče oko njih">
+            <input type="checkbox" id="bar-on-band" />
+            Dugmad na pojasu
           </label>
           <label class="prototype-pick" title="Kako izgleda prostor otvoren za traku">
             <span>Izgled pojasa</span>

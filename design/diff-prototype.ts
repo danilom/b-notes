@@ -23,6 +23,7 @@ const readOnly = element('read-only', HTMLInputElement);
 const preamble = element('preamble', HTMLInputElement);
 const barRoom = element('bar-room', HTMLInputElement);
 const bandLook = element('band-look', HTMLSelectElement);
+const barOnBand = element('bar-on-band', HTMLInputElement);
 const view = element('view', HTMLElement);
 
 /** A sample of how the changes are drawn, at the legend's size, with the legend's own word. */
@@ -246,6 +247,26 @@ try {
 }
 showBandLook();
 bandLook.addEventListener('change', showBandLook);
+
+const BAR_ON_BAND_KEY = 'diff-prototype:bar-on-band';
+
+/** The buttons straight on the band or on their own plate, drawn by the page's styles from this mark. */
+function showBarOnBand(): void {
+  view.toggleAttribute('data-bar-on-band', barOnBand.checked);
+  try {
+    localStorage.setItem(BAR_ON_BAND_KEY, barOnBand.checked ? 'on' : 'off');
+  } catch (error) {
+    console.warn('Whether the buttons stand on the band could not be remembered', error);
+  }
+}
+
+try {
+  barOnBand.checked = localStorage.getItem(BAR_ON_BAND_KEY) === 'on';
+} catch (error) {
+  console.warn('Whether the buttons stand on the band could not be read back', error);
+}
+showBarOnBand();
+barOnBand.addEventListener('change', showBarOnBand);
 
 element('swap', HTMLButtonElement).addEventListener('click', () => {
   [current.value, proposed.value] = [proposed.value, current.value];
