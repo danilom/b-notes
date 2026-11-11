@@ -967,15 +967,25 @@ function reviewWhoLine(preset: Preset, by: Choice, kept: Kept | undefined): HTML
   the far end of the legend's line. In its place, two radio rows, each showing what it shows, drawn
   as the legend draws its samples: the change as old and new, or the text as it will be. At the right
   of the two lines above the text, where there was room, so it costs no height. The harness switches
-  between stacked and side by side, a title or none, and the old checkbox, to judge them together.
+  between stacked and side by side, the title's wording, the samples and the highlight, and the old
+  checkbox, to judge them together.
   Tried and dropped the same day: two joined buttons on a line of their own (a line of height, and
-  words alone too subtle), and a phone's on/off switch.
+  words alone too subtle), and a phone's on/off switch. Samples reading "staro" and "novo" (Danilo:
+  they say old against new, when the choice is only the shape the changes are drawn in).
 */
 export type ReviewLook = 'stacked' | 'side' | 'checkbox';
-export type ReviewTitle = 'none' | 'above' | 'left';
+/** The title before the two rows, as its words, or none. */
+export type ReviewTitle = 'none' | 'Prikaži:' | 'Prikaz izmena:' | 'Izmene:' | 'Izgled izmena:' | 'Prikaži izmene:';
+/** What the samples say: the legend's own word, or nothing legible, so they are read by their shape alone. */
+export type ReviewSample = 'word' | 'blurred';
+/** How the row chosen is marked besides its radio: a grey wash, the window's soft blue, or not at all. */
+export type ReviewHighlight = 'grey' | 'blue' | 'none';
 
-let reviewLook: ReviewLook = 'stacked';
-let reviewTitle: ReviewTitle = 'left';
+// Side by side, Danilo's pick (2026-11-11).
+let reviewLook: ReviewLook = 'side';
+let reviewTitle: ReviewTitle = 'Prikaz izmena:';
+let reviewSample: ReviewSample = 'word';
+let reviewHighlight: ReviewHighlight = 'grey';
 
 export function setReviewLook(look: ReviewLook): void {
   reviewLook = look;
@@ -984,6 +994,16 @@ export function setReviewLook(look: ReviewLook): void {
 
 export function setReviewTitle(title: ReviewTitle): void {
   reviewTitle = title;
+  if (corrections.view === 'review') draw();
+}
+
+export function setReviewSample(sample: ReviewSample): void {
+  reviewSample = sample;
+  if (corrections.view === 'review') draw();
+}
+
+export function setReviewHighlight(highlight: ReviewHighlight): void {
+  reviewHighlight = highlight;
   if (corrections.view === 'review') draw();
 }
 
@@ -1036,9 +1056,15 @@ function onlyNewCheckbox(): HTMLElement {
   return only;
 }
 
-/** A word drawn with the marks the text itself uses, at the legend's size. */
-function sampleWord(word: string, marks: string): HTMLElement {
-  return el('span', marks, word);
+/**
+ * A word drawn with the marks the text itself uses, at the legend's size. The legend's own "reč",
+ * so nothing in it reads as old against new; or blurred, so only the shape of the mark is left.
+ */
+function sampleWord(marks: string): HTMLElement {
+  const word = strings('sr').legendSample;
+  const mark = el('span', marks);
+  mark.append(reviewSample === 'blurred' ? el('span', 'lektor-view-blurred', word) : word);
+  return mark;
 }
 
 /** One way to show the text: a radio, then a sample of what it looks like, the whole row one target. */
@@ -1059,34 +1085,38 @@ function viewOption(isOnlyNew: boolean, name: string, samples: readonly HTMLElem
 
 /** The two ways, each said by a sample rather than in words; named for a screen reader only. */
 function viewChoice(): HTMLElement {
-  const group = el('div', `lektor-view-choice is-${reviewLook} title-${reviewTitle}`);
+  const group = el('div', `lektor-view-choice is-${reviewLook} highlight-${reviewHighlight}`);
   group.setAttribute('role', 'radiogroup');
-  group.setAttribute('aria-label', 'Prikaži tekst');
-  if (reviewTitle !== 'none') group.append(el('span', 'lektor-view-title', 'Prikaži:'));
+  group.setAttribute('aria-label', 'Prikaz izmena');
+  if (reviewTitle !== 'none') group.append(el('span', 'lektor-view-title', reviewTitle));
   const options = el('div', 'lektor-view-options');
   options.append(
-    viewOption(false, 'sa izmenama', [sampleWord('staro', 'diff-gone diff-struck'), sampleWord('novo', 'diff-new')]),
-    viewOption(true, 'kakav će biti', [sampleWord('novo', 'diff-resolved')]),
+    viewOption(false, 'izmene označene', [sampleWord('diff-gone diff-struck'), sampleWord('diff-new')]),
+    viewOption(true, 'samo rezultat', [sampleWord('diff-resolved')]),
   );
   group.append(options);
   return group;
 }
 
-/** The legend's line, with today's checkbox at its right when that is the look being tried. */
+/**
+ * The legend's line, with the way to show the text at its right: side by side it fits beside the
+ * legend alone, leaving the line above its whole width, which beside both lines it wrapped.
+ */
 function reviewViewLine(legend: HTMLElement): HTMLElement {
   const line = el('div', 'lektor-review-row');
   line.append(legend);
   if (reviewLook === 'checkbox') line.append(onlyNewCheckbox());
+  if (reviewLook === 'side') line.append(viewChoice());
   return line;
 }
 
-/** Who made them and what the marks mean, on the left; the way to show the text at their right. */
+/** Who made them and what the marks mean, on the left; stacked, the way to show the text at the right of both. */
 function reviewHead(who: HTMLElement, legend: HTMLElement): HTMLElement {
   const lines = el('div', 'lektor-review-lines');
   lines.append(who, reviewViewLine(legend));
   const head = el('div', 'lektor-review-head');
   head.append(lines);
-  if (reviewLook !== 'checkbox') head.append(viewChoice());
+  if (reviewLook === 'stacked') head.append(viewChoice());
   return head;
 }
 

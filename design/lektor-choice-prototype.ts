@@ -8,7 +8,7 @@
   classes and icons, piece for piece as lektor-sidebar.ts builds its screens.
 */
 import { icon } from '../src/ui/icons.ts';
-import { type WindowCase, corrections, openCorrectionsWindow, setCorrectionsStale, setKeysOpener, openCorrectionsWindowAt, redrawWindowIfOpen, setReviewLook, setReviewTitle } from './lektor-corrections-window-prototype.ts';
+import { type ReviewTitle, type WindowCase, corrections, openCorrectionsWindow, setCorrectionsStale, setKeysOpener, openCorrectionsWindowAt, redrawWindowIfOpen, setReviewHighlight, setReviewLook, setReviewSample, setReviewTitle } from './lektor-corrections-window-prototype.ts';
 import { type KeyCheck, deadKeyNotice, isAnyKeyDead, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { type PaidIfSlow, lektorChoice, paidIfSlowByDefault } from './lektor-choice-radios.ts';
 import { type CommentFailure, commentFailure, commentRun, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
@@ -664,21 +664,43 @@ const CONTROLS: readonly PrototypeControl[] = [
     id: 'review-look',
     label: 'Prikaz teksta u pregledu',
     options: [
-      { value: 'stacked', label: 'jedno ispod drugog' },
       { value: 'side', label: 'jedno pored drugog' },
+      { value: 'stacked', label: 'jedno ispod drugog' },
       { value: 'checkbox', label: 'kvadratić (kao sada)' },
     ],
-    value: 'stacked',
+    value: 'side',
   },
   {
     id: 'review-title',
     label: 'Naslov prikaza',
     options: [
-      { value: 'left', label: '„Prikaži:” levo' },
-      { value: 'above', label: '„Prikaži:” iznad' },
+      { value: 'Prikaz izmena:', label: '„Prikaz izmena:”' },
+      { value: 'Prikaži izmene:', label: '„Prikaži izmene:”' },
+      { value: 'Izgled izmena:', label: '„Izgled izmena:”' },
+      { value: 'Izmene:', label: '„Izmene:”' },
+      { value: 'Prikaži:', label: '„Prikaži:”' },
       { value: 'none', label: 'bez naslova' },
     ],
-    value: 'left',
+    value: 'Prikaz izmena:',
+  },
+  {
+    id: 'review-sample',
+    label: 'Uzorak u prikazu',
+    options: [
+      { value: 'word', label: '„reč”, kao u legendi' },
+      { value: 'blurred', label: 'zamućen' },
+    ],
+    value: 'word',
+  },
+  {
+    id: 'review-highlight',
+    label: 'Isticanje izabranog',
+    options: [
+      { value: 'grey', label: 'sivo' },
+      { value: 'blue', label: 'plavo' },
+      { value: 'none', label: 'bez' },
+    ],
+    value: 'grey',
   },
   {
     id: 'google-38',
@@ -793,6 +815,12 @@ const ODD_TITLES: Readonly<Record<string, string>> = {
   control: 'Jutro\u0007 na obali',
 };
 
+const REVIEW_TITLES: readonly ReviewTitle[] = ['none', 'Prikaži:', 'Prikaz izmena:', 'Izmene:', 'Izgled izmena:', 'Prikaži izmene:'];
+
+function isReviewTitle(value: string | boolean): value is ReviewTitle {
+  return REVIEW_TITLES.some((one) => one === value);
+}
+
 function setControl(id: string, value: string | boolean): void {
   if (id === 'screen') setScreen(value);
   if (id === 'stale') isCommentStale = value === true;
@@ -810,8 +838,10 @@ function setControl(id: string, value: string | boolean): void {
   if (id === 'offline') state.isOffline = value === true;
   if (id === 'letters-kept') setKept(value);
   if (id === 'corrections-stale') setCorrectionsStale(value === true);
-  if (id === 'review-look') setReviewLook(value === 'side' || value === 'checkbox' ? value : 'stacked');
-  if (id === 'review-title') setReviewTitle(value === 'above' || value === 'none' ? value : 'left');
+  if (id === 'review-look') setReviewLook(value === 'stacked' || value === 'checkbox' ? value : 'side');
+  if (id === 'review-title') setReviewTitle(isReviewTitle(value) ? value : 'Prikaz izmena:');
+  if (id === 'review-sample') setReviewSample(value === 'blurred' ? value : 'word');
+  if (id === 'review-highlight') setReviewHighlight(value === 'blue' || value === 'none' ? value : 'grey');
   // The app's own switch, as the diff prototype sets it.
   if (id === 'dark') document.documentElement.dataset['mode'] = value === true ? 'dark' : 'light';
   render();
