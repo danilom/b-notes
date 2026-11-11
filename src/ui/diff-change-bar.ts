@@ -355,7 +355,21 @@ export function createDiffChangeBar(
    */
   function wantedLeft(over: Element, line: DOMRect): number {
     const isLetter = over.classList.contains('diff-tidied-letter');
-    return isLetter ? (line.left + line.right) / 2 - bar.offsetWidth / 2 : line.left;
+    return isLetter ? (line.left + line.right) / 2 - lettersMiddle() : line.left;
+  }
+
+  /**
+   * How far into the bar the middle of its letters is: the letters alone, not the X after them,
+   * so that with three the middle one stands over the letter. Less any margin the bar is drawn
+   * with, as it is placed by where it would stand without one.
+   */
+  function lettersMiddle(): number {
+    const letters = [...bar.querySelectorAll('.diff-bar-letter')].map((letter) => letter.getBoundingClientRect());
+    const [first, last] = [letters.at(0), letters.at(-1)];
+    const barLeft = bar.getBoundingClientRect().left;
+    if (first === undefined || last === undefined) return bar.offsetWidth / 2;
+    const margin = Number.parseFloat(getComputedStyle(bar).marginLeft) || 0;
+    return (first.left + last.right) / 2 - barLeft + margin;
   }
 
   /** Above the start of what it is for, and gone if that has scrolled out of the box. */
