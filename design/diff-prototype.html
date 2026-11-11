@@ -186,6 +186,22 @@
         background-color: var(--choice-shown);
       }
 
+      /* An ordinary grey button, its wording's colour at full strength as a bar down its left side. */
+      #view[data-button-look='side-bar'] .diff-bar .diff-bar-choice {
+        --choice-shown: var(--toolbar);
+        border-color: var(--line);
+        border-left: 5px solid var(--choice-fill);
+        background-color: var(--toolbar);
+        color: var(--ink);
+      }
+
+      #view[data-button-look='side-bar'] .diff-bar .diff-bar-choice:hover:not(:disabled) {
+        --choice-shown: color-mix(in oklch, var(--ink) 8%, var(--toolbar));
+        border-color: var(--line);
+        border-left-color: var(--choice-fill);
+        background-color: var(--choice-shown);
+      }
+
       /* A plain button with the colour as its edge and its words. */
       #view[data-button-look='outlined'] .diff-bar .diff-bar-choice {
         --choice-shown: var(--panel);
@@ -304,7 +320,10 @@
         border-bottom: 1px solid var(--line);
       }
 
+      /* As tall as its controls need, at any width: held to the boxes' height, it scrolled. */
       .prototype-controls.prototype-tab-panel {
+        height: auto;
+        overflow: visible;
         align-items: start;
         gap: 0.5rem 1.5rem;
       }
@@ -436,8 +455,6 @@
             <input type="checkbox" id="merging" checked />
             Spoji bliske izmene
           </label>
-        </div>
-        <div class="prototype-column">
           <label>
             <input type="checkbox" id="only-new" />
             Tekst kakav će biti
@@ -446,10 +463,18 @@
             <input type="checkbox" id="read-only" />
             Samo za čitanje
           </label>
+        </div>
+        <div class="prototype-column">
           <label title="Legenda i broj izmena, kako ih AI Lektor piše iznad teksta">
             <input type="checkbox" id="preamble" checked />
             Redovi iznad teksta
           </label>
+          <label>
+            <input type="checkbox" id="dark" />
+            Tamno
+          </label>
+        </div>
+        <div class="prototype-column">
           <label title="Traka nad izmenom razmakne redove umesto da pokrije red iznad">
             <input type="checkbox" id="bar-room" checked />
             Prostor za traku
@@ -462,6 +487,8 @@
             <input type="checkbox" id="change-on-band" checked />
             Izmena na pojasu
           </label>
+        </div>
+        <div class="prototype-column">
           <label class="prototype-pick" title="Kako izgledaju Vrati staro, Prihvati i Izmeni">
             <span>Izgled dugmadi</span>
             <select id="button-look">
@@ -469,6 +496,7 @@
               <option value="underlined">Obična, podvučena bojom</option>
               <option value="radio">Radio u boji</option>
               <option value="pale">Bleda boja</option>
+              <option value="side-bar">Siva, s bojom sa strane</option>
               <option value="outlined">Obrub u boji</option>
               <option value="text">Samo tekst u boji</option>
             </select>
@@ -485,12 +513,6 @@
               <option value="tray">Udubljenje</option>
               <option value="tinted">Plavičasta</option>
             </select>
-          </label>
-        </div>
-        <div class="prototype-column">
-          <label>
-            <input type="checkbox" id="dark" />
-            Tamno
           </label>
         </div>
       </div>
