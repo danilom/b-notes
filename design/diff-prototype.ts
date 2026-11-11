@@ -139,6 +139,8 @@ function render(): void {
     ),
   );
   view.replaceChildren(column);
+  // For the page's styles, whose looks for the current change hold only where there are bands.
+  view.toggleAttribute('data-bar-room', barRoom.checked && !readOnly.checked);
 }
 
 /**

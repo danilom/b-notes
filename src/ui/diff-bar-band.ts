@@ -134,16 +134,28 @@ function reachToTheEdges(box: HTMLElement, band: HTMLElement): void {
 const JOIN = '--band-join';
 
 /**
- * How far above its words what the bar is for must reach to meet the band: the line's own
- * spacing, between the band's bottom and the top of the words. Set on the box, for a look that
- * draws the change hanging from the band, its background reaching up that far.
+ * How far above its words a change must reach to the top of its line: the line's own spacing,
+ * which is where a band's bottom is when one is open. Set on the box, for a look that draws the
+ * current change on the band's grey, reaching up that far, with a band or without one.
+ *
+ * Read with a marker of no height put in where the line starts, which, being a block, sits
+ * exactly between that line and the one above and moves nothing; then taken out.
  */
-export function measureJoin(box: HTMLElement, band: HTMLElement, over: Element): void {
+export function measureJoin(box: HTMLElement, change: Element): void {
   // Taken off first: a reach set before is in the measure, as the top of the change's padding.
   box.style.removeProperty(JOIN);
-  const words = over.getClientRects()[0];
+  const words = change.getClientRects()[0];
   if (words === undefined) return;
-  box.style.setProperty(JOIN, `${Math.max(0, words.top - band.getBoundingClientRect().bottom)}px`);
+  const { start } = lineStart(box, change, words.top);
+  const marker = document.createElement('span');
+  marker.style.display = 'block';
+  if (start === null) change.before(marker);
+  else placeBefore(start, marker);
+  const lineTop = marker.getBoundingClientRect().top;
+  const parent = marker.parentNode;
+  marker.remove();
+  parent?.normalize();
+  box.style.setProperty(JOIN, `${Math.max(0, words.top - lineTop)}px`);
 }
 
 /** Whether this is the first line's band, drawn in the box's padding and taking no space. */

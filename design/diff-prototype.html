@@ -97,7 +97,8 @@
         reaches up through the line's spacing (measured, --band-join) to meet the band, and
         down to its dotted line. Its own background, so under its words and their marks.
       */
-      #view[data-change-on-band] .review-text:has(.diff-bar-band) .diff-bar-over {
+      /* The current change, bar or not (Danilo, 2026-11-11): with the bar put away, it stays on the grey. */
+      #view[data-bar-room][data-change-on-band] .review-text .diff-current {
         /* How far the grey spills past the change at the sides, and below. */
         --spill: 4px;
         --spill-below: 5px;
@@ -114,7 +115,7 @@
       }
 
       /* The change's grey reaching further left than its words, the bar is held back by as much, to keep to the words. */
-      #view[data-bar-on-band][data-change-on-band] .review-text:has(.diff-bar-over) .diff-bar-band > .diff-bar {
+      #view[data-bar-room][data-bar-on-band][data-change-on-band] .review-text:has(.diff-bar-over) .diff-bar-band > .diff-bar {
         margin-left: calc(-0.4rem - 1px + 4px);
       }
 

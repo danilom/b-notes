@@ -407,7 +407,6 @@ export function createDiffChangeBar(
     onLinesMoved();
     const line = over.getClientRects()[0];
     if (band === null || line === undefined) return;
-    measureJoin(box, band, over);
     seatBarAt(box, band, bar, wantedLeft(over, line));
     const taken = stepperTaken();
     const frame = framed.getBoundingClientRect();
@@ -456,12 +455,18 @@ export function createDiffChangeBar(
     else showOver(current);
   };
 
+  /** How far the current change reaches up to the top of its line, for a look drawing it on the band's grey, bar or not. */
+  const measureCurrent = (): void => {
+    if (editing.makesRoom === true && current !== null) measureJoin(box, current);
+  };
+
   // On a band, the bar scrolls with the text by itself.
   const placeAgain = (): void => {
     if (shownOver !== null && band === null) place(shownOver);
   };
   /** Lines wrapped anew: a band opened for the old ones may now be in the middle of one. */
   const fitAgain = (): void => {
+    measureCurrent();
     if (shownOver === null) return;
     if (band === null) place(shownOver);
     else openBand(shownOver);
@@ -476,6 +481,7 @@ export function createDiffChangeBar(
   return {
     setCurrent(change, how) {
       current = change;
+      measureCurrent();
       // A collapsed change clicked opens, which draws the view again with this one current.
       const at = change === null ? -1 : changes.indexOf(change);
       if (how === 'clicked' && at >= 0 && !editing.choiceOf(at).isOpen) {
