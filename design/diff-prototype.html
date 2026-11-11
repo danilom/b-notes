@@ -191,22 +191,30 @@
         outline all round, and its words and radio. Picked for now (Danilo, 2026-11-12), with
         standard round radios.
       */
+      /* No fill of its own, so the band's grey shows through: the same grey (Danilo, 2026-11-12). */
       #view[data-button-look='side-bar'] .diff-bar .diff-bar-choice {
-        --choice-shown: var(--toolbar);
+        --choice-shown: transparent;
         border: 1px solid var(--choice-fill);
         border-left-width: 5px;
-        background-color: var(--toolbar);
+        background-color: transparent;
         color: var(--choice-fill);
       }
 
+      /* A shade darker under the pointer: the band's wash once more. */
       #view[data-button-look='side-bar'] .diff-bar .diff-bar-choice:hover:not(:disabled) {
-        --choice-shown: color-mix(in oklch, var(--ink) 8%, var(--toolbar));
+        --choice-shown: var(--wash);
         border-color: var(--choice-fill);
-        background-color: var(--choice-shown);
+        background-color: var(--wash);
       }
 
+      /* The words straight after the radio, not centred in what is left of the button. */
       #view[data-button-look='side-bar'] .diff-bar .diff-bar-dot {
+        margin-right: 0;
         border-radius: 50%;
+      }
+
+      #view[data-button-look='side-bar'] .diff-bar .diff-bar-choice::after {
+        content: none;
       }
 
       #view[data-button-look='side-bar'] .diff-bar .diff-bar-chosen .diff-bar-dot {
