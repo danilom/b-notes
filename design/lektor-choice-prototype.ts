@@ -684,7 +684,7 @@ const CONTROLS: readonly PrototypeControl[] = [
     ],
     value: 'Izgled izmena:',
   },
-  { id: 'review-title-split', label: 'Naslov prikaza u dva reda', value: true },
+  { id: 'review-title-split', label: 'Naslov prikaza u dva reda', value: false },
   {
     id: 'review-sample',
     label: 'Uzorak u prikazu',

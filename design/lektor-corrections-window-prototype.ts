@@ -985,8 +985,8 @@ export type ReviewHighlight = 'grey' | 'blue' | 'none';
 let reviewLook: ReviewLook = 'stacked';
 // Danilo's wording (2026-11-11): "Prikaz" implies more than a look, and the choice is only the look.
 let reviewTitle: ReviewTitle = 'Izgled izmena:';
-/** The title on two lines, beside the two rows, or on one. */
-let isTitleSplit = true;
+/** The title on one line, Danilo's pick (2026-11-11): split, each word sat beside a row and read as its label. */
+let isTitleSplit = false;
 let reviewSample: ReviewSample = 'word';
 let reviewHighlight: ReviewHighlight = 'grey';
 
