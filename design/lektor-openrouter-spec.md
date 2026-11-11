@@ -154,7 +154,10 @@ the work:
     - "API ključevi" as the main button.
   - **The whole feature goes, not one Lektor of two:** partial disabling reads as flaky.
   - **On the keys screen,** the dead key's field says "Ovaj ključ više ne radi. Zalepi novi." A working key
-    pasted clears it.
+    pasted clears it. The dead key's box shows "Zalepi ključ ovde", as an empty one does, not "Sačuvan", which over
+    the warning read as all well (Danilo, 2026-11-11).
+  - **"Sačuvaj" with nothing pasted stays as it is** (Danilo, 2026-11-11): solid blue, doing nothing. Not worth special
+    cases on that screen.
   - **Found only on sending:** the same screen, plus "Nazad", in the panel and in the window. In the window,
     "API ključevi" closes the window and opens the keys screen in the panel.
 - **Keys stay in plain text in `lektor.json`.** Decided; nothing more.
@@ -261,7 +264,8 @@ rule that sent him back to the first step after a big change he came back to goe
 - **Failed while another text is open:** "Utisak o tekstu „X” nije stigao." plus the problem. Its shortcut resends
   that text, not the open one.
 - **The text deleted (or archived) while being read:** the request stops at once, and the panel says "Tekst „X” je obrisan." /
-  "Zato utisak o njemu neće stići." "Nazad" goes to the open text's menu.
+  "Zato utisak o njemu neće stići." "Nazad" goes to the open text's menu. Plain lines, the second small grey, with no
+  red warning sign and no failure box (Danilo, 2026-11-11): deleting it was his own act, not a fault.
 
 ## 7. Closing
 
@@ -326,12 +330,21 @@ marked like Ranije verzije's open row. All are locked while a request runs.
   - **A hand-over to paid** gets its own "AI Lektor: 🪙 Plaćeni „Flash”" line, a little apart, before its stages.
   - **Under the queue stage while it lasts:** "Besplatni zahtevi čekaju na red, pa traju duže, obično nekoliko minuta." plus
     "Ako ne krene za 2 minuta, šalje se plaćenom lektoru „Flash”." if ticked.
-  - **Then the big clock "Prošlo je N s",** and the model in small grey ("gemini-3.6-flash (rezervni)").
+  - **Then the big clock "Prošlo je N s",** and the model in small grey ("gemini-3.6-flash (rezervni)"). Kept
+    deliberately (Danilo, 2026-11-11): the wait is the one place with room to show such things; §1's "worked around,
+    not explained" is about what he's asked to act on.
   - **"Odustani od zahteva"** at the column's bottom right, where the send button was. That's fine here: the window has
     no next-step strip.
 - **The review:**
-  - **The header line:** "Vrsta ispravke: X · [mark] Plaćeni „Opus” · pre 3 dana · plaćeno $0,48 · Veće promene: 12,
-    sitne popravke: 31.", with the model only as the name's tooltip.
+  - **The header line, bare** (Danilo, 2026-11-11): "Stilska dorada · [mark] Plaćeni „Opus” · pre 3 dana · plaćeno
+    $0,48 · veće promene: 12, sitne popravke: 31." No "Vrsta ispravke:" label, and the counts start in lowercase, so the
+    longest case fits on one line beside "Izgled izmena". Each part says in full what it is in its tooltip:
+    - the kind: "Vrsta ispravke: Stilska dorada";
+    - the Lektor: "AI Lektor koji je napisao ispravke: Plaćeni „Opus” (Model: claude-opus-5.5)", the model that ran;
+    - the time: "Vreme kad su ispravke napisane: pre 3 dana";
+    - the cost, on paid: "Plaćeno za sve napisane predloge: $0,48";
+    - the counts: "Broj izmena: veće promene 12, sitne popravke 31".
+    The counts are the app's `review.counts` in `src/language/lektor-wording.ts`, which starts with a capital today.
   - **Then the app's legend.**
   - **"Izgled izmena"** (Danilo, 2026-11-11) replaces the checkbox "Prikaži tekst kakav će biti", which was too easy
     to miss. It's a choice of how the changes are drawn, nothing more:
@@ -518,6 +531,7 @@ per model, not the service. Real recorded replies to build the fakes from are in
   row chosen (one more colour, competing); "Prikaži:" and "Prikaz izmena:" as the title ("Prikaz" implies more than a
   look); the title split over two lines (each word read as its row's label); the view setting only the changes he
   hadn't touched (the control would say one thing and the page show another).
+- **The review's header:** the counts moved to the legend's line (longer still there).
 - **Money:** cost estimates, spending caps, daily ceilings, price checks.
 - **Background requests:** closing doesn't cancel.
 - **The reset time:** "danas"/"sutra" before it.
