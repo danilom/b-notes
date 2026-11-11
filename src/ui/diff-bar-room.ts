@@ -67,7 +67,7 @@ export function removeBarRoom(box: HTMLElement): void {
 }
 
 /** How much shorter the gap is than the bar, at top and bottom alike: a little, so the bar stands on it. */
-const SHORTER_THAN_BAR_PX = 2;
+const SHORTER_THAN_BAR_PX = 3;
 
 /**
  * Opens a gap above the line `over` is on, as tall as the bar less a little, between that line
