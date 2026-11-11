@@ -332,8 +332,28 @@ marked like Ranije verzije's open row. All are locked while a request runs.
 - **The review:**
   - **The header line:** "Vrsta ispravke: X · [mark] Plaćeni „Opus” · pre 3 dana · plaćeno $0,48 · Veće promene: 12,
     sitne popravke: 31.", with the model only as the name's tooltip.
-  - **Then the app's legend** with "Prikaži tekst kakav će biti" at the right.
-  - **Footer:** "← Nazad" at the far left, solid-blue "Unesi" (the app's hop/confetti stays), and "Zatvori".
+  - **Then the app's legend.**
+  - **"Izgled izmena"** (Danilo, 2026-11-11) replaces the checkbox "Prikaži tekst kakav će biti", which was too easy
+    to miss. It's a choice of how the changes are drawn, nothing more:
+    - **Where:** at the right of the header line and the legend, beside both. It costs no height, which this dialog
+      can't spare.
+    - **What:** "Izgled izmena:" on one line, small grey, then two radio rows stacked one under the other. Each row is
+      a sample of what it shows, drawn at the legend's size with the text's own marks and the legend's word "reč":
+      red struck "reč" next to green "reč" (the changes as old and new, 2 px apart), and green bold "reč" (the text as
+      it will be). No words name the rows; their screen-reader names are "izmene označene" and "samo rezultat".
+    - **Look:** the rows touch, with no dead space between them, and the whole row is the click target. The row
+      chosen has a light grey wash (the toolbar's grey) and a thin edge, not the accent: a fill would clash with the
+      marks' red, green and blue. Hovering the row chosen changes nothing.
+    - **What it does:** choosing a row draws **every** change that way, and forgets which ones he opened or closed by
+      hand. He can still open a single change afterwards. Clicking the row already chosen applies it again, so it
+      closes what he has opened since.
+    - **The one exception:** a change he has decided stays closed in both views, showing what goes in (the legend's
+      "biće uneto"). Opened, its wordings are drawn alike and his pick shows only on the bar, so the text would stop
+      saying what he chose.
+    - Rework kinds open on "samo rezultat", as today. Built in `createDiffReview` (`src/ui/diff-review.ts`), already
+      done and tested on `lektor-openrouter` (commit ba6d1fe).
+  - **Footer:** "← Nazad" at the far left, solid-blue "Unesi sve izmene u tekst" (the app's hop/confetti stays), and
+    "Zatvori".
 - **After the window closes,** taken or not, the panel stays open, on the screen the window was opened from: the
   menu, or the utisak (Danilo, 2026-11-11). Closing the panel after the review was for when the corrections were
   set up in the panel.
@@ -434,6 +454,8 @@ per model, not the service. Real recorded replies to build the fakes from are in
   nothing.
 - **Opening:** offline with and without keys saved (no keys: the keyless check), on the utisak when there is one.
 - **Void suggestions:** trailing whitespace doesn't void them; any other change does; one line however many.
+- **The review's view:** done in `test/diff-review.test.ts`: every change follows it, his own opening forgotten,
+  decided ones stay closed, setting it again applies again.
 - **The utisak's title line:** empty, spaces, his own quotes, long, control characters.
 - **Requests and texts:** request for the open text, for another text, text deleted while waiting, failure on
   another text (its shortcut resends that text), only one request at a time.
@@ -449,7 +471,8 @@ per model, not the service. Real recorded replies to build the fakes from are in
   "Zatvori" cancelling), the utisak (signature, title line, stale note, "AI može da pogreši" scrolled into view), and
   another text (pinned wait, done elsewhere with "Otvori tekst i utisak", deleted text).
 - **The window:** each kind, cards, void line, the request with the fold, the tick box and the balance, the wait with the
-  queue, the 3.6 switch and the hand-over lines, each failure screen and its shortcut, the review and Unesi, and the
+  queue, the 3.6 switch and the hand-over lines, each failure screen and its shortcut, the review (both views of "Izgled izmena", a change he opened closed
+  again by its row) and Unesi, and the
   close confirm (asks with kept suggestions, not without, Nazad never asks).
 - **Dark mode once:** marks brighter, pictures unchanged.
 - **Mind the traps in memory:** `npx playwright test <spec>` doesn't rebuild; no spec name may start with `test-`.
@@ -488,6 +511,13 @@ per model, not the service. Real recorded replies to build the fakes from are in
 - **Dead key:** a message squeezed over a greyed menu; disabling one Lektor of two; "Javi Danilu".
 - **Waits:** "Google AI"/"Claude AI" stage names; "(novi model)/(stariji model)"; "Odustani" in the strip.
 - **Void suggestions:** one line per set, naming Lektor and date.
+- **The review's view** (in place of "Prikaži tekst kakav će biti"): the checkbox itself (missed); two joined
+  buttons "Prikaži tekst: [sa izmenama] [kakav će biti]" on a line of their own (a line of height, words too subtle);
+  an on/off switch; samples reading "staro"/"novo" (they say old against new, when the choice is only the shape);
+  blurred samples (the green bold one vanishes); the rows side by side (less plainly a choice); the soft blue on the
+  row chosen (one more colour, competing); "Prikaži:" and "Prikaz izmena:" as the title ("Prikaz" implies more than a
+  look); the title split over two lines (each word read as its row's label); the view setting only the changes he
+  hadn't touched (the control would say one thing and the page show another).
 - **Money:** cost estimates, spending caps, daily ceilings, price checks.
 - **Background requests:** closing doesn't cancel.
 - **The reset time:** "danas"/"sutra" before it.
@@ -898,12 +928,14 @@ questions this section first raised are listed at its end, and are written into 
   - Lay it out as `design/lektor-corrections-window-prototype.ts` does.
   - `correct()` and `showCorrectionFailure()` leave the sidebar.
 - **Take from `openLektorDialog` (`lektor-dialog.ts`), so the review draws inside the right side:**
-  - `viewOfDiff`, `legend`, `onlyNewChoice` ("Prikaži tekst kakav će biti");
+  - `viewOfDiff` and `legend`; `onlyNewChoice` (the checkbox) gives way to "Izgled izmena" (§8). The mockup's
+    `viewChoice` in `design/lektor-corrections-window-prototype.ts` draws it, with its CSS in
+    `design/lektor-choice-prototype.html` (`.lektor-view-*`);
   - the `noticeIfAtTheEnd` confetti (`burstFrom`);
   - `leave()` with `openConfirmDialog` and the existing `review.leaveTitle`, `leaveBody`, `leaveBodyDecided` and
     `leaveCancel`, picked by `review.hasDecisions()`. §7's wording is already there.
 - **Change in the review:** today's footer is the footer note, then "Unesi sve izmene u tekst", then Zatvori. It
-  becomes "← Nazad", solid "Unesi" and Zatvori. The header line moves into `withKind` and its service line.
+  becomes "← Nazad", solid "Unesi sve izmene u tekst" and Zatvori. The header line moves into `withKind` and its service line.
 - **The instruction shown:** today the box shows `PRESET_PROMPTS[preset]` only, and `CORRECTION_RULES` and
   `REWRITE_RULES` stay hidden. Show what `correctionInstruction` sends, less his note, which is in its own box below.
 - **Reuse as they are:** `showAsModal`, `titleOf`, `PRESET_ORDER`, `PRESET_PROMPTS`, `parts.applyCorrections` (which
