@@ -78,22 +78,64 @@ export function copiedText(box: HTMLElement, range: Range, wordingOf: (change: E
   return from <= to ? textNow.slice(from, to) : '';
 }
 
+/** A review on the page, and how to read its changes and its text as it will be. */
+interface CopiedReview {
+  box: HTMLElement;
+  wordingOf: (change: Element) => string;
+  textNow: () => string;
+}
+
+/** Reviews drawn, the newest last; those since drawn again, and gone from the page, are dropped as found. */
+const reviews: CopiedReview[] = [];
+let isListening = false;
+
 /**
- * Copying from the box gives the text as it will be. Only for a selection inside the box:
- * one reaching out of it, or one that cannot be placed in the text, is left to the browser.
+ * The selection cut down to the box: a selection reaching out of it, started over the bar
+ * floating above the first line, say, or in the legend, takes only the text.
  */
-export function copyOnlyWhatGoesIn(box: HTMLElement, wordingOf: (change: Element) => string, textNow: () => string): void {
-  box.addEventListener('copy', (event) => {
-    const selection = getSelection();
-    if (selection === null || selection.rangeCount === 0 || event.clipboardData === null) return;
-    const range = selection.getRangeAt(0);
-    if (!box.contains(range.commonAncestorContainer)) return;
-    const copied = copiedText(box, range, wordingOf, textNow());
+function rangeInBox(selected: Range, box: HTMLElement): Range | null {
+  if (!selected.intersectsNode(box)) return null;
+  const inside = document.createRange();
+  inside.selectNodeContents(box);
+  if (box.contains(selected.startContainer)) inside.setStart(selected.startContainer, selected.startOffset);
+  if (box.contains(selected.endContainer)) inside.setEnd(selected.endContainer, selected.endOffset);
+  return inside;
+}
+
+/**
+ * One listener for the page, not one for the box: the browser sends a copy to where the
+ * selection starts, or to the page itself, which need not be in the box at all.
+ */
+function onCopy(event: ClipboardEvent): void {
+  const selection = getSelection();
+  if (selection === null || selection.rangeCount === 0 || selection.isCollapsed || event.clipboardData === null) return;
+  for (const [at, review] of [...reviews.entries()].reverse()) {
+    if (!review.box.isConnected) {
+      reviews.splice(at, 1);
+      continue;
+    }
+    const range = rangeInBox(selection.getRangeAt(0), review.box);
+    if (range === null) continue;
+    const copied = copiedText(review.box, range, review.wordingOf, review.textNow());
     if (copied === null) {
       console.warn('A copy from the review could not be placed in the text as it will be; left to the browser');
       return;
     }
     event.clipboardData.setData('text/plain', copied);
     event.preventDefault();
-  });
+    return;
+  }
+}
+
+/**
+ * Copying any of the box gives the text as it will be. One that cannot be placed in the text
+ * is left to the browser.
+ */
+export function copyOnlyWhatGoesIn(box: HTMLElement, wordingOf: (change: Element) => string, textNow: () => string): void {
+  if (!isListening) document.addEventListener('copy', onCopy);
+  isListening = true;
+  // Each choice draws the review again: those gone from the page go now, not at the next copy.
+  const gone = reviews.filter((review) => !review.box.isConnected);
+  for (const review of gone) reviews.splice(reviews.indexOf(review), 1);
+  reviews.push({ box, wordingOf, textNow });
 }
