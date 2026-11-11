@@ -229,26 +229,34 @@ barRoom.addEventListener('change', () => {
   renderKeepingPlace();
 });
 
-const BAND_LOOK_KEY = 'diff-prototype:band-look';
-
-/** A look for the band, drawn by the page's own styles, which go by this mark on the view. */
-function showBandLook(): void {
-  view.dataset['bandLook'] = bandLook.value;
+/**
+ * A choice among looks, drawn by the page's own styles from a mark on the view, remembered
+ * across visits.
+ *
+ * @param mark The view's data attribute, without "data-".
+ */
+function lookChoice(pick: HTMLSelectElement, mark: string): void {
+  const key = `diff-prototype:${mark}`;
+  const show = (): void => {
+    view.setAttribute(`data-${mark}`, pick.value);
+    try {
+      localStorage.setItem(key, pick.value);
+    } catch (error) {
+      console.warn(`The ${mark} could not be remembered`, error);
+    }
+  };
   try {
-    localStorage.setItem(BAND_LOOK_KEY, bandLook.value);
+    const remembered = localStorage.getItem(key);
+    if (remembered !== null && [...pick.options].some((option) => option.value === remembered)) pick.value = remembered;
   } catch (error) {
-    console.warn('The look of the band could not be remembered', error);
+    console.warn(`The ${mark} could not be read back`, error);
   }
+  show();
+  pick.addEventListener('change', show);
 }
 
-try {
-  const remembered = localStorage.getItem(BAND_LOOK_KEY);
-  if (remembered !== null && [...bandLook.options].some((option) => option.value === remembered)) bandLook.value = remembered;
-} catch (error) {
-  console.warn('The look of the band could not be read back', error);
-}
-showBandLook();
-bandLook.addEventListener('change', showBandLook);
+lookChoice(bandLook, 'band-look');
+lookChoice(element('button-look', HTMLSelectElement), 'button-look');
 
 /**
  * A switch for one of the band's looks, which the page's styles draw from a mark on the view,

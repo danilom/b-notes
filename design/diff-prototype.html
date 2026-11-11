@@ -119,6 +119,107 @@
         margin-left: calc(-0.4rem - 1px + 4px);
       }
 
+      /*
+        Lighter looks to try for Vrati staro, Prihvati and Izmeni (2026-11-11), each keeping the
+        tie to the colour of its wording in a lighter form, and the sign of the one in effect.
+        --choice-fill is the wording's colour (interface.css); --choice-shown is what the
+        button is filled with, which the chosen sign's inner gap is drawn in.
+      */
+      #view[data-button-look] .diff-bar .diff-bar-choice,
+      #view[data-button-look] .diff-bar .diff-bar-choice:hover:not(:disabled) {
+        background-image: none;
+      }
+
+      /* An ordinary button, its colour a stripe along the bottom; thicker for the one in effect. */
+      #view[data-button-look='underlined'] .diff-bar .diff-bar-choice {
+        --choice-shown: var(--panel);
+        border-color: var(--line);
+        background-color: var(--panel);
+        color: var(--ink);
+        box-shadow: inset 0 -3px 0 var(--choice-fill);
+      }
+
+      #view[data-button-look='underlined'] .diff-bar .diff-bar-chosen {
+        box-shadow: inset 0 -5px 0 var(--choice-fill);
+      }
+
+      #view[data-button-look='underlined'] .diff-bar .diff-bar-choice:hover:not(:disabled) {
+        --choice-shown: var(--toolbar);
+        border-color: var(--line);
+        background-color: var(--toolbar);
+      }
+
+      /* No button at all: a round radio in the wording's colour, and the words beside it. */
+      #view[data-button-look='radio'] .diff-bar .diff-bar-choice {
+        --choice-shown: transparent;
+        border-color: transparent;
+        background-color: transparent;
+        color: var(--ink);
+      }
+
+      #view[data-button-look='radio'] .diff-bar .diff-bar-dot {
+        border-radius: 50%;
+        border-color: var(--choice-fill);
+      }
+
+      #view[data-button-look='radio'] .diff-bar .diff-bar-chosen .diff-bar-dot {
+        background: radial-gradient(circle, var(--choice-fill) 0 34%, transparent 38%);
+        box-shadow: none;
+      }
+
+      #view[data-button-look='radio'] .diff-bar .diff-bar-choice:hover:not(:disabled) {
+        border-color: transparent;
+        background-color: var(--wash);
+      }
+
+      /* The wording's colour, faint, with words and sign in its full strength. */
+      #view[data-button-look='pale'] .diff-bar .diff-bar-choice {
+        --choice-shown: color-mix(in oklch, var(--choice-fill) 14%, var(--panel));
+        border-color: color-mix(in oklch, var(--choice-fill) 40%, var(--panel));
+        background-color: var(--choice-shown);
+        color: var(--choice-fill);
+      }
+
+      #view[data-button-look='pale'] .diff-bar .diff-bar-choice:hover:not(:disabled) {
+        --choice-shown: color-mix(in oklch, var(--choice-fill) 24%, var(--panel));
+        border-color: var(--choice-fill);
+        background-color: var(--choice-shown);
+      }
+
+      /* A plain button with the colour as its edge and its words. */
+      #view[data-button-look='outlined'] .diff-bar .diff-bar-choice {
+        --choice-shown: var(--panel);
+        border: 1.5px solid var(--choice-fill);
+        background-color: var(--panel);
+        color: var(--choice-fill);
+      }
+
+      #view[data-button-look='outlined'] .diff-bar .diff-bar-choice:hover:not(:disabled) {
+        --choice-shown: color-mix(in oklch, var(--choice-fill) 10%, var(--panel));
+        border-color: var(--choice-fill);
+        background-color: var(--choice-shown);
+      }
+
+      /* Only the words and the sign, in the wording's colour. */
+      #view[data-button-look='text'] .diff-bar .diff-bar-choice {
+        --choice-shown: transparent;
+        border-color: transparent;
+        background-color: transparent;
+        color: var(--choice-fill);
+        font-weight: 600;
+      }
+
+      #view[data-button-look='text'] .diff-bar .diff-bar-choice:hover:not(:disabled) {
+        border-color: transparent;
+        background-color: var(--wash);
+      }
+
+      /* With nothing behind it but the band, the sign's inner square is drawn smaller rather than ringed in a colour. */
+      #view[data-button-look='text'] .diff-bar .diff-bar-chosen .diff-bar-dot {
+        background: linear-gradient(currentColor, currentColor) center / 40% 40% no-repeat;
+        box-shadow: none;
+      }
+
       /* As the Lektor's window sizes the lines above its text (lektor.css, .lektor-window .review-body). */
       .lektor-review-head {
         margin-bottom: 0.75rem;
@@ -360,6 +461,17 @@
           <label title="Izmena nad kojom je traka dobija istu pozadinu kao pojas, spojenu s njim">
             <input type="checkbox" id="change-on-band" checked />
             Izmena na pojasu
+          </label>
+          <label class="prototype-pick" title="Kako izgledaju Vrati staro, Prihvati i Izmeni">
+            <span>Izgled dugmadi</span>
+            <select id="button-look">
+              <option value="filled">Pune boje (sada)</option>
+              <option value="underlined">Obična, podvučena bojom</option>
+              <option value="radio">Radio u boji</option>
+              <option value="pale">Bleda boja</option>
+              <option value="outlined">Obrub u boji</option>
+              <option value="text">Samo tekst u boji</option>
+            </select>
           </label>
           <label class="prototype-pick" title="Kako izgleda prostor otvoren za traku">
             <span>Izgled pojasa</span>
