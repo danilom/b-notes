@@ -471,9 +471,9 @@ per model, not the service. Real recorded replies to build the fakes from are in
   "Zatvori" cancelling), the utisak (signature, title line, stale note, "AI može da pogreši" scrolled into view), and
   another text (pinned wait, done elsewhere with "Otvori tekst i utisak", deleted text).
 - **The window:** each kind, cards, void line, the request with the fold, the tick box and the balance, the wait with the
-  queue, the 3.6 switch and the hand-over lines, each failure screen and its shortcut, the review (both views of "Izgled izmena", a change he opened closed
-  again by its row) and Unesi, and the
-  close confirm (asks with kept suggestions, not without, Nazad never asks).
+  queue, the 3.6 switch and the hand-over lines, each failure screen and its shortcut, the review (both views of
+  "Izgled izmena", and a change he opened closed again by its row) and Unesi, and the close confirm (asks with kept
+  suggestions, not without, Nazad never asks).
 - **Dark mode once:** marks brighter, pictures unchanged.
 - **Mind the traps in memory:** `npx playwright test <spec>` doesn't rebuild; no spec name may start with `test-`.
 
