@@ -1097,7 +1097,8 @@ function viewOption(isOnlyNew: boolean, name: string, samples: readonly HTMLElem
   input.dataset['onlyNew'] = String(isOnlyNew);
   input.checked = isOnlyNew === review.showsOnlyNew();
   input.setAttribute('aria-label', name);
-  input.addEventListener('change', () => review.setShowsOnlyNew(isOnlyNew));
+  // On a click, not a change: the row already chosen applies again, closing what he opened since.
+  input.addEventListener('click', () => review.setShowsOnlyNew(isOnlyNew));
   const shown = el('span', 'lektor-view-sample');
   shown.append(...samples);
   option.append(input, shown);
