@@ -364,6 +364,22 @@ marked like Ranije verzije's open row. All are locked while a request runs.
       choice stays, and shows on the change's bar.
     - Dubinska prerada opens on "samo rezultat", as today; the others on "izmene označene". Built in `createDiffReview` (`src/ui/diff-review.ts`), already
       done and tested on `lektor-openrouter` (commit ba6d1fe).
+  - **The bar over a change stands on a band** (Danilo, 2026-11-12, tried in the diff prototype, branch
+    `diff-bar-room`). It no longer floats over the line above and covers it:
+    - **The band:** opened in the text above the line, as tall as the bar less 3 px a side, the bar centred on it.
+      Grey with a fine grid of dots, edge to edge, so it isn't read as a blank line of his. The line he's on stays
+      put and the text above moves up, at once (a slide was tried and found worse). On the first line it sits in the
+      box's top padding; where the stepper leaves no room beside the bar, it goes lower, bar and all.
+    - **The bar on it:** the buttons straight on the band, no plate, edge or halo; the first one starts where the
+      change does. The choice buttons keep their faint colours, full under the pointer (full all the time was tried
+      and looked off). A letter's bar is centred on its letters, not counting the X.
+    - **The current change** sits on the band's grey, joined to it and spilling 4 px at the sides and 5 px below,
+      bar up or not. A letter with its bar up the same, in the shape of its pointer highlight.
+    - **Clicks** on the band do nothing. **Izmeni** keeps the band while he types; finishing the edit closes it.
+    - **Copying** from the review gives only the text as it will be, in both views: no wording not going in, no
+      marks, no buttons. Cut from the review's own text (`src/ui/diff-copied-text.ts`), since the drawing loses
+      paragraph breaks and spaces put where a break was.
+    - Built in `src/ui/diff-bar-band.ts` and `diff-change-bar.ts`, switched on by the review's `makesRoom`.
   - **Footer:** "← Nazad" at the far left, solid-blue "Unesi sve izmene u tekst" (the app's hop/confetti stays), and
     "Zatvori".
 - **After the window closes,** taken or not, the panel stays open, on the screen the window was opened from: the
