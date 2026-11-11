@@ -80,6 +80,8 @@ export function createReviewPanel(confirmContainer: HTMLDialogElement, setup: Re
     const editing = review.editing();
     return {
       ...editing,
+      // The bar on a band of its own, covering no words of the line above (Danilo, 2026-11-12).
+      makesRoom: true,
       onCurrent: (changeAt) => {
         editing.onCurrent(changeAt);
         noticeIfAtTheEnd(changeAt);

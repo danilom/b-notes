@@ -2852,14 +2852,18 @@ dialog::backdrop {
 }
 
 /*
-  The band the bar stands on, opened above the line it is over; its height is set where it is
-  made, and the bar is inside it. A shade darker, from edge to edge of the text area, so it is
-  not taken for a blank line in his text. How far that is on either side is measured where the
-  band is made: exactly to the edges, as further would make the box scroll sideways.
+  The band the bar stands on (Danilo, 2026-11-12, tried in the diff prototype): opened above the
+  line it is over, so the bar covers no words of the line above, its height set where it is
+  made, and the bar inside it. A shade darker with a fine grid of dots, from edge to edge of the
+  text area, so it is not taken for a blank line in his text but for a surface something stands
+  on. How far that is on either side is measured where the band is made: exactly to the edges,
+  as further would make the box scroll sideways. Not part of his text: nothing in it is selected.
 */
 .diff-bar-band {
+  --band-dot: color-mix(in srgb, var(--ink) 22%, transparent);
   position: relative;
   display: block;
+  user-select: none;
 }
 
 /* The shading on a layer of its own, under the bar. */
@@ -2867,13 +2871,64 @@ dialog::backdrop {
   content: '';
   position: absolute;
   inset: 0 calc(-1 * var(--reach-right, 0px)) 0 calc(-1 * var(--reach-left, 0px));
-  background: var(--wash);
+  background:
+    radial-gradient(circle, var(--band-dot) 1px, transparent 1.3px) 0 0 / 7px 7px,
+    var(--wash);
 }
 
-/* The bar on its band is inside the text, whose spacing and line height are not the bar's. */
+/*
+  On its band the bar is inside the text, whose spacing and line height are not the bar's, and
+  stands straight on the band, without the plate, edge and halo it floats on elsewhere: less
+  in the way, more of a piece with the text. It keeps its size, so the band is as tall as ever.
+  Back by the plate's padding and edge (.stepper), so its first button, not the plate no longer
+  drawn, starts where the change does.
+*/
 .diff-bar-band > .diff-bar {
+  margin-left: calc(-0.4rem - 1px);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
   line-height: normal;
   white-space: normal;
+}
+
+/*
+  Where the bar has a band: the current change on the band's own grey, bar up or not, and a
+  coloured letter while its bar is up. The grey reaches up through the line's spacing,
+  measured as --band-join, to meet the band.
+*/
+.review-text.diff-makes-room {
+  /* How far the change's grey spills past it at the sides, and below. */
+  --spill: 4px;
+  --spill-below: 5px;
+}
+
+/*
+  Further out at the sides and below, overlapping what is there a little: borders in the same
+  grey, taking no room. An inline box's borders above and below move no line, and those at the
+  sides are given back by a margin as wide, so nothing moves. The background stops inside them,
+  or the two greys would add up. Its own background, so under its words and their marks.
+*/
+/* As specific as the rules for a collapsed change and a letter under the pointer, which set the same, and after them. */
+.diff-framed .review-text.diff-makes-room .diff-current {
+  padding-top: var(--band-join, 0px);
+  border: 0 solid var(--wash);
+  border-width: 0 var(--spill) var(--spill-below);
+  margin-inline: calc(-1 * var(--spill));
+  background-color: var(--wash);
+  background-clip: padding-box;
+}
+
+/* The change's grey reaching further left than its words, the bar is held back by as much, to keep to the words. */
+.diff-makes-room:has(.diff-bar-over) .diff-bar-band > .diff-bar {
+  margin-left: calc(-0.4rem - 1px + var(--spill));
+}
+
+/* A letter keeps the shape its highlight under the pointer has, rules for close neighbours and all: only the colour and the reach up are the selection's. */
+.diff-framed .review-text.diff-makes-room .diff-letter-over {
+  padding-top: var(--band-join, 0px);
+  border-radius: 0;
+  background-color: var(--wash);
 }
 
 /* All one width, so that none of them looks like the preferred answer. */

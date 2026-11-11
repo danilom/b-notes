@@ -66,7 +66,11 @@ export interface DiffEditing {
   lettersOf: (tidyAt: number) => readonly string[];
   onPickLetter: (tidyAt: number, slot: number, letter: string) => void;
   onCurrent: (changeAt: number) => void;
-  /** Opens a gap above the line the bar is over, instead of covering the line above. Being tried in the diff prototype. */
+  /**
+   * The bar stands on a band opened above the line it is over, rather than floating over the
+   * line above and covering it; and the current change, and a letter with its bar up, are drawn
+   * on the band's grey. The Lektor's review; the diff prototype can turn it off, to compare.
+   */
   makesRoom?: boolean;
 }
 
@@ -188,8 +192,10 @@ function startEditing(change: HTMLElement, fragments: readonly Element[], at: nu
  * raised bars over the line he was reading, and an unsteady one could not get to the
  * buttons before they went.
  *
- * One bar, floating over the box rather than inside it, so that it moves no lines
- * and is not cut off by the edge of the box.
+ * One bar. With `makesRoom`, as the Lektor's review has it, it stands on a band opened in the
+ * text above its line (diff-bar-band.ts): the text above moves up to make room, the line he
+ * is on stays where it is, and the bar covers nothing. Without, it floats over the box, moving
+ * no lines but covering the line above.
  */
 export function createDiffChangeBar(
   framed: HTMLElement,
@@ -203,6 +209,8 @@ export function createDiffChangeBar(
   bar.className = 'stepper diff-bar';
   bar.hidden = true;
   framed.append(bar);
+  // For the stylesheet: where bars have bands, the current change is drawn on the band's grey.
+  box.classList.toggle('diff-makes-room', editing.makesRoom === true);
   // On its band the bar is inside the text, where a click anywhere puts the bar away: its own are not that.
   bar.addEventListener('click', (event) => {
     if (band !== null) event.stopPropagation();

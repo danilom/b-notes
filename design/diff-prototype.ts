@@ -23,8 +23,6 @@ const onlyNew = element('only-new', HTMLInputElement);
 const readOnly = element('read-only', HTMLInputElement);
 const preamble = element('preamble', HTMLInputElement);
 const barRoom = element('bar-room', HTMLInputElement);
-const bandLook = element('band-look', HTMLSelectElement);
-const barOnBand = element('bar-on-band', HTMLInputElement);
 const view = element('view', HTMLElement);
 
 /** A sample of how the changes are drawn, at the legend's size, with the legend's own word. */
@@ -140,8 +138,6 @@ function render(): void {
     ),
   );
   view.replaceChildren(column);
-  // For the page's styles, whose looks for the current change hold only where there are bands.
-  view.toggleAttribute('data-bar-room', barRoom.checked && !readOnly.checked);
 }
 
 /**
@@ -229,62 +225,6 @@ barRoom.addEventListener('change', () => {
   }
   renderKeepingPlace();
 });
-
-/**
- * A choice among looks, drawn by the page's own styles from a mark on the view, remembered
- * across visits.
- *
- * @param mark The view's data attribute, without "data-".
- */
-function lookChoice(pick: HTMLSelectElement, mark: string): void {
-  const key = `diff-prototype:${mark}`;
-  const show = (): void => {
-    view.setAttribute(`data-${mark}`, pick.value);
-    try {
-      localStorage.setItem(key, pick.value);
-    } catch (error) {
-      console.warn(`The ${mark} could not be remembered`, error);
-    }
-  };
-  try {
-    const remembered = localStorage.getItem(key);
-    if (remembered !== null && [...pick.options].some((option) => option.value === remembered)) pick.value = remembered;
-  } catch (error) {
-    console.warn(`The ${mark} could not be read back`, error);
-  }
-  show();
-  pick.addEventListener('change', show);
-}
-
-lookChoice(bandLook, 'band-look');
-lookChoice(element('button-look', HTMLSelectElement), 'button-look');
-
-/**
- * A switch for one of the band's looks, which the page's styles draw from a mark on the view,
- * remembered across visits. On unless turned off.
- */
-function lookSwitch(box: HTMLInputElement, mark: string): void {
-  const key = `diff-prototype:${mark}`;
-  const show = (): void => {
-    view.toggleAttribute(`data-${mark}`, box.checked);
-    try {
-      localStorage.setItem(key, box.checked ? 'on' : 'off');
-    } catch (error) {
-      console.warn(`Whether ${mark} could not be remembered`, error);
-    }
-  };
-  try {
-    box.checked = localStorage.getItem(key) !== 'off';
-  } catch (error) {
-    console.warn(`Whether ${mark} could not be read back`, error);
-  }
-  show();
-  box.addEventListener('change', show);
-}
-
-// The buttons straight on the band, chosen; the change on it too, asked for to try (Danilo, 2026-11-11).
-lookSwitch(barOnBand, 'bar-on-band');
-lookSwitch(element('change-on-band', HTMLInputElement), 'change-on-band');
 
 element('swap', HTMLButtonElement).addEventListener('click', () => {
   [current.value, proposed.value] = [proposed.value, current.value];
