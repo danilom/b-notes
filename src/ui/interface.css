@@ -2852,16 +2852,30 @@ dialog::backdrop {
 }
 
 /*
-  The gap opened above the line the bar is over; its height is set where it is made. A shade
-  darker, from edge to edge of the text area, so it is not taken for a blank line in his text:
-  a shadow spread all round reaches the edges without widening the box, which would scroll
-  sideways, and is cut off at the gap's own top and bottom.
+  The band the bar stands on, opened above the line it is over; its height is set where it is
+  made, and the bar is inside it. A shade darker, from edge to edge of the text area, so it is
+  not taken for a blank line in his text: a shadow spread all round reaches the edges without
+  widening the box, which would scroll sideways, and is cut off at the band's top and bottom.
 */
-.diff-bar-room {
+.diff-bar-band {
+  position: relative;
   display: block;
+}
+
+/* The shading on a layer of its own, so cutting it off at the band's top and bottom does not cut the bar off too. */
+.diff-bar-band::before {
+  content: '';
+  position: absolute;
+  inset: 0;
   background: var(--wash);
   box-shadow: 0 0 0 100vmax var(--wash);
   clip-path: inset(0 -100vmax);
+}
+
+/* The bar on its band is inside the text, whose spacing and line height are not the bar's. */
+.diff-bar-band > .diff-bar {
+  line-height: normal;
+  white-space: normal;
 }
 
 /* All one width, so that none of them looks like the preferred answer. */

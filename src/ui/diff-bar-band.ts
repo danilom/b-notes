@@ -1,14 +1,19 @@
 /**
- * Room above the line the change bar is over, so the bar covers no words of the line above.
+ * The band the change bar stands on: a shaded strip opened between the line the bar is for
+ * and the line above, with the bar inside it. The two are one thing, so they cannot part:
+ * the band is in the text and scrolls with it, and the bar goes wherever the band does.
  *
  * The text flows, so there is no line to give a margin to. Instead an empty block goes in at
  * the place the line starts on screen: the line above ends where it ended, the line itself
  * starts with the same word at the same width, and so every line wraps as it did, only lower.
- * The box scrolls by as much, so the line he clicked stays under the pointer and what moves is
- * what was above it.
+ * Each line keeps its own spacing; the band is the space added. The box scrolls by as much,
+ * so the line he clicked stays under the pointer and what moves is what was above it.
  */
 
-const ROOM_CLASS = 'diff-bar-room';
+const BAND_CLASS = 'diff-bar-band';
+
+/** How much shorter the band is than the bar, at top and bottom alike: a little, so the bar stands on it. */
+const SHORTER_THAN_BAR_PX = 3;
 
 /** A place in the text: before the character at `offset` in `node`. */
 interface TextPlace {
@@ -37,77 +42,108 @@ function textBefore(box: HTMLElement, over: Element): Text[] {
 }
 
 /**
- * Where the line `over` is on starts, and how low the line above reaches. Going back a
+ * Where the line `over` is on starts, and whether there is a line above it. Going back a
  * character at a time, the first one drawn higher up is the end of the line above.
  */
-function lineStart(box: HTMLElement, over: Element, lineTop: number): { start: TextPlace | null; aboveBottom: number | null } {
+function lineStart(box: HTMLElement, over: Element, lineTop: number): { start: TextPlace | null; isFirstLine: boolean } {
   let start: TextPlace | null = null;
   for (const node of textBefore(box, over)) {
     for (let offset = node.length - 1; offset >= 0; offset -= 1) {
       if (/\s/.test(node.data.charAt(offset))) continue;
       const rect = characterRect(node, offset);
       if (rect === null) continue;
-      if (rect.bottom <= lineTop + 1) return { start, aboveBottom: rect.bottom };
+      if (rect.bottom <= lineTop + 1) return { start, isFirstLine: false };
       start = { node, offset };
     }
   }
-  return { start, aboveBottom: null };
+  return { start, isFirstLine: true };
 }
 
-/** Takes the room out again, wherever it is, and gives back the scroll it took. */
-export function removeBarRoom(box: HTMLElement): void {
-  for (const room of box.querySelectorAll<HTMLElement>(`.${ROOM_CLASS}`)) {
-    // The first line's band takes no space, so it gives none back.
-    const height = room.style.marginTop === '' ? room.offsetHeight : 0;
-    const parent = room.parentNode;
-    room.remove();
+/**
+ * Takes the band out, and gives back the scroll it took. The bar goes back to `home`, hidden.
+ */
+export function closeBarBand(box: HTMLElement, bar: HTMLElement, home: HTMLElement): void {
+  for (const band of box.querySelectorAll<HTMLElement>(`.${BAND_CLASS}`)) {
+    if (band.contains(bar)) {
+      bar.hidden = true;
+      home.append(bar);
+    }
+    const parent = band.parentNode;
+    band.remove();
     parent?.normalize();
-    box.scrollTop -= height;
+    box.scrollTop -= Number(band.dataset['scrolledBy'] ?? 0);
   }
 }
 
-/** How much shorter the gap is than the bar, at top and bottom alike: a little, so the bar stands on it. */
-const SHORTER_THAN_BAR_PX = 3;
-
 /**
- * Opens a gap above the line `over` is on, as tall as the bar less a little, between that line
- * and the one above, each keeping its usual spacing: the gap is the space added, shaded, and the
- * bar sits centred on it.
+ * Opens the band above the line `over` is on, as tall as the bar less a little, and puts the
+ * bar in it, centred on it. Any band already open closes first.
  *
  * On the first line the box's own padding is the room already, so the band is drawn there,
  * pulled up by as much as it is tall: it takes no space and the line does not move.
  *
- * @returns The gap, for the bar to be centred on, or null where none could be made.
+ * @param home Where the bar goes back to when the band closes.
+ * @param options.mayDrawInPadding False where the padding is taken, by the stepper with no
+ *   room beside it: the first line then gets a band of its own, below the padding.
+ * @returns The band, or null where `over` is not drawn.
  */
-export function makeBarRoom(box: HTMLElement, over: Element, barHeight: number): HTMLElement | null {
-  removeBarRoom(box);
+export function openBarBand(
+  box: HTMLElement,
+  over: Element,
+  bar: HTMLElement,
+  home: HTMLElement,
+  { mayDrawInPadding = true } = {},
+): HTMLElement | null {
+  closeBarBand(box, bar, home);
   const line = over.getClientRects()[0];
   if (line === undefined) return null;
-  const { start, aboveBottom } = lineStart(box, over, line.top);
-  const isFirstLine = aboveBottom === null;
-  const height = Math.max(0, Math.round(barHeight - 2 * SHORTER_THAN_BAR_PX));
+  const { start, isFirstLine } = lineStart(box, over, line.top);
 
-  const room = document.createElement('span');
-  room.className = ROOM_CLASS;
-  room.style.height = `${height}px`;
-  if (isFirstLine) room.style.marginTop = `-${height}px`;
-  if (start === null) over.before(room);
-  else placeBefore(start, room);
-  if (!isFirstLine) box.scrollTop += height;
-  return room;
+  bar.hidden = false;
+  const height = Math.max(0, Math.round(bar.offsetHeight - 2 * SHORTER_THAN_BAR_PX));
+  // A span made a block: it may go in among the spans of the text.
+  const band = document.createElement('span');
+  band.className = BAND_CLASS;
+  band.style.height = `${height}px`;
+  if (isFirstLine && mayDrawInPadding) band.style.marginTop = `-${height}px`;
+  if (start === null) over.before(band);
+  else placeBefore(start, band);
+  bar.style.top = `-${SHORTER_THAN_BAR_PX}px`;
+  band.append(bar);
+  // Not on the first line: scrolled back, its band would go up under the stepper it was moved to clear.
+  if (!isFirstLine) {
+    box.scrollTop += height;
+    band.dataset['scrolledBy'] = String(height);
+  }
+  return band;
+}
+
+/** Whether this is the first line's band, drawn in the box's padding and taking no space. */
+export const isDrawnInPadding = (band: HTMLElement): boolean => band.style.marginTop !== '';
+
+/**
+ * The bar along its band: from `wantedLeft` on the screen, kept inside the box.
+ */
+export function seatBarAt(box: HTMLElement, band: HTMLElement, bar: HTMLElement, wantedLeft: number): void {
+  const bandLeft = band.getBoundingClientRect().left;
+  const boxLeft = box.getBoundingClientRect().left + box.clientLeft;
+  const lowest = boxLeft - bandLeft;
+  // A pixel in from the edge: right up against it, a fraction over made the box scroll sideways.
+  const highest = Math.floor(lowest + box.clientWidth - bar.getBoundingClientRect().width) - 1;
+  bar.style.left = `${Math.max(lowest, Math.min(wantedLeft - bandLeft, highest))}px`;
 }
 
 /**
  * Before the line's first character, and outside any box that character begins: a line
- * starting with another change gets the room above that change, not inside its marks.
+ * starting with another change gets the band above that change, not inside its marks.
  */
-function placeBefore({ node, offset }: TextPlace, room: HTMLElement): void {
+function placeBefore({ node, offset }: TextPlace, band: HTMLElement): void {
   // The spaces before stay at the end of the line above, where the text's kept spacing hangs them.
   let outermost: Node = offset > 0 ? node.splitText(offset) : node;
   while (outermost.parentElement !== null && !outermost.parentElement.classList.contains('diff-paragraph') && isFirst(outermost)) {
     outermost = outermost.parentElement;
   }
-  outermost.parentNode?.insertBefore(room, outermost);
+  outermost.parentNode?.insertBefore(band, outermost);
 }
 
 /** Whether nothing at all comes before this in its parent. */

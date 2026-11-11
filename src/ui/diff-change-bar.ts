@@ -1,5 +1,5 @@
 import type { ChangeCandidate } from '../notes/text-diff.ts';
-import { makeBarRoom, removeBarRoom } from './diff-bar-room.ts';
+import { closeBarBand, isDrawnInPadding, openBarBand, seatBarAt } from './diff-bar-band.ts';
 import { icon } from './icons.ts';
 
 /**
@@ -192,18 +192,22 @@ export function createDiffChangeBar(
   box: HTMLElement,
   changes: readonly HTMLElement[],
   editing: DiffEditing,
-  /** Lines moved, by room made above one or taken away: what is placed beside them goes again. */
+  /** Lines moved, by a band opened above one or closed: what is placed beside them goes again. */
   onLinesMoved: () => void = () => {},
 ): DiffChangeBar {
   const bar = document.createElement('div');
   bar.className = 'stepper diff-bar';
   bar.hidden = true;
   framed.append(bar);
+  // On its band the bar is inside the text, where a click anywhere puts the bar away: its own are not that.
+  bar.addEventListener('click', (event) => {
+    if (band !== null) event.stopPropagation();
+  });
 
   let current: HTMLElement | null = null;
   let shownOver: Element | null = null;
-  /** The gap opened for the bar above its line, which it is centred on, if one was. */
-  let room: HTMLElement | null = null;
+  /** The band the bar stands on, in the text above its line, while it has one. */
+  let band: HTMLElement | null = null;
   let isEditing = false;
   /** Between a choice and the drawing it leads to: a second click then would choose twice. */
   let isLeaving = false;
@@ -344,6 +348,16 @@ export function createDiffChangeBar(
     );
   }
 
+  /**
+   * Where along the line the bar wants to start, on the screen. Over a single letter, centred
+   * on it: the pointer is right there, and has the shortest way to go whichever letter it
+   * wants. A change is read from its start.
+   */
+  function wantedLeft(over: Element, line: DOMRect): number {
+    const isLetter = over.classList.contains('diff-tidied-letter');
+    return isLetter ? (line.left + line.right) / 2 - bar.offsetWidth / 2 : line.left;
+  }
+
   /** Above the start of what it is for, and gone if that has scrolled out of the box. */
   function place(over: Element): void {
     const line = over.getClientRects()[0];
@@ -353,37 +367,55 @@ export function createDiffChangeBar(
       return;
     }
     bar.hidden = false;
-    // Over a single letter, centred on it: the pointer is right there, and has the
-    // shortest way to go whichever letter it wants. A change is read from its start.
-    const isLetter = over.classList.contains('diff-tidied-letter');
-    const wanted = isLetter ? (line.left + line.right) / 2 - bar.offsetWidth / 2 : line.left;
-    const left = Math.max(0, Math.min(wanted - frame.left, frame.width - bar.offsetWidth));
-    const top = topOver(line) - frame.top;
+    const left = Math.max(0, Math.min(wantedLeft(over, line) - frame.left, frame.width - bar.offsetWidth));
+    const top = line.top - frame.top - bar.offsetHeight - GAP_ABOVE_PX;
     const clear = clearOfStepper(left, top, line.bottom - frame.top + GAP_ABOVE_PX);
     bar.style.left = `${clear.left}px`;
     bar.style.top = `${clear.top}px`;
   }
 
-  /** Centred on the gap opened for it, if there is one; otherwise just above the line. */
-  function topOver(line: DOMRect): number {
-    const gap = room?.isConnected === true ? room.getBoundingClientRect() : null;
-    if (gap === null) return line.top - bar.offsetHeight - GAP_ABOVE_PX;
-    return (gap.top + gap.bottom) / 2 - bar.offsetHeight / 2;
+  /** The stepper's box, in the frame's own pixels, or null when it is not showing. */
+  function stepperTaken(): { left: number; top: number; bottom: number } | null {
+    const steps = framed.querySelector('.review-steps');
+    if (!(steps instanceof HTMLElement) || steps.hidden) return null;
+    const [frame, taken] = [framed.getBoundingClientRect(), steps.getBoundingClientRect()];
+    return { left: taken.left - frame.left, top: taken.top - frame.top, bottom: taken.bottom - frame.top };
   }
+
+  const meetsStepper = (left: number, top: number, taken: { left: number; top: number; bottom: number }): boolean =>
+    left + bar.offsetWidth > taken.left - GAP_ABOVE_PX && top + bar.offsetHeight > taken.top - GAP_ABOVE_PX && top < taken.bottom + GAP_ABOVE_PX;
 
   /**
    * Keeps the bar off the box's own stepper, which is on top of the text in the corner:
    * to its left if there is room, or else under the line it is for.
    */
   function clearOfStepper(left: number, top: number, topBelow: number): { left: number; top: number } {
-    const steps = framed.querySelector('.review-steps');
-    if (!(steps instanceof HTMLElement) || steps.hidden) return { left, top };
-    const [frame, taken] = [framed.getBoundingClientRect(), steps.getBoundingClientRect()];
-    const [takenLeft, takenTop, takenBottom] = [taken.left - frame.left, taken.top - frame.top, taken.bottom - frame.top];
-    const meets = left + bar.offsetWidth > takenLeft - GAP_ABOVE_PX && top + bar.offsetHeight > takenTop - GAP_ABOVE_PX && top < takenBottom + GAP_ABOVE_PX;
-    if (!meets) return { left, top };
-    const moved = takenLeft - bar.offsetWidth - GAP_ABOVE_PX;
+    const taken = stepperTaken();
+    if (taken === null || !meetsStepper(left, top, taken)) return { left, top };
+    const moved = taken.left - bar.offsetWidth - GAP_ABOVE_PX;
     return moved >= 0 ? { left: moved, top } : { left, top: topBelow };
+  }
+
+  /**
+   * The bar on its band, which is in the text and so carries the bar as the text scrolls.
+   * Off the stepper as the bar is anywhere: to its left if there is room. Where there is not,
+   * the band goes lower, bar and all, rather than the bar leaving it: the first line's band
+   * from the box's padding to a gap of its own below it, another line's by scrolling the text.
+   */
+  function openBand(over: Element, mayDrawInPadding = true): void {
+    band = openBarBand(box, over, bar, framed, { mayDrawInPadding });
+    onLinesMoved();
+    const line = over.getClientRects()[0];
+    if (band === null || line === undefined) return;
+    seatBarAt(box, band, bar, wantedLeft(over, line));
+    const taken = stepperTaken();
+    const frame = framed.getBoundingClientRect();
+    const seated = bar.getBoundingClientRect();
+    if (taken === null || !meetsStepper(seated.left - frame.left, seated.top - frame.top, taken)) return;
+    const moved = taken.left - bar.offsetWidth - GAP_ABOVE_PX;
+    if (moved >= 0) seatBarAt(box, band, bar, frame.left + moved);
+    else if (isDrawnInPadding(band) && mayDrawInPadding) openBand(over, false);
+    else box.scrollTop -= taken.bottom + GAP_ABOVE_PX - (seated.top - frame.top);
   }
 
   function showOver(over: Element): void {
@@ -398,25 +430,17 @@ export function createDiffChangeBar(
       fillForChange(change);
       for (const fragment of fragmentsOf(change)) fragment.classList.add(BAR_OVER);
     }
-    makeRoom(over);
-    place(over);
-  }
-
-  /** The bar is shown before it is measured: hidden, it has no height. */
-  function makeRoom(over: Element): void {
-    if (editing.makesRoom !== true) return;
-    bar.hidden = false;
-    room = makeBarRoom(box, over, bar.offsetHeight);
-    onLinesMoved();
+    if (editing.makesRoom === true) openBand(over);
+    else place(over);
   }
 
   function hide(): void {
     bar.hidden = true;
     shownOver = null;
     for (const marked of box.querySelectorAll(`.${BAR_OVER}`)) marked.classList.remove(BAR_OVER);
-    if (editing.makesRoom !== true) return;
-    removeBarRoom(box);
-    room = null;
+    if (band === null) return;
+    closeBarBand(box, bar, framed);
+    band = null;
     onLinesMoved();
   }
 
@@ -431,13 +455,15 @@ export function createDiffChangeBar(
     else showOver(current);
   };
 
+  // On a band, the bar scrolls with the text by itself.
   const placeAgain = (): void => {
-    if (shownOver !== null) place(shownOver);
+    if (shownOver !== null && band === null) place(shownOver);
   };
-  /** Lines wrapped anew: the room made for the old ones may now be in the middle of one. */
+  /** Lines wrapped anew: a band opened for the old ones may now be in the middle of one. */
   const fitAgain = (): void => {
-    if (shownOver !== null) makeRoom(shownOver);
-    placeAgain();
+    if (shownOver === null) return;
+    if (band === null) place(shownOver);
+    else openBand(shownOver);
   };
   box.addEventListener('scroll', placeAgain);
   // The first bar is placed as the review opens, before its lines and the stepper have
