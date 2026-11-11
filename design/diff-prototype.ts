@@ -261,7 +261,8 @@ function showBarOnBand(): void {
 }
 
 try {
-  barOnBand.checked = localStorage.getItem(BAR_ON_BAND_KEY) === 'on';
+  // On unless turned off: the look chosen (Danilo, 2026-11-11).
+  barOnBand.checked = localStorage.getItem(BAR_ON_BAND_KEY) !== 'off';
 } catch (error) {
   console.warn('Whether the buttons stand on the band could not be read back', error);
 }
