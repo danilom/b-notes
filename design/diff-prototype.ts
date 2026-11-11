@@ -284,8 +284,6 @@ function lookSwitch(box: HTMLInputElement, mark: string): void {
 // The buttons straight on the band, chosen; the change on it too, asked for to try (Danilo, 2026-11-11).
 lookSwitch(barOnBand, 'bar-on-band');
 lookSwitch(element('change-on-band', HTMLInputElement), 'change-on-band');
-// The buttons in the text's own colours, asked for (Danilo, 2026-11-12).
-lookSwitch(element('choice-full', HTMLInputElement), 'choice-full');
 
 element('swap', HTMLButtonElement).addEventListener('click', () => {
   [current.value, proposed.value] = [proposed.value, current.value];
