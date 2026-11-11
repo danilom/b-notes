@@ -73,6 +73,36 @@ export function closeBarBand(box: HTMLElement, bar: HTMLElement, home: HTMLEleme
     parent?.normalize();
     box.scrollTop -= Number(band.dataset['scrolledBy'] ?? 0);
   }
+  // Scrolled back first: taken away before, the room it gave would have pulled the text with it.
+  box.style.removeProperty('padding-bottom');
+}
+
+/** How tall the box's contents are, its padding below included, whether or not they fill it. */
+function contentHeight(box: HTMLElement): number {
+  const last = box.lastElementChild;
+  const padding = Number.parseFloat(getComputedStyle(box).paddingBottom) || 0;
+  if (last === null) return padding;
+  const lastBottom = last.getBoundingClientRect().bottom - box.getBoundingClientRect().top - box.clientTop + box.scrollTop;
+  return lastBottom + padding;
+}
+
+/**
+ * Scrolls the box down by `height`, so what is above the band moves up and the line under it
+ * stays where it is. Where the text is too short to scroll that far, as one that fits the
+ * window, the box is given as much room below its end as it lacks; without it, it was the
+ * line he is on that moved, down by the band's height.
+ *
+ * @returns How far it scrolled, to be given back when the band closes.
+ */
+function scrollForBand(box: HTMLElement, height: number): number {
+  const lacking = box.scrollTop + height - (contentHeight(box) - box.clientHeight);
+  if (lacking > 0) {
+    const padding = Number.parseFloat(getComputedStyle(box).paddingBottom) || 0;
+    box.style.paddingBottom = `${padding + lacking}px`;
+  }
+  const before = box.scrollTop;
+  box.scrollTop += height;
+  return box.scrollTop - before;
 }
 
 /**
@@ -115,10 +145,7 @@ export function openBarBand(
   band.append(bar);
   reachToTheEdges(box, band);
   // Not on the first line: scrolled back, its band would go up under the stepper it was moved to clear.
-  if (!isFirstLine) {
-    box.scrollTop += height;
-    band.dataset['scrolledBy'] = String(height);
-  }
+  if (!isFirstLine) band.dataset['scrolledBy'] = String(scrollForBand(box, height));
   return band;
 }
 

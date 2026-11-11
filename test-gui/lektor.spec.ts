@@ -556,7 +556,140 @@ test.describe('the corrections window', () => {
     await changes.nth(2).click();
     await expect(bar).toBeVisible();
   });
+
+  test('stands the bar on a band above its line, covering none of his words and leaving his line where it was', async ({ page }) => {
+    await setUp(page);
+    await writeNewText(page, `${LONG_ENOUGH} ${LONG_ENOUGH}\n\n${LONG_ENOUGH} ${LONG_ENOUGH}\n\n${LONG_ENOUGH}`);
+    await openPanel(page);
+    await openWindowOn(page, 'Stilska dorada');
+    await sendCorrections(page);
+    const dialog = windowDialog(page);
+    const change = dialog.locator('.review-text .diff-change').nth(3);
+    await dialog.locator('.review-text').click({ position: { x: 5, y: 5 } });
+    await expect(dialog.locator('.diff-bar-band')).toHaveCount(0);
+    const before = await wordsTop(change);
+    await change.click();
+    await expect(dialog.locator('.diff-bar-band .diff-bar')).toBeVisible();
+    expect(Math.abs((await wordsTop(change)) - before)).toBeLessThan(1);
+    expect(await wordsUnderBar(page)).toEqual([]);
+    // A click on the band beside the buttons does nothing.
+    const band = await dialog.locator('.diff-bar-band').boundingBox();
+    const buttons = await dialog.locator('.diff-bar').boundingBox();
+    if (band === null || buttons === null) throw new Error('The band or its bar is not drawn');
+    await page.mouse.click(buttons.x + buttons.width + 20, band.y + band.height / 2);
+    await expect(dialog.locator('.diff-bar-band .diff-bar')).toBeVisible();
+    await dialog.locator('.diff-bar .stepper-close').click();
+    await expect(dialog.locator('.diff-bar-band')).toHaveCount(0);
+    expect(Math.abs((await wordsTop(change)) - before)).toBeLessThan(1);
+  });
+
+  test('keeps the band while he types his own wording, and closes it as he finishes', async ({ page }) => {
+    await setUp(page);
+    await writeNewText(page, `${LONG_ENOUGH} ${LONG_ENOUGH}\n\n${LONG_ENOUGH}`);
+    await openPanel(page);
+    await openWindowOn(page, 'Stilska dorada');
+    await sendCorrections(page);
+    const dialog = windowDialog(page);
+    const change = dialog.locator('.review-text .diff-change').nth(2);
+    await change.click();
+    const before = await wordsTop(change);
+    await dialog.locator('.diff-bar').getByRole('button', { name: /^Izmeni/ }).click();
+    const field = dialog.locator('.diff-edit');
+    await expect(field).toBeFocused();
+    await expect(dialog.locator('.diff-bar-band')).toHaveCount(1);
+    await expect(dialog.locator('.diff-bar')).toBeHidden();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('nesto sasvim moje');
+    await page.keyboard.press('Enter');
+    await expect(dialog.locator('.diff-bar-band')).toHaveCount(0);
+    const mine = dialog.locator('.review-text .diff-current');
+    await expect(mine).toContainText('nesto sasvim moje');
+    expect(Math.abs((await wordsTop(mine)) - before)).toBeLessThan(1);
+  });
+
+  test('copies only the text as it will be, from either view, whatever the selection starts on', async ({ page }) => {
+    await setUp(page);
+    await writeNewText(page, `${LONG_ENOUGH} ${LONG_ENOUGH}\n\n${LONG_ENOUGH} ${LONG_ENOUGH}\n\n${LONG_ENOUGH}`);
+    await openPanel(page);
+    await openWindowOn(page, 'Stilska dorada');
+    await sendCorrections(page);
+    const dialog = windowDialog(page);
+    await dialog.locator('.review-text .diff-change').nth(1).click();
+    await dialog.locator('.diff-bar').getByRole('button', { name: /^Vrati staro/ }).click();
+    await dialog.locator('.review-text .diff-change').nth(3).click();
+    await expect(dialog.locator('.diff-bar-band .diff-bar')).toBeVisible();
+    const fromTheText = await copyOf(page, '.review-text');
+    const fromTheLegend = await copyOf(page, '.diff-legend');
+    await dialog.getByLabel('samo rezultat').click();
+    const fromTheResult = await copyOf(page, '.review-text');
+    await dialog.getByRole('button', { name: 'Unesi sve izmene u tekst' }).click();
+    await expect(dialog).toBeHidden();
+    const taken = await page.locator('#editor').inputValue();
+    expect(fromTheText).toBe(taken);
+    expect(fromTheLegend).toBe(taken);
+    expect(fromTheResult).toBe(taken);
+    expect(fromTheText).not.toMatch(/Vrati staro|Prihvati|Izmeni|↵|‸/);
+  });
 });
+
+/** Where a change's words start on the screen: its letters, not its box, which the selection's grey reaches above. */
+async function wordsTop(change: ReturnType<Page['locator']>): Promise<number> {
+  return change.evaluate((element) => {
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+      if (node.textContent?.trim() === '') continue;
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      const box = range.getClientRects()[0];
+      if (box !== undefined) return box.top;
+    }
+    throw new Error('The change has no words drawn');
+  });
+}
+
+/** His words the bar is drawn over, if any. */
+async function wordsUnderBar(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const bar = document.querySelector('#lektor-dialog .diff-bar');
+    const text = document.querySelector('#lektor-dialog .review-text');
+    if (bar === null || text === null) throw new Error('No bar or no text');
+    const over = bar.getBoundingClientRect();
+    const covered: string[] = [];
+    const walker = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+      if (bar.contains(node) || node.textContent?.trim() === '') continue;
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      for (const line of range.getClientRects()) {
+        const meets = line.right > over.left && line.left < over.right && line.bottom > over.top + 1 && line.top < over.bottom - 1;
+        if (meets) covered.push(node.textContent ?? '');
+      }
+    }
+    return covered;
+  });
+}
+
+/**
+ * What a copy of the review puts on the clipboard, for a selection from the start of what `from`
+ * names to the end of the text, sent to the page as the browser sends it.
+ */
+async function copyOf(page: Page, from: string): Promise<string> {
+  return page.evaluate((startAt) => {
+    const start = document.querySelector(`#lektor-dialog ${startAt}`);
+    const text = document.querySelector('#lektor-dialog .review-text');
+    if (start === null || text === null) throw new Error(`Nothing to select from ${startAt}`);
+    const range = document.createRange();
+    range.setStartBefore(start);
+    range.setEnd(text, text.childNodes.length);
+    const selection = getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    const clipboard = new DataTransfer();
+    document.dispatchEvent(new ClipboardEvent('copy', { clipboardData: clipboard, bubbles: true, cancelable: true }));
+    selection?.removeAllRanges();
+    return clipboard.getData('text/plain');
+  }, from);
+}
 
 test('in dark mode, draws the marks brighter and keeps the menu pictures in their own colours', async ({ page }) => {
   await setUp(page);
