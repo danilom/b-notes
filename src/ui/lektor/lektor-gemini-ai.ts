@@ -1,77 +1,65 @@
 import { LEKTOR_TIMED_OUT, LEKTOR_UNREACHED } from '../../platform/lektor-remote.ts';
-import { type DailyCapWords, dailyCapSentence } from './lektor-daily-cap.ts';
-import { correctionInstruction, FEEDBACK_INSTRUCTION, proposalFrom } from './lektor-instructions.ts';
-import { type CorrectionRequest, type LektorService, LektorServiceError } from './lektor-service.ts';
-import { callService, connectionCheck, isRecord, type LektorServiceParts, messageOf } from './lektor-service-call.ts';
+import { type LektorService, LektorServiceError } from './lektor-service.ts';
+import { callService, codeOf, isRecord, type LektorServiceParts, messageOf, reasonsOf } from './lektor-service-call.ts';
 
-/* The free Lektor, on Google's Gemini. */
+/*
+  The free Lektor, on Google's free tier, through `/interactions`, streamed. Which model it asks
+  is the model chain's to say (lektor-model-chain.ts): 3.8 first, 3.6 standing in where allowed.
+*/
 
-/**
- * One model for everything, and the good one: a weaker model's work would be taken for what the
- * Lektor is like, and on plain corrections the quick one got words wrong. When this one can't
- * answer he is told, rather than quietly given something worse.
- */
-const MODEL = 'gemini-3.6-flash';
+/** The day's free requests are spent: Google's code for it, and only that (spec §2). */
+const DAILY_QUOTA = 'quota_exceeded';
+/** Busy, a per-minute limit, or out of time at Google's end: all "try a bit later". */
+const BUSY_CODES = new Set(['service_unavailable', 'rate_limit_exceeded', 'too_many_requests', 'deadline_exceeded', 'unavailable', 'internal']);
+/** Google's own refusals to write about this text. */
+const BLOCKED_CODES = new Set(['safety', 'prohibited_content', 'recitation', 'blocklist', 'content_blocked', 'spii']);
+const KEY_CODES = new Set(['permission_denied', 'authentication', 'unauthenticated']);
+
+function failureOf(status: number, reply: unknown): LektorServiceError['failure'] | null {
+  if (status === LEKTOR_UNREACHED) return 'offline';
+  // Out of time: our words, not Google's, and in his eyes the same as busy.
+  if (status === LEKTOR_TIMED_OUT) return 'busy';
+  const code = codeOf(reply).toLowerCase();
+  if (code === DAILY_QUOTA) return 'daily-limit';
+  if (BUSY_CODES.has(code)) return 'busy';
+  if (BLOCKED_CODES.has(code)) return 'declined';
+  if (KEY_CODES.has(code) || reasonsOf(reply).includes('API_KEY_INVALID')) return 'bad-key';
+  if (status === 401 || status === 403) return 'bad-key';
+  if (status === 400 && /token|too long|too large|size/i.test(messageOf(reply))) return 'too-long';
+  // Any other 429 is a per-minute limit, never the day's (spec §2): busy.
+  if (status === 429 || status >= 500) return 'busy';
+  return null;
+}
 
 /** What a refusal means to him. Only the kinds he should hear differently are told apart. */
-function refusal(status: number, reply: unknown, parts: GeminiParts): LektorServiceError {
+function refusal(status: number, reply: unknown, parts: LektorServiceParts): LektorServiceError {
   const message = messageOf(reply);
-  const detail = `${status}: ${message}`;
-  if (status === LEKTOR_UNREACHED) return new LektorServiceError('offline', detail);
-  // Out of time: our words, not Google's.
-  if (status === LEKTOR_TIMED_OUT) return new LektorServiceError('overloaded', detail);
-  if (status === 429) return new LektorServiceError('limit', detail, message, dailyCapSentence(message, new Date(), parts.dailyCapWords()) ?? '');
-  if (status === 401 || status === 403 || /api.?key/i.test(message)) return new LektorServiceError('bad-key', detail, message);
-  if (status === 400 && /token|too long|too large|size/i.test(message)) return new LektorServiceError('too-long', detail, message);
-  // Google's wording is all the cap and the key are recognised by, so one nobody has met is worth knowing about.
-  if (status < 500) parts.warn('A refusal from Google the Lektor does not recognise', { status, message });
-  return new LektorServiceError('overloaded', detail, message);
+  const detail = `${status} ${codeOf(reply)}: ${message}`;
+  const known = failureOf(status, reply);
+  if (known !== null) return new LektorServiceError(known, detail, known === 'offline' ? '' : message);
+  // Only a code the Lektor doesn't know ends up here, so one nobody has met is worth knowing about.
+  parts.warn('A refusal from Google the Lektor does not recognise', { status, code: codeOf(reply), message });
+  return new LektorServiceError('busy', detail, message);
 }
 
-/** The reply's words, from the last of the model's steps: an earlier one may be its thinking. */
-function wordsOf(reply: unknown): string | null {
-  if (!isRecord(reply)) return null;
-  if (typeof reply['output_text'] === 'string') return reply['output_text'];
-  const steps = reply['steps'];
-  if (!Array.isArray(steps)) return null;
-  const last = steps.filter(isRecord).findLast((step) => step['type'] === 'model_output');
-  const content = last?.['content'];
-  if (!Array.isArray(content)) return null;
-  const texts = content.filter(isRecord).flatMap((part) => (typeof part['text'] === 'string' ? [part['text']] : []));
-  return texts.length === 0 ? null : texts.join('');
-}
-
-export interface GeminiParts extends LektorServiceParts {
-  dailyCapWords: () => DailyCapWords;
-}
-
-export function createGeminiAi(parts: GeminiParts): LektorService {
-  async function ask(system: string, input: string, signal: AbortSignal): Promise<string> {
-    const request = { provider: 'gemini', action: 'send', key: parts.keyNow(), model: MODEL, system, input } as const;
-    const { status, reply } = await callService(parts, request, signal);
-    if (status !== 200) throw refusal(status, reply, parts);
-    const words = wordsOf(reply);
-    const finished = !isRecord(reply) || reply['status'] === undefined || reply['status'] === 'completed';
-    if (words === null || words.trim() === '' || !finished) {
-      throw new LektorServiceError('cut-off', `${MODEL}: ${isRecord(reply) ? String(reply['status']) : 'no reply'}`);
-    }
-    return words;
-  }
-
-  async function corrections(request: CorrectionRequest, signal: AbortSignal): Promise<string> {
-    return proposalFrom(await ask(correctionInstruction(request), request.text, signal), request.text);
-  }
-
+export function createGeminiAi(parts: LektorServiceParts): LektorService {
   return {
     company: 'google',
-    commentModel: MODEL,
-    correctionModel: () => MODEL,
-    connectionCheck: (signal) => connectionCheck(parts, signal),
     keyCheck: async (key, signal) => {
       const { status, reply } = await callService(parts, { provider: 'gemini', action: 'check', key, model: '', system: '', input: '' }, signal);
       if (status !== 200) throw refusal(status, reply, parts);
     },
-    feedback: async (text, signal) => (await ask(FEEDBACK_INSTRUCTION, text, signal)).trim(),
-    corrections,
+    ask: async ({ model, system, input, onProgress }, signal) => {
+      const request = { provider: 'gemini', action: 'send', key: parts.keyNow(), model, system, input } as const;
+      const { status, reply } = await callService(parts, request, signal, onProgress);
+      if (status !== 200) throw refusal(status, reply, parts);
+      const text = isRecord(reply) && typeof reply['text'] === 'string' ? reply['text'] : '';
+      const finished = isRecord(reply) && reply['status'] === 'completed';
+      if (!finished || text.trim() === '') {
+        throw new LektorServiceError('cut-off', `${model}: ${isRecord(reply) ? String(reply['status']) : 'no reply'}`);
+      }
+      const answeredBy = isRecord(reply) && typeof reply['model'] === 'string' ? reply['model'] : model;
+      return { words: text, model: answeredBy, cost: null };
+    },
   };
 }
