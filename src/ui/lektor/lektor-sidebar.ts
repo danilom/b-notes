@@ -115,7 +115,7 @@ export interface Lektor {
   listChanged(isListed: (key: NoteHandle) => boolean): void;
 }
 
-const REVEAL_MS = 10_000;
+const REVEAL_MS = 5_000;
 const FOLLOWING_SLACK_PX = 40;
 /** Under this there is nothing for a reader to respond to: a title or a stray line, though not a short poem. */
 const FEWEST_WORDS = 10;
