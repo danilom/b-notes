@@ -114,6 +114,17 @@
         background-clip: padding-box;
       }
 
+      /*
+        A coloured letter while its bar is up, on the same grey, reaching up to the band in the
+        same way (Danilo, 2026-11-12). Otherwise the shape its highlight under the pointer has,
+        rules for close neighbours and all: only the colour, and the reach up, are the selection's.
+      */
+      #view[data-bar-room][data-change-on-band] .review-text .diff-letter-over {
+        background-color: var(--wash);
+        padding-top: var(--band-join, 0px);
+        border-radius: 0;
+      }
+
       /* The change's grey reaching further left than its words, the bar is held back by as much, to keep to the words. */
       #view[data-bar-room][data-bar-on-band][data-change-on-band] .review-text:has(.diff-bar-over) .diff-bar-band > .diff-bar {
         margin-left: calc(-0.4rem - 1px + 4px);

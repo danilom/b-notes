@@ -93,6 +93,8 @@ export interface DiffChangeBar {
 
 /** On a change while the bar is up over it, which is when its own wording can be clicked to edit. */
 const BAR_OVER = 'diff-bar-over';
+/** On a coloured letter while its bar is up: chosen, as a change is current. */
+const LETTER_OVER = 'diff-letter-over';
 
 function barButton(said: string, className: string, onClick: () => void): HTMLButtonElement {
   const button = document.createElement('button');
@@ -435,9 +437,11 @@ export function createDiffChangeBar(
   function showOver(over: Element): void {
     if (isEditing) return;
     shownOver = over;
-    for (const marked of box.querySelectorAll(`.${BAR_OVER}`)) marked.classList.remove(BAR_OVER);
+    unmarkAll();
     if (over.classList.contains('diff-tidied-letter') && over instanceof HTMLElement) {
       fillForLetter(over);
+      over.classList.add(LETTER_OVER);
+      if (editing.makesRoom === true) measureJoin(box, over);
     } else {
       const change = changeOfFragment(over, changes, fragmentsAll());
       if (change === null) return;
@@ -448,10 +452,15 @@ export function createDiffChangeBar(
     else place(over);
   }
 
+  /** Nothing marked as having the bar over it, change or letter. */
+  function unmarkAll(): void {
+    for (const marked of box.querySelectorAll(`.${BAR_OVER}, .${LETTER_OVER}`)) marked.classList.remove(BAR_OVER, LETTER_OVER);
+  }
+
   function hide(): void {
     bar.hidden = true;
     shownOver = null;
-    for (const marked of box.querySelectorAll(`.${BAR_OVER}`)) marked.classList.remove(BAR_OVER);
+    unmarkAll();
     if (band === null) return;
     closeBarBand(box, bar, framed);
     band = null;
@@ -471,7 +480,7 @@ export function createDiffChangeBar(
 
   /** How far the current change reaches up to the top of its line, for a look drawing it on the band's grey, bar or not. */
   const measureCurrent = (): void => {
-    if (editing.makesRoom === true && current !== null) measureJoin(box, current);
+    if (editing.makesRoom === true && current !== null) measureJoin(box, current, box.querySelectorAll('.diff-current'));
   };
 
   // On a band, the bar scrolls with the text by itself.
