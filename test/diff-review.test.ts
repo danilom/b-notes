@@ -119,24 +119,38 @@ describe('showing only the new text', () => {
     assert.equal(review.textNow(), createDiffReview(pieces, nothing, false).textNow());
   });
 
-  it('opens and collapses only the changes he has not opened or collapsed himself', () => {
+  it('shows every change the way chosen, forgetting the ones he opened himself', () => {
     assert.ok(changeCount >= 3);
-    const review = createDiffReview(pieces, nothing, true);
+    const review = createDiffReview(pieces, nothing, false);
     review.editing().onOpen(0);
+    review.setShowsOnlyNew(true);
+    const isOpen = (at: number): boolean => review.editing().choiceOf(at).isOpen;
+    assert.deepEqual([isOpen(0), isOpen(1), isOpen(2)], [false, false, false]);
+  });
+
+  it('keeps a decided change collapsed when the changes are shown as old and new', () => {
+    const review = createDiffReview(pieces, nothing, true);
     review.editing().onChoose(1, 'old');
+    review.editing().onOpen(1);
     review.setShowsOnlyNew(false);
     const isOpen = (at: number): boolean => review.editing().choiceOf(at).isOpen;
     assert.deepEqual([isOpen(0), isOpen(1), isOpen(2)], [true, false, true]);
-    review.setShowsOnlyNew(true);
-    assert.deepEqual([isOpen(0), isOpen(1), isOpen(2)], [true, false, false]);
     assert.equal(review.editing().choiceOf(1).chosen, 'old');
   });
 
-  it('keeps open a change he opened again after choosing for it, whichever way the box is set', () => {
-    const review = createDiffReview(pieces, nothing, false);
-    review.editing().onChoose(0, 'old');
+  it('collapses again a change he opened when the view is set to what it already is', () => {
+    const review = createDiffReview(pieces, nothing, true);
     review.editing().onOpen(0);
-    review.setShowsOnlyNew(true);
     assert.equal(review.editing().choiceOf(0).isOpen, true);
+    review.setShowsOnlyNew(true);
+    assert.equal(review.editing().choiceOf(0).isOpen, false);
+  });
+
+  it('lets him open one change after the view is set', () => {
+    const review = createDiffReview(pieces, nothing, false);
+    review.setShowsOnlyNew(true);
+    review.editing().onOpen(2);
+    assert.equal(review.editing().choiceOf(2).isOpen, true);
+    assert.equal(review.editing().choiceOf(0).isOpen, false);
   });
 });

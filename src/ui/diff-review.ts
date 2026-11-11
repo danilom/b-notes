@@ -12,13 +12,16 @@ export interface DiffReview {
   editing: () => DiffEditing;
   /** Whether he has chosen anything but the proposal, or written anything, that closing would lose. */
   hasDecisions: () => boolean;
-  /** Whether the changes he hasn't opened or collapsed himself are shown collapsed. */
+  /** Whether the changes are shown collapsed to what goes in, as last set for all of them. */
   showsOnlyNew: () => boolean;
-  /** Collapses or opens the changes he hasn't opened or collapsed himself. Chooses nothing. */
+  /**
+   * Shows every change one way, forgetting which he opened or collapsed himself; those he has
+   * decided stay collapsed either way. Chooses nothing. Setting it as it already is applies it again.
+   */
   setShowsOnlyNew: (only: boolean) => void;
 }
 
-/** What he last did to how a change is shown, which outranks the checkbox. */
+/** What he last did to how a change is shown, which outranks the view until the view is set again. */
 type Shown = 'opened' | 'collapsed';
 
 /**
@@ -27,8 +30,11 @@ type Shown = 'opened' | 'collapsed';
  * wording side by side, or collapsed to the chosen one.
  *
  * Whether it is open is his to say, a change at a time: clicking one opens it, and
- * choosing a wording collapses it. A change he has done neither to follows "Prikaži samo
- * novi tekst", which is so only ever a statement about those, and never undoes his own.
+ * choosing a wording collapses it. Setting the view ("Izgled izmena") is a statement about
+ * all of them: it forgets what he opened or collapsed and shows every change that way, so
+ * the view he sees chosen is what the page shows. Except that a change he has decided stays
+ * collapsed, showing what goes in: opened, its wordings are drawn alike and his decision
+ * shows only on the bar, so the text would no longer say what he chose.
  *
  * @param pieces The proposal as compared, tidied and merged; choices go by place in this list.
  * @param redraw Called after anything he does, for the view to be drawn again.
@@ -47,7 +53,8 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
   let settling: ChangeSettling | null = null;
 
   const choiceAt = (at: number): ChangeChoice => choices.get(at) ?? { chosen: 'proposed' };
-  const isCollapsed = (at: number): boolean => (shownByHim.get(at) ?? (isOnlyNew ? 'collapsed' : 'opened')) === 'collapsed';
+  const byView = (at: number): Shown => (isOnlyNew || choices.has(at) ? 'collapsed' : 'opened');
+  const isCollapsed = (at: number): boolean => (shownByHim.get(at) ?? byView(at)) === 'collapsed';
   const collapsedNow = (): Set<number> => new Set(changePieces.flatMap((_, at) => (isCollapsed(at) ? [at] : [])));
   const piecesNow = (): TextPiece[] => piecesAfter(pieces, { changes: choices, letters, collapsed: collapsedNow() });
 
@@ -99,6 +106,7 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
     showsOnlyNew: () => isOnlyNew,
     setShowsOnlyNew: (only) => {
       isOnlyNew = only;
+      shownByHim.clear();
       redraw();
     },
     editing: () => ({
