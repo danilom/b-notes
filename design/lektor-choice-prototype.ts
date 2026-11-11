@@ -8,7 +8,7 @@
   classes and icons, piece for piece as lektor-sidebar.ts builds its screens.
 */
 import { icon } from '../src/ui/icons.ts';
-import { type WindowCase, corrections, openCorrectionsWindow, setCorrectionsStale, setKeysOpener, openCorrectionsWindowAt, redrawWindowIfOpen } from './lektor-corrections-window-prototype.ts';
+import { type WindowCase, corrections, openCorrectionsWindow, setCorrectionsStale, setKeysOpener, openCorrectionsWindowAt, redrawWindowIfOpen, setReviewLook } from './lektor-corrections-window-prototype.ts';
 import { type KeyCheck, deadKeyNotice, isAnyKeyDead, keys, keysScreen } from './lektor-keys-prototype.ts';
 import { type PaidIfSlow, lektorChoice, paidIfSlowByDefault } from './lektor-choice-radios.ts';
 import { type CommentFailure, commentFailure, commentRun, commentShortcut, commentWaiting, startCommentRun, stopCommentRun } from './lektor-comment-run-prototype.ts';
@@ -659,6 +659,17 @@ const CONTROLS: readonly PrototypeControl[] = [
     value: 'none',
   },
   { id: 'corrections-stale', label: 'Tekst promenjen posle predloga', value: false },
+  // New, to try: what takes the place of the easily missed checkbox in the review.
+  {
+    id: 'review-look',
+    label: 'Prikaz teksta u pregledu',
+    options: [
+      { value: 'two-buttons', label: 'dva dugmeta' },
+      { value: 'switch', label: 'prekidač' },
+      { value: 'checkbox', label: 'kvadratić (kao sada)' },
+    ],
+    value: 'two-buttons',
+  },
   {
     id: 'google-38',
     label: 'Gugl, 3.8',
@@ -789,6 +800,7 @@ function setControl(id: string, value: string | boolean): void {
   if (id === 'offline') state.isOffline = value === true;
   if (id === 'letters-kept') setKept(value);
   if (id === 'corrections-stale') setCorrectionsStale(value === true);
+  if (id === 'review-look') setReviewLook(value === 'switch' || value === 'checkbox' ? value : 'two-buttons');
   // The app's own switch, as the diff prototype sets it.
   if (id === 'dark') document.documentElement.dataset['mode'] = value === true ? 'dark' : 'light';
   render();

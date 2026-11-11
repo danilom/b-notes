@@ -26,7 +26,10 @@
 import { titleOf } from '../src/ui/dialogs/dialog-heading.ts';
 import { type Shown, showAsModal } from '../src/ui/dialogs/modal.ts';
 import { strings } from '../src/language/wording.ts';
+import { diffTexts, mergeCloseChanges, separateTidying } from '../src/notes/text-diff.ts';
 import { createDiffLegend } from '../src/ui/diff-legend.ts';
+import { type DiffReview, createDiffReview } from '../src/ui/diff-review.ts';
+import { createTextDiffView } from '../src/ui/diff-view.ts';
 import { icon } from '../src/ui/icons.ts';
 import { deadKeyNotice, keys } from './lektor-keys-prototype.ts';
 import {
@@ -249,6 +252,8 @@ function openReview(preset: Preset, by: Choice): void {
   corrections.preset = preset;
   corrections.reviewBy = by;
   corrections.failure = null;
+  // As the app does: a rework is read as a text, so it starts as the text it will be.
+  review = createDiffReview(PROPOSAL_PIECES, redrawReviewText, !FALLS_BACK.has(preset));
   show('review');
 }
 
@@ -957,22 +962,116 @@ function reviewWhoLine(preset: Preset, by: Choice, kept: Kept | undefined): HTML
   return line;
 }
 
-/** The second line, how the text below is shown: what its marks mean, and the box that changes the view. */
-function reviewViewLine(legend: HTMLElement): HTMLElement {
+/*
+  New, to try (2026-11-11): the checkbox "Prikaži tekst kakav će biti" was too easy to miss, small at
+  the far end of the legend's line. The harness's "Prikaz teksta u pregledu" switches between it and
+  the ways proposed in its place, so they can be judged side by side on a real diff.
+*/
+export type ReviewLook = 'checkbox' | 'two-buttons' | 'switch';
+
+let reviewLook: ReviewLook = 'two-buttons';
+
+export function setReviewLook(look: ReviewLook): void {
+  reviewLook = look;
+  if (corrections.view === 'review') draw();
+}
+
+/**
+ * A Slova i zarezi proposal for the sample text: its letters put right, and a few larger changes, so
+ * the review has both kinds to show and the view switch something to do.
+ */
+const PROPOSED_PARAGRAPHS: readonly string[] = [
+  'Ujutru sam sišao do obale, gde ribari već slažu mreže. Mirisalo je na so i na kafu iz obližnje kafane, a galebovi su se svađali oko onoga što je ostalo od noći.',
+  'Djed Marko sedeo je na klupi i gledao more kao da ga prvi put vidi. Rekao mi je: „Vidi kako se bonaca smirila, a juče je jugo lomilo grane.” Klimnuo sam glavom i seo pored njega.',
+  'Dugo smo ćutali, jer je ponekad tišina bolja od priče. Preko zaliva je prolazio trajekt, spor i beo, a za njim je ostajala pruga koja se polako zatvarala.',
+  'Kad je sunce prešlo preko brda, djed je ustao, otresao kapu i krenuo uz stepenice. „Ajde”, rekao je, „riba neće čekati.” Ostao sam još malo, da vidim kako voda menja boju.',
+];
+
+const textOf = (paragraphs: readonly string[]): string => [TEXT_TITLE, ...paragraphs].join('\n\n');
+
+/** Compared as the app compares them in openLektorDialog. */
+const PROPOSAL_PIECES = mergeCloseChanges(separateTidying(diffTexts(textOf(TEXT_PARAGRAPHS), textOf(PROPOSED_PARAGRAPHS))));
+
+let review: DiffReview = createDiffReview(PROPOSAL_PIECES, redrawReviewText);
+/** Where the review's text is drawn, so a choice in it redraws the text alone, not the window. */
+let reviewTextSlot: HTMLElement | null = null;
+
+function redrawReviewText(): void {
+  if (reviewTextSlot === null) return;
+  const words = strings('sr');
+  reviewTextSlot.replaceChildren(
+    createTextDiffView(
+      review.piecesNow(),
+      { previous: words.changePrevious, next: words.changeNext, at: words.changeAt },
+      { showTidied: true, editing: review.editing() },
+    ),
+  );
+  // The view control says which way it is shown, so it follows the review's own state.
+  for (const control of document.querySelectorAll<HTMLElement>('[data-only-new]')) {
+    const isOnlyNew = control.dataset['onlyNew'] === 'true';
+    control.setAttribute(control.getAttribute('role') === 'switch' ? 'aria-checked' : 'aria-pressed', String(isOnlyNew === review.showsOnlyNew()));
+  }
+  const box = document.querySelector<HTMLInputElement>('.lektor-only-new input');
+  if (box !== null) box.checked = review.showsOnlyNew();
+}
+
+/** Today's: a checkbox at the far right of the legend's line. */
+function onlyNewCheckbox(): HTMLElement {
   const only = el('label', 'lektor-only-new');
   const box = el('input');
   box.type = 'checkbox';
+  box.checked = review.showsOnlyNew();
+  box.addEventListener('change', () => review.setShowsOnlyNew(box.checked));
   only.append(box, strings('sr').lektor.review.onlyNew);
+  return only;
+}
+
+/**
+ * Two buttons, one always pressed, as the app's Izgled settings choose: both ways named, so neither is
+ * hidden behind a box he must think to tick, and the pressed one filled, which he already knows.
+ */
+function onlyNewButtons(): HTMLElement {
+  const group = el('div', 'lektor-view-choice');
+  group.setAttribute('role', 'group');
+  group.setAttribute('aria-label', 'Prikaži tekst');
+  const way = (isOnlyNew: boolean, label: string): HTMLButtonElement => {
+    const one = button(label, () => review.setShowsOnlyNew(isOnlyNew), 'choice');
+    one.dataset['onlyNew'] = String(isOnlyNew);
+    one.setAttribute('aria-pressed', String(isOnlyNew === review.showsOnlyNew()));
+    return one;
+  };
+  const ways = el('div', 'choices');
+  ways.append(way(false, 'sa izmenama'), way(true, 'kakav će biti'));
+  group.append(el('span', 'lektor-view-choice-label', 'Prikaži tekst:'), ways);
+  return group;
+}
+
+/** A switch, as a phone has: bigger than the checkbox, and on or off at a glance. */
+function onlyNewSwitch(): HTMLElement {
+  const label = el('label', 'lektor-view-switch');
+  const toggle = button('', () => review.setShowsOnlyNew(!review.showsOnlyNew()), 'lektor-switch');
+  toggle.setAttribute('role', 'switch');
+  toggle.dataset['onlyNew'] = 'true';
+  toggle.setAttribute('aria-checked', String(review.showsOnlyNew()));
+  toggle.append(el('span', 'lektor-switch-knob'));
+  label.append(toggle, strings('sr').lektor.review.onlyNew);
+  return label;
+}
+
+/** The second line, how the text below is shown: what its marks mean, and, for the checkbox and the switch, the control beside them. */
+function reviewViewLine(legend: HTMLElement): HTMLElement {
   const line = el('div', 'lektor-review-row');
-  line.append(legend, only);
+  line.append(legend);
+  if (reviewLook === 'checkbox') line.append(onlyNewCheckbox());
+  if (reviewLook === 'switch') line.append(onlyNewSwitch());
   return line;
 }
 
-/** His text in the review's own read-only box, without the marks: the real review draws the changes here. */
+/** His text in the review's own box, with the proposal's changes marked, drawn by the app's own diff view. */
 function reviewTextBox(): HTMLElement {
-  const box = el('div', 'review-text');
-  box.append(el('p', '', TEXT_TITLE), ...TEXT_PARAGRAPHS.map((paragraph) => el('p', '', paragraph)));
-  return box;
+  reviewTextSlot = el('div', 'lektor-review-text-slot');
+  queueMicrotask(redrawReviewText);
+  return reviewTextSlot;
 }
 
 /**
@@ -997,6 +1096,8 @@ function reviewPanel(preset: Preset): HTMLElement {
   const body = el('div', 'review-body lektor-body');
   body.append(
     reviewWhoLine(preset, by, kept),
+    // The buttons on a line of their own, before the legend: how the text is shown comes first, then what its marks mean.
+    ...(reviewLook === 'two-buttons' ? [onlyNewButtons()] : []),
     reviewViewLine(legend),
     reviewTextBox(),
   );

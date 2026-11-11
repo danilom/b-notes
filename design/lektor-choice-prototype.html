@@ -456,7 +456,12 @@
         margin-top: 0.75rem;
       }
 
-      .lektor-window .review-body > :not(.review-text) * {
+      /* The review's text keeps its own size: it is drawn inside a slot, so a choice redraws it alone. */
+      .lektor-review-text-slot {
+        display: contents;
+      }
+
+      .lektor-window .review-body > :not(.review-text, .lektor-review-text-slot) * {
         font-size: inherit;
         line-height: inherit;
       }
@@ -480,6 +485,83 @@
 
       .lektor-review-row > .lektor-only-new {
         white-space: nowrap;
+      }
+
+      /*
+        New, to try: in place of the checkbox, two buttons on a line of their own, "Prikaži tekst:
+        [sa izmenama] [kakav će biti]", read as one sentence. The pressed one filled, as in Izgled.
+      */
+      .lektor-view-choice {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin: 0.35rem 0 0.15rem;
+      }
+
+      .lektor-view-choice .choices {
+        gap: 0;
+      }
+
+      .lektor-view-choice .choice {
+        padding: 0.35rem 0.9rem;
+      }
+
+      /* Joined into one piece, so the two read as two ways of one thing, not two separate actions. */
+      .lektor-view-choice .choice:first-child {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+      }
+
+      .lektor-view-choice .choice:last-child {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        margin-left: -1px;
+      }
+
+      .lektor-view-choice-label {
+        font-weight: bold;
+      }
+
+      /* New, to try: a switch, in the checkbox's place at the right of the legend. */
+      .lektor-view-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        white-space: nowrap;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      .lektor-switch {
+        position: relative;
+        width: 2.8rem;
+        height: 1.5rem;
+        min-height: 0;
+        padding: 0;
+        border-radius: 0.75rem;
+        border: 2px solid var(--quiet);
+        background: var(--page);
+      }
+
+      .lektor-switch-knob {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: calc(1.5rem - 8px);
+        height: calc(1.5rem - 8px);
+        border-radius: 50%;
+        background: var(--quiet);
+        transition: left 0.12s;
+      }
+
+      .lektor-switch[aria-checked='true'] {
+        border-color: var(--chosen);
+        background: var(--chosen);
+      }
+
+      .lektor-switch[aria-checked='true'] .lektor-switch-knob {
+        left: calc(2.8rem - 1.5rem + 2px);
+        background: var(--on-chosen);
       }
 
       /*
