@@ -63,6 +63,35 @@ export interface LektorAddresses {
   openrouter?: string;
 }
 
+/** Only this computer: a stand-in a test runs. Anything else would send his keys and his text to whoever named it. */
+const ON_THIS_COMPUTER = /^http:\/\/(127\.0\.0\.1|localhost):\d+(\/|$)/;
+
+/**
+ * Stand-ins for the services, as a test run of the app names them in its environment, as JSON:
+ * `{ "gemini": "http://127.0.0.1:…", "openrouter": "http://127.0.0.1:…" }`. Unset, the
+ * services' own. Set to anything but addresses on this computer, also the services' own, said
+ * in the log: a mistake there must not become a way to send his text elsewhere.
+ */
+export function testLektorAddresses(raw: string | undefined, log: { warn: (message: string, detail?: unknown) => void }): LektorAddresses {
+  if (raw === undefined || raw === '') return {};
+  let named: unknown;
+  try {
+    named = JSON.parse(raw);
+  } catch (error) {
+    log.warn('Test Lektor addresses are not JSON; using the services', String(error));
+    return {};
+  }
+  if (typeof named !== 'object' || named === null) return {};
+  const addresses: LektorAddresses = {};
+  for (const service of ['gemini', 'openrouter'] as const) {
+    const address: unknown = (named as Record<string, unknown>)[service];
+    if (address === undefined) continue;
+    if (typeof address === 'string' && ON_THIS_COMPUTER.test(address)) addresses[service] = address;
+    else log.warn('A test Lektor address is not on this computer; using the service', { service });
+  }
+  return addresses;
+}
+
 export interface LektorAsking {
   /** Aborted when he gives up, which comes back as `LEKTOR_STOPPED`. */
   stop?: AbortSignal;

@@ -6,7 +6,7 @@ import { BUILD_STAMP } from '../../platform/build-info.ts';
 import { LOG_LEVELS, createFileLogger } from './log-file.ts';
 import { createFileSystem } from './disk-file-system.ts';
 import { absenceReply } from '../../platform/file-system.ts';
-import { askLektorService, lektorLogDetail, lektorRequestFrom } from '../../platform/lektor-remote.ts';
+import { askLektorService, lektorLogDetail, lektorRequestFrom, testLektorAddresses } from '../../platform/lektor-remote.ts';
 import { logsFolderFor, notesFolderFor, readChosenFolders, whereToOpen, writeChosenFolders } from './chosen-folders.ts';
 import { findResophFolder } from './resoph-config.ts';
 import { createOtherEditors } from './windows-editors.ts';
@@ -48,6 +48,12 @@ app.setAppUserModelId(APP_ID);
 Menu.setApplicationMenu(null);
 
 const runMode = app.isPackaged ? 'installed' : 'dev';
+
+// A test run of the app (test-gui/lektor-electron.spec.ts) keeps everything of its own in a
+// folder it names, apart from this machine's settings, saved state and logs. Set before
+// anything is read from there. Never set on his machines.
+const testDataFolder = process.env['B_NOTES_TEST_DATA'];
+if (testDataFolder !== undefined && testDataFolder !== '') app.setPath('userData', testDataFolder);
 
 // `userData` rather than `getPath('logs')` because it resolves before the app is
 // ready, and startup is exactly when we most need somewhere to write. The log,
@@ -240,6 +246,8 @@ handle('app:copyToClipboard', async (args) => {
   numbered as the request is: the answer itself can only come once, at the end.
 */
 const lektorInFlight = new Map<number, AbortController>();
+// Google's and OpenRouter's own unless a test run names stand-ins on this computer.
+const lektorAddresses = testLektorAddresses(process.env['B_NOTES_LEKTOR_ADDRESSES'], log);
 handle('lektor:request', async (args, event) => {
   const id = asNumber(args[0], 'id');
   const request = lektorRequestFrom(args[1]);
@@ -251,6 +259,7 @@ handle('lektor:request', async (args, event) => {
   try {
     const response = await askLektorService(request, {
       stop: controller.signal,
+      addresses: lektorAddresses,
       onProgress: (progress) => {
         if (!webContents.isDestroyed()) webContents.send('lektor:progress', id, progress);
       },
