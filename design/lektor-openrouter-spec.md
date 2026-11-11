@@ -1003,6 +1003,9 @@ The questions this section raised, and his answers. Each is also written where i
 1. **Branch:** build on a new branch off `lektor-openrouter`, not from `main`.
 2. **Anthropic direct:** removed.
 3. **The test Lektor:** removed. The saved real replies move into the fake network (§17.5).
+   *Changed 2026-11-11, after the build (Danilo):* the fake network is in the app too, switched on per machine
+   in Advanced ("Fake AI network"), with a strip over the app while it is on, to pick a scenario and turn it
+   off. It applies to every Lektor's requests, so it isn't a Lektor of its own as the test Lektor was.
 4. **Opening:** the key checks double as the internet check; with no keys, a keyless check. An offline screen with
    "Pokušaj ponovo" comes first, over a kept utisak too. No extra work to read a utisak offline, but a panel
    already open on it stays.

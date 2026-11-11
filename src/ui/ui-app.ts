@@ -35,6 +35,8 @@ import { openConfirmDialog } from './dialogs/confirm-dialog.ts';
 import { createCtrlCard } from './ctrl-card.ts';
 import { type FindInText, createFindInText } from './find-in-text.ts';
 import { icon } from './icons.ts';
+import { type FakeNetworkSwitch, createFakeNetworkSwitch, readFakeNetworkSetting } from './lektor/lektor-fake-network-switch.ts';
+import { showFakeNetworkOverlay } from './lektor/lektor-fake-network-overlay.ts';
 import { type Lektor, createLektor } from './lektor/lektor-sidebar.ts';
 import { type KeptCopiesView, createKeptCopies } from './versions/kept-copies.ts';
 import { showLostTexts } from './lost-texts.ts';
@@ -392,6 +394,9 @@ function putInEditor(text: string): void {
   typedSomething();
   editor.focus();
 }
+
+/** What the Lektor asks through: the real network, or the fake one where Advanced has switched it on. */
+let fakeNetwork: FakeNetworkSwitch | null = null;
 
 /** The Lektor, unless it could not be set up: nothing else depends on it. */
 let lektor: Lektor | null = null;
@@ -1149,6 +1154,11 @@ export async function startApp(runningOn: Host): Promise<void> {
   // effect next time the app opens, which is when whoever edited it is there.
   const advanced = await readAdvanced(host.files, host.appFolder);
   const testModeOn = await testModeIsOn(host);
+  // Per machine, like test mode: every Lektor answered by the fake AI network while it is on.
+  fakeNetwork = createFakeNetworkSwitch(
+    { real: host.askLektorService, files: host.files, appFolder: host.appFolder, log, ...(host.savedLektorReply === undefined ? {} : { savedCorrection: host.savedLektorReply }) },
+    await readFakeNetworkSetting(host.files, host.appFolder, log),
+  );
   if (testModeOn) testMode = startTestMode(host, listPane, (said, how) => flashToast(toast, said, how));
   createCtrlCard({
     within: writingBox,
@@ -1169,6 +1179,7 @@ export async function startApp(runningOn: Host): Promise<void> {
     settingsNow: () => settings,
     advancedNow: () => advanced,
     testModeNow: () => testModeOn,
+    fakeNetworkNow: () => fakeNetwork?.isOn() ?? false,
     preview: (appearance) => {
       showAppearanceOf(appearance);
       // Everything else in the panel is a stylesheet away. This one is a
@@ -1269,7 +1280,7 @@ export async function startApp(runningOn: Host): Promise<void> {
       notesFolder: host.notesFolder,
       appFolder: host.appFolder,
       log,
-      askService: host.askLektorService,
+      askService: (request, stop, onProgress) => (fakeNetwork ?? { ask: host.askLektorService }).ask(request, stop, onProgress),
       copyToClipboard: host.copyToClipboard,
       languageNow: () => language,
       textNow: () => openHandle,
@@ -1278,6 +1289,7 @@ export async function startApp(runningOn: Host): Promise<void> {
       applyCorrections: applyLektorCorrections,
       openText: (key) => void open(key),
     });
+    if (fakeNetwork !== null) showFakeNetworkOverlay(fakeNetwork, log);
   } catch (error: unknown) {
     // His writing is what this window is for, and the app starts without the Lektor rather than not at all.
     log.error('The Lektor could not be set up', describeError(error));

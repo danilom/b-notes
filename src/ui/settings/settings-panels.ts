@@ -1,6 +1,7 @@
 import type { Language } from '../../language/wording.ts';
 import type { Host } from '../../platform/host.ts';
 import { type Log, describeError } from '../../platform/logging.ts';
+import { writeFakeNetworkSetting } from '../lektor/lektor-fake-network-switch.ts';
 import { openAdvancedPanel } from './advanced-panel.ts';
 import { type AdvancedSettings, writeAdvanced } from './advanced-settings.ts';
 import { restartWithTestMode } from '../../test-mode/test-mode-setting.ts';
@@ -21,6 +22,8 @@ export interface SettingsPanelsParts {
   advancedNow: () => AdvancedSettings;
   /** Whether test mode is on, for the switch in the advanced panel. */
   testModeNow: () => boolean;
+  /** Whether the Lektor talks to the fake AI network on this machine. */
+  fakeNetworkNow: () => boolean;
   languageNow: () => Language;
   settingsNow: () => Settings;
   /** Shown, not kept: what he is trying out goes on screen and nowhere else. */
@@ -73,7 +76,7 @@ export function createSettingsPanels(parts: SettingsPanelsParts): SettingsPanels
   function showAdvanced(): void {
     if (advancedPane.open) return;
 
-    const close = openAdvancedPanel(advancedPane, host, parts.advancedNow(), parts.testModeNow(), {
+    const close = openAdvancedPanel(advancedPane, host, parts.advancedNow(), parts.testModeNow(), parts.fakeNetworkNow(), {
       onClose: () => {
         close();
       },
@@ -86,8 +89,11 @@ export function createSettingsPanels(parts: SettingsPanelsParts): SettingsPanels
           app the folders are settled before a window exists, so a reload alone
           would be handed the old ones anyway.
         */
-        const { ctrlCardAfterMs, testMode, ...folders } = settings;
+        const { ctrlCardAfterMs, testMode, fakeNetwork, ...folders } = settings;
+        // Left as it is when unchanged, so a scenario chosen on the overlay survives the restart.
+        const isFakeChanged = fakeNetwork !== parts.fakeNetworkNow();
         void writeAdvanced(host.files, host.appFolder, { ctrlCardAfterMs })
+          .then(() => (isFakeChanged ? writeFakeNetworkSetting(host.files, host.appFolder, fakeNetwork ? 'normal' : null) : undefined))
           .then(() => host.rememberFolders(folders))
           .then(() => restartWithTestMode(host, testMode))
           .catch((error: unknown) => {

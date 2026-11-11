@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { GOOGLE_BUSY, GOOGLE_WRONG_KEY, OPENROUTER_WRONG_KEY } from '../src/hosts/mockup/lektor-fake-network.ts';
+import { GOOGLE_BUSY, GOOGLE_WRONG_KEY, OPENROUTER_WRONG_KEY } from '../src/platform/lektor-fake-network.ts';
 import { LEKTOR_STOPPED, LEKTOR_TIMED_OUT, LEKTOR_UNREACHED, type LektorRequest, type LektorResponse } from '../src/platform/lektor-remote.ts';
 import { createGeminiAi } from '../src/ui/lektor/lektor-gemini-ai.ts';
 import { createOpenRouterAi } from '../src/ui/lektor/lektor-openrouter-ai.ts';

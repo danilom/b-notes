@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { createFakeNetwork, GOOGLE_BUSY, GOOGLE_WRONG_KEY, OPENROUTER_WRONG_KEY } from '../src/hosts/mockup/lektor-fake-network.ts';
+import { createFakeNetwork, GOOGLE_BUSY, GOOGLE_WRONG_KEY, OPENROUTER_WRONG_KEY } from '../src/platform/lektor-fake-network.ts';
 import { lektorLogDetail } from '../src/platform/lektor-remote.ts';
 import { recorded } from './lektor-api-fixtures.ts';
 

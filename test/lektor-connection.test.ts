@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { createFakeNetwork, type FakeDay } from '../src/hosts/mockup/lektor-fake-network.ts';
+import { createFakeNetwork, type FakeDay } from '../src/platform/lektor-fake-network.ts';
 import { FileMissing, type FileSystem } from '../src/platform/file-system.ts';
 import type { Log } from '../src/platform/logging.ts';
 import { createLektorConnection } from '../src/ui/lektor/lektor-connection.ts';

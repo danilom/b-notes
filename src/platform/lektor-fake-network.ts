@@ -1,15 +1,15 @@
-import type { LektorProgress } from '../../platform/lektor-progress.ts';
-import { LEKTOR_STOPPED, LEKTOR_TIMED_OUT, LEKTOR_UNREACHED, type LektorRequest, type LektorResponse } from '../../platform/lektor-remote.ts';
+import type { LektorProgress } from './lektor-progress.ts';
+import { LEKTOR_STOPPED, LEKTOR_TIMED_OUT, LEKTOR_UNREACHED, type LektorRequest, type LektorResponse } from './lektor-remote.ts';
 
 /*
-  Google and OpenRouter, pretended, for tests: the unit tests hand it to the services as their
-  way out, and the browser build's GUI tests switch it on in place of the dev server. It answers
-  at the same seam as the real network (`Host.askLektorService`), with the same shapes the
+  Google and OpenRouter, pretended: the unit tests hand it to the services as their way out, and
+  in the app or the browser build it stands in for the real network for every Lektor at once, when
+  Advanced → "Fake AI network" is on (a per-machine setting, so never on his machines by sync). It
+  answers at the same seam as the real network (`Host.askLektorService`), with the same shapes the
   services really send: the refusal bodies below are copied from the recorded replies in
   test/fixtures/lektor-api/, and test/lektor-fake-network.test.ts holds them to those files.
 
-  Nothing here spends anything or reaches anything. The browser build only: the app can't contain
-  it (test/boundaries.test.ts keeps hosts/electron away from hosts/mockup).
+  Nothing here spends anything or reaches anything.
 */
 
 export interface FakeClock {
@@ -62,8 +62,32 @@ export interface FakeDay {
   savedCorrection?: (text: string, system: string) => Promise<string | null>;
 }
 
-/** Where the browser build looks for a day, in its pretend files' app folder. */
+/** Where the setting lives, in `userData` (the app folder): per machine, never synced. */
 export const FAKE_DAY_FILE = 'lektor-fake-network.json';
+
+/**
+ * The days the overlay offers, each acting out one thing that can happen. Anything not named
+ * answers normally: free after a short queue, paid at once.
+ */
+export const FAKE_SCENARIOS = {
+  normal: {},
+  'slow free queue': { turns: { 'gemini-3.8-flash': [{ kind: 'queue-forever' }], 'gemini-3.6-flash': [{ kind: 'queue-forever' }] } },
+  'Google busy': { turns: { 'gemini-3.8-flash': [{ kind: 'busy' }], 'gemini-3.6-flash': [{ kind: 'busy' }] } },
+  'free day spent': { turns: { 'gemini-3.8-flash': [{ kind: 'daily-limit' }], 'gemini-3.6-flash': [{ kind: 'daily-limit' }] } },
+  'paid busy': { turns: { 'google/gemini-3.8-flash': [{ kind: 'busy' }], 'anthropic/claude-opus-5.5': [{ kind: 'busy' }] } },
+  'no money': { balance: 0, turns: { 'google/gemini-3.8-flash': [{ kind: 'no-credit' }], 'anthropic/claude-opus-5.5': [{ kind: 'no-credit' }] } },
+  'low balance': { balance: 0.9 },
+  'balance unreadable': { balance: null },
+  offline: { isOffline: true },
+  'dead keys': { deadKeys: ['gemini', 'openrouter'] },
+  'keys refused on sending': { keysDieOnSend: ['gemini', 'openrouter'] },
+  'cut off': { turns: Object.fromEntries(['gemini-3.8-flash', 'gemini-3.6-flash', 'google/gemini-3.8-flash', 'anthropic/claude-opus-5.5'].map((model) => [model, [{ kind: 'cut-off' }]])) },
+  'refuses to write': { turns: Object.fromEntries(['gemini-3.8-flash', 'gemini-3.6-flash', 'google/gemini-3.8-flash', 'anthropic/claude-opus-5.5'].map((model) => [model, [{ kind: 'declined' }]])) },
+} as const satisfies Record<string, FakeDay>;
+
+export type FakeScenario = keyof typeof FAKE_SCENARIOS;
+
+export const isFakeScenario = (value: unknown): value is FakeScenario => typeof value === 'string' && Object.hasOwn(FAKE_SCENARIOS, value);
 
 /** The model a saved reply comes back as: real Opus words, marked as saved so the review says so. */
 export const SAVED_REPLY_MODEL = 'saved/anthropic/claude-opus-5.5';
@@ -158,9 +182,22 @@ export interface FakeNetwork {
   asked: { provider: FakeProvider; action: LektorRequest['action']; model: string }[];
 }
 
-export function createFakeNetwork(day: FakeDay, clock: FakeClock = BROWSER_CLOCK): FakeNetwork {
+/**
+ * @param dayNow The day, or a way to read it as it is now: switching scenario while the app runs
+ * takes effect from the next request.
+ */
+export function createFakeNetwork(dayNow: FakeDay | (() => FakeDay), clock: FakeClock = BROWSER_CLOCK): FakeNetwork {
+  let day: FakeDay = typeof dayNow === 'function' ? dayNow() : dayNow;
   const asked: FakeNetwork['asked'] = [];
   const turnsTaken = new Map<string, number>();
+
+  const refresh = (): void => {
+    if (typeof dayNow !== 'function') return;
+    const next = dayNow();
+    // A new day starts its turns afresh.
+    if (next !== day) turnsTaken.clear();
+    day = next;
+  };
 
   const turnFor = (model: string): FakeTurn => {
     const turns = day.turns?.[model];
@@ -270,6 +307,7 @@ export function createFakeNetwork(day: FakeDay, clock: FakeClock = BROWSER_CLOCK
   return {
     asked,
     ask: async (request, stop, onProgress) => {
+      refresh();
       asked.push({ provider: request.provider, action: request.action, model: request.model });
       try {
         return await respond(request, stop, onProgress);

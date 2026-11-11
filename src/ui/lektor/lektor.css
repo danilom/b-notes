@@ -1954,3 +1954,31 @@ body.lektor-open #lektor-side {
   width: 1.05em;
   height: 1.05em;
 }
+
+/*
+  Advanced → "Fake AI network" is on: a strip over everything, so it can't be mistaken for the real
+  thing. For whoever is testing, not for him; plain on purpose, in a colour nothing else uses.
+*/
+.fake-network-overlay {
+  position: fixed;
+  inset: 0 auto auto 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0.3rem 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  border: 2px solid #8a2be2;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  background: #f3e8ff;
+  color: #3b0a63;
+  font-family: var(--ui-font);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.fake-network-overlay select,
+.fake-network-overlay button {
+  font: inherit;
+}

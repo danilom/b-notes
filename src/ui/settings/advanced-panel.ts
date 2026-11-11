@@ -27,7 +27,7 @@ import { testModeRow } from '../../test-mode/test-mode-panel-row.ts';
  */
 export interface AdvancedHandlers {
   onClose: () => void;
-  onKeep: (settings: ChosenPlaces & { ctrlCardAfterMs: number | null; testMode: boolean }) => void;
+  onKeep: (settings: ChosenPlaces & { ctrlCardAfterMs: number | null; testMode: boolean; fakeNetwork: boolean }) => void;
 }
 
 /** A path, and the way to look at it. */
@@ -132,6 +132,30 @@ export function describeResophTray(tray: ResophTray): { said: string; trouble: b
   return { said: 'on — b-notes switches it off the next time Resoph is closed', trouble: true };
 }
 
+/**
+ * Every Lektor answered by the fake AI network instead of Google and OpenRouter, so the whole
+ * Lektor can be tried without spending or sending anything. This machine only; while on, a strip
+ * over the app says so, with the scenario to act out and a way to turn it off.
+ */
+function fakeNetworkRow(on: boolean, change: (on: boolean) => void): HTMLElement {
+  const row = document.createElement('div');
+  row.className = 'advanced-row';
+  const name = document.createElement('label');
+  name.className = 'advanced-label';
+  name.textContent = 'Fake AI network';
+  const box = document.createElement('input');
+  box.type = 'checkbox';
+  box.id = 'advanced-fake-network';
+  box.checked = on;
+  name.htmlFor = box.id;
+  box.addEventListener('change', () => change(box.checked));
+  const note = document.createElement('span');
+  note.className = 'advanced-note';
+  note.textContent = 'Every Lektor answered by a fake Google and OpenRouter: nothing sent, nothing spent. This machine only.';
+  row.append(name, box, note);
+  return row;
+}
+
 /** Resoph's minimize-to-tray, read when the panel opens. */
 function trayRow(host: Host): HTMLElement {
   const row = document.createElement('div');
@@ -197,6 +221,7 @@ export function openAdvancedPanel(
   host: Host,
   advanced: AdvancedSettings,
   testModeOn: boolean,
+  fakeNetworkOn: boolean,
   handlers: AdvancedHandlers,
 ): () => void {
   let resoph = host.resophFolder ?? '';
@@ -204,6 +229,7 @@ export function openAdvancedPanel(
   let logs = host.logsFolder;
   let wait: number | null = advanced.ctrlCardAfterMs;
   let testMode = testModeOn;
+  let fakeNetwork = fakeNetworkOn;
 
   let modal: Shown | null = null;
   const close = (): void => {
@@ -285,6 +311,9 @@ export function openAdvancedPanel(
         },
         host.testTools !== null,
       ),
+      fakeNetworkRow(fakeNetwork, (to) => {
+        fakeNetwork = to;
+      }),
     );
 
     const footer = document.createElement('footer');
@@ -292,7 +321,7 @@ export function openAdvancedPanel(
     keep.type = 'button';
     keep.className = 'keep';
     keep.textContent = 'Apply and restart';
-    keep.addEventListener('click', () => handlers.onKeep({ resoph, notes, logs, ctrlCardAfterMs: wait, testMode }));
+    keep.addEventListener('click', () => handlers.onKeep({ resoph, notes, logs, ctrlCardAfterMs: wait, testMode, fakeNetwork }));
 
     const cancel = document.createElement('button');
     cancel.type = 'button';

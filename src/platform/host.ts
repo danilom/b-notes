@@ -104,6 +104,14 @@ export interface Host {
    */
   readonly askLektorService: (request: LektorRequest, stop: AbortSignal, onProgress: (progress: LektorProgress) => void) => Promise<LektorResponse>;
   /**
+   * A real Opus reply saved for a sample text with this one's title, for the fake AI network to give
+   * back in place of a made-up correction; null when there is none. Only the browser build has any,
+   * from the dev server's gitignored testdata.
+   *
+   * @param system The instruction, which says which kind of correction it is.
+   */
+  readonly savedLektorReply?: (text: string, system: string) => Promise<string | null>;
+  /**
    * Asks for a folder, starting from `from`. Null when nothing was chosen.
    *
    * The host's job because only it has a picker: Electron has the real one, and

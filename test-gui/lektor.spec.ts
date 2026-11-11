@@ -577,3 +577,37 @@ test('in dark mode, draws the marks brighter and keeps the menu pictures in thei
   expect(darkMark).not.toBe(lightMark);
   expect(darkWood).toBe(lightWood);
 });
+
+test('switches the fake AI network on in Advanced, says so over the app, and turns it off from there', async ({ page }) => {
+  await page.evaluate(() => {
+    const key = 'b-notes:mock-files';
+    const files = JSON.parse(window.localStorage.getItem(key) ?? '{}') as Record<string, unknown>;
+    files['b-notes/lektor.json'] = { text: JSON.stringify({ googleKey: 'g', openRouterKey: 'o' }), updatedAt: Date.now() };
+    window.localStorage.setItem(key, JSON.stringify(files));
+  });
+  await page.locator('#appearance-button').click();
+  await page.getByRole('button', { name: 'Advanced settings' }).click();
+  await page.locator('#confirm input').fill('advanced');
+  await page.locator('#confirm').getByRole('button', { name: 'Continue' }).click();
+  await page.getByLabel('Fake AI network').check();
+  await page.getByRole('button', { name: 'Apply and restart' }).click();
+  await expect(page.locator('#list .note').first()).toBeVisible();
+  const overlay = page.locator('.fake-network-overlay');
+  await expect(overlay).toContainText('FAKE AI NETWORK');
+  await expect(overlay.getByLabel('Fake AI network scenario')).toHaveValue('normal');
+  await overlay.getByLabel('Fake AI network scenario').selectOption('Google busy');
+  // Kept over a restart, and above the Lektor's own window.
+  await page.reload();
+  await expect(overlay.getByLabel('Fake AI network scenario')).toHaveValue('Google busy');
+  await writeNewText(page);
+  await page.locator('#lektor-open').click();
+  await side(page).getByRole('button', { name: /^Ispravke/ }).click();
+  await expect(windowDialog(page)).toBeVisible();
+  await expect(overlay).toBeInViewport();
+  await windowDialog(page).locator('footer').getByRole('button', { name: 'Zatvori' }).click();
+  await overlay.getByRole('button', { name: 'Turn off' }).click();
+  await expect(overlay).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('#list .note').first()).toBeVisible();
+  await expect(page.locator('.fake-network-overlay')).toHaveCount(0);
+});

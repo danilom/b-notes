@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { createFakeNetwork, type FakeDay } from '../src/hosts/mockup/lektor-fake-network.ts';
+import { createFakeNetwork, type FakeDay } from '../src/platform/lektor-fake-network.ts';
 import { createGeminiAi } from '../src/ui/lektor/lektor-gemini-ai.ts';
 import { type ChainError, type ChainReply, type ChainRequest, runModelChain, type Stage } from '../src/ui/lektor/lektor-model-chain.ts';
 import { createOpenRouterAi } from '../src/ui/lektor/lektor-openrouter-ai.ts';
