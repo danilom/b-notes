@@ -28,6 +28,56 @@
         color: var(--ink);
       }
 
+      /*
+        Looks to try for the band the bar stands on (2026-11-11), each saying in its own way that
+        the space is the control's and not a blank line of his. The app's own is "grey".
+      */
+      #view {
+        --band-mark: color-mix(in srgb, var(--ink) 22%, transparent);
+      }
+
+      /* Thin diagonal strokes, as a drawing marks a cut-away: a space that is not part of the text. */
+      #view[data-band-look='hatched'] .diff-bar-band::before {
+        background: repeating-linear-gradient(-45deg, var(--band-mark) 0 1px, transparent 1px 7px);
+      }
+
+      #view[data-band-look='hatched-grey'] .diff-bar-band::before {
+        background:
+          repeating-linear-gradient(-45deg, var(--band-mark) 0 1px, transparent 1px 7px),
+          var(--wash);
+      }
+
+      /* A fine grid of dots, as a work surface under a tool. */
+      #view[data-band-look='dots'] .diff-bar-band::before {
+        background:
+          radial-gradient(circle, var(--band-mark) 1px, transparent 1.3px) 0 0 / 7px 7px,
+          var(--wash);
+      }
+
+      /* Dashed lines above and below, as "cut here": the text opened to let something in. */
+      #view[data-band-look='dashed'] .diff-bar-band::before {
+        background: none;
+        border-block: 1px dashed var(--quiet);
+      }
+
+      /* A track the bar runs in: solid lines above and below a shaded strip. */
+      #view[data-band-look='rails'] .diff-bar-band::before {
+        border-block: 1px solid var(--line);
+      }
+
+      /* A recess the bar sits down in, shaded deepest at its top edge. */
+      #view[data-band-look='tray'] .diff-bar-band::before {
+        background: color-mix(in srgb, var(--ink) 7%, transparent);
+        box-shadow:
+          inset 0 4px 5px -3px color-mix(in srgb, var(--ink) 30%, transparent),
+          inset 0 -2px 3px -2px color-mix(in srgb, var(--ink) 18%, transparent);
+      }
+
+      /* The window's own soft blue, the colour of things that belong to the window and not the text. */
+      #view[data-band-look='tinted'] .diff-bar-band::before {
+        background: color-mix(in srgb, var(--chosen-soft) 70%, transparent);
+      }
+
       /* As the Lektor's window sizes the lines above its text (lektor.css, .lektor-window .review-body). */
       .lektor-review-head {
         margin-bottom: 0.75rem;
@@ -261,6 +311,19 @@
           <label title="Traka nad izmenom razmakne redove umesto da pokrije red iznad">
             <input type="checkbox" id="bar-room" checked />
             Prostor za traku
+          </label>
+          <label class="prototype-pick" title="Kako izgleda prostor otvoren za traku">
+            <span>Izgled pojasa</span>
+            <select id="band-look">
+              <option value="grey">Siva (kao sada)</option>
+              <option value="hatched">Šrafura</option>
+              <option value="hatched-grey">Šrafura na sivom</option>
+              <option value="dots">Tačkice</option>
+              <option value="dashed">Isprekidane ivice</option>
+              <option value="rails">Šina</option>
+              <option value="tray">Udubljenje</option>
+              <option value="tinted">Plavičasta</option>
+            </select>
           </label>
         </div>
         <div class="prototype-column">

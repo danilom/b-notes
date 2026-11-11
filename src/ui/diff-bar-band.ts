@@ -110,12 +110,25 @@ export function openBarBand(
   else placeBefore(start, band);
   bar.style.top = `-${SHORTER_THAN_BAR_PX}px`;
   band.append(bar);
+  reachToTheEdges(box, band);
   // Not on the first line: scrolled back, its band would go up under the stepper it was moved to clear.
   if (!isFirstLine) {
     box.scrollTop += height;
     band.dataset['scrolledBy'] = String(height);
   }
   return band;
+}
+
+/**
+ * How far the band's shading reaches past it on either side, to the edges of the box: exactly
+ * that far, since anything past them would make the box scroll sideways.
+ */
+function reachToTheEdges(box: HTMLElement, band: HTMLElement): void {
+  const [inside, own] = [box.getBoundingClientRect(), band.getBoundingClientRect()];
+  const left = inside.left + box.clientLeft;
+  // Rounded down: a fraction of a pixel over the edge brought up a sideways scrollbar.
+  band.style.setProperty('--reach-left', `${Math.floor(own.left - left)}px`);
+  band.style.setProperty('--reach-right', `${Math.floor(left + box.clientWidth - own.right)}px`);
 }
 
 /** Whether this is the first line's band, drawn in the box's padding and taking no space. */

@@ -22,6 +22,7 @@ const onlyNew = element('only-new', HTMLInputElement);
 const readOnly = element('read-only', HTMLInputElement);
 const preamble = element('preamble', HTMLInputElement);
 const barRoom = element('bar-room', HTMLInputElement);
+const bandLook = element('band-look', HTMLSelectElement);
 const view = element('view', HTMLElement);
 
 /** A sample of how the changes are drawn, at the legend's size, with the legend's own word. */
@@ -224,6 +225,27 @@ barRoom.addEventListener('change', () => {
   }
   renderKeepingPlace();
 });
+
+const BAND_LOOK_KEY = 'diff-prototype:band-look';
+
+/** A look for the band, drawn by the page's own styles, which go by this mark on the view. */
+function showBandLook(): void {
+  view.dataset['bandLook'] = bandLook.value;
+  try {
+    localStorage.setItem(BAND_LOOK_KEY, bandLook.value);
+  } catch (error) {
+    console.warn('The look of the band could not be remembered', error);
+  }
+}
+
+try {
+  const remembered = localStorage.getItem(BAND_LOOK_KEY);
+  if (remembered !== null && [...bandLook.options].some((option) => option.value === remembered)) bandLook.value = remembered;
+} catch (error) {
+  console.warn('The look of the band could not be read back', error);
+}
+showBandLook();
+bandLook.addEventListener('change', showBandLook);
 
 element('swap', HTMLButtonElement).addEventListener('click', () => {
   [current.value, proposed.value] = [proposed.value, current.value];
