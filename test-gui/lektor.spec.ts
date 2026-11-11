@@ -616,6 +616,8 @@ test.describe('the corrections window', () => {
     const dialog = windowDialog(page);
     await dialog.locator('.review-text .diff-change').nth(1).click();
     await dialog.locator('.diff-bar').getByRole('button', { name: /^Vrati staro/ }).click();
+    // A choice lands a moment after the click, once the other wordings have faded.
+    await expect(dialog.locator('.review-text .diff-change').nth(1).locator('.diff-resolved')).toHaveCount(1);
     await dialog.locator('.review-text .diff-change').nth(3).click();
     await expect(dialog.locator('.diff-bar-band .diff-bar')).toBeVisible();
     const fromTheText = await copyOf(page, '.review-text');
