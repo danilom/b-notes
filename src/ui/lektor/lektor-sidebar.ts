@@ -237,6 +237,7 @@ export function createLektor(parts: LektorParts): Lektor {
   /* Keys. */
 
   function openKeys(): void {
+    isKeyJustSaved = false;
     keysCameFrom = panelScreen;
     panelScreen = 'keys';
     log.info('Opened the Lektor keys');
@@ -309,6 +310,7 @@ export function createLektor(parts: LektorParts): Lektor {
   }
 
   function toStepTwo(): void {
+    isKeyJustSaved = false;
     // A new start of the step, so Besplatni again: nothing is chosen for him from how he left it.
     choice = 'free';
     isTicked = paidIfSlowByDefault(connection.hasKey().paid, connection.balance());
@@ -323,8 +325,8 @@ export function createLektor(parts: LektorParts): Lektor {
   }
 
   function menuScreen(): Step {
+    // Said until he moves on from the menu, however often it is redrawn meanwhile.
     const saved = isKeyJustSaved ? [el('p', 'lektor-key-saved', words().keyWorksSaved)] : [];
-    isKeyJustSaved = false;
     const keys = button('', openKeys, 'lektor-fallible');
     keys.append(el('span', '', words().keysLink));
     const keysLink = el('div', 'lektor-menu-keys');
@@ -393,9 +395,10 @@ export function createLektor(parts: LektorParts): Lektor {
 
   /* Reading. */
 
-  async function readComment(to: Choice, key: TextKey = openKey, again: Request | null = null): Promise<void> {
+  async function readComment(to: Choice, asked: TextKey = openKey, again: Request | null = null): Promise<void> {
     if (request?.controller !== null && request !== null) return;
-    const state = stateOf(key);
+    let key = asked;
+    let state = stateOf(key);
     const controller = new AbortController();
     const isOpenText = key === openKey;
     request = {
@@ -416,8 +419,20 @@ export function createLektor(parts: LektorParts): Lektor {
     render();
     try {
       if (isOpenText && again === null && !(await parts.prepareToSend())) throw new LektorServiceError('not-brought-over', 'not on disk');
-      // The name it has once brought over from Resoph.
-      if (isOpenText && again === null) sent.name = parts.textNameNow();
+      if (isOpenText && again === null) {
+        // The name it has once brought over from Resoph, and the text it is now: a new one has no file, and so
+        // no handle of its own, until this first save. The request belongs to that text from here on.
+        sent.name = parts.textNameNow();
+        const settled = parts.textNow();
+        if (settled !== key && settled !== NO_NOTE) {
+          states.delete(key);
+          states.set(settled, state);
+          if (openKey === key) openKey = settled;
+          key = settled;
+          sent.key = settled;
+          state = stateOf(key);
+        }
+      }
       log.info('The Lektor was asked to read a text', { choice: to, mayHandOver: sent.mayHandOver });
       const reply = await connection.run({ work: 'comment', choice: to, mayHandOver: sent.mayHandOver, system: FEEDBACK_INSTRUCTION, input: sent.input }, () => {}, controller.signal);
       Object.assign(state, {
@@ -652,6 +667,7 @@ export function createLektor(parts: LektorParts): Lektor {
   /* The window. */
 
   function openWindow(): void {
+    isKeyJustSaved = false;
     const state = stateOf(openKey);
     const name = parts.textNameNow();
     openCorrectionsWindow(
@@ -771,6 +787,7 @@ export function createLektor(parts: LektorParts): Lektor {
     checking = null;
     isOpen = false;
     isAboutAiOpen = false;
+    isKeyJustSaved = false;
     log.info('Closed the Lektor');
     render();
   }
@@ -845,6 +862,8 @@ export function createLektor(parts: LektorParts): Lektor {
     startedNewText(): void {
       states.delete(NO_NOTE);
       openKey = NO_NOTE;
+      // An empty text has nothing for the Lektor, so the panel goes; unless it is showing a utisak for another text.
+      if (request === null) isOpen = false;
       render();
     },
     listChanged(isListed): void {

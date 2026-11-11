@@ -42,7 +42,9 @@ export type FakeTurn =
   | { kind: 'cut-off' }
   | { kind: 'declined' }
   /** OpenRouter finds no host the request allows: our own mistake. */
-  | { kind: 'no-host' };
+  | { kind: 'no-host' }
+  /** No answer at all: the internet gone just as he sent it. */
+  | { kind: 'offline' };
 
 export type FakeProvider = 'gemini' | 'openrouter';
 
@@ -50,6 +52,8 @@ export interface FakeDay {
   isOffline?: boolean;
   /** Keys that no longer work. Any key at all is otherwise taken. */
   deadKeys?: readonly FakeProvider[];
+  /** Keys that pass the opening check but are refused on sending: a key revoked meanwhile. */
+  keysDieOnSend?: readonly FakeProvider[];
   /** What is left on the paid account; null when it can't be read (credits refused, the key without a cap). */
   balance?: number | null;
   /** By model, in turn; the last is repeated. Unnamed models answer after a short queue. */
@@ -64,7 +68,7 @@ export const FAKE_DAY_FILE = 'lektor-fake-network.json';
 /** The model a saved reply comes back as: real Opus words, marked as saved so the review says so. */
 export const SAVED_REPLY_MODEL = 'saved/anthropic/claude-opus-5.5';
 
-const TURN_KINDS: readonly FakeTurn['kind'][] = ['answer', 'busy', 'busy-after-queue', 'daily-limit', 'queue-forever', 'no-credit', 'cut-off', 'declined', 'no-host'];
+const TURN_KINDS: readonly FakeTurn['kind'][] = ['answer', 'busy', 'busy-after-queue', 'daily-limit', 'queue-forever', 'no-credit', 'cut-off', 'declined', 'no-host', 'offline'];
 
 function answerFrom(turn: Record<string, unknown>): FakeTurn {
   const answer: Extract<FakeTurn, { kind: 'answer' }> = { kind: 'answer' };
@@ -88,10 +92,12 @@ function turnFrom(raw: unknown): FakeTurn | null {
 /** A day as a test wrote it, checked: anything it doesn't recognise is left out, and anything but an object gives null. */
 export function fakeDayFrom(raw: unknown): FakeDay | null {
   if (typeof raw !== 'object' || raw === null) return null;
-  const { isOffline, deadKeys, balance, turns } = raw as Record<string, unknown>;
+  const { isOffline, deadKeys, keysDieOnSend, balance, turns } = raw as Record<string, unknown>;
   const day: { -readonly [K in keyof FakeDay]: FakeDay[K] } = {};
   if (typeof isOffline === 'boolean') day.isOffline = isOffline;
-  if (Array.isArray(deadKeys)) day.deadKeys = deadKeys.filter((one): one is FakeProvider => one === 'gemini' || one === 'openrouter');
+  const providers = (list: unknown[]): FakeProvider[] => list.filter((one): one is FakeProvider => one === 'gemini' || one === 'openrouter');
+  if (Array.isArray(deadKeys)) day.deadKeys = providers(deadKeys);
+  if (Array.isArray(keysDieOnSend)) day.keysDieOnSend = providers(keysDieOnSend);
   if (typeof balance === 'number' || balance === null) day.balance = balance;
   if (typeof turns === 'object' && turns !== null) {
     day.turns = Object.fromEntries(
@@ -223,6 +229,9 @@ export function createFakeNetwork(day: FakeDay, clock: FakeClock = BROWSER_CLOCK
         return { status: 402, reply: OPENROUTER_NO_CREDIT };
       case 'no-host':
         return { status: 404, reply: OPENROUTER_NO_HOST };
+      case 'offline':
+        await wait(300, stop);
+        return { status: LEKTOR_UNREACHED, reply: { error: { message: 'TypeError' } } };
       case 'declined':
         return isFree ? { status: 400, reply: GOOGLE_BLOCKED } : { status: 403, reply: OPENROUTER_MODERATED };
       case 'cut-off':
@@ -250,7 +259,7 @@ export function createFakeNetwork(day: FakeDay, clock: FakeClock = BROWSER_CLOCK
     if (request.action === 'ping') return { status: 200, reply: {} };
     // As the real network does: nothing is sent on an empty key.
     if (request.key === '') return { status: 401, reply: { error: { message: '' } } };
-    const isDead = day.deadKeys?.includes(request.provider) ?? false;
+    const isDead = (day.deadKeys?.includes(request.provider) ?? false) || (request.action === 'send' && (day.keysDieOnSend?.includes(request.provider) ?? false));
     if (request.action === 'balance') return balanceReply(isDead);
     if (isDead) return request.provider === 'gemini' ? { status: 400, reply: GOOGLE_WRONG_KEY } : { status: 401, reply: OPENROUTER_WRONG_KEY };
     if (request.action === 'check') return { status: 200, reply: request.provider === 'gemini' ? { models: [{ name: 'models/gemini-3.8-flash' }] } : { data: { limit_remaining: null } } };

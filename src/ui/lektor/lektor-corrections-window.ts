@@ -576,7 +576,7 @@ export function openCorrectionsWindow(parts: WindowParts, text: WindowText): voi
     const proposed = withEndingOf(text.text, kept.proposed);
     const made = createReviewPanel(
       parts.confirmPane,
-      { title: text.title, current: text.text, proposed, whoLine: whoLine(kind, kept, isJustMade), showsOnlyNew: !fallsBack(kind), savedNote: parts.savedNoteFor(kept.model) },
+      { title: text.title, current: text.text, proposed, whoLine: whoLine(kind, kept, isJustMade), showsOnlyNew: kind === 'rewrite', savedNote: parts.savedNoteFor(kept.model) },
       parts.languageNow(),
       {
         onApply: (result) => void apply(result),

@@ -1,367 +1,579 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /**
- * The AI Lektor from his side, on the test Lektor: no AI, no network, no cost. Any request
- * for an AI service fails the test that makes one, so none of this can ever spend anything.
+ * The AI Lektor from his side, on the browser build's fake network (src/hosts/mockup/
+ * lektor-fake-network.ts): Google and OpenRouter as they really answer, reaching nothing, spending
+ * nothing. Any request for the real services fails the test that makes one.
  */
 
 const LONG_ENOUGH = 'Ovo je sasvim obican tekst koji je dovoljno dugacak da ga citalac moze da procita do kraja.';
+const TITLE = 'Naslov teksta';
 
-let requestsToAi = 0;
+const FREE_38 = 'gemini-3.8-flash';
+const FREE_36 = 'gemini-3.6-flash';
+const PAID_FLASH = 'google/gemini-3.8-flash';
+const OPUS = 'anthropic/claude-opus-5.5';
+const FAST = { kind: 'answer', queueMs: 300, thinkMs: 200, writeMs: 400 };
 
-async function withTestLektor(page: Page, behaviour: string): Promise<void> {
-  await page.evaluate((chosen) => {
-    const key = 'b-notes:mock-files';
-    const files = JSON.parse(window.localStorage.getItem(key) ?? '{}') as Record<string, unknown>;
-    files['Podaci/lektor-test.json'] = { text: JSON.stringify({ behaviour: chosen }), updatedAt: Date.now() };
-    window.localStorage.setItem(key, JSON.stringify(files));
-  }, behaviour);
+let requestsToRealServices = 0;
+
+interface Day {
+  isOffline?: boolean;
+  deadKeys?: string[];
+  keysDieOnSend?: string[];
+  balance?: number | null;
+  turns?: Record<string, object[]>;
+}
+
+/** Keys saved and a day for the fake network, then the app as it starts with them. Any model not named answers quickly. */
+async function setUp(page: Page, { keys = { googleKey: 'g-key', openRouterKey: 'or-key' }, day = {} }: { keys?: Record<string, string>; day?: Day } = {}): Promise<void> {
+  const turns = Object.fromEntries([FREE_38, FREE_36, PAID_FLASH, OPUS].map((model) => [model, day.turns?.[model] ?? [FAST]]));
+  await page.evaluate(
+    ({ saved, fakeDay }) => {
+      const key = 'b-notes:mock-files';
+      const files = JSON.parse(window.localStorage.getItem(key) ?? '{}') as Record<string, unknown>;
+      files['b-notes/lektor.json'] = { text: JSON.stringify(saved), updatedAt: Date.now() };
+      files['Podaci/lektor-fake-network.json'] = { text: JSON.stringify(fakeDay), updatedAt: Date.now() };
+      window.localStorage.setItem(key, JSON.stringify(files));
+    },
+    { saved: keys, fakeDay: { balance: 7.47, ...day, turns } },
+  );
   await page.reload();
   await expect(page.locator('#list .note').first()).toBeVisible();
 }
 
-async function writeNewText(page: Page): Promise<void> {
+async function writeNewText(page: Page, body = LONG_ENOUGH): Promise<void> {
   await page.locator('#new-note').click();
-  await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH}`);
+  await page.locator('#editor').fill(`${TITLE}\n\n${body}`);
+}
+
+const side = (page: Page) => page.locator('#lektor-side');
+const windowDialog = (page: Page) => page.locator('#lektor-dialog');
+
+async function openPanel(page: Page): Promise<void> {
+  await page.locator('#lektor-open').click();
+  await expect(side(page).locator('.lektor-side-title')).toBeVisible();
+}
+
+async function toStepTwo(page: Page): Promise<void> {
+  await side(page).getByRole('button', { name: /^Utisak o tekstu/ }).click();
+  await expect(side(page).getByRole('button', { name: /^Pošalji tekst lektoru/ })).toBeVisible();
+}
+
+async function readUtisak(page: Page): Promise<void> {
+  await toStepTwo(page);
+  await side(page).getByRole('button', { name: /^Pošalji tekst lektoru/ }).click();
+  await expect(side(page).locator('.lektor-response')).toContainText('Probni utisak', { timeout: 15_000 });
+}
+
+async function openWindowOn(page: Page, kind: string): Promise<void> {
+  await side(page).getByRole('button', { name: /^Ispravke/ }).click();
+  await windowDialog(page).getByText(kind, { exact: true }).click();
+}
+
+async function sendCorrections(page: Page): Promise<void> {
+  await windowDialog(page).getByRole('button', { name: /^Pošalji zahtev za ispravke/ }).click();
+  await expect(windowDialog(page).getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible({ timeout: 15_000 });
+}
+
+/** Closing the review, saying yes to the question it asks. */
+async function closeReview(page: Page): Promise<void> {
+  await windowDialog(page).locator('button.close').click();
+  await page.locator('#confirm button.danger', { hasText: 'Zatvori' }).click();
+  await expect(windowDialog(page)).toBeHidden();
 }
 
 test.beforeEach(async ({ page }) => {
-  requestsToAi = 0;
+  requestsToRealServices = 0;
   await page.route('**/lektor-ai', async (route) => {
-    requestsToAi += 1;
+    requestsToRealServices += 1;
     await route.abort();
   });
   await page.goto('/');
   await expect(page.locator('#list .note').first()).toBeVisible();
 });
 
-test('asks nothing of any AI service until he opens the Lektor', async ({ page }) => {
+test.afterEach(() => {
+  expect(requestsToRealServices).toBe(0);
+});
+
+test.describe('the panel', () => {
+  test('asks nothing of any AI service until he opens the Lektor', async ({ page }) => {
+    await setUp(page);
+    await writeNewText(page);
+    await page.locator('#list .note').nth(1).click();
+    expect(await page.evaluate(() => document.querySelectorAll('#lektor-side *').length)).toBe(0);
+  });
+
+  test('offers the Lektor only on a text long enough to read', async ({ page }) => {
+    await page.locator('#new-note').click();
+    await expect(page.locator('#lektor-open')).toBeDisabled();
+    await page.locator('#editor').fill(LONG_ENOUGH);
+    await expect(page.locator('#lektor-open')).toBeEnabled();
+  });
+
+  test('with no keys, opens on the keys with no way back, and a pasted key that works leads to the menu', async ({ page }) => {
+    await setUp(page, { keys: {} });
+    await writeNewText(page);
+    await openPanel(page);
+    await expect(side(page)).toContainText('AI Lektor: podešavanje');
+    await expect(side(page)).toContainText('Dovoljan je jedan.');
+    await expect(side(page).getByRole('button', { name: 'Nazad' })).toHaveCount(0);
+    await side(page).getByLabel('Besplatni (Google)').fill('novi-kljuc');
+    await side(page).getByRole('button', { name: 'Sačuvaj' }).click();
+    await expect(side(page)).toContainText('API ključ radi i sačuvan je.');
+    await expect(side(page).getByRole('button', { name: /^Utisak o tekstu/ })).toBeVisible();
+  });
+
+  test('says the internet is down, with a way to try again, keys or none', async ({ page }) => {
+    for (const keys of [{}, { googleKey: 'g' }]) {
+      await setUp(page, { keys, day: { isOffline: true } });
+      await page.locator('#list .note').first().click();
+      await openPanel(page);
+      await expect(side(page)).toContainText('Internet ne radi, a AI Lektoru je potreban.');
+      await expect(side(page).getByRole('button', { name: 'Pokušaj ponovo' })).toBeVisible();
+    }
+  });
+
+  test('finds a dead key on opening, says so for the whole Lektor, and the keys screen says which', async ({ page }) => {
+    await setUp(page, { day: { deadKeys: ['openrouter'] } });
+    await writeNewText(page);
+    await openPanel(page);
+    await expect(side(page).locator('.lektor-dead-key')).toContainText('API ključ više ne radi.');
+    await expect(side(page).getByRole('button', { name: /^Utisak o tekstu/ })).toHaveCount(0);
+    await side(page).getByRole('button', { name: 'API ključevi' }).click();
+    await expect(side(page)).toContainText('Ovaj ključ više ne radi. Zalepi novi.');
+    await expect(side(page).getByLabel('Plaćeni (OpenRouter)')).toHaveAttribute('placeholder', 'Zalepi ključ ovde');
+    await expect(side(page).getByLabel('Besplatni (Google)')).toHaveAttribute('placeholder', 'Sačuvan');
+    await expect(side(page)).toContainText('✓ Radi');
+  });
+
+  test('starts step 2 on Besplatni with the tick box ticked and the balance, greying the box on Plaćeni', async ({ page }) => {
+    await setUp(page);
+    await writeNewText(page);
+    await openPanel(page);
+    await toStepTwo(page);
+    await expect(side(page).getByLabel(/^Besplatni „Flash”/)).toBeChecked();
+    const tick = side(page).getByLabel(/^Ako čeka duže od 2 minuta/);
+    await expect(tick).toBeChecked();
+    await expect(side(page)).toContainText('Na računu za plaćene lektore: $7,47');
+    const send = side(page).getByRole('button', { name: /^Pošalji tekst lektoru/ });
+    await expect(send).toHaveAttribute('title', /Šalje se Guglu\nModel: gemini-3.8-flash \(ako je zauzet: gemini-3.6-flash\)\nAko čeka duže od 2 minuta: firmi OpenRouter, model google\/gemini-3.8-flash/);
+    await side(page).getByLabel(/^Plaćeni „Opus”/).check();
+    await expect(tick).toBeDisabled();
+    await expect(send).toHaveAttribute('title', 'Šalje se firmi OpenRouter\nModel: anthropic/claude-opus-5.5');
+    // Back to the menu and in again: Besplatni once more.
+    await side(page).getByRole('button', { name: 'Nazad' }).click();
+    await toStepTwo(page);
+    await expect(side(page).getByLabel(/^Besplatni „Flash”/)).toBeChecked();
+  });
+
+  test('starts the tick box unticked under a dollar, saying "malo" in red', async ({ page }) => {
+    await setUp(page, { day: { balance: 0.9 } });
+    await writeNewText(page);
+    await openPanel(page);
+    await toStepTwo(page);
+    await expect(side(page).getByLabel(/^Ako čeka duže od 2 minuta/)).not.toBeChecked();
+    await expect(side(page).locator('.lektor-balance-low')).toContainText('$0,90 (malo)');
+  });
+
+  test('hides the balance and leaves the box unticked when the balance cannot be read', async ({ page }) => {
+    await setUp(page, { day: { balance: null } });
+    await writeNewText(page);
+    await openPanel(page);
+    await toStepTwo(page);
+    await expect(side(page).locator('.lektor-balance')).toHaveCount(0);
+    await expect(side(page).getByLabel(/^Ako čeka duže od 2 minuta/)).not.toBeChecked();
+  });
+
+  test('waits with the text named and a clock, gives up to step 2, and reads it again', async ({ page }) => {
+    await setUp(page, { day: { turns: { [FREE_38]: [{ kind: 'answer', queueMs: 4000 }, FAST] } } });
+    await writeNewText(page);
+    await openPanel(page);
+    await toStepTwo(page);
+    await side(page).getByRole('button', { name: /^Pošalji tekst lektoru/ }).click();
+    await expect(side(page)).toContainText(`AI Lektor čita tekst „${TITLE}”…`);
+    await expect(side(page)).toContainText('Besplatni lektor često čeka na red');
+    await expect(side(page).locator('.lektor-comment-clock')).toContainText(/Prošlo je \d+ s\./);
+    await expect(side(page).locator('.lektor-side-dock')).toHaveCount(0);
+    await side(page).getByRole('button', { name: 'Odustani od zahteva' }).click();
+    await expect(side(page).getByRole('button', { name: /^Pošalji tekst lektoru/ })).toBeVisible();
+    await side(page).getByRole('button', { name: /^Pošalji tekst lektoru/ }).click();
+    await expect(side(page).locator('.lektor-response')).toContainText(`Utisak AI Lektora o tekstu „${TITLE}”:`, { timeout: 15_000 });
+  });
+
+  test('signs the utisak by who wrote it, with a paid one’s cost, and brings "AI može da pogreši" into view', async ({ page }) => {
+    await setUp(page);
+    await writeNewText(page);
+    await openPanel(page);
+    await toStepTwo(page);
+    await side(page).getByLabel(/^Plaćeni „Opus”/).check();
+    await side(page).getByRole('button', { name: /^Pošalji tekst lektoru/ }).click();
+    const signed = side(page).locator('.lektor-comment-notes .lektor-service-line');
+    await expect(signed).toContainText('AI Lektor: Plaćeni „Opus” · upravo sad · $0,05', { timeout: 15_000 });
+    await side(page).locator('.lektor-response').click();
+    await side(page).getByRole('button', { name: /AI može da pogreši/ }).click();
+    await expect(side(page).locator('.lektor-about-ai')).toBeInViewport();
+  });
+
+  test('closing cancels a utisak being read, and opens again on step 2 with nothing arriving later', async ({ page }) => {
+    await setUp(page, { day: { turns: { [FREE_38]: [{ kind: 'answer', queueMs: 1500 }] } } });
+    await writeNewText(page);
+    await openPanel(page);
+    await toStepTwo(page);
+    await side(page).getByRole('button', { name: /^Pošalji tekst lektoru/ }).click();
+    await expect(side(page)).toContainText('AI Lektor čita tekst');
+    await page.locator('#lektor-open').click();
+    await expect(page.locator('body')).not.toHaveClass(/lektor-open/);
+    await page.waitForTimeout(3500);
+    await openPanel(page);
+    await expect(side(page).getByRole('button', { name: /^Pošalji tekst lektoru/ })).toBeVisible();
+    await expect(side(page).locator('.lektor-response')).toHaveCount(0);
+  });
+
+  test('opens on the utisak whenever there is one, with the note after a big change', async ({ page }) => {
+    await setUp(page);
+    await writeNewText(page);
+    await openPanel(page);
+    await readUtisak(page);
+    await page.locator('#lektor-open').click();
+    await page.locator('#editor').fill(`${TITLE}\n\n${LONG_ENOUGH} ${LONG_ENOUGH} ${LONG_ENOUGH}`);
+    await openPanel(page);
+    await expect(side(page).locator('.lektor-response')).toContainText('Probni utisak');
+    await expect(side(page).locator('.lektor-stale')).toContainText(/napisan pre tvojih poslednjih izmena \(oko \d+ reči\)/);
+  });
+
+  test('stays with a utisak being read while another text is open, and offers the way to it when done', async ({ page }) => {
+    await setUp(page, { day: { turns: { [FREE_38]: [{ kind: 'answer', queueMs: 2500 }] } } });
+    await writeNewText(page);
+    await openPanel(page);
+    await toStepTwo(page);
+    await side(page).getByRole('button', { name: /^Pošalji tekst lektoru/ }).click();
+    await page.locator('#list .note').nth(2).click();
+    await expect(side(page)).toContainText(`AI Lektor čita tekst „${TITLE}”…`);
+    await expect(side(page)).toContainText(`Utisak o tekstu „${TITLE}” je gotov.`, { timeout: 15_000 });
+    await side(page).getByRole('button', { name: 'Otvori tekst i utisak' }).click();
+    await expect(page.locator('#editor')).toHaveValue(new RegExp(`^${TITLE}`));
+    await expect(side(page).locator('.lektor-response')).toContainText('Probni utisak');
+  });
+
+  test('stops a utisak whose text is deleted meanwhile, and says so plainly', async ({ page }) => {
+    await setUp(page, { day: { turns: { [FREE_38]: [{ kind: 'answer', queueMs: 5000 }] } } });
+    await writeNewText(page);
+    await expect(page.locator('#status-text')).toContainText('Sačuvano');
+    await openPanel(page);
+    await toStepTwo(page);
+    await side(page).getByRole('button', { name: /^Pošalji tekst lektoru/ }).click();
+    await expect(side(page)).toContainText('AI Lektor čita tekst');
+    await page.locator('#delete-note').click();
+    await page.locator('#confirm').getByRole('button', { name: 'Obriši', exact: true }).click();
+    await expect(side(page)).toContainText(`Tekst „${TITLE}” je obrisan.`);
+    await expect(side(page)).toContainText('Zato utisak o njemu neće stići.');
+    await expect(side(page).locator('.lektor-problem')).toHaveCount(0);
+  });
+
+  test('says Google is busy with the service’s own words, and sends to the paid Lektor from there', async ({ page }) => {
+    await setUp(page, { day: { turns: { [FREE_38]: [{ kind: 'busy' }], [FREE_36]: [{ kind: 'busy' }] } } });
+    await writeNewText(page);
+    await openPanel(page);
+    await toStepTwo(page);
+    await side(page).getByLabel(/^Ako čeka duže od 2 minuta/).uncheck();
+    await side(page).getByRole('button', { name: /^Pošalji tekst lektoru/ }).click();
+    await expect(side(page).locator('.lektor-problem')).toContainText('Gugl je sada zauzet.', { timeout: 15_000 });
+    await expect(side(page).locator('.lektor-service-said')).toContainText('high demand');
+    await expect(side(page).getByRole('button', { name: 'Kopiraj poruku' })).toBeVisible();
+    await expect(side(page).getByRole('button', { name: 'Pokušaj ponovo' })).toHaveCount(0);
+    await side(page).getByRole('button', { name: /^Pošalji plaćenom lektoru/ }).click();
+    await expect(side(page).locator('.lektor-comment-notes')).toContainText('Plaćeni „Opus”', { timeout: 15_000 });
+  });
+
+  test('says when the free Lektor works again once its day is spent, with no retry', async ({ page }) => {
+    await setUp(page, { keys: { googleKey: 'g' }, day: { turns: { [FREE_38]: [{ kind: 'daily-limit' }], [FREE_36]: [{ kind: 'daily-limit' }] } } });
+    await writeNewText(page);
+    await openPanel(page);
+    await toStepTwo(page);
+    await side(page).getByRole('button', { name: /^Pošalji tekst lektoru/ }).click();
+    await expect(side(page).locator('.lektor-problem')).toContainText('Besplatni lektor je za danas potrošen.', { timeout: 15_000 });
+    await expect(side(page).locator('.lektor-problem')).toContainText(/Ponovo radi posle \d\d:\d\d\./);
+    await expect(side(page).getByRole('button', { name: 'Pokušaj ponovo' })).toHaveCount(0);
+  });
+
+  test('shows the dead-key screen with a way back when a key is refused on sending, never as busy', async ({ page }) => {
+    await setUp(page, { day: { keysDieOnSend: ['gemini'] } });
+    await writeNewText(page);
+    await openPanel(page);
+    await toStepTwo(page);
+    await side(page).getByRole('button', { name: /^Pošalji tekst lektoru/ }).click();
+    await expect(side(page).locator('.lektor-dead-key')).toContainText('API ključ više ne radi.', { timeout: 15_000 });
+    await expect(side(page)).not.toContainText('zauzet');
+    await side(page).getByRole('button', { name: 'Nazad' }).click();
+    await expect(side(page).getByRole('button', { name: /^Pošalji tekst lektoru/ })).toBeVisible();
+  });
+
+  test('closes when a new text is started', async ({ page }) => {
+    await setUp(page);
+    await writeNewText(page);
+    await openPanel(page);
+    await expect(page.locator('body')).toHaveClass(/lektor-open/);
+    await page.locator('#new-note').click();
+    await expect(page.locator('body')).not.toHaveClass(/lektor-open/);
+  });
+});
+
+test.describe('the corrections window', () => {
+  test('shows the kinds with nothing picked, then Slova i zarezi said rather than asked, with the tick box', async ({ page }) => {
+    await setUp(page);
+    await writeNewText(page);
+    await openPanel(page);
+    await side(page).getByRole('button', { name: /^Ispravke/ }).click();
+    await expect(windowDialog(page)).toContainText('Izaberi vrstu ispravke sa leve strane.');
+    await expect(windowDialog(page)).toContainText('Tvoj tekst se ne menja dok je ovaj prozor otvoren.');
+    await windowDialog(page).getByText('Slova i zarezi', { exact: true }).click();
+    await expect(windowDialog(page).locator('.lektor-window-detail .lektor-service-line')).toHaveText('AI Lektor: Besplatni „Flash”');
+    await expect(windowDialog(page).getByLabel(/^Ako čeka duže od 2 minuta/)).toBeChecked();
+    await expect(windowDialog(page)).toContainText('Na računu za plaćene lektore: $7,47');
+  });
+
+  test('waits through its stages, reviews, puts the corrections in with a version kept, and the panel stays', async ({ page }) => {
+    await setUp(page);
+    await writeNewText(page);
+    const before = await page.locator('#editor').inputValue();
+    await openPanel(page);
+    await side(page).getByRole('button', { name: /^Ispravke/ }).click();
+    await windowDialog(page).getByText('Slova i zarezi', { exact: true }).click();
+    await windowDialog(page).getByRole('button', { name: /^Pošalji zahtev za ispravke/ }).click();
+    await expect(windowDialog(page).locator('.lektor-stages')).toContainText('Zahtev čeka u redu…');
+    await expect(windowDialog(page).locator('.lektor-window-clock')).toContainText(/Prošlo je \d+ s/);
+    await expect(windowDialog(page).getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible({ timeout: 15_000 });
+    await expect(windowDialog(page).locator('.lektor-review-head .lektor-service-line')).toContainText(/^Slova i zarezi · Besplatni „Flash” · upravo sad · veće promene: \d+, sitne popravke: \d+\.$/);
+    await windowDialog(page).getByRole('button', { name: 'Unesi sve izmene u tekst' }).click();
+    await expect(page.locator('#toast')).toContainText('Izmene su unete u tekst.');
+    await expect(page.locator('#editor')).not.toHaveValue(before);
+    await expect(page.locator('#see-versions')).toContainText('(1)');
+    await expect(page.locator('body')).toHaveClass(/lektor-open/);
+    await expect(side(page).getByRole('button', { name: /^Utisak o tekstu/ })).toBeVisible();
+  });
+
+  test('does not touch the text when the version cannot be kept', async ({ page }) => {
+    await page.goto('/?test');
+    await setUp(page);
+    await writeNewText(page);
+    await openPanel(page);
+    await openWindowOn(page, 'Slova i zarezi');
+    await sendCorrections(page);
+    const before = await page.locator('#editor').inputValue();
+    await page.evaluate(() => (window as unknown as { refuseTheNextWrites: (count: number) => void }).refuseTheNextWrites(1));
+    await windowDialog(page).getByRole('button', { name: 'Unesi sve izmene u tekst' }).click();
+    await expect(page.locator('#status-text')).toContainText('Izmene nisu unete');
+    await expect(page.locator('#editor')).toHaveValue(before);
+  });
+
+  test('hands a slow free request to paid Flash at two minutes, saying so, and signs it by Flash', async ({ page }) => {
+    await page.clock.install();
+    await setUp(page, { day: { turns: { [FREE_38]: [{ kind: 'queue-forever' }], [FREE_36]: [{ kind: 'queue-forever' }] } } });
+    await writeNewText(page);
+    await openPanel(page);
+    await openWindowOn(page, 'Slova i zarezi');
+    await windowDialog(page).getByRole('button', { name: /^Pošalji zahtev za ispravke/ }).click();
+    await expect(windowDialog(page)).toContainText('Ako ne krene za 2 minuta, šalje se plaćenom lektoru');
+    await page.clock.fastForward('01:05');
+    await expect(windowDialog(page)).toContainText('gemini-3.6-flash (rezervni)');
+    await page.clock.fastForward('01:00');
+    await expect(windowDialog(page).locator('.lektor-stages .lektor-service-line')).toHaveText('AI Lektor: Plaćeni „Flash”');
+    await expect(windowDialog(page).locator('.lektor-stage-mark-moved')).toHaveCount(1);
+    await page.clock.fastForward('00:05');
+    await expect(windowDialog(page).locator('.lektor-review-head .lektor-service-line')).toContainText('Plaćeni „Flash” · ', { timeout: 15_000 });
+    await expect(windowDialog(page).locator('.lektor-review-head .lektor-service-line')).toContainText('plaćeno $0,01');
+  });
+
+  test('keeps the set it made, shows it as a card on the next opening, and says when it is void', async ({ page }) => {
+    await setUp(page);
+    await writeNewText(page);
+    await openPanel(page);
+    await openWindowOn(page, 'Slova i zarezi');
+    await sendCorrections(page);
+    await closeReview(page);
+    await side(page).getByRole('button', { name: /^Ispravke/ }).click();
+    await windowDialog(page).getByText('Slova i zarezi', { exact: true }).click();
+    await expect(windowDialog(page).locator('.lektor-ready-card')).toHaveCount(1);
+    await expect(windowDialog(page).locator('.lektor-ready-card')).toContainText('Predlozi lektora „Flash”');
+    await windowDialog(page).getByRole('button', { name: 'Novi zahtev za ispravke…' }).click();
+    await expect(windowDialog(page).getByRole('button', { name: 'Nazad na predloge' })).toBeVisible();
+    await windowDialog(page).getByRole('button', { name: 'Nazad na predloge' }).click();
+    await windowDialog(page).getByRole('button', { name: 'Pogledaj' }).click();
+    await expect(windowDialog(page).getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible();
+    // Nazad never asks, and leads back to the card.
+    await windowDialog(page).getByRole('button', { name: 'Nazad' }).click();
+    await expect(page.locator('#confirm')).toBeHidden();
+    await expect(windowDialog(page).locator('.lektor-ready-card')).toHaveCount(1);
+    await windowDialog(page).locator('footer').getByRole('button', { name: 'Zatvori' }).click();
+    await page.locator('#confirm button.danger', { hasText: 'Zatvori' }).click();
+    await expect(windowDialog(page)).toBeHidden();
+    await page.locator('#editor').fill(`${TITLE}\n\n${LONG_ENOUGH} Promenjeno.`);
+    await side(page).getByRole('button', { name: /^Ispravke/ }).click();
+    await windowDialog(page).getByText('Slova i zarezi', { exact: true }).click();
+    await expect(windowDialog(page)).toContainText('Stari predlozi više ne važe, tekst je promenjen.');
+    await expect(windowDialog(page).locator('.lektor-ready-card')).toHaveCount(0);
+  });
+
+  test('asks before closing only when there are kept suggestions', async ({ page }) => {
+    await setUp(page);
+    await writeNewText(page);
+    await openPanel(page);
+    await side(page).getByRole('button', { name: /^Ispravke/ }).click();
+    await windowDialog(page).locator('footer').getByRole('button', { name: 'Zatvori' }).click();
+    await expect(windowDialog(page)).toBeHidden();
+    await openWindowOn(page, 'Slova i zarezi');
+    await sendCorrections(page);
+    await windowDialog(page).getByRole('button', { name: 'Nazad' }).click();
+    await windowDialog(page).locator('footer').getByRole('button', { name: 'Zatvori' }).click();
+    await expect(page.locator('#confirm')).toContainText('Zatvori AI ispravke');
+    await page.locator('#confirm button.danger', { hasText: 'Zatvori' }).click();
+    await expect(windowDialog(page)).toBeHidden();
+  });
+
+  test('offers Opus for the rework kinds, holds Plaćeni across them until the window closes, and says what it cost last time', async ({ page }) => {
+    await setUp(page);
+    await writeNewText(page);
+    await openPanel(page);
+    await openWindowOn(page, 'Stilska dorada');
+    await expect(windowDialog(page).getByLabel(/^Besplatni „Flash”/)).toBeChecked();
+    await windowDialog(page).getByLabel(/^Plaćeni „Opus”/).check();
+    await windowDialog(page).getByText('Dubinska prerada', { exact: true }).click();
+    await expect(windowDialog(page).getByLabel(/^Plaćeni „Opus”/)).toBeChecked();
+    await sendCorrections(page);
+    await expect(windowDialog(page).locator('.lektor-review-head .lektor-service-line')).toContainText('Plaćeni „Opus” · upravo sad · plaćeno $0,05');
+    await closeReview(page);
+    await openWindowOn(page, 'Dubinska prerada');
+    await windowDialog(page).getByRole('button', { name: 'Novi zahtev za ispravke…' }).click();
+    await expect(windowDialog(page).getByLabel(/^Besplatni „Flash”/)).toBeChecked();
+    await windowDialog(page).getByLabel(/^Plaćeni „Opus”/).check();
+    await expect(windowDialog(page)).toContainText('Prošli put za ovaj tekst: $0,05');
+  });
+
+  test('folds the instructions, showing the whole English one sent and his own note when opened', async ({ page }) => {
+    await setUp(page);
+    await writeNewText(page);
+    await openPanel(page);
+    await openWindowOn(page, 'Pravopis i gramatika');
+    await expect(windowDialog(page).locator('.lektor-prompt')).toHaveCount(0);
+    await windowDialog(page).getByRole('button', { name: /Uputstva za AI/ }).click();
+    await expect(windowDialog(page).locator('.lektor-prompt')).toContainText('Return the whole text');
+    await windowDialog(page).locator('.lektor-note').fill('Bez zareza');
+    await windowDialog(page).locator('footer').getByRole('button', { name: 'Zatvori' }).click();
+    await side(page).getByRole('button', { name: /^Ispravke/ }).click();
+    await windowDialog(page).getByText('Pravopis i gramatika', { exact: true }).click();
+    await expect(windowDialog(page).locator('.lektor-note')).toHaveValue('Bez zareza');
+  });
+
+  test('says the money is gone on paid, and sends to the free Lektor from there', async ({ page }) => {
+    await setUp(page, { day: { turns: { [OPUS]: [{ kind: 'no-credit' }] } } });
+    await writeNewText(page);
+    await openPanel(page);
+    await openWindowOn(page, 'Dubinska prerada');
+    await windowDialog(page).getByLabel(/^Plaćeni „Opus”/).check();
+    await windowDialog(page).getByRole('button', { name: /^Pošalji zahtev za ispravke/ }).click();
+    await expect(windowDialog(page).locator('.lektor-problem')).toContainText('Plaćeni iznos je potrošen.', { timeout: 15_000 });
+    await windowDialog(page).getByRole('button', { name: /^Pošalji besplatnom lektoru/ }).click();
+    await expect(windowDialog(page).getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible({ timeout: 15_000 });
+  });
+
+  test('says the free one could not take it and there is no money left, after a hand-over, with no shortcut', async ({ page }) => {
+    await setUp(page, { day: { turns: { [FREE_38]: [{ kind: 'busy' }], [FREE_36]: [{ kind: 'busy' }], [PAID_FLASH]: [{ kind: 'no-credit' }] } } });
+    await writeNewText(page);
+    await openPanel(page);
+    await openWindowOn(page, 'Slova i zarezi');
+    await windowDialog(page).getByRole('button', { name: /^Pošalji zahtev za ispravke/ }).click();
+    await expect(windowDialog(page).locator('.lektor-problem')).toContainText('za plaćenog nema više novca', { timeout: 15_000 });
+    await expect(windowDialog(page).getByRole('button', { name: /^Pošalji (besplatnom|plaćenom) lektoru/ })).toHaveCount(0);
+  });
+
+  test('sends a key refused on sending to the keys screen in the panel, closing the window', async ({ page }) => {
+    await setUp(page, { day: { keysDieOnSend: ['gemini'] } });
+    await writeNewText(page);
+    await openPanel(page);
+    await openWindowOn(page, 'Slova i zarezi');
+    await windowDialog(page).getByRole('button', { name: /^Pošalji zahtev za ispravke/ }).click();
+    await expect(windowDialog(page).locator('.lektor-dead-key')).toContainText('Zovi za pomoć.', { timeout: 15_000 });
+    await windowDialog(page).getByRole('button', { name: 'API ključevi' }).click();
+    await expect(windowDialog(page)).toBeHidden();
+    await expect(side(page)).toContainText('Ovaj ključ više ne radi. Zalepi novi.');
+  });
+
+  test('offers trying again when the internet goes as he sends, and that works once it is back', async ({ page }) => {
+    await setUp(page, { day: { turns: { [FREE_38]: [{ kind: 'offline' }, FAST] } } });
+    await writeNewText(page);
+    await openPanel(page);
+    await openWindowOn(page, 'Slova i zarezi');
+    await windowDialog(page).getByRole('button', { name: /^Pošalji zahtev za ispravke/ }).click();
+    await expect(windowDialog(page).locator('.lektor-problem')).toContainText('Internet ne radi, a AI Lektoru je potreban.', { timeout: 15_000 });
+    await expect(windowDialog(page).getByRole('button', { name: /^Pošalji (besplatnom|plaćenom) lektoru/ })).toHaveCount(0);
+    await windowDialog(page).getByRole('button', { name: 'Pokušaj ponovo' }).click();
+    await expect(windowDialog(page).getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible({ timeout: 15_000 });
+  });
+
+  test('draws every change in the look chosen, and the chosen one again closes what he opened', async ({ page }) => {
+    await setUp(page);
+    await writeNewText(page, `${LONG_ENOUGH} ${LONG_ENOUGH} ${LONG_ENOUGH}`);
+    await openPanel(page);
+    await openWindowOn(page, 'Dubinska prerada');
+    await sendCorrections(page);
+    const dialog = windowDialog(page);
+    const result = dialog.getByLabel('samo rezultat');
+    const marked = dialog.getByLabel('izmene označene');
+    await expect(dialog.locator('.lektor-view-title')).toHaveText('Izgled izmena:');
+    await expect(result).toBeChecked();
+    const collapsed = await dialog.locator('.review-text .diff-resolved').count();
+    expect(collapsed).toBeGreaterThan(1);
+    await dialog.locator('.review-text .diff-resolved').first().click();
+    await expect(dialog.locator('.review-text .diff-resolved')).toHaveCount(collapsed - 1);
+    await result.click();
+    await expect(dialog.locator('.review-text .diff-resolved')).toHaveCount(collapsed);
+    await marked.click();
+    await expect(dialog.locator('.review-text .diff-resolved')).toHaveCount(0);
+    await expect(dialog.locator('.diff-legend')).toContainText('biće uneto');
+  });
+
+  test('raises the bar over a change on a click and never on hovering, and steps without it until a change is clicked', async ({ page }) => {
+    await setUp(page);
+    await writeNewText(page, `${LONG_ENOUGH} ${LONG_ENOUGH}\n\n${LONG_ENOUGH} ${LONG_ENOUGH}\n\n${LONG_ENOUGH}`);
+    await openPanel(page);
+    await openWindowOn(page, 'Stilska dorada');
+    await sendCorrections(page);
+    const dialog = windowDialog(page);
+    const bar = dialog.locator('.diff-bar');
+    const changes = dialog.locator('.review-text .diff-change');
+    const next = dialog.locator('.review-steps').getByRole('button', { name: 'Sledeća' });
+    await expect(bar).toBeVisible({ timeout: 15_000 });
+    await dialog.locator('.review-text').click({ position: { x: 5, y: 5 } });
+    await expect(bar).toBeHidden();
+    await changes.nth(2).hover();
+    await page.waitForTimeout(800);
+    await expect(bar).toBeHidden();
+    await next.click();
+    await expect(dialog.locator('.review-steps')).toContainText('Razlika 2 od');
+    await expect(bar).toBeHidden();
+    await changes.nth(2).click();
+    await expect(bar).toBeVisible();
+  });
+});
+
+test('in dark mode, draws the marks brighter and keeps the menu pictures in their own colours', async ({ page }) => {
+  await setUp(page);
   await writeNewText(page);
-  await page.locator('#list .note').nth(1).click();
-  expect(requestsToAi).toBe(0);
-});
-
-test('offers the Lektor only on a text long enough to read', async ({ page }) => {
-  await page.locator('#new-note').click();
-  await expect(page.locator('#lektor-open')).toBeDisabled();
-  await page.locator('#editor').fill(LONG_ENOUGH);
-  await expect(page.locator('#lektor-open')).toBeEnabled();
-});
-
-test('asks for the keys, by name, when there are none', async ({ page }) => {
-  await page.route('**/lektor-ai', (route) => route.fulfill({ json: {} }));
-  await writeNewText(page);
-  await page.locator('#lektor-open').click();
-  await expect(page.getByText('API ključ za Google (besplatan)')).toBeVisible();
-  await expect(page.getByText('API ključ za Anthropic (plaćen)')).toBeVisible();
-});
-
-async function withOnlyKey(page: Page, keys: Record<string, string>): Promise<void> {
-  await page.evaluate((saved) => {
-    const key = 'b-notes:mock-files';
-    const files = JSON.parse(window.localStorage.getItem(key) ?? '{}') as Record<string, unknown>;
-    files['b-notes/lektor.json'] = { text: JSON.stringify(saved), updatedAt: Date.now() };
-    window.localStorage.setItem(key, JSON.stringify(files));
-  }, keys);
-  await page.reload();
-  await expect(page.locator('#list .note').first()).toBeVisible();
-}
-
-test('with only the free key, greys out the paid Lektor and goes straight to the first step', async ({ page }) => {
-  await page.route('**/lektor-ai', (route) => route.fulfill({ json: {} }));
-  await withOnlyKey(page, { googleKey: 'not-a-real-key' });
-  await writeNewText(page);
-  await page.locator('#lektor-open').click();
-
-  await expect(page.getByLabel(/^Google:/)).toBeChecked();
-  await expect(page.getByLabel(/^Anthropic:/)).toBeDisabled();
-  await expect(page.locator('label', { hasText: 'Anthropic:' })).toHaveAttribute('title', 'Nije unet API ključ.');
-  await expect(page.locator('label', { hasText: 'Google:' })).not.toHaveAttribute('title', /./);
-  await expect(page.getByRole('button', { name: /^Pošalji ceo tekst/ })).toHaveAttribute('title', 'Model: gemini-3.6-flash (besplatan)');
-});
-
-test('with only the paid key, starts on it, and saving the keys box with nothing new leads back', async ({ page }) => {
-  await page.route('**/lektor-ai', (route) => route.fulfill({ json: {} }));
-  await withOnlyKey(page, { anthropicKey: 'not-a-real-key' });
-  await writeNewText(page);
-  await page.locator('#lektor-open').click();
-
-  await expect(page.getByLabel(/^Anthropic:/)).toBeChecked();
-  await expect(page.getByLabel(/^Google:/)).toBeDisabled();
-  await expect(page.getByRole('button', { name: /^Pošalji ceo tekst/ })).toHaveAttribute('title', 'Model: claude-opus-5-5 (plaćen)');
-
-  await page.getByRole('button', { name: 'API ključevi' }).click();
-  await page.getByRole('button', { name: 'Sačuvaj' }).click();
-  await expect(page.getByLabel(/^Anthropic:/)).toBeChecked();
-});
-
-test('keeps the old text as a version when corrections go in, and says these are only a test', async ({ page }) => {
-  await withTestLektor(page, 'ok');
-  await writeNewText(page);
-  const before = await page.locator('#editor').inputValue();
-
-  await page.locator('#lektor-open').click();
-  await expect(page.getByLabel('Probni: bez AI, samo za proveru')).toBeChecked();
-  await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
-  await expect(page.locator('.lektor-response')).toContainText('PROBNI', { timeout: 15_000 });
-
-  await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
-  await page.getByLabel('Slova i zarezi').check();
-  await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
-  await expect(page.getByText('Probni predlozi, bez pravog AI')).toBeVisible({ timeout: 15_000 });
-
-  await page.getByRole('button', { name: 'Unesi sve izmene u tekst' }).click();
-  await expect(page.locator('#toast')).toContainText('Izmene su unete u tekst.');
-  await expect(page.locator('#editor')).not.toHaveValue(before);
-  await expect(page.locator('#see-versions')).toContainText('(1)');
-  expect(requestsToAi).toBe(0);
-
-  // The job is done, so the sidebar goes; opened again after so small a change, the comment is there and still holds.
-  await expect(page.locator('body')).not.toHaveClass(/lektor-open/);
-  await page.locator('#lektor-open').click();
-  await expect(page.locator('.lektor-response')).toContainText('PROBNI');
-  await expect(page.locator('.lektor-stale')).toHaveCount(0);
-});
-
-test('does not touch the text when the version cannot be kept', async ({ page }) => {
-  await page.goto('/?test');
-  await withTestLektor(page, 'ok');
-  await writeNewText(page);
-  await page.locator('#lektor-open').click();
-  await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
-  await page.getByRole('button', { name: 'Pređi na ispravke' }).click({ timeout: 15_000 });
-  await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
-  const apply = page.getByRole('button', { name: 'Unesi sve izmene u tekst' });
-  await expect(apply).toBeVisible({ timeout: 15_000 });
-  const before = await page.locator('#editor').inputValue();
-
-  await page.evaluate(() => (window as unknown as { refuseTheNextWrites: (count: number) => void }).refuseTheNextWrites(1));
-  await apply.click();
-
-  await expect(page.locator('#status-text')).toContainText('Izmene nisu unete');
-  await expect(page.locator('#editor')).toHaveValue(before);
-  await expect(page.getByRole('button', { name: 'Pogledaj ispravke' })).toBeVisible();
-});
-
-test('shows corrections already made instead of sending again, until the request or the text differs', async ({ page }) => {
-  await withTestLektor(page, 'ok');
-  await writeNewText(page);
-  await page.locator('#lektor-open').click();
-  await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
-  await page.getByRole('button', { name: 'Pređi na ispravke' }).click({ timeout: 15_000 });
-  await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
-  await expect(page.getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible({ timeout: 15_000 });
-  await page.locator('#lektor-dialog button.close').click();
-  // Not one stray click away: these may have cost money.
-  await expect(page.locator('body')).toHaveClass(/lektor-open/);
-  await page.locator('#confirm button.danger', { hasText: 'Zatvori' }).click();
-  await expect(page.locator('body')).not.toHaveClass(/lektor-open/);
-
-  // The text is still what was read, so the comment is what he comes back to, with no send button in the way.
-  await page.locator('#lektor-open').click();
-  await expect(page.locator('.lektor-response')).toContainText('PROBNI');
-  await expect(page.getByRole('button', { name: /^Pošalji ceo tekst/ })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
-  const see = page.getByRole('button', { name: 'Pogledaj ispravke' });
-  const send = page.getByRole('button', { name: 'Pošalji zahtev za ispravke' });
-  await expect(see).toBeVisible();
-  await expect(see).toHaveAttribute('title', /^Model: /);
-  await expect(page.getByRole('button', { name: 'Pošalji nov zahtev za ispravke' })).toHaveAttribute('title', /^Model: /);
-
-  await page.getByLabel('Dubinska prerada').check();
-  await expect(send).toBeVisible();
-  await expect(see).toHaveCount(0);
-  await page.getByLabel('Slova i zarezi').check();
-  await expect(see).toBeVisible();
-
-  await page.locator('.lektor-note').fill('Bez zareza');
-  await expect(send).toBeVisible();
-  await page.locator('.lektor-note').fill('');
-  await expect(see).toBeVisible();
-
-  await see.click();
-  await expect(page.getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible();
-  await page.locator('#lektor-dialog button.close').click();
-  await page.locator('#confirm button.danger', { hasText: 'Zatvori' }).click();
-
-  await page.locator('#lektor-open').click();
-  await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
-  await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} Jos jedna recenica.`);
-  await expect(send).toBeVisible();
-  await expect(see).toHaveCount(0);
-});
-
-test('says nothing about a small change, and sends corrections without asking', async ({ page }) => {
-  await withTestLektor(page, 'ok');
-  await writeNewText(page);
-  await page.locator('#lektor-open').click();
-  await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
-  await page.getByRole('button', { name: 'Pređi na ispravke' }).click({ timeout: 15_000 });
-  await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
-  await expect(page.getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible({ timeout: 15_000 });
-  await page.locator('#lektor-dialog button.close').click();
-  await page.locator('#confirm button.danger', { hasText: 'Zatvori' }).click();
-
-  await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} Jos.`);
-  await page.locator('#lektor-open').click();
-  await expect(page.locator('.lektor-response')).toContainText('PROBNI');
-  await expect(page.locator('.lektor-stale')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
-
-  await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
-  await expect(page.getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible({ timeout: 15_000 });
-});
-
-test('in the same sitting, opens on the comment after a big change, says how big, and offers a new one', async ({ page }) => {
-  await withTestLektor(page, 'ok');
-  await writeNewText(page);
-  await page.locator('#lektor-open').click();
-  await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
-  await page.getByRole('button', { name: 'Pređi na ispravke' }).click({ timeout: 15_000 });
-  await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
-  await expect(page.getByRole('button', { name: 'Unesi sve izmene u tekst' })).toBeVisible({ timeout: 15_000 });
-  await page.locator('#lektor-dialog button.close').click();
-  await page.locator('#confirm button.danger', { hasText: 'Zatvori' }).click();
-
-  await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} ${LONG_ENOUGH}`);
-  await page.locator('#lektor-open').click();
-  await expect(page.locator('.lektor-stale')).toContainText(/napisan pre tvojih poslednjih izmena \(oko \d+ reči\)/);
-  // One way to a new one, not a second beside the note.
-  await expect(page.getByRole('button', { name: 'Traži novi utisak' })).toHaveCount(1);
-
-  // Left on the corrections step.
-  await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
-  await page.locator('#lektor-open').click();
-  await page.locator('#lektor-open').click();
-  await expect(page.locator('.lektor-response')).toContainText('PROBNI');
-
-  // Left on the first step, which the one way to a new comment leads to.
-  await page.getByRole('button', { name: 'Traži novi utisak' }).click();
-  await expect(page.getByRole('button', { name: 'Postojeći AI utisak' })).toBeVisible();
-  await page.locator('#lektor-open').click();
-  await page.locator('#lektor-open').click();
-  await expect(page.locator('.lektor-response')).toContainText('PROBNI');
-});
-
-test('after a big change he comes back to later, opens on the step that asks for a new comment', async ({ page }) => {
-  await withTestLektor(page, 'ok');
-  await writeNewText(page);
-  await page.locator('#lektor-open').click();
-  await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
-  await expect(page.locator('.lektor-response')).toContainText('PROBNI', { timeout: 15_000 });
-  await page.locator('#lektor-open').click();
-  await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} ${LONG_ENOUGH}`);
-  await expect(page.locator('#status-text')).toContainText('Sačuvano');
-
-  // The app closed and opened again.
-  await page.reload();
-  await page.locator('#list .note', { hasText: 'Naslov teksta' }).first().click();
-  await page.locator('#lektor-open').click();
-  await expect(page.getByRole('button', { name: /^Pošalji ceo tekst/ })).toBeVisible();
-  await page.getByRole('button', { name: 'Postojeći AI utisak' }).click();
-  await expect(page.locator('.lektor-response')).toContainText('PROBNI');
-  await expect(page.locator('.lektor-stale')).toContainText(/napisan pre tvojih poslednjih izmena \(oko \d+ reči\)/);
-});
-
-test('says which Lektor wrote the comment and made the corrections, with a mark beside each choice', async ({ page }) => {
-  await withTestLektor(page, 'ok');
-  await writeNewText(page);
-  await page.locator('#lektor-open').click();
-  await expect(page.locator('input[name="lektor-level"] + .lektor-service-mark')).toHaveCount(3);
-  await expect(page.getByRole('button', { name: /^Pošalji ceo tekst/ }).locator('.lektor-service-mark')).toHaveCount(1);
-  await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
-  await expect(page.locator('.lektor-waiting .lektor-service-line')).toHaveText('AI Lektor: Probni: bez AI');
-  await expect(page.locator('.lektor-comment-notes .lektor-service-line')).toContainText('AI Lektor: Probni: bez AI · ', { timeout: 15_000 });
-  await expect(page.getByRole('button', { name: 'Pređi na ispravke' }).locator('.lektor-service-mark')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
-  await expect(page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).locator('.lektor-service-mark')).toHaveCount(1);
-  await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
-  await expect(page.locator('#lektor-dialog .lektor-service-line')).toHaveText('Slova i zarezi · AI Lektor: Probni: bez AI, samo za proveru', { timeout: 15_000 });
-});
-
-test('offers no retry once the daily tries are gone, and passes on what the service said', async ({ page }) => {
-  await withTestLektor(page, 'limit');
-  await writeNewText(page);
-  await page.locator('#lektor-open').click();
-  await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
-  await expect(page.locator('.lektor-problem')).toContainText('Današnjih 20 besplatnih pokušaja', { timeout: 15_000 });
-  await expect(page.locator('.lektor-service-said')).toContainText('requests per day');
-  await expect(page.getByRole('button', { name: 'Kopiraj poruku' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Pokušaj ponovo' })).toHaveCount(0);
-});
-
-test('shows a Dubinska prerada as the new text alone, opens a change on a click, and shows the other kinds in red and green', async ({ page }) => {
-  await withTestLektor(page, 'ok');
-  await writeNewText(page);
-  await page.locator('#lektor-open').click();
-  await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
-  await page.getByRole('button', { name: 'Pređi na ispravke' }).click({ timeout: 15_000 });
-
-  await page.getByLabel('Dubinska prerada').check();
-  await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
-  const dialog = page.locator('#lektor-dialog');
-  const onlyNew = dialog.getByLabel('Prikaži tekst kakav će biti');
-  await expect(onlyNew).toBeChecked({ timeout: 15_000 });
-  await expect(dialog.locator('.lektor-service-line')).toContainText(/^Dubinska prerada · /);
-  await expect(dialog.locator('.diff-legend')).toContainText('biće uneto');
-  await expect(dialog.locator('.review-text .diff-resolved').first()).toBeVisible();
-
-  const collapsed = await dialog.locator('.review-text .diff-resolved').count();
-  await dialog.locator('.review-text .diff-change').first().click();
-  await expect(dialog.locator('.review-text .diff-resolved')).toHaveCount(collapsed - 1);
-  await expect(dialog.locator('.diff-bar').getByRole('button', { name: 'Prihvati' })).toHaveAttribute('aria-pressed', 'true');
-
-  await onlyNew.uncheck();
-  await expect(dialog.locator('.review-text .diff-resolved')).toHaveCount(0);
-  await dialog.locator('button.close').click();
-  await page.locator('#confirm button.danger', { hasText: 'Zatvori' }).click();
-
-  await page.locator('#lektor-open').click();
-  await page.getByRole('button', { name: 'Pređi na ispravke' }).click();
-  await page.getByLabel('Stilska dorada').check();
-  await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
-  await expect(onlyNew).not.toBeChecked({ timeout: 15_000 });
-  await expect(dialog.locator('.lektor-service-line')).toContainText(/^Stilska dorada · /);
-});
-
-test('raises the bar over a change on a click and never on hovering, puts it away on a click elsewhere, and steps without it until a change is clicked', async ({ page }) => {
-  await withTestLektor(page, 'ok');
-  await page.locator('#new-note').click();
-  await page.locator('#editor').fill(`Naslov teksta\n\n${LONG_ENOUGH} ${LONG_ENOUGH}\n\n${LONG_ENOUGH} ${LONG_ENOUGH}\n\n${LONG_ENOUGH}`);
-  await page.locator('#lektor-open').click();
-  await page.getByRole('button', { name: /^Pošalji ceo tekst/ }).click();
-  await page.getByRole('button', { name: 'Pređi na ispravke' }).click({ timeout: 15_000 });
-  await page.getByLabel('Stilska dorada').check();
-  await page.getByRole('button', { name: 'Pošalji zahtev za ispravke' }).click();
-
-  const dialog = page.locator('#lektor-dialog');
-  const bar = dialog.locator('.diff-bar');
-  const changes = dialog.locator('.review-text .diff-change');
-  const next = dialog.locator('.review-steps').getByRole('button', { name: 'Sledeća' });
-  await expect(bar).toBeVisible({ timeout: 15_000 });
-
-  await dialog.locator('.review-text').click({ position: { x: 5, y: 5 } });
-  await expect(bar).toBeHidden();
-  await changes.nth(2).hover();
-  await page.waitForTimeout(800);
-  await expect(bar).toBeHidden();
-  await next.click();
-  await expect(dialog.locator('.review-steps')).toContainText('Razlika 2 od');
-  await expect(bar).toBeHidden();
-
-  await changes.nth(2).click();
-  await expect(bar).toBeVisible();
-  await bar.getByRole('button', { name: /^Prihvati/ }).click();
-  await expect(bar).toBeHidden();
-  await next.click();
-  await expect(bar).toBeVisible();
-});
-
-test('closes when a new text is started', async ({ page }) => {
-  await withTestLektor(page, 'ok');
-  await writeNewText(page);
-  await page.locator('#lektor-open').click();
-  await expect(page.locator('body')).toHaveClass(/lektor-open/);
-  await page.locator('#new-note').click();
-  await expect(page.locator('body')).not.toHaveClass(/lektor-open/);
+  await openPanel(page);
+  await toStepTwo(page);
+  const colours = async (): Promise<[string, string]> =>
+    page.evaluate(() => {
+      const mark = document.querySelector('#lektor-side .lektor-choice-mark-free');
+      const wood = document.querySelector('#lektor-side .lektor-picture .ic-wood');
+      return [mark === null ? '' : getComputedStyle(mark).color, wood === null ? '' : getComputedStyle(wood).fill];
+    });
+  const [lightMark, lightWood] = await colours();
+  await page.evaluate(() => {
+    document.documentElement.dataset['mode'] = 'dark';
+  });
+  const [darkMark, darkWood] = await colours();
+  expect(darkMark).not.toBe(lightMark);
+  expect(darkWood).toBe(lightWood);
 });

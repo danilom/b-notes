@@ -363,7 +363,7 @@ marked like Ranije verzije's open row. All are locked while a request runs.
     - **The one exception:** a change he has decided stays closed in both views, showing what goes in (the legend's
       "biće uneto"). Opened, its wordings are drawn alike and his pick shows only on the bar, so the text would stop
       saying what he chose.
-    - Rework kinds open on "samo rezultat", as today. Built in `createDiffReview` (`src/ui/diff-review.ts`), already
+    - Dubinska prerada opens on "samo rezultat", as today; the others on "izmene označene". Built in `createDiffReview` (`src/ui/diff-review.ts`), already
       done and tested on `lektor-openrouter` (commit ba6d1fe).
   - **Footer:** "← Nazad" at the far left, solid-blue "Unesi sve izmene u tekst" (the app's hop/confetti stays), and
     "Zatvori".
