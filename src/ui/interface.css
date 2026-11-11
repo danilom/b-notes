@@ -2851,6 +2851,11 @@ dialog::backdrop {
   display: none;
 }
 
+/* The gap opened above the line the bar is over; its height is set where it is made. */
+.diff-bar-room {
+  display: block;
+}
+
 /* All one width, so that none of them looks like the preferred answer. */
 .diff-bar button {
   flex: none;

@@ -507,7 +507,7 @@ export function createTextDiffView(
 
   const changes = [...text.querySelectorAll<HTMLElement>('.diff-change')];
   markSettling(framed, changes, editing?.settling);
-  const bar: DiffChangeBar | null = editing === undefined ? null : createDiffChangeBar(framed, text, changes, editing);
+  const bar: DiffChangeBar | null = editing === undefined ? null : createDiffChangeBar(framed, text, changes, editing, () => placeCurrentMark(text, mark));
 
   const markCurrent = (change: HTMLElement, isCurrent: boolean, how: BecameCurrent): void => {
     markCurrentChange(change, isCurrent);

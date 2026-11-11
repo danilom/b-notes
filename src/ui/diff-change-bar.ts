@@ -1,4 +1,5 @@
 import type { ChangeCandidate } from '../notes/text-diff.ts';
+import { makeBarRoom, removeBarRoom } from './diff-bar-room.ts';
 import { icon } from './icons.ts';
 
 /**
@@ -63,6 +64,8 @@ export interface DiffEditing {
   lettersOf: (tidyAt: number) => readonly string[];
   onPickLetter: (tidyAt: number, slot: number, letter: string) => void;
   onCurrent: (changeAt: number) => void;
+  /** Opens a gap above the line the bar is over, instead of covering the line above. Being tried in the diff prototype. */
+  makesRoom?: boolean;
 }
 
 const GAP_ABOVE_PX = 3;
@@ -189,6 +192,8 @@ export function createDiffChangeBar(
   box: HTMLElement,
   changes: readonly HTMLElement[],
   editing: DiffEditing,
+  /** Lines moved, by room made above one or taken away: what is placed beside them goes again. */
+  onLinesMoved: () => void = () => {},
 ): DiffChangeBar {
   const bar = document.createElement('div');
   bar.className = 'stepper diff-bar';
@@ -384,13 +389,25 @@ export function createDiffChangeBar(
       fillForChange(change);
       for (const fragment of fragmentsOf(change)) fragment.classList.add(BAR_OVER);
     }
+    makeRoom(over);
     place(over);
+  }
+
+  /** The bar is shown before it is measured: hidden, it has no height. */
+  function makeRoom(over: Element): void {
+    if (editing.makesRoom !== true) return;
+    bar.hidden = false;
+    makeBarRoom(box, over, bar.offsetHeight + 2 * GAP_ABOVE_PX);
+    onLinesMoved();
   }
 
   function hide(): void {
     bar.hidden = true;
     shownOver = null;
     for (const marked of box.querySelectorAll(`.${BAR_OVER}`)) marked.classList.remove(BAR_OVER);
+    if (editing.makesRoom !== true) return;
+    removeBarRoom(box);
+    onLinesMoved();
   }
 
   /**
@@ -407,12 +424,17 @@ export function createDiffChangeBar(
   const placeAgain = (): void => {
     if (shownOver !== null) place(shownOver);
   };
+  /** Lines wrapped anew: the room made for the old ones may now be in the middle of one. */
+  const fitAgain = (): void => {
+    if (shownOver !== null) makeRoom(shownOver);
+    placeAgain();
+  };
   box.addEventListener('scroll', placeAgain);
   // The first bar is placed as the review opens, before its lines and the stepper have
   // settled, and came out under the title instead of over it; and a window resized moves
   // every line. Placed again once they have.
-  new ResizeObserver(placeAgain).observe(box);
-  requestAnimationFrame(() => requestAnimationFrame(placeAgain));
+  new ResizeObserver(fitAgain).observe(box);
+  requestAnimationFrame(() => requestAnimationFrame(fitAgain));
 
   return {
     setCurrent(change, how) {

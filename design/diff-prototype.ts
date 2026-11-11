@@ -21,6 +21,7 @@ const dark = element('dark', HTMLInputElement);
 const onlyNew = element('only-new', HTMLInputElement);
 const readOnly = element('read-only', HTMLInputElement);
 const preamble = element('preamble', HTMLInputElement);
+const barRoom = element('bar-room', HTMLInputElement);
 const view = element('view', HTMLElement);
 
 /** The lines the Lektor's panel puts above the text: what each mark means, and how many there are. */
@@ -69,7 +70,7 @@ function render(): void {
       review.piecesNow(),
       { previous: words.changePrevious, next: words.changeNext, at: words.changeAt },
       // Without the editing, the view only shows: no bar, nothing decided, a click only makes a change current.
-      readOnly.checked ? { showTidied: tidying.value === 'coloured' } : { showTidied: tidying.value === 'coloured', editing: review.editing() },
+      readOnly.checked ? { showTidied: tidying.value === 'coloured' } : { showTidied: tidying.value === 'coloured', editing: { ...review.editing(), makesRoom: barRoom.checked } },
     ),
   );
   view.replaceChildren(column);
@@ -142,6 +143,21 @@ preamble.addEventListener('change', () => {
     localStorage.setItem(PREAMBLE_KEY, preamble.checked ? 'on' : 'off');
   } catch (error) {
     console.warn('Whether to show the lines above the text could not be remembered', error);
+  }
+  renderKeepingPlace();
+});
+
+const BAR_ROOM_KEY = 'diff-prototype:bar-room';
+try {
+  barRoom.checked = localStorage.getItem(BAR_ROOM_KEY) !== 'off';
+} catch (error) {
+  console.warn('Whether to make room for the bar could not be read back', error);
+}
+barRoom.addEventListener('change', () => {
+  try {
+    localStorage.setItem(BAR_ROOM_KEY, barRoom.checked ? 'on' : 'off');
+  } catch (error) {
+    console.warn('Whether to make room for the bar could not be remembered', error);
   }
   renderKeepingPlace();
 });
