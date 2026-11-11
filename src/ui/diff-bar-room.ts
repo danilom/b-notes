@@ -77,15 +77,31 @@ export function makeBarRoom(box: HTMLElement, over: Element, needed: number): vo
   if (line === undefined) return;
   const { start, aboveBottom } = lineStart(box, over, line.top);
   if (aboveBottom === null) return;
-  const height = Math.ceil(needed - (line.top - aboveBottom));
-  if (height <= 0) return;
+  // Even where there is room enough already, a gap of nothing goes in, to carry the shading.
+  const height = Math.max(0, Math.ceil(needed - (line.top - aboveBottom)));
 
   const room = document.createElement('span');
   room.className = ROOM_CLASS;
   room.style.height = `${height}px`;
   if (start === null) over.before(room);
   else placeBefore(start, room);
+  shadeBetweenTheLines(room, over, aboveBottom);
   box.scrollTop += height;
+}
+
+/** Clear of the letters on either side, which a band right up to them would seem to touch. */
+const SHADE_CLEARANCE_PX = 2;
+
+/**
+ * The shading reaches past the gap, up to the line above and down to the line the bar is
+ * over, so the whole of the space the bar sits in is one band. Measured before the box scrolls.
+ */
+function shadeBetweenTheLines(room: HTMLElement, over: Element, aboveBottom: number): void {
+  const gap = room.getBoundingClientRect();
+  const lineTop = over.getClientRects()[0]?.top ?? gap.bottom;
+  const up = Math.max(0, gap.top - aboveBottom - SHADE_CLEARANCE_PX);
+  const down = Math.max(0, lineTop - gap.bottom - SHADE_CLEARANCE_PX);
+  room.style.clipPath = `inset(-${up}px -100vmax -${down}px)`;
 }
 
 /**
