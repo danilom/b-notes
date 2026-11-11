@@ -57,7 +57,8 @@ function lineStart(box: HTMLElement, over: Element, lineTop: number): { start: T
 /** Takes the room out again, wherever it is, and gives back the scroll it took. */
 export function removeBarRoom(box: HTMLElement): void {
   for (const room of box.querySelectorAll<HTMLElement>(`.${ROOM_CLASS}`)) {
-    const height = room.offsetHeight;
+    // The first line's band takes no space, so it gives none back.
+    const height = room.style.marginTop === '' ? room.offsetHeight : 0;
     const parent = room.parentNode;
     room.remove();
     parent?.normalize();
@@ -71,24 +72,28 @@ const SHORTER_THAN_BAR_PX = 2;
 /**
  * Opens a gap above the line `over` is on, as tall as the bar less a little, between that line
  * and the one above, each keeping its usual spacing: the gap is the space added, shaded, and the
- * bar sits centred on it. Nothing on the first line, where the box's own padding is the room.
+ * bar sits centred on it.
  *
- * @returns The gap, for the bar to be centred on, or null where none was made.
+ * On the first line the box's own padding is the room already, so the band is drawn there,
+ * pulled up by as much as it is tall: it takes no space and the line does not move.
+ *
+ * @returns The gap, for the bar to be centred on, or null where none could be made.
  */
 export function makeBarRoom(box: HTMLElement, over: Element, barHeight: number): HTMLElement | null {
   removeBarRoom(box);
   const line = over.getClientRects()[0];
   if (line === undefined) return null;
   const { start, aboveBottom } = lineStart(box, over, line.top);
-  if (aboveBottom === null) return null;
+  const isFirstLine = aboveBottom === null;
   const height = Math.max(0, Math.round(barHeight - 2 * SHORTER_THAN_BAR_PX));
 
   const room = document.createElement('span');
   room.className = ROOM_CLASS;
   room.style.height = `${height}px`;
+  if (isFirstLine) room.style.marginTop = `-${height}px`;
   if (start === null) over.before(room);
   else placeBefore(start, room);
-  box.scrollTop += height;
+  if (!isFirstLine) box.scrollTop += height;
   return room;
 }
 
