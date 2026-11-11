@@ -16,6 +16,8 @@
       not chosen are in git, should one be wanted again.
     -->
     <link rel="stylesheet" href="/interface.css" />
+    <!-- For the Lektor's "Izgled izmena" chooser above the text, drawn as its window draws it. -->
+    <link rel="stylesheet" href="/lektor.css" />
     <style>
       body {
         flex-direction: column;
@@ -24,6 +26,23 @@
         padding: 0.8rem 1.2rem;
         background: var(--page);
         color: var(--ink);
+      }
+
+      /* As the Lektor's window sizes the lines above its text (lektor.css, .lektor-window .review-body). */
+      .lektor-review-head {
+        margin-bottom: 0.75rem;
+        font-family: var(--ui-font);
+        font-size: calc(var(--ui-size) * 0.85);
+        line-height: normal;
+      }
+
+      .lektor-review-head * {
+        font-size: inherit;
+        line-height: inherit;
+      }
+
+      .lektor-review-head p {
+        margin: 0;
       }
 
       .prototype-controls {

@@ -24,8 +24,67 @@ const preamble = element('preamble', HTMLInputElement);
 const barRoom = element('bar-room', HTMLInputElement);
 const view = element('view', HTMLElement);
 
-/** The lines the Lektor's panel puts above the text: what each mark means, and how many there are. */
-function aboveTheText(pieces: readonly TextPiece[]): HTMLElement[] {
+/** A sample of how the changes are drawn, at the legend's size, with the legend's own word. */
+function sampleOf(marks: string): HTMLElement {
+  const sample = document.createElement('span');
+  sample.className = marks;
+  sample.textContent = strings('sr').legendSample;
+  return sample;
+}
+
+/**
+ * "Izgled izmena" as the Lektor's window draws it (lektor-review.ts): two radio rows, each a
+ * sample of what it shows, and a click on one, chosen already or not, draws every change that way.
+ */
+function viewChoice(shown: DiffReview): HTMLElement {
+  const said = strings('sr').lektor.review;
+  const option = (isOnlyNew: boolean, name: string, samples: HTMLElement[]): HTMLElement => {
+    const row = document.createElement('label');
+    row.className = 'lektor-view-option';
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'lektor-view';
+    input.checked = isOnlyNew === shown.showsOnlyNew();
+    input.setAttribute('aria-label', name);
+    input.addEventListener('click', () => {
+      onlyNew.checked = isOnlyNew;
+      shown.setShowsOnlyNew(isOnlyNew);
+    });
+    const sample = document.createElement('span');
+    sample.className = 'lektor-view-sample';
+    sample.append(...samples);
+    row.append(input, sample);
+    return row;
+  };
+  const options = document.createElement('div');
+  options.className = 'lektor-view-options';
+  options.append(
+    option(false, said.lookMarked, [sampleOf('diff-gone diff-struck'), sampleOf('diff-new')]),
+    option(true, said.lookResult, [sampleOf('diff-resolved')]),
+  );
+  const title = document.createElement('span');
+  title.className = 'lektor-view-title';
+  title.textContent = said.look;
+  const group = document.createElement('div');
+  group.className = 'lektor-view-choice';
+  group.setAttribute('role', 'radiogroup');
+  group.setAttribute('aria-label', said.look);
+  group.append(title, options);
+  return group;
+}
+
+/** The lines the Lektor's window puts above the text: how many changes and what each mark means, and at their right how they are drawn. */
+function aboveTheText(pieces: readonly TextPiece[], shown: DiffReview): HTMLElement {
+  const lines = document.createElement('div');
+  lines.className = 'lektor-review-lines';
+  lines.append(...legendAndCounts(pieces));
+  const head = document.createElement('div');
+  head.className = 'lektor-review-head';
+  head.append(lines, viewChoice(shown));
+  return head;
+}
+
+function legendAndCounts(pieces: readonly TextPiece[]): HTMLElement[] {
   const words = strings('sr');
   const said = words.lektor.review;
   const count = (kind: TextPiece['kind']): number => pieces.filter((piece) => piece.kind === kind).length;
@@ -42,7 +101,11 @@ function aboveTheText(pieces: readonly TextPiece[]): HTMLElement[] {
   const counts = document.createElement('p');
   counts.className = 'review-note-aside diff-legend-counts';
   counts.textContent = said.counts(count('change'), count('tidy'));
-  return [legend, counts];
+  const legendRow = document.createElement('div');
+  legendRow.className = 'lektor-review-row';
+  legendRow.append(legend);
+  // In the window's order: the line with the counts, then the legend.
+  return [counts, legendRow];
 }
 
 /** The proposal in front of him, which starts over whenever what is compared changes. */
@@ -64,7 +127,7 @@ function render(): void {
   const column = document.createElement('div');
   // The Lektor's own, so that its rules for the review apply here as there.
   column.className = 'review-body lektor-body';
-  if (preamble.checked) column.append(...aboveTheText(reviewed));
+  if (preamble.checked) column.append(aboveTheText(reviewed, review));
   column.append(
     createTextDiffView(
       review.piecesNow(),
