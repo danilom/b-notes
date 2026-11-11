@@ -55,8 +55,10 @@ export interface DiffEditing {
   onChoose: (changeAt: number, chosen: 'old' | 'proposed', startedAt?: ScreenPoint) => void;
   /** Shows every wording of a collapsed change, choosing nothing. */
   onOpen: (changeAt: number) => void;
-  /** The wording an edit of this change starts from. */
+  /** The wording an edit of this change starts from: the one going in, or his own. */
   wordingOf: (changeAt: number) => string;
+  /** The whole text as his choices leave it, which a copy is taken from. */
+  textNow: () => string;
   onEdit: (changeAt: number, text: string) => void;
   /** Called when an edit is backed out of, so that what it disturbed can be drawn again. */
   onCancelEdit: () => void;
@@ -306,10 +308,23 @@ export function createDiffChangeBar(
     return button;
   }
 
+  /**
+   * The bar goes, but its band stays while he types (Danilo, 2026-11-12): closing it would move
+   * the text above just as he starts. It closes as the edit ends, before the review is drawn
+   * again, so the scroll it took is given back and the line stays where it was.
+   */
   function beginEditing(change: HTMLElement): void {
     isEditing = true;
-    hide();
-    startEditing(change, fragmentsOf(change), changes.indexOf(change), editing);
+    hide({ keepBand: true });
+    const closingBand = (then: () => void) => (): void => {
+      closeBand();
+      then();
+    };
+    startEditing(change, fragmentsOf(change), changes.indexOf(change), {
+      ...editing,
+      onEdit: (at, text) => closingBand(() => editing.onEdit(at, text))(),
+      onCancelEdit: closingBand(editing.onCancelEdit),
+    });
   }
 
   /**
@@ -457,10 +472,14 @@ export function createDiffChangeBar(
     for (const marked of box.querySelectorAll(`.${BAR_OVER}, .${LETTER_OVER}`)) marked.classList.remove(BAR_OVER, LETTER_OVER);
   }
 
-  function hide(): void {
+  function hide({ keepBand = false } = {}): void {
     bar.hidden = true;
     shownOver = null;
     unmarkAll();
+    if (!keepBand) closeBand();
+  }
+
+  function closeBand(): void {
     if (band === null) return;
     closeBarBand(box, bar, framed);
     band = null;

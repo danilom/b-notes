@@ -2,6 +2,7 @@ import { type Language, strings } from '../../language/wording.ts';
 import { diffTexts, mergeCloseChanges, separateTidying } from '../../notes/text-diff.ts';
 import { openConfirmDialog } from '../dialogs/confirm-dialog.ts';
 import { titleOf } from '../dialogs/dialog-heading.ts';
+import { scrollTakenByBand } from '../diff-bar-band.ts';
 import { createDiffLegend } from '../diff-legend.ts';
 import { createDiffReview } from '../diff-review.ts';
 import { createTextDiffView } from '../diff-view.ts';
@@ -95,7 +96,7 @@ export function createReviewPanel(confirmContainer: HTMLDialogElement, setup: Re
     for (const input of viewInputs) input.checked = (input.value === 'result') === review.showsOnlyNew();
     queueMicrotask(() => {
       const box = preview.querySelector('.review-text');
-      if (box !== null) box.scrollTop = before;
+      if (box !== null) box.scrollTop = before + scrollTakenByBand(box);
     });
   }
 

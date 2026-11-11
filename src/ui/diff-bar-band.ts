@@ -104,6 +104,9 @@ export function openBarBand(
   // A span made a block: it may go in among the spans of the text.
   const band = document.createElement('span');
   band.className = BAND_CLASS;
+  // The bar's own ground: a click on it, beside the buttons, does nothing. Let through to the
+  // text, it was a click on nothing in particular, which puts the bar away, band and all.
+  band.addEventListener('click', (event) => event.stopPropagation());
   band.style.height = `${height}px`;
   if (isFirstLine && mayDrawInPadding) band.style.marginTop = `-${height}px`;
   if (start === null) over.before(band);
@@ -168,6 +171,15 @@ export function measureJoin(box: HTMLElement, element: Element, alike: Iterable<
   parent?.normalize();
   const reach = `${Math.max(0, words - lineTop)}px`;
   for (const each of [element, ...alike]) if (each instanceof HTMLElement) each.style.setProperty(JOIN, reach);
+}
+
+/**
+ * How far the box is scrolled for the band open in it. A review drawn again puts its box back
+ * where it was scrolled to before, which, done after the new drawing's band has opened, undid the
+ * band's scroll and moved the line he was on down by its height: it puts it back plus this.
+ */
+export function scrollTakenByBand(box: ParentNode): number {
+  return [...box.querySelectorAll<HTMLElement>(`.${BAND_CLASS}`)].reduce((taken, band) => taken + Number(band.dataset['scrolledBy'] ?? 0), 0);
 }
 
 /** Whether this is the first line's band, drawn in the box's padding and taking no space. */

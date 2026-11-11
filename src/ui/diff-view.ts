@@ -7,6 +7,7 @@ import {
 } from '../notes/text-diff.ts';
 import { letterSegmentsOf } from '../notes/text-review.ts';
 import { scrollShowing } from './change-in-view.ts';
+import { MOVED_SPACE, copyOnlyWhatGoesIn } from './diff-copied-text.ts';
 import {
   type BecameCurrent,
   type DiffChangeBar,
@@ -185,6 +186,17 @@ function wordsPart(drawn: DiffPart): (HTMLElement | string)[] {
 }
 
 /**
+ * A change's own space, drawn outside it: marked, as copying takes the change's whole wording,
+ * this space and all, and must not take it twice.
+ */
+function movedSpace(space: Text): HTMLElement {
+  const marked = document.createElement('span');
+  marked.className = MOVED_SPACE;
+  marked.append(space);
+  return marked;
+}
+
+/**
  * Moves the spaces at either end of a change out of it, so that what marks the
  * change as current goes around its words, and drops those between one wording and
  * the next. Each wording keeps the spaces at its own ends, which put next to each
@@ -192,8 +204,8 @@ function wordsPart(drawn: DiffPart): (HTMLElement | string)[] {
  */
 function movingSpacesOutOf(change: HTMLElement): void {
   const { firstChild: first, lastChild: last } = change;
-  if (first instanceof Text) change.before(first);
-  if (last instanceof Text && last !== first) change.after(last);
+  if (first instanceof Text) change.before(movedSpace(first));
+  if (last instanceof Text && last !== first) change.after(movedSpace(last));
   for (const node of [...change.childNodes]) {
     if (node instanceof Text && node.previousSibling instanceof HTMLElement && node.nextSibling instanceof HTMLElement) node.remove();
   }
@@ -507,6 +519,10 @@ export function createTextDiffView(
 
   const changes = [...text.querySelectorAll<HTMLElement>('.diff-change')];
   markSettling(framed, changes, editing?.settling);
+  // Reviewing, he may copy a piece of what he is about to take; only reading, as in Ranije verzije, it is left as it was.
+  if (editing !== undefined) {
+    copyOnlyWhatGoesIn(text, (change) => editing.wordingOf(changes.findIndex((each) => each === change)), editing.textNow);
+  }
   const bar: DiffChangeBar | null = editing === undefined ? null : createDiffChangeBar(framed, text, changes, editing, () => placeCurrentMark(text, mark));
 
   const markCurrent = (change: HTMLElement, isCurrent: boolean, how: BecameCurrent): void => {

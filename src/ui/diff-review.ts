@@ -142,6 +142,7 @@ export function createDiffReview(pieces: readonly TextPiece[], redraw: () => voi
       },
       onEdit,
       onCancelEdit: redraw,
+      textNow: () => textAfter(piecesAfter(pieces, { changes: choices, letters })),
       lettersOf: (tidyAt) => letters.get(tidyAt) ?? [],
       onPickLetter: (tidyAt, slot, letter) => {
         const chosen = [...(letters.get(tidyAt) ?? [])];

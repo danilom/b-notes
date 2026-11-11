@@ -1,5 +1,6 @@
 import { strings } from '../src/language/wording.ts';
 import { type TextPiece, diffTexts, mergeCloseChanges, separateTidying } from '../src/notes/text-diff.ts';
+import { scrollTakenByBand } from '../src/ui/diff-bar-band.ts';
 import { createDiffLegend } from '../src/ui/diff-legend.ts';
 import { type DiffReview, createDiffReview } from '../src/ui/diff-review.ts';
 import { createTextDiffView } from '../src/ui/diff-view.ts';
@@ -153,7 +154,7 @@ function renderKeepingPlace(): void {
   render();
   queueMicrotask(() => {
     const box = view.querySelector('.review-text');
-    if (box !== null) box.scrollTop = before;
+    if (box !== null) box.scrollTop = before + scrollTakenByBand(box);
   });
 }
 
