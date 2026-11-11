@@ -98,14 +98,24 @@
         down to its dotted line. Its own background, so under its words and their marks.
       */
       #view[data-change-on-band] .review-text:has(.diff-bar-band) .diff-bar-over {
-        /* How far the grey spills past the change at the sides; twice that below. */
+        /* How far the grey spills past the change at the sides, and below. */
         --spill: 4px;
+        --spill-below: 5px;
         background-color: var(--wash);
         padding-top: var(--band-join, 0px);
         /* Further out at the sides and below (Danilo, 2026-11-11), overlapping what is there a
-           little. A shadow, which takes no room, so nothing moves and the dotted line keeps to
-           the words; spread all round and moved down as far, so its top stays at the band's. */
-        box-shadow: 0 var(--spill) 0 var(--spill) var(--wash);
+           little: borders in the same grey, taking no room. An inline box's borders above and
+           below move no line, and those at the sides are given back by a margin as wide, so
+           nothing moves. The background stops inside them, or the two greys would add up. */
+        border: 0 solid var(--wash);
+        border-width: 0 var(--spill) var(--spill-below);
+        margin-inline: calc(-1 * var(--spill));
+        background-clip: padding-box;
+      }
+
+      /* The change's grey reaching further left than its words, the bar is held back by as much, to keep to the words. */
+      #view[data-bar-on-band][data-change-on-band] .review-text:has(.diff-bar-over) .diff-bar-band > .diff-bar {
+        margin-left: calc(-0.4rem - 1px + 4px);
       }
 
       /* As the Lektor's window sizes the lines above its text (lektor.css, .lektor-window .review-body). */
