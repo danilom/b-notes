@@ -1410,6 +1410,14 @@ body.holding > #main {
   font-size: 0.92em;
 }
 
+/*
+  A new version on its way, after the save in the line's own grey: a fact for when an email has
+  told him what to wait for, nothing to press. Its "·" only when there is a save to follow.
+*/
+#status-said:not(:empty) + #status-update::before {
+  content: ' · ';
+}
+
 
 /*
   Over his writing, just above the strip, and over on the right where the

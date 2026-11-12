@@ -8,6 +8,7 @@ import {
   emptyHintShows,
   keptOf,
   statusFor,
+  updateNoteFor,
 } from '../src/ui/status-line.ts';
 
 const AT_REST: WhatIsHappening = {
@@ -199,5 +200,19 @@ describe('how much he has written', () => {
       statusFor(at({ couldNotSave: true, savedWords: 1250 }), 'sr'),
       'Poslednje izmene nisu sačuvane',
     );
+  });
+});
+
+describe('the word on a new version, after the save', () => {
+  it('says a download is under way, with the version an email would name', () => {
+    assert.equal(updateNoteFor({ kind: 'downloading', version: '1.0.1' }, 'sr'), 'Preuzimam verziju 1.0.1…');
+  });
+
+  it('says a download is done, and nothing about what to do', () => {
+    assert.equal(updateNoteFor({ kind: 'downloaded', version: '1.0.1' }, 'sr'), 'Verzija 1.0.1 je preuzeta.');
+  });
+
+  it('says nothing when no new version is on its way', () => {
+    assert.equal(updateNoteFor({ kind: 'none' }, 'sr'), '');
   });
 });

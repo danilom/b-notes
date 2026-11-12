@@ -1,4 +1,5 @@
 import { type Shown, showAsModal } from '../dialogs/modal.ts';
+import type { AppUpdate } from '../../platform/app-update.ts';
 import { APP_VERSION, BUILD_STAMP } from '../../platform/build-info.ts';
 import type { ChosenPlaces, Host } from '../../platform/host.ts';
 import type { ResophTray } from '../../platform/other-editors.ts';
@@ -216,12 +217,25 @@ function waitRow(value: number | null, change: (to: number | null) => void): HTM
   return row;
 }
 
+/**
+ * Beside the version, a newer one on its way: the status line says the same, but lets it go
+ * where the strip is too narrow, and this is where whoever helps him looks first.
+ */
+function updateWaiting(update: AppUpdate): HTMLElement[] {
+  if (update.kind === 'none') return [];
+  const said = document.createElement('span');
+  said.className = 'advanced-update';
+  said.textContent = update.kind === 'downloading' ? `downloading ${update.version}` : `${update.version} downloaded, installs when the app closes`;
+  return [said];
+}
+
 export function openAdvancedPanel(
   container: HTMLDialogElement,
   host: Host,
   advanced: AdvancedSettings,
   testModeOn: boolean,
   fakeNetworkOn: boolean,
+  appUpdate: AppUpdate,
   handlers: AdvancedHandlers,
 ): () => void {
   let resoph = host.resophFolder ?? '';
@@ -263,7 +277,7 @@ export function openAdvancedPanel(
     version.textContent = APP_VERSION;
     const stamp = document.createElement('span');
     stamp.textContent = BUILD_STAMP;
-    build.append(version, stamp);
+    build.append(version, stamp, ...updateWaiting(appUpdate));
 
     /*
       Which copy of the app this is, said where the person changing things will

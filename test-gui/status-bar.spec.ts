@@ -148,3 +148,49 @@ test('shows the status line whole on his screens, and cut short with the whole o
   await expect.poll(() => line.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
   await expect(line).toHaveAttribute('title', (await line.textContent()) ?? '');
 });
+
+/** A new version where the packaged app's main process would report one: no updater runs in a browser. */
+async function pretendUpdate(page: import('@playwright/test').Page, update: { kind: string; version?: string }): Promise<void> {
+  await page.evaluate((told) => (window as unknown as { pretendAppUpdate: (raw: unknown) => void }).pretendAppUpdate(told), update);
+}
+
+test('says a new version is being downloaded, then that it is, after the save', async ({ page }) => {
+  const update = page.locator('#status-update');
+  await expect(page.locator('#status-said')).toContainText('Sačuvano');
+  await expect(update).toBeHidden();
+
+  await pretendUpdate(page, { kind: 'downloading', version: '1.0.1' });
+  await expect(update).toHaveText('Preuzimam verziju 1.0.1…');
+  await pretendUpdate(page, { kind: 'downloaded', version: '1.0.1' });
+  await expect(update).toHaveText('Verzija 1.0.1 je preuzeta.');
+  await expect(update).toBeVisible();
+  await expect(page.locator('#status-said')).toContainText('Sačuvano');
+
+  expect(await update.evaluate((element) => getComputedStyle(element, '::before').content)).toBe('" · "');
+});
+
+test('shows the new version whole on his screens, and lets it go whole before the save is cut', async ({ page }) => {
+  await pretendUpdate(page, { kind: 'downloaded', version: '1.0.1' });
+  const update = page.locator('#status-update');
+  const line = page.locator('#status-text');
+
+  for (const { laptop, width, height } of HIS_WINDOWS) {
+    await page.setViewportSize({ width, height });
+    await expect(update, `on his ${laptop}`).toBeVisible();
+    expect(await line.evaluate((element) => element.scrollWidth > element.clientWidth), `on his ${laptop}`).toBe(false);
+  }
+
+  // Narrow enough for the save alone, not for both: the new version goes, the save stays whole.
+  const saidWidth = await page.locator('#status-said').evaluate((element) => element.getBoundingClientRect().width);
+  for (let width = 1100; width > 500; width -= 20) {
+    await page.setViewportSize({ width, height: 700 });
+    const room = await line.evaluate((element) => element.clientWidth);
+    if (room < saidWidth + 40 && room > saidWidth + 4) break;
+  }
+  await expect(update).toBeHidden();
+  expect(await line.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(false);
+
+  // Room again, and it comes back.
+  await page.setViewportSize({ width: HIS_WINDOWS[0].width, height: HIS_WINDOWS[0].height });
+  await expect(update).toBeVisible();
+});

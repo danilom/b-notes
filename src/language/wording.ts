@@ -89,6 +89,13 @@ const TEXT = {
     lastChanged: 'Poslednja izmena',
     notSaved: 'Nije sačuvano',
     changesNotSaved: 'Poslednje izmene nisu sačuvane',
+    /*
+      Where a new version stands, after the save in the status line. Facts and nothing he must do:
+      it is there so that an email telling him how to get a new version can say what to wait for,
+      and the number is the one the email gives (Danilo, 2026-11-12).
+    */
+    updateDownloading: (version: string) => `Preuzimam verziju ${version}…`,
+    updateDownloaded: (version: string) => `Verzija ${version} je preuzeta.`,
     minutesAgo: (n: number) => `pre ${n} ${plural(n, 'minut', 'minuta', 'minuta')}`,
     hoursAgo: (n: number) => `pre ${n} ${plural(n, 'sat', 'sata', 'sati')}`,
     yesterday: 'juče',
@@ -440,6 +447,8 @@ const TEXT = {
     lastChanged: 'Last changed',
     notSaved: 'Not saved',
     changesNotSaved: 'Latest changes not saved',
+    updateDownloading: (version: string) => `Downloading version ${version}…`,
+    updateDownloaded: (version: string) => `Version ${version} is downloaded.`,
     minutesAgo: (n: number) => `${n} minute${n === 1 ? '' : 's'} ago`,
     hoursAgo: (n: number) => `${n} hour${n === 1 ? '' : 's'} ago`,
     yesterday: 'yesterday',

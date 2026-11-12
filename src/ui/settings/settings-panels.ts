@@ -1,4 +1,5 @@
 import type { Language } from '../../language/wording.ts';
+import type { AppUpdate } from '../../platform/app-update.ts';
 import type { Host } from '../../platform/host.ts';
 import { type Log, describeError } from '../../platform/logging.ts';
 import { writeFakeNetworkSetting } from '../lektor/lektor-fake-network-switch.ts';
@@ -24,6 +25,8 @@ export interface SettingsPanelsParts {
   testModeNow: () => boolean;
   /** Whether the Lektor talks to the fake AI network on this machine. */
   fakeNetworkNow: () => boolean;
+  /** Where a new version stands, said beside the version in the advanced panel. */
+  appUpdateNow: () => AppUpdate;
   languageNow: () => Language;
   settingsNow: () => Settings;
   /** Shown, not kept: what he is trying out goes on screen and nowhere else. */
@@ -76,7 +79,7 @@ export function createSettingsPanels(parts: SettingsPanelsParts): SettingsPanels
   function showAdvanced(): void {
     if (advancedPane.open) return;
 
-    const close = openAdvancedPanel(advancedPane, host, parts.advancedNow(), parts.testModeNow(), parts.fakeNetworkNow(), {
+    const close = openAdvancedPanel(advancedPane, host, parts.advancedNow(), parts.testModeNow(), parts.fakeNetworkNow(), parts.appUpdateNow(), {
       onClose: () => {
         close();
       },

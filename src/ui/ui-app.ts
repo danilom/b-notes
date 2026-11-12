@@ -13,6 +13,7 @@ import { BUILD_STAMP } from '../platform/build-info.ts';
 import type { Host } from '../platform/host.ts';
 import { type Log, describeError } from '../platform/logging.ts';
 import { parentFolder } from '../platform/parent-folder.ts';
+import { type AppUpdate, isSameUpdate, NO_UPDATE } from '../platform/app-update.ts';
 import { DEFAULT_CTRL_CARD_AFTER_MS, readAdvanced } from './settings/advanced-settings.ts';
 import { type Place, readSession, writeSession } from './settings/app-session.ts';
 import { writingStartsAt } from '../notes/note-title.ts';
@@ -51,6 +52,7 @@ import {
   canDelete,
   emptyHintShows,
   statusFor,
+  updateNoteFor,
 } from './status-line.ts';
 import { flashToast } from './toast.ts';
 import { type TestMode, startTestMode } from '../test-mode/test-mode-view.ts';
@@ -104,6 +106,8 @@ const editorMarks = element('editor-marks', HTMLDivElement);
 const writingBox = element('writing', HTMLDivElement);
 const foundPane = element('found', HTMLDivElement);
 const statusText = element('status-text', HTMLSpanElement);
+const statusSaid = element('status-said', HTMLSpanElement);
+const statusUpdate = element('status-update', HTMLSpanElement);
 const search = element('search', HTMLInputElement);
 const newNote = element('new-note', HTMLButtonElement);
 const hideList = element('hide-list', HTMLButtonElement);
@@ -622,8 +626,9 @@ function showStatus(): void {
   emptyHint.hidden = !emptyHintShows(now);
   if (!emptyHint.hidden) pointHintAtDeleteButton();
 
-  statusText.textContent = statusFor(now, language);
-  sayWholeIfCut();
+  statusSaid.textContent = statusFor(now, language);
+  statusUpdate.textContent = updateNoteFor(appUpdate, language);
+  fitStatusLine();
   // Shown is said: a thing that has just happened stops being news once he has
   // been told it.
   notice = null;
@@ -636,12 +641,35 @@ function showStatus(): void {
  * pointer for nothing.
  */
 function sayWholeIfCut(): void {
-  if (statusText.scrollWidth > statusText.clientWidth) statusText.title = statusText.textContent;
+  if (statusText.scrollWidth > statusText.clientWidth) statusText.title = statusSaid.textContent;
   else statusText.removeAttribute('title');
 }
 
+/**
+ * The word on a new version goes whole, before the save is cut at all: the save is what he
+ * relies on, and half a version number is worse than none. Shown again once there is room.
+ */
+function fitStatusLine(): void {
+  statusUpdate.hidden = statusUpdate.textContent === '';
+  if (!statusUpdate.hidden && statusText.scrollWidth > statusText.clientWidth) statusUpdate.hidden = true;
+  sayWholeIfCut();
+}
+
 // Checked again when the window changes size, which is what cuts it.
-new ResizeObserver(sayWholeIfCut).observe(statusText);
+new ResizeObserver(fitStatusLine).observe(statusText);
+
+/** Where a new version of the app stands, as the host last told it. */
+let appUpdate: AppUpdate = NO_UPDATE;
+
+/** Listens from the moment the status line can say it; logged when it changes, never asked of him. */
+function followAppUpdate(): void {
+  host.onAppUpdate((update) => {
+    if (isSameUpdate(update, appUpdate)) return;
+    appUpdate = update;
+    if (update.kind !== 'none') log.info('A new version is on its way', update);
+    showStatus();
+  });
+}
 
 /*
   The Lektor's panel as wide as the list on the other side. The list asks for a width and gives
@@ -1181,6 +1209,7 @@ export async function startApp(runningOn: Host): Promise<void> {
     advancedNow: () => advanced,
     testModeNow: () => testModeOn,
     fakeNetworkNow: () => fakeNetwork?.isOn() ?? false,
+    appUpdateNow: () => appUpdate,
     preview: (appearance) => {
       showAppearanceOf(appearance);
       // Everything else in the panel is a stylesheet away. This one is a
@@ -1480,6 +1509,7 @@ export async function startApp(runningOn: Host): Promise<void> {
   }
 
   ready = true;
+  followAppUpdate();
   const body = document.body.getBoundingClientRect();
   log.info('Ready', {
     build: BUILD_STAMP,

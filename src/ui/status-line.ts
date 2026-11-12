@@ -1,3 +1,4 @@
+import type { AppUpdate } from '../platform/app-update.ts';
 import { type Language, describeWhen, strings } from '../language/wording.ts';
 import { NO_NOTE, type NoNote, type NoteHandle } from '../notes/note-handle.ts';
 import { isEmptyText } from '../notes/note.ts';
@@ -77,6 +78,19 @@ export function statusFor(now: WhatIsHappening, language: Language): string {
     next to changes — so the line is as still as it was.
   */
   return `${words.savedAgo(describeWhen(now.savedAt, language))} · ${words.wordCount(now.savedWords)}`;
+}
+
+/**
+ * Where a new version of the app stands, said after the save, or nothing.
+ *
+ * Its own words rather than part of `statusFor`'s, so the strip can let it go whole when room is
+ * short and keep the save, which he relies on, whole for longer.
+ */
+export function updateNoteFor(update: AppUpdate, language: Language): string {
+  const words = strings(language);
+  if (update.kind === 'downloading') return words.updateDownloading(update.version);
+  if (update.kind === 'downloaded') return words.updateDownloaded(update.version);
+  return '';
 }
 
 /**
