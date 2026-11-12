@@ -133,6 +133,17 @@ the work:
   - Pasting checks the key (free calls).
   - "Nazad" at the left, "Sačuvaj" at the right, the same size.
   - Wording as in the mockup ("Dovoljan je jedan.").
+- **Both keys in one paste** (Danilo, 2026-11-12). "Zalepi ključeve", under the intro, reads the clipboard and puts
+  each key it finds in its own box; a paste into either box is sorted the same way. Keys are found by their shape
+  (OpenRouter `sk-or-v1-` and 64 hex; Google `AIza` and 35, or the newer `AQ.` and a run), in any order and whatever
+  is around them: a whole message, labels, quotes, the JSON, invisible characters, nothing between the two. A key
+  broken across lines is not looked for. A paste into a box holding no key lands in that box as before.
+  - **Nothing is saved until Sačuvaj,** which gets the focus. A line under the button says what was found ("Oba
+    ključa su upisana…", the one key by its box's name, or that there was none), since a box already reading
+    "Sačuvan" changes too little to see. The line goes on Sačuvaj or leaving the screen.
+  - **The same key as the one saved** is filled like any other; saving it again changes nothing.
+  - The clipboard is never logged or kept; the log says only which keys were found. The wording is a placeholder
+    until Danilo's review.
 - **No keys at all:** the panel opens on the keys screen with no "Nazad". After a key is saved, it goes to the
   menu with "API ključ radi i sačuvan je."
 - **A key that stops working (dead key):**
