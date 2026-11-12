@@ -277,6 +277,12 @@ body.lektor-open #lektor-side {
   font-size: inherit;
 }
 
+/* A little larger so he can see time passing at a glance, but far short of the corrections window's clock: this wait is beside his work, not in front of it. */
+.lektor-waiting .lektor-comment-clock {
+  font-size: 1.3em;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Something is happening, in every place he waits on the AI: words alone look stuck after ten seconds. */
 .lektor-reading {
   display: flex;
