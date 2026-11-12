@@ -316,6 +316,7 @@ An optional AI proofreader, in `src/ui/lektor/`. It is the one exception to "no 
 - Updates must be invisible: `autoDownload: true`, `autoInstallOnAppQuit: true`. Never prompt him to install, and never call `quitAndInstall()` while he's editing. `autoRunAppAfterInstall` is off — he closed the app because he was finished, and a window reappearing on its own looks like the computer acting unprompted.
 - The update host must support `Accept-Ranges`, or electron-updater can't do a differential download and falls back to fetching the whole installer — 98MB instead of roughly 1MB for a small fix. GitHub Releases supports it; check before moving to any other host.
 - Updates are silent, so a broken updater is silent too. Everything electron-updater reports is routed into the log file; that's the only place it will ever surface.
+- **The status line says where a new version stands** (from 1.0.1): "Preuzimam verziju X…" while it downloads, "Verzija X je preuzeta." once it waits to install, after the save in the line's own grey, and let go whole before the save is cut. A fact, nothing to press: it is there so an email telling him how to get a new feature can say what to wait for. Advanced settings says the same beside the version. Only listened to (`app-update-events.ts`); nothing about how updates are fetched or installed changed for it.
 
 ### How an update reaches him
 
