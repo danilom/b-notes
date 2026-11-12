@@ -82,6 +82,8 @@ const onBeforeClose = (finish: () => Promise<void>): void => {
  * in the browser build and fail in the one he runs.
  */
 const copyToClipboard = (text: string): Promise<void> => ipcRenderer.invoke('app:copyToClipboard', text);
+/** The other way, for the same reasons. */
+const readClipboard = (): Promise<string> => ipcRenderer.invoke('app:readClipboard');
 
 /**
  * The Lektor's way out to an AI service, and its way of calling one off. Numbered by
@@ -125,6 +127,7 @@ contextBridge.exposeInMainWorld('setZoom', setZoom);
 contextBridge.exposeInMainWorld('folders', folders);
 contextBridge.exposeInMainWorld('openFolder', openFolder);
 contextBridge.exposeInMainWorld('copyToClipboard', copyToClipboard);
+contextBridge.exposeInMainWorld('readClipboard', readClipboard);
 contextBridge.exposeInMainWorld('lektorRequest', lektorRequest);
 contextBridge.exposeInMainWorld('lektorStop', lektorStop);
 contextBridge.exposeInMainWorld('onLektorProgress', onLektorProgress);

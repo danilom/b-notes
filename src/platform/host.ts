@@ -94,6 +94,11 @@ export interface Host {
    */
   readonly copyToClipboard: (text: string) => Promise<void>;
   /**
+   * The text on the clipboard, for the Lektor's "Zalepi ključeve", which finds his keys in it.
+   * Whatever he last copied, his writing included, so it is never logged or kept.
+   */
+  readonly readClipboard: () => Promise<string>;
+  /**
    * Asks an AI service, for the Lektor and nothing else.
    *
    * The host's job because the page may not reach those addresses itself, and in the

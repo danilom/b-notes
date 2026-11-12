@@ -245,6 +245,8 @@ handle('app:restart', async () => {
 handle('app:copyToClipboard', async (args) => {
   clipboard.writeText(asString(args[0], 'text'));
 });
+// For the Lektor's keys. Not logged: it is whatever he last copied, his writing included.
+handle('app:readClipboard', async () => clipboard.readText());
 /*
   The Lektor's way to an AI service. Here because the page may not reach those addresses,
   and logged here for what it did and never what it said: not his text, not a key. The model

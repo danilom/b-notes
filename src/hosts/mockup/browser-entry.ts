@@ -125,6 +125,7 @@ async function main(): Promise<void> {
       uses Electron's instead of this.
     */
     copyToClipboard: (text: string) => navigator.clipboard.writeText(text),
+    readClipboard: () => navigator.clipboard.readText(),
     // Through the dev server, standing in for the main process: the page may not reach those addresses itself.
     askLektorService: askThroughDevServer,
     savedLektorReply: savedReplyFromDevServer,

@@ -20,6 +20,7 @@ declare global {
     }>;
     openFolder?: (path: string) => Promise<void>;
     copyToClipboard?: (text: string) => Promise<void>;
+    readClipboard?: () => Promise<string>;
     lektorRequest?: (id: number, request: LektorRequest) => Promise<LektorResponse>;
     lektorStop?: (id: number) => Promise<void>;
     onLektorProgress?: (listener: (id: number, progress: unknown) => void) => void;
@@ -50,6 +51,7 @@ async function main(): Promise<void> {
     folders,
     openFolder,
     copyToClipboard,
+    readClipboard,
     lektorRequest,
     lektorStop,
     onLektorProgress,
@@ -66,6 +68,7 @@ async function main(): Promise<void> {
     folders === undefined ||
     openFolder === undefined ||
     copyToClipboard === undefined ||
+    readClipboard === undefined ||
     lektorRequest === undefined ||
     lektorStop === undefined ||
     onLektorProgress === undefined ||
@@ -104,6 +107,7 @@ async function main(): Promise<void> {
     logsFolder: where.logs,
     openFolder,
     copyToClipboard,
+    readClipboard,
     askLektorService: async (request, stop, onProgress) => {
       lastLektorRequest += 1;
       const id = lastLektorRequest;
