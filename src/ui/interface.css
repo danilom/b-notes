@@ -2091,9 +2091,13 @@ dialog::backdrop {
   }
 }
 
-/* All the window's height, but only the width his lines and their margins take. */
+/*
+  All the window's height, and the width his lines and their margins take, with room besides
+  for the review's header to say what it is (kind, Lektor, when, cost, how many) on one line
+  beside "Izgled izmena" (Danilo, 2026-11-12): at 54rem it wrapped.
+*/
 .panel.lektor-panel {
-  width: min(54rem, 100%);
+  width: min(62rem, 100%);
 }
 
 .panel.review-panel header {
