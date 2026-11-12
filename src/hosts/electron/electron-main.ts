@@ -3,11 +3,11 @@ import { hostname, homedir } from 'node:os';
 import path from 'node:path';
 
 import { BUILD_STAMP } from '../../platform/build-info.ts';
-import { LOG_LEVELS, createFileLogger } from './log-file.ts';
+import { LOG_LEVELS, openFileLogger } from './log-file.ts';
 import { createFileSystem } from './disk-file-system.ts';
 import { absenceReply } from '../../platform/file-system.ts';
 import { askLektorService, lektorLogDetail, lektorRequestFrom, testLektorAddresses } from '../../platform/lektor-remote.ts';
-import { logsFolderFor, notesFolderFor, readChosenFolders, whereToOpen, writeChosenFolders } from './chosen-folders.ts';
+import { defaultLogsFolder, logsFolderFor, notesFolderFor, readChosenFolders, whereToOpen, writeChosenFolders } from './chosen-folders.ts';
 import { findResophFolder } from './resoph-config.ts';
 import { createOtherEditors } from './windows-editors.ts';
 import { OTHER_EDITORS, type OtherEditor } from '../../platform/other-editors.ts';
@@ -65,7 +65,11 @@ const appFolder = app.getPath('userData');
 // log goes. Anything wrong with the file reads as "nothing was chosen", which
 // starts the app in its default places rather than not at all.
 const chosen = readChosenFolders(appFolder);
-const log = createFileLogger(logsFolderFor(appFolder, chosen), runMode);
+// A chosen log folder that will not take the log (its drive gone, say) falls back to the
+// default one, without a word to him: the log is for whoever reads it, and they will find
+// the reason at the top of it.
+const opened = openFileLogger([logsFolderFor(appFolder, chosen), defaultLogsFolder(appFolder)], runMode);
+const log = opened.log;
 const rendererLog = log.scoped('renderer');
 
 // Nothing here reaches a terminal: Electron detaches stdout on Windows, so an
@@ -73,6 +77,10 @@ const rendererLog = log.scoped('renderer');
 // these quits — he may have text on screen, and staying up beats a tidy exit.
 process.on('uncaughtException', (error) => log.error('Uncaught exception', error));
 process.on('unhandledRejection', (reason) => log.error('Unhandled rejection', reason));
+
+for (const { folder, error } of opened.unusable) {
+  log.warn('Could not write the log in this folder; using the next one', { folder, using: opened.folder, error });
+}
 
 // Forward slashes throughout, which is what the filesystem contract expects and
 // which Windows accepts perfectly well.

@@ -155,6 +155,46 @@ function readLogFiles(dir: string): LogFileInfo[] {
   return files;
 }
 
+/** A folder the log could not be opened in, and why. */
+export interface UnusableLogFolder {
+  folder: string;
+  error: unknown;
+}
+
+export interface OpenedLog {
+  log: Logger;
+  /** The folder the log is being written to, or null when none would take it. */
+  folder: string | null;
+  /** Folders tried before it, in order, each with what stopped it. */
+  unusable: UnusableLogFolder[];
+}
+
+/**
+ * Opens the log in the first of `folders` that will take it.
+ *
+ * Never throws. This runs before anything else in the app, so a throw here is
+ * an error dialog in place of the app, over a folder he never chose and cannot
+ * fix — a log folder pointed at a drive that has since gone was enough. With no
+ * folder usable at all, the log goes to the console: the app without a log
+ * beats no app.
+ */
+export function openFileLogger(
+  folders: readonly string[],
+  mode: RunMode,
+  retention: LogRetention = DEFAULT_RETENTION,
+): OpenedLog {
+  const unusable: UnusableLogFolder[] = [];
+  for (const folder of new Set(folders)) {
+    try {
+      return { log: createFileLogger(folder, mode, retention), folder, unusable };
+    } catch (error: unknown) {
+      unusable.push({ folder, error });
+    }
+  }
+  return { log: consoleLogger('main'), folder: null, unusable };
+}
+
+/** Throws when the folder cannot be made or written to; `openFileLogger` is what the app calls. */
 export function createFileLogger(
   dir: string,
   mode: RunMode,
@@ -165,18 +205,9 @@ export function createFileLogger(
   const started = new Date();
   const fileName = logFileName(started, process.pid, mode);
   const file = path.join(dir, fileName);
-
-  // Pruning happens once, at startup. Nothing rotates while the app is open,
-  // because this run writes to this one file for its whole life.
-  for (const name of filesToPrune(readLogFiles(dir), retention, dayStamp(started), fileName)) {
-    try {
-      unlinkSync(path.join(dir, name));
-    } catch (error) {
-      // Windows refuses to delete a file another instance still has open. Skip
-      // it — the next run will get it — rather than abandoning the whole sweep.
-      console.error(`Could not delete old log ${name}`, error);
-    }
-  }
+  // Created now, so a folder that exists but cannot be written to is found out
+  // here, while there is still another folder to try, rather than entry by entry.
+  appendFileSync(file, '', 'utf8');
 
   function write(level: LogLevel, source: string, message: string, detail?: unknown): void {
     try {
@@ -200,5 +231,38 @@ export function createFileLogger(
     };
   }
 
-  return at('main');
+  const log = at('main');
+  pruneOldLogs(dir, retention, dayStamp(started), fileName, log);
+  return log;
+}
+
+/**
+ * Pruning happens once, at startup. Nothing rotates while the app is open,
+ * because this run writes to this one file for its whole life. A failure costs
+ * only disk space, so it is logged and the app goes on.
+ */
+function pruneOldLogs(dir: string, retention: LogRetention, today: string, activeName: string, log: Logger): void {
+  let doomed: string[];
+  try {
+    doomed = filesToPrune(readLogFiles(dir), retention, today, activeName);
+  } catch (error: unknown) {
+    log.warn('Could not look through old logs to prune them', error);
+    return;
+  }
+  for (const name of doomed) {
+    try {
+      unlinkSync(path.join(dir, name));
+    } catch (error: unknown) {
+      // Windows refuses to delete a file another instance still has open. Skip
+      // it — the next run will get it — rather than abandoning the whole sweep.
+      log.warn(`Could not delete old log ${name}`, error);
+    }
+  }
+}
+
+function consoleLogger(source: string): Logger {
+  const say = (level: LogLevel) => (message: string, detail?: unknown) => {
+    console.error(formatLine(new Date(), level, source, message, detail));
+  };
+  return { debug: say('debug'), info: say('info'), warn: say('warn'), error: say('error'), scoped: consoleLogger };
 }

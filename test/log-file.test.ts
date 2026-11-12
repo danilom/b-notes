@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { after, describe, it } from 'node:test';
 
 import { describeError } from '../src/platform/logging.ts';
 
@@ -9,6 +12,7 @@ import {
   filesToPrune,
   formatLine,
   logFileName,
+  openFileLogger,
   parseLogFileDay,
 } from '../src/hosts/electron/log-file.ts';
 
@@ -185,6 +189,62 @@ describe('filesToPrune', () => {
     const strict: LogRetention = { maxAgeDays: 1, maxTotalBytes: 1000 };
 
     assert.deepEqual(filesToPrune([old, ACTIVE], strict, TODAY, ACTIVE.name), [old.name]);
+  });
+});
+
+describe('openFileLogger', () => {
+  const scratch = mkdtempSync(path.join(tmpdir(), 'b-notes-log-'));
+  after(() => rmSync(scratch, { recursive: true, force: true }));
+
+  /** A folder that cannot be made, since a file stands where its parent should be: what a drive gone looks like to mkdir. */
+  function folderThatCannotBeMade(name: string): string {
+    const blocker = path.join(scratch, `${name}-blocker`);
+    writeFileSync(blocker, '');
+    return path.join(blocker, 'logs');
+  }
+
+  const logsIn = (folder: string): string[] => readdirSync(folder).filter((name) => name.endsWith('.log'));
+
+  it('writes to the chosen folder when it can', () => {
+    const chosen = path.join(scratch, 'chosen');
+    const opened = openFileLogger([chosen, path.join(scratch, 'unused')], 'dev');
+
+    opened.log.info('started');
+
+    assert.equal(opened.folder, chosen);
+    assert.deepEqual(opened.unusable, []);
+    assert.equal(logsIn(chosen).length, 1);
+  });
+
+  it('falls back to the next folder when the chosen one cannot be made, and says which and why', () => {
+    const gone = folderThatCannotBeMade('gone');
+    const fallback = path.join(scratch, 'fallback');
+
+    const opened = openFileLogger([gone, fallback], 'dev');
+    opened.log.info('started');
+
+    assert.equal(opened.folder, fallback);
+    assert.deepEqual(opened.unusable.map((tried) => tried.folder), [gone]);
+    assert.ok(opened.unusable[0]?.error instanceof Error);
+    const [written] = logsIn(fallback);
+    assert.ok(written !== undefined);
+    assert.match(readFileSync(path.join(fallback, written), 'utf8'), /started/);
+  });
+
+  it('still gives a working log when no folder will take it', () => {
+    const opened = openFileLogger([folderThatCannotBeMade('first'), folderThatCannotBeMade('second')], 'dev');
+
+    assert.equal(opened.folder, null);
+    assert.equal(opened.unusable.length, 2);
+    assert.doesNotThrow(() => opened.log.scoped('renderer').error('still here'));
+  });
+
+  it('tries a folder named twice only once', () => {
+    const gone = folderThatCannotBeMade('twice');
+
+    const opened = openFileLogger([gone, gone], 'dev');
+
+    assert.equal(opened.unusable.length, 1);
   });
 });
 

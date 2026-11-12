@@ -69,7 +69,12 @@ export function writeChosenFolders(appFolder: string, folders: ChosenFolders): v
  * open the default folder after the logs had been moved.
  */
 export function logsFolderFor(appFolder: string, chosen: ChosenFolders): string {
-  return chosen.logs ?? asPath(path.join(appFolder, 'logs'));
+  return chosen.logs ?? defaultLogsFolder(appFolder);
+}
+
+/** Where the log goes when nobody chose, and where it falls back to when the chosen folder will not take it. */
+export function defaultLogsFolder(appFolder: string): string {
+  return asPath(path.join(appFolder, 'logs'));
 }
 
 /**
