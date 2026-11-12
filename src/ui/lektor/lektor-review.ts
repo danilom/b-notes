@@ -8,7 +8,7 @@ import { createDiffReview } from '../diff-review.ts';
 import { createTextDiffView } from '../diff-view.ts';
 import { icon } from '../icons.ts';
 import { burstFrom } from './lektor-confetti.ts';
-import { button, el } from './lektor-pieces.ts';
+import { arrowBackButton, button, el } from './lektor-pieces.ts';
 
 /*
   What a proofreader proposes for a text, for him to look over, drawn as the corrections window's
@@ -205,8 +205,7 @@ export function createReviewPanel(confirmContainer: HTMLDialogElement, setup: Re
   panes.append(body);
 
   // A step back at the footer's left, apart from the two that finish or leave.
-  const back = button('', handlers.onBack, 'lektor-footer-back');
-  back.append(icon('back'), el('span', '', words.lektor.back));
+  const back = arrowBackButton(words.lektor.back, handlers.onBack, 'lektor-footer-back');
   const footer = el('footer');
   footer.append(back);
   if (hasAnything) {

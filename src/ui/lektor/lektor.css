@@ -299,7 +299,8 @@ body.lektor-open #lektor-side {
   border: 2px solid var(--line);
   border-top-color: var(--quiet);
   border-radius: 50%;
-  animation: lektor-turning 1s linear infinite;
+  /* --turned: set back by the time gone, by turningMark(), so a mark drawn afresh carries on rather than starting over. */
+  animation: lektor-turning 1s linear var(--turned, 0s) infinite;
 }
 
 @keyframes lektor-turning {
@@ -311,7 +312,7 @@ body.lektor-open #lektor-side {
 /* Where Windows is set to spare him animation, a slow pulse rather than nothing. */
 @media (prefers-reduced-motion: reduce) {
   .lektor-reading::before {
-    animation: lektor-pulsing 2s ease-in-out infinite;
+    animation: lektor-pulsing 2s ease-in-out var(--turned, 0s) infinite;
   }
 
   @keyframes lektor-pulsing {
@@ -1946,18 +1947,24 @@ body.lektor-open #lektor-side {
   color: var(--quiet);
 }
 
-/* Back to the choices, at the footer's far left, the dialog's size like the others. */
-.lektor-window footer .lektor-footer-back {
-  margin-right: auto;
+/* Every way back (arrowBackButton): its arrow on the middle of its words, wherever it sits. */
+.lektor-arrow-back {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.3em;
 }
 
-.lektor-footer-back svg {
+/* In the window, the arrow a little larger than the dialog's small words, so it still reads as one. */
+.lektor-window .lektor-arrow-back svg {
+  flex: none;
   width: 1.1em;
   height: 1.1em;
+}
+
+/* Back to the choices, at the footer's far left, the dialog's size like the others. */
+.lektor-window footer .lektor-footer-back {
+  margin-right: auto;
 }
 
 .lektor-window .lektor-sends {

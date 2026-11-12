@@ -14,7 +14,7 @@ import { correctionInstruction, proposalFrom, withHisFilingMarks } from './lekto
 import { areSetsVoid, type KeptProposal, type KeptResults, keptSet, withCorrections, withEndingOf } from './lektor-kept-results.ts';
 import { markOf } from './lektor-marks.ts';
 import { ChainError, type ChainFailure, isStopped, type Stage } from './lektor-model-chain.ts';
-import { balanceLine, button, deadKeyNoticeOf, el, elapsedWords, type LektorWords, type ProblemParts, problemBox, sendButton, sendTooltip, serviceLineOf, tierFor } from './lektor-pieces.ts';
+import { arrowBackButton, balanceLine, button, deadKeyNoticeOf, el, elapsedWords, type LektorWords, type ProblemParts, problemBox, sendButton, sendTooltip, serviceLineOf, tierFor, turningMark } from './lektor-pieces.ts';
 import { PRESET_ORDER, PRESET_PROMPTS } from './lektor-presets.ts';
 import { createReviewPanel } from './lektor-review.ts';
 import { type Choice, LektorServiceError, type PresetId } from './lektor-service.ts';
@@ -338,7 +338,7 @@ export function openCorrectionsWindow(parts: WindowParts, text: WindowText): voi
 
   /** A finished stage ticked, the current one turning, one given up or refused a soft "!": not a cross. */
   function stageMark(stage: Stage, isCurrent: boolean): HTMLElement {
-    if (isCurrent) return el('span', 'lektor-stage-mark lektor-reading');
+    if (isCurrent) return turningMark('lektor-stage-mark');
     if (stage.isGivenUp || isTurnedAway(stage)) return el('span', 'lektor-stage-mark lektor-stage-mark-moved', '!');
     return el('span', 'lektor-stage-mark', '✓');
   }
@@ -426,11 +426,10 @@ export function openCorrectionsWindow(parts: WindowParts, text: WindowText): voi
 
   function failedDetail(kind: PresetId, failure: Failed): HTMLElement[] {
     const big = el('div', 'lektor-window-big');
-    const back = button('', () => {
+    const back = arrowBackButton(words().back, () => {
       failed = null;
       show('choosing');
     }, 'lektor-back-to-ready');
-    back.append(icon('back'), el('span', '', words().back));
     const row = el('div', 'lektor-window-actions');
     row.append(back);
     if (failure.failure === 'bad-key') {

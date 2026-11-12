@@ -75,11 +75,33 @@ export function sendButton(label: string, tier: Tier, onClick: () => void, class
   return made;
 }
 
-/** A way back at the strip's left: its arrow and its words, plain beside the coloured way on. */
-export function backButton(label: string, onBack: () => void): HTMLButtonElement {
-  const back = button('', onBack, 'status-action lektor-side-back');
+/** A turn of the spinner is 1 s and its pulse, where motion is spared, 2 s: one delay modulo this keeps both in step. */
+const SPINNER_CYCLE_MS = 2000;
+
+/**
+ * The turning mark of something under way, in step with the clock rather than with when it was
+ * drawn. The corrections wait draws its stages afresh each time the writing grows, many times a
+ * second, and a mark that started its turn from the top each time only ever showed a few degrees.
+ */
+export function turningMark(className: string): HTMLElement {
+  const mark = el('span', `${className} lektor-reading`);
+  mark.style.setProperty('--turned', `${-(performance.now() % SPINNER_CYCLE_MS)}ms`);
+  return mark;
+}
+
+/**
+ * A way back, its arrow before its words and lined up on their middle, wherever it sits. Every
+ * way back is made here: built by hand in four places, one of them came out with its arrow low.
+ */
+export function arrowBackButton(label: string, onBack: () => void, className: string): HTMLButtonElement {
+  const back = button('', onBack, `${className} lektor-arrow-back`);
   back.append(icon('back'), el('span', '', label));
   return back;
+}
+
+/** A way back at the strip's left: its arrow and its words, plain beside the coloured way on. */
+export function backButton(label: string, onBack: () => void): HTMLButtonElement {
+  return arrowBackButton(label, onBack, 'status-action lektor-side-back');
 }
 
 export interface ProblemParts {

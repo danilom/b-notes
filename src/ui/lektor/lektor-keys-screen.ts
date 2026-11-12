@@ -1,7 +1,6 @@
-import { icon } from '../icons.ts';
 import { type KeysFound, keysInText } from './lektor-keys-in-text.ts';
 import { markOf } from './lektor-marks.ts';
-import { button, el, type LektorWords, MAIN_ACTION, type ProblemParts, problemBox } from './lektor-pieces.ts';
+import { backButton, button, el, type LektorWords, MAIN_ACTION, type ProblemParts, problemBox } from './lektor-pieces.ts';
 import type { Choice } from './lektor-service.ts';
 
 /*
@@ -115,11 +114,7 @@ export function keysScreen(words: LektorWords, parts: ProblemParts, state: KeysS
   saveButton.disabled = isChecking;
   const pasteButton = button(words.keysPasteButton, actions.pasteFromClipboard, 'status-action lektor-keys-paste');
   pasteButton.disabled = isChecking;
-  let back: HTMLButtonElement | null = null;
-  if (actions.goBack !== null) {
-    back = button('', actions.goBack, 'status-action lektor-side-back');
-    back.append(icon('back'), el('span', '', words.back));
-  }
+  const back = actions.goBack === null ? null : backButton(words.back, actions.goBack);
   return {
     content: [
       el('p', 'lektor-line', words.keyIntro),
