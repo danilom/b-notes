@@ -141,6 +141,9 @@ the work:
   - **Nothing is saved until Sačuvaj,** which gets the focus. A line under the button says what was found ("Oba
     ključa su upisana…", the one key by its box's name, or that there was none), since a box already reading
     "Sačuvan" changes too little to see. The line goes on Sačuvaj or leaving the screen.
+  - **The button** is as tall as Sačuvaj but white, not blue: one solid blue button to a screen, the next step,
+    and here that is Sačuvaj (Danilo, 2026-11-12). **No key found** is said as the screen's other problems are,
+    with the warning mark; keys found are said plainly.
   - **The same key as the one saved** is filled like any other; saving it again changes nothing.
   - The clipboard is never logged or kept; the log says only which keys were found. The wording is a placeholder
     until Danilo's review.

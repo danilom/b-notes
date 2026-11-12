@@ -355,7 +355,12 @@ test.describe('pasting the keys', () => {
     await expect(side(page).getByLabel('Besplatni (Google)')).toHaveValue(GOOGLE);
     await expect(side(page).getByLabel('Plaćeni (OpenRouter)')).toHaveValue(OPENROUTER);
     await expect(side(page).locator('.lektor-keys-pasted')).toHaveText('Oba ključa su upisana. Pritisni Sačuvaj.');
+    await expect(side(page).locator('.lektor-keys-pasted')).not.toHaveClass(/lektor-problem/);
     await expect(side(page).getByRole('button', { name: 'Sačuvaj' })).toBeFocused();
+    const heights = await side(page).evaluate((panel) =>
+      ['.lektor-keys-paste', '.lektor-main-action'].map((which) => panel.querySelector(which)?.getBoundingClientRect().height),
+    );
+    expect(heights[0]).toBe(heights[1]);
     expect(await savedKeys(page)).toEqual({});
     await page.keyboard.press('Enter');
     await expect(side(page)).toContainText('API ključ radi i sačuvan je.');
@@ -387,6 +392,8 @@ test.describe('pasting the keys', () => {
     await copied(page, LONG_ENOUGH);
     await side(page).getByRole('button', { name: 'Zalepi ključeve' }).click();
     await expect(side(page).locator('.lektor-keys-pasted')).toHaveText('U kopiranom tekstu nema ključa. Kopiraj poruku s ključevima, pa pritisni ponovo.');
+    // A problem, looking like the screen's others, where keys found are said plainly.
+    await expect(side(page).locator('.lektor-keys-pasted')).toHaveClass(/lektor-problem/);
     await expect(side(page).getByLabel('Besplatni (Google)')).toHaveValue('');
     await expect(side(page).getByLabel('Plaćeni (OpenRouter)')).toHaveValue('');
   });

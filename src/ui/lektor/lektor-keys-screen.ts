@@ -61,9 +61,15 @@ export interface KeysScreenActions {
   keysPasted: (found: KeysFound) => void;
 }
 
-function pastedLine(words: LektorWords, pasted: KeysPasted | null): HTMLElement[] {
+/** Keys found is news, said plainly; none found is a problem, looking like the screen's others. */
+function pastedLine(words: LektorWords, parts: ProblemParts, pasted: KeysPasted | null): HTMLElement[] {
   if (pasted === null) return [];
-  const said = pasted === 'both' ? words.keysPasted.both : pasted === 'none' ? words.keysPasted.none : words.keysPasted.one(words.keyNames[pasted]);
+  if (pasted === 'none') {
+    const problem = problemBox(parts, words.keysPasted.none);
+    problem.classList.add('lektor-keys-pasted');
+    return [problem];
+  }
+  const said = pasted === 'both' ? words.keysPasted.both : words.keysPasted.one(words.keyNames[pasted]);
   return [el('p', 'lektor-keys-pasted', said)];
 }
 
@@ -118,7 +124,7 @@ export function keysScreen(words: LektorWords, parts: ProblemParts, state: KeysS
     content: [
       el('p', 'lektor-line', words.keyIntro),
       pasteButton,
-      ...pastedLine(words, state.pasted),
+      ...pastedLine(words, parts, state.pasted),
       ...keyField(words, parts, state, 'free', actions),
       ...keyField(words, parts, state, 'paid', actions),
     ],

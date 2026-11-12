@@ -1924,9 +1924,15 @@ body.lektor-open #lektor-side {
   font-style: italic;
 }
 
-/* "Zalepi ključeve", as wide as its words, under the line that asks for the keys. */
+/*
+  "Zalepi ključeve", as wide as its words, under the line that asks for the keys. As tall as Sačuvaj,
+  so it reads as a thing to do rather than a small one in the text, but white: one solid blue button
+  to a screen, the next step, and here that is Sačuvaj (Danilo, 2026-11-12).
+*/
 .lektor-side-body > .lektor-keys-paste {
   align-self: flex-start;
+  min-height: 2.1rem;
+  padding-inline: 0.8rem;
 }
 
 /* What the paste found, in his reading colour: it is the one sign the boxes changed. */
