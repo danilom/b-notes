@@ -87,11 +87,12 @@ What does: code whose wrong answer still looks like an answer.
 
 - Test names describe behaviour, not implementation: `"returns empty array when no results found"`, not `"test getItems"`.
 - This project's test commands and layers are in `DESIGN.md`.
-- **Run the unit suite freely; ask before running the GUI suite.** `npm test`
-  takes ten seconds and needs no permission. `npm run test:gui` takes three to
-  five minutes, which is a long time to lose in the middle of iterating — so
-  say what you'd run it for and wait to be told yes, rather than starting it
-  and reporting afterwards. Offer the targeted form where one fits.
+- **Run specific tests freely; ask before running a whole suite.** A single
+  unit test file (`node --test <file>`) or a targeted GUI test needs no
+  permission. The full `npm test` and `npm run test:gui` (fifteen to twenty
+  minutes, a long time to lose in the middle of iterating) do: say what you'd
+  run it for and wait to be told yes, rather than starting it and reporting
+  afterwards. Offer the targeted form where one fits.
 - **Permission to run it is for the run you were given it for.** "Go ahead
   without asking" covers the batch of work it was said about and expires with
   it; it is not a standing arrangement, and carrying it into the next task is

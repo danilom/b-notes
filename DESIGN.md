@@ -420,7 +420,7 @@ what you're seeing doesn't match what the app should be doing.
 
 - Logic tests: `npm test` runs `node --test` directly against the TypeScript sources — Node strips the types itself, so there's no build step and no test framework. This is why `erasableSyntaxOnly` is on in `tsconfig.json`: enums and parameter properties would break it. Covers the storage layer and pure logic; keep these runnable without Electron.
 - GUI tests: `npm run test:gui` builds, then runs Playwright over the browser build in `test-gui/`. It drives the real interface against the mock filesystem, so it is the only layer that catches a stylesheet that never loaded, a dialog that never opened, or a button that does nothing. Keep the suite small — the critical path is "type → it persists → reopen → the text is still there".
-- **It costs three to five minutes. Ask before running it.** `npm test` is ten seconds and needs no permission; this does not. Say what it would catch and wait to be told yes. When one area changed, offer the targeted form, which is about thirty seconds:
+- **It costs fifteen to twenty minutes. Ask before running it,** and before the full `npm test` too; a single unit test file (`node --test <file>`) or a targeted GUI test needs no permission. Say what it would catch and wait to be told yes. When one area changed, offer the targeted form, which is about thirty seconds:
 
   ```
   node scripts/build.mjs && npx playwright test status-bar
