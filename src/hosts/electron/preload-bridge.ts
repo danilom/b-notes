@@ -91,6 +91,12 @@ const readClipboard = (): Promise<string> => ipcRenderer.invoke('app:readClipboa
  */
 const lektorRequest = (id: number, request: LektorRequest): Promise<LektorResponse> => ipcRenderer.invoke('lektor:request', id, request);
 const lektorStop = (id: number): Promise<void> => ipcRenderer.invoke('lektor:stop', id);
+/** Where a new version of the app stands: asked once on starting, then told of each change. Checked in the window. */
+const appUpdateState = (): Promise<unknown> => ipcRenderer.invoke('app:updateState');
+const onAppUpdate = (listener: (update: unknown) => void): void => {
+  ipcRenderer.on('app:update', (_event, update: unknown) => listener(update));
+};
+
 /** How each running request is getting on, by its number; the window sorts them out. Checked there, as anything from across the bridge is. */
 const onLektorProgress = (listener: (id: number, progress: unknown) => void): void => {
   ipcRenderer.on('lektor:progress', (_event, id: unknown, progress: unknown) => {
@@ -128,6 +134,8 @@ contextBridge.exposeInMainWorld('folders', folders);
 contextBridge.exposeInMainWorld('openFolder', openFolder);
 contextBridge.exposeInMainWorld('copyToClipboard', copyToClipboard);
 contextBridge.exposeInMainWorld('readClipboard', readClipboard);
+contextBridge.exposeInMainWorld('appUpdateState', appUpdateState);
+contextBridge.exposeInMainWorld('onAppUpdate', onAppUpdate);
 contextBridge.exposeInMainWorld('lektorRequest', lektorRequest);
 contextBridge.exposeInMainWorld('lektorStop', lektorStop);
 contextBridge.exposeInMainWorld('onLektorProgress', onLektorProgress);

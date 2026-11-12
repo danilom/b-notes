@@ -1,6 +1,8 @@
 import { app } from 'electron';
 import electronUpdater from 'electron-updater';
 
+import type { AppUpdate } from '../../platform/app-update.ts';
+import { followAppUpdates } from './app-update-events.ts';
 import type { Logger } from './log-file.ts';
 
 // electron-updater is CommonJS, so the named export isn't reliably reachable
@@ -13,8 +15,10 @@ const { autoUpdater } = electronUpdater;
  * He is never asked about updates. There's no prompt to dismiss, nothing to
  * approve, and nothing that can interrupt him mid-essay: the download happens
  * in the background and the swap happens after he's closed the app.
+ *
+ * @param tell Where a new version stands, each time that changes, for the status line to say.
  */
-export function startUpdateChecks(log: Logger): void {
+export function startUpdateChecks(log: Logger, tell: (update: AppUpdate) => void): void {
   const updates = log.scoped('updater');
 
   if (!app.isPackaged) {
@@ -41,16 +45,7 @@ export function startUpdateChecks(log: Logger): void {
   // opens it himself.
   autoUpdater.autoRunAppAfterInstall = false;
 
-  autoUpdater.on('checking-for-update', () => updates.info('Checking for update'));
-  autoUpdater.on('update-available', (info) => updates.info('Update available', { version: info.version }));
-  autoUpdater.on('update-not-available', () => updates.info('Already up to date'));
-  autoUpdater.on('download-progress', (progress) =>
-    updates.debug('Downloading update', { percent: Math.round(progress.percent) }),
-  );
-  autoUpdater.on('update-downloaded', (info) =>
-    updates.info('Update downloaded, installing on quit', { version: info.version }),
-  );
-  autoUpdater.on('error', (error) => updates.error('Updater error', error));
+  followAppUpdates(autoUpdater, updates, tell);
 
   autoUpdater.checkForUpdates().catch((error: unknown) => {
     updates.error('Update check failed', error);

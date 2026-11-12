@@ -1,5 +1,6 @@
 import type { FileSystem } from '../../platform/file-system.ts';
 import type { ChosenPlaces, Host, RunMode } from '../../platform/host.ts';
+import { appUpdateFrom } from '../../platform/app-update.ts';
 import { type LektorProgress, lektorProgressFrom } from '../../platform/lektor-progress.ts';
 import type { LektorRequest, LektorResponse } from '../../platform/lektor-remote.ts';
 import type { Log } from '../../platform/logging.ts';
@@ -21,6 +22,8 @@ declare global {
     openFolder?: (path: string) => Promise<void>;
     copyToClipboard?: (text: string) => Promise<void>;
     readClipboard?: () => Promise<string>;
+    appUpdateState?: () => Promise<unknown>;
+    onAppUpdate?: (listener: (update: unknown) => void) => void;
     lektorRequest?: (id: number, request: LektorRequest) => Promise<LektorResponse>;
     lektorStop?: (id: number) => Promise<void>;
     onLektorProgress?: (listener: (id: number, progress: unknown) => void) => void;
@@ -52,6 +55,8 @@ async function main(): Promise<void> {
     openFolder,
     copyToClipboard,
     readClipboard,
+    appUpdateState,
+    onAppUpdate,
     lektorRequest,
     lektorStop,
     onLektorProgress,
@@ -69,6 +74,8 @@ async function main(): Promise<void> {
     openFolder === undefined ||
     copyToClipboard === undefined ||
     readClipboard === undefined ||
+    appUpdateState === undefined ||
+    onAppUpdate === undefined ||
     lektorRequest === undefined ||
     lektorStop === undefined ||
     onLektorProgress === undefined ||
@@ -108,6 +115,15 @@ async function main(): Promise<void> {
     openFolder,
     copyToClipboard,
     readClipboard,
+    onAppUpdate: (listener) => {
+      onAppUpdate((raw) => listener(appUpdateFrom(raw)));
+      // Asked after listening, so a change between the two is not lost. The main process
+      // answers and tells in the order things happened, so the answer never undoes a change.
+      appUpdateState().then(
+        (raw) => listener(appUpdateFrom(raw)),
+        (error: unknown) => log.warn('Could not ask where a new version stands', error),
+      );
+    },
     askLektorService: async (request, stop, onProgress) => {
       lastLektorRequest += 1;
       const id = lastLektorRequest;

@@ -5,6 +5,7 @@ import path from 'node:path';
 import { BUILD_STAMP } from '../../platform/build-info.ts';
 import { LOG_LEVELS, openFileLogger } from './log-file.ts';
 import { createFileSystem } from './disk-file-system.ts';
+import { type AppUpdate, NO_UPDATE } from '../../platform/app-update.ts';
 import { absenceReply } from '../../platform/file-system.ts';
 import { askLektorService, lektorLogDetail, lektorRequestFrom, testLektorAddresses } from '../../platform/lektor-remote.ts';
 import { defaultLogsFolder, logsFolderFor, notesFolderFor, readChosenFolders, whereToOpen, writeChosenFolders } from './chosen-folders.ts';
@@ -247,6 +248,13 @@ handle('app:copyToClipboard', async (args) => {
 });
 // For the Lektor's keys. Not logged: it is whatever he last copied, his writing included.
 handle('app:readClipboard', async () => clipboard.readText());
+/*
+  Where a new version stands, for the status line. Kept here as well as sent, because the
+  updater may speak before the window is listening: the window asks once when it starts, and
+  is told of every change after.
+*/
+let appUpdate: AppUpdate = NO_UPDATE;
+handle('app:updateState', async () => appUpdate);
 /*
   The Lektor's way to an AI service. Here because the page may not reach those addresses,
   and logged here for what it did and never what it said: not his text, not a key. The model
@@ -526,7 +534,10 @@ async function start(): Promise<void> {
     workArea: screen.getPrimaryDisplay().workArea,
     scale: screen.getPrimaryDisplay().scaleFactor,
   });
-  startUpdateChecks(log);
+  startUpdateChecks(log, (update) => {
+    appUpdate = update;
+    if (mainWindow !== null && !mainWindow.webContents.isDestroyed()) mainWindow.webContents.send('app:update', update);
+  });
   // Never waited on and never fatal: a Resoph setting is not worth a start.
   otherEditors.turnOffResophTrayIfClosed().catch((failure: unknown) => {
     log.warn("Could not switch off Resoph's minimize-to-tray", failure);

@@ -1,3 +1,4 @@
+import { type AppUpdate, appUpdateFrom, NO_UPDATE } from '../../platform/app-update.ts';
 import type { ChosenPlaces, Host } from '../../platform/host.ts';
 import type { Log } from '../../platform/logging.ts';
 import { startApp } from '../../ui/ui-app.ts';
@@ -47,6 +48,28 @@ let finishBeforeClose: (() => Promise<void>) | null = null;
  * On `window` rather than behind `?test`, like `showFiles` beside it: it draws
  * nothing and this host is never built into what he installs.
  */
+/** Told where a pretend new version stands: no updater runs in a browser, so there is never one unless a test says so. */
+const appUpdateListeners: ((update: AppUpdate) => void)[] = [];
+
+function onAppUpdate(listener: (update: AppUpdate) => void): void {
+  appUpdateListeners.push(listener);
+  queueMicrotask(() => listener(NO_UPDATE));
+}
+
+/**
+ * `pretendAppUpdate({ kind: 'downloaded', version: '1.0.1' })`, for the status line's word on a new
+ * version. Checked as the packaged app checks what crosses from its main process.
+ */
+function offerThePretendUpdate(): void {
+  Object.defineProperty(window, 'pretendAppUpdate', {
+    value: (raw: unknown): void => {
+      const update = appUpdateFrom(raw);
+      for (const listener of appUpdateListeners) listener(update);
+    },
+    writable: true,
+  });
+}
+
 function offerTheCloseSequence(): void {
   Object.defineProperty(window, 'closeWindow', {
     value: async (): Promise<void> => {
@@ -126,6 +149,7 @@ async function main(): Promise<void> {
     */
     copyToClipboard: (text: string) => navigator.clipboard.writeText(text),
     readClipboard: () => navigator.clipboard.readText(),
+    onAppUpdate,
     // Through the dev server, standing in for the main process: the page may not reach those addresses itself.
     askLektorService: askThroughDevServer,
     savedLektorReply: savedReplyFromDevServer,
@@ -184,6 +208,7 @@ ${path}`);
   await startApp(host);
   offerTheTestHelpers();
   offerTheCloseSequence();
+  offerThePretendUpdate();
 }
 
 void main();

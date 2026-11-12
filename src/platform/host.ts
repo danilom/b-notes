@@ -1,3 +1,4 @@
+import type { AppUpdate } from './app-update.ts';
 import type { FileSystem } from './file-system.ts';
 import type { LektorProgress } from './lektor-progress.ts';
 import type { LektorRequest, LektorResponse } from './lektor-remote.ts';
@@ -98,6 +99,12 @@ export interface Host {
    * Whatever he last copied, his writing included, so it is never logged or kept.
    */
   readonly readClipboard: () => Promise<string>;
+  /**
+   * Where a new version of the app stands, for the status line: `listener` is told the state as
+   * it is now, soon after, and again at each change. Only the packaged app updates; elsewhere it
+   * is told of none.
+   */
+  readonly onAppUpdate: (listener: (update: AppUpdate) => void) => void;
   /**
    * Asks an AI service, for the Lektor and nothing else.
    *
