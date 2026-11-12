@@ -128,6 +128,8 @@ export function createMockFileSystem(): FileSystem {
      * the one question this is asked.
      */
     async folderExists(folder: string): Promise<boolean> {
+      // The pretend disk's root is there with nothing in it, as a real drive's is.
+      if (folder === '') return true;
       for (const at of load().keys()) if (at.startsWith(`${folder}/`)) return true;
       return false;
     },

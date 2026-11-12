@@ -12,6 +12,7 @@ import {
 import { BUILD_STAMP } from '../platform/build-info.ts';
 import type { Host } from '../platform/host.ts';
 import { type Log, describeError } from '../platform/logging.ts';
+import { parentFolder } from '../platform/parent-folder.ts';
 import { DEFAULT_CTRL_CARD_AFTER_MS, readAdvanced } from './settings/advanced-settings.ts';
 import { type Place, readSession, writeSession } from './settings/app-session.ts';
 import { writingStartsAt } from '../notes/note-title.ts';
@@ -1378,8 +1379,8 @@ export async function startApp(runningOn: Host): Promise<void> {
     return { notes: live };
   }
 
-  function cannotReachHisWriting(because?: string): void {
-    showLostTexts(document.body, { folder: host.resophFolder ?? host.notesFolder, because }, language, {
+  function cannotReachHisWriting(folder: string, because?: string): void {
+    showLostTexts(document.body, { folder, because }, language, {
       // Straight in, with no word to type. The guard is there to stop idle
       // curiosity, and a man staring at this screen is not idly curious.
       onAdvanced: () => panels.showAdvanced(),
@@ -1418,7 +1419,20 @@ export async function startApp(runningOn: Host): Promise<void> {
   */
   if (host.resophFolder !== null && !(await host.files.folderExists(host.resophFolder))) {
     log.error('There is no Resoph folder where his writing should be', { folder: host.resophFolder });
-    cannotReachHisWriting();
+    cannotReachHisWriting(host.resophFolder);
+    return;
+  }
+
+  /*
+    b-notes' own folder may rightly not be there yet, but the folder it goes in
+    always is: Dropbox beside his Resoph folder, Documents, or the drive of one
+    chosen in the advanced panel. When that is gone too, the drive is unplugged
+    or the folder was moved, and opening on whatever Resoph still has would show
+    a list with every text written in b-notes silently missing.
+  */
+  if (!(await host.files.folderExists(host.notesFolder)) && !(await host.files.folderExists(parentFolder(host.notesFolder)))) {
+    log.error('Neither b-notes\' folder nor the folder it should be in is there', { folder: host.notesFolder });
+    cannotReachHisWriting(host.notesFolder);
     return;
   }
 
@@ -1429,7 +1443,7 @@ export async function startApp(runningOn: Host): Promise<void> {
     log.error('Could not read his writing at all', describeError(error));
     // Verbatim. It is the only thing that tells a disconnected drive from a
     // permission that changed, and he is going to read it down a telephone.
-    cannotReachHisWriting(error instanceof Error ? error.message : String(error));
+    cannotReachHisWriting(host.resophFolder ?? host.notesFolder, error instanceof Error ? error.message : String(error));
     return;
   }
 
