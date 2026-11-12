@@ -1283,6 +1283,7 @@ export async function startApp(runningOn: Host): Promise<void> {
       log,
       askService: (request, stop, onProgress) => (fakeNetwork ?? { ask: host.askLektorService }).ask(request, stop, onProgress),
       copyToClipboard: host.copyToClipboard,
+      readClipboard: host.readClipboard,
       languageNow: () => language,
       textNow: () => openHandle,
       textNameNow: openName,

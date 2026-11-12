@@ -18,7 +18,8 @@ import { failureView } from './lektor-failures.ts';
 import { nameForHeading } from './lektor-heading-name.ts';
 import { FEEDBACK_INSTRUCTION } from './lektor-instructions.ts';
 import { type KeptResults, readKeptResults, writeKeptResults } from './lektor-kept-results.ts';
-import { type KeyNote, keysScreen } from './lektor-keys-screen.ts';
+import { type KeysFound, keysInText } from './lektor-keys-in-text.ts';
+import { type KeyNote, type KeysPasted, keysScreen } from './lektor-keys-screen.ts';
 import { ispravkePicture, utisakPicture } from './lektor-menu-pictures.ts';
 import { ChainError, type ChainFailure, isStopped } from './lektor-model-chain.ts';
 import { backButton, button, deadKeyNoticeOf, el, elapsedWords, type LektorWords, MAIN_ACTION, type ProblemParts, problemBox, sendButton, sendTooltip, serviceLineOf, tierFor } from './lektor-pieces.ts';
@@ -93,6 +94,8 @@ export interface LektorParts {
   log: Log;
   askService: (request: LektorRequest, stop: AbortSignal, onProgress: (progress: LektorProgress) => void) => Promise<LektorResponse>;
   copyToClipboard: (text: string) => Promise<void>;
+  /** For "Zalepi ključeve". */
+  readClipboard: () => Promise<string>;
   languageNow: () => Language;
   /** Which text is open, as something that stays the same while it is. */
   textNow: () => TextKey;
@@ -143,7 +146,12 @@ export function createLektor(parts: LektorParts): Lektor {
   let isKeyJustSaved = false;
   let isAboutAiOpen = false;
   let checking: AbortController | null = null;
-  const keyState = { drafts: { free: '', paid: '' }, notes: { free: null, paid: null } as Record<Choice, KeyNote>, serviceSaid: { free: '', paid: '' } };
+  const keyState = {
+    drafts: { free: '', paid: '' },
+    notes: { free: null, paid: null } as Record<Choice, KeyNote>,
+    serviceSaid: { free: '', paid: '' },
+    pasted: null as KeysPasted | null,
+  };
   let revealTimer: ReturnType<typeof setInterval> | null = null;
   let clockTimer: ReturnType<typeof setInterval> | null = null;
   let waitingToRedraw: ReturnType<typeof setTimeout> | null = null;
@@ -239,6 +247,7 @@ export function createLektor(parts: LektorParts): Lektor {
 
   function openKeys(): void {
     isKeyJustSaved = false;
+    keyState.pasted = null;
     keysCameFrom = panelScreen;
     panelScreen = 'keys';
     log.info('Opened the Lektor keys');
@@ -247,6 +256,7 @@ export function createLektor(parts: LektorParts): Lektor {
 
   function keysGoBack(): void {
     for (const which of ['free', 'paid'] as const) keyState.notes[which] = null;
+    keyState.pasted = null;
     panelScreen = connection.isAnyDead() ? 'dead-key' : keysCameFrom === 'dead-key' ? null : keysCameFrom;
     render();
   }
@@ -263,8 +273,38 @@ export function createLektor(parts: LektorParts): Lektor {
     }
   }
 
+  /**
+   * Keys found in a paste go to their own boxes, whichever box or button they came through, and
+   * wait there for Sačuvaj: nothing is sent to a service until he presses it.
+   */
+  function fillKeys(found: KeysFound, from: 'button' | 'box'): void {
+    const which = (['free', 'paid'] as const).filter((choice) => found[choice] !== undefined);
+    for (const choice of which) {
+      keyState.drafts[choice] = found[choice] ?? '';
+      keyState.notes[choice] = null;
+    }
+    keyState.pasted = which.length === 2 ? 'both' : (which[0] ?? 'none');
+    // Which keys, never the keys, and never the rest of what he copied.
+    log.info('Lektor keys pasted', { from, found: which });
+    render();
+    side.querySelector<HTMLButtonElement>('.lektor-side-dock .lektor-main-action')?.focus();
+  }
+
+  async function pasteKeysFromClipboard(): Promise<void> {
+    let copied: string;
+    try {
+      copied = await parts.readClipboard();
+    } catch (error: unknown) {
+      // Nothing to read from is, to him, nothing copied: the line saying so tells him what to do.
+      log.warn('Could not read the clipboard for the Lektor keys', describeError(error));
+      copied = '';
+    }
+    fillKeys(keysInText(copied), 'button');
+  }
+
   /** A key only counts once its service has taken it, and what was pasted stays in the box until then. */
   async function saveKeys(): Promise<void> {
+    keyState.pasted = null;
     const pasted = (['free', 'paid'] as const).filter((which) => {
       keyState.drafts[which] = keyState.drafts[which].replace(/\s/g, '');
       return keyState.drafts[which] !== '';
@@ -726,7 +766,17 @@ export function createLektor(parts: LektorParts): Lektor {
       case 'keys': {
         // With no keys at all, no Nazad: there is nothing to go back to.
         const goBack = panelScreen === 'no-keys' ? null : keysGoBack;
-        const shown = keysScreen(words(), problemParts, { ...keyState, hasKey: connection.hasKey(), dead: connection.dead, balance: connection.balance() }, () => void saveKeys(), goBack);
+        const shown = keysScreen(
+          words(),
+          problemParts,
+          { ...keyState, hasKey: connection.hasKey(), dead: connection.dead, balance: connection.balance() },
+          {
+            save: () => void saveKeys(),
+            goBack,
+            pasteFromClipboard: () => void pasteKeysFromClipboard(),
+            keysPasted: (found) => fillKeys(found, 'box'),
+          },
+        );
         return { content: shown.content, main: shown.main, back: shown.back };
       }
       default:

@@ -1,4 +1,5 @@
 import { icon } from '../icons.ts';
+import { type KeysFound, keysInText } from './lektor-keys-in-text.ts';
 import { markOf } from './lektor-marks.ts';
 import { button, el, type LektorWords, MAIN_ACTION, type ProblemParts, problemBox } from './lektor-pieces.ts';
 import type { Choice } from './lektor-service.ts';
@@ -13,11 +14,16 @@ import type { Choice } from './lektor-service.ts';
 /** What has become of a key pasted into its box. */
 export type KeyNote = 'checking' | 'refused' | 'offline' | 'unavailable' | null;
 
+/** What the last paste found: both keys, one of them, or none. */
+export type KeysPasted = 'both' | Choice | 'none';
+
 export interface KeysScreenState {
   drafts: Record<Choice, string>;
   notes: Record<Choice, KeyNote>;
   /** What each service said about a refused key, to show in small grey. */
   serviceSaid: Record<Choice, string>;
+  /** Said under "Zalepi ključeve" until he saves or leaves: a box already reading "Sačuvan" changes too little to see. */
+  pasted: KeysPasted | null;
   hasKey: Readonly<Record<Choice, boolean>>;
   dead: Readonly<Record<Choice, boolean>>;
   balance: number | null;
@@ -45,7 +51,37 @@ function noteLine(words: LektorWords, parts: ProblemParts, state: KeysScreenStat
   return [problemBox(parts, words.keyNotes[note], '', state.serviceSaid[which])];
 }
 
-function keyField(words: LektorWords, parts: ProblemParts, state: KeysScreenState, which: Choice, save: () => void): HTMLElement[] {
+/** The keys screen's doings, handed in by the panel that owns its state. */
+export interface KeysScreenActions {
+  save: () => void;
+  goBack: (() => void) | null;
+  /** "Zalepi ključeve": the keys looked for on the clipboard. */
+  pasteFromClipboard: () => void;
+  /** A paste into either box that held at least one key: they go to their own boxes, whichever was pasted into. */
+  keysPasted: (found: KeysFound) => void;
+}
+
+function pastedLine(words: LektorWords, pasted: KeysPasted | null): HTMLElement[] {
+  if (pasted === null) return [];
+  const said = pasted === 'both' ? words.keysPasted.both : pasted === 'none' ? words.keysPasted.none : words.keysPasted.one(words.keyNames[pasted]);
+  return [el('p', 'lektor-keys-pasted', said)];
+}
+
+/**
+ * A paste holding a key is sorted into the boxes by the key's shape; one holding none is left to
+ * the box as before, so whatever he pastes still lands somewhere he can see it.
+ */
+function sortsPastedKeys(box: HTMLInputElement, keysPasted: (found: KeysFound) => void): void {
+  box.addEventListener('paste', (event) => {
+    // From the paste itself, not the box: a one-line box drops line breaks, which would glue two keys together.
+    const found = keysInText(event.clipboardData?.getData('text/plain') ?? '');
+    if (Object.keys(found).length === 0) return;
+    event.preventDefault();
+    keysPasted(found);
+  });
+}
+
+function keyField(words: LektorWords, parts: ProblemParts, state: KeysScreenState, which: Choice, actions: KeysScreenActions): HTMLElement[] {
   const label = el('label', 'lektor-label lektor-key-label');
   label.append(markOf(which === 'free' ? 'free' : 'paid-flash'), document.createTextNode(words.keyNames[which]));
   const box = el('input', 'lektor-key');
@@ -61,22 +97,31 @@ function keyField(words: LektorWords, parts: ProblemParts, state: KeysScreenStat
     state.drafts[which] = box.value;
   });
   box.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') save();
+    if (event.key === 'Enter') actions.save();
   });
+  sortsPastedKeys(box, actions.keysPasted);
   return [label, box, ...savedLine(words, parts, state, which), ...noteLine(words, parts, state, which)];
 }
 
-export function keysScreen(words: LektorWords, parts: ProblemParts, state: KeysScreenState, save: () => void, goBack: (() => void) | null): KeysScreen {
+export function keysScreen(words: LektorWords, parts: ProblemParts, state: KeysScreenState, actions: KeysScreenActions): KeysScreen {
   const isChecking = state.notes.free === 'checking' || state.notes.paid === 'checking';
-  const saveButton = button(words.save, save, MAIN_ACTION);
+  const saveButton = button(words.save, actions.save, MAIN_ACTION);
   saveButton.disabled = isChecking;
+  const pasteButton = button(words.keysPasteButton, actions.pasteFromClipboard, 'status-action lektor-keys-paste');
+  pasteButton.disabled = isChecking;
   let back: HTMLButtonElement | null = null;
-  if (goBack !== null) {
-    back = button('', goBack, 'status-action lektor-side-back');
+  if (actions.goBack !== null) {
+    back = button('', actions.goBack, 'status-action lektor-side-back');
     back.append(icon('back'), el('span', '', words.back));
   }
   return {
-    content: [el('p', 'lektor-line', words.keyIntro), ...keyField(words, parts, state, 'free', save), ...keyField(words, parts, state, 'paid', save)],
+    content: [
+      el('p', 'lektor-line', words.keyIntro),
+      pasteButton,
+      ...pastedLine(words, state.pasted),
+      ...keyField(words, parts, state, 'free', actions),
+      ...keyField(words, parts, state, 'paid', actions),
+    ],
     main: saveButton,
     back,
   };

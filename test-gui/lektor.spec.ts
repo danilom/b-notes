@@ -320,6 +320,87 @@ test.describe('the panel', () => {
   });
 });
 
+test.describe('pasting the keys', () => {
+  // Made up, of the right shapes: none of these is anyone's key.
+  const GOOGLE = `AQ.${'Ab3_x-Yz9Q'.repeat(5)}`;
+  const OPENROUTER = `sk-or-v1-${'0123456789abcdef'.repeat(4)}`;
+  const MESSAGE = `Zdravo,\n\nevo ključeva za Lektor:\nOpenRouter: ${OPENROUTER}\nGoogle: ${GOOGLE}\n\nPozdrav`;
+
+  /** Something on the clipboard, as he would have copied it. */
+  async function copied(page: Page, text: string): Promise<void> {
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.evaluate((what) => navigator.clipboard.writeText(what), text);
+  }
+
+  /** The keys as saved, read from the pretend b-notes folder. */
+  async function savedKeys(page: Page): Promise<unknown> {
+    return page.evaluate(() => {
+      const files = JSON.parse(window.localStorage.getItem('b-notes:mock-files') ?? '{}') as Record<string, { text: string } | undefined>;
+      const saved = files['b-notes/lektor.json'];
+      return saved === undefined ? null : (JSON.parse(saved.text) as unknown);
+    });
+  }
+
+  async function toKeys(page: Page): Promise<void> {
+    await setUp(page, { keys: {} });
+    await writeNewText(page);
+    await openPanel(page);
+    await expect(side(page)).toContainText('AI Lektor: podešavanje');
+  }
+
+  test('fills both boxes from a copied message, says so, and saves nothing until Sačuvaj', async ({ page }) => {
+    await toKeys(page);
+    await copied(page, MESSAGE);
+    await side(page).getByRole('button', { name: 'Zalepi ključeve' }).click();
+    await expect(side(page).getByLabel('Besplatni (Google)')).toHaveValue(GOOGLE);
+    await expect(side(page).getByLabel('Plaćeni (OpenRouter)')).toHaveValue(OPENROUTER);
+    await expect(side(page).locator('.lektor-keys-pasted')).toHaveText('Oba ključa su upisana. Pritisni Sačuvaj.');
+    await expect(side(page).getByRole('button', { name: 'Sačuvaj' })).toBeFocused();
+    expect(await savedKeys(page)).toEqual({});
+    await page.keyboard.press('Enter');
+    await expect(side(page)).toContainText('API ključ radi i sačuvan je.');
+    expect(await savedKeys(page)).toEqual({ googleKey: GOOGLE, openRouterKey: OPENROUTER });
+  });
+
+  test('sorts a paste into one box into both, whichever box it went into', async ({ page }) => {
+    await toKeys(page);
+    await copied(page, `${OPENROUTER}${GOOGLE}`);
+    await side(page).getByLabel('Plaćeni (OpenRouter)').click();
+    await page.keyboard.press('Control+V');
+    await expect(side(page).getByLabel('Besplatni (Google)')).toHaveValue(GOOGLE);
+    await expect(side(page).getByLabel('Plaćeni (OpenRouter)')).toHaveValue(OPENROUTER);
+    await expect(side(page).locator('.lektor-keys-pasted')).toHaveText('Oba ključa su upisana. Pritisni Sačuvaj.');
+  });
+
+  test('moves a single key pasted into the other box to its own, and names it', async ({ page }) => {
+    await toKeys(page);
+    await copied(page, ` ${OPENROUTER}\n`);
+    await side(page).getByLabel('Besplatni (Google)').click();
+    await page.keyboard.press('Control+V');
+    await expect(side(page).getByLabel('Besplatni (Google)')).toHaveValue('');
+    await expect(side(page).getByLabel('Plaćeni (OpenRouter)')).toHaveValue(OPENROUTER);
+    await expect(side(page).locator('.lektor-keys-pasted')).toHaveText('Upisan je ključ za Plaćeni (OpenRouter). Pritisni Sačuvaj.');
+  });
+
+  test('says there is no key when what was copied holds none, and changes no box', async ({ page }) => {
+    await toKeys(page);
+    await copied(page, LONG_ENOUGH);
+    await side(page).getByRole('button', { name: 'Zalepi ključeve' }).click();
+    await expect(side(page).locator('.lektor-keys-pasted')).toHaveText('U kopiranom tekstu nema ključa. Kopiraj poruku s ključevima, pa pritisni ponovo.');
+    await expect(side(page).getByLabel('Besplatni (Google)')).toHaveValue('');
+    await expect(side(page).getByLabel('Plaćeni (OpenRouter)')).toHaveValue('');
+  });
+
+  test('leaves a paste holding no key in the box it went into, as any paste', async ({ page }) => {
+    await toKeys(page);
+    await copied(page, 'neki-drugi-kljuc');
+    await side(page).getByLabel('Besplatni (Google)').click();
+    await page.keyboard.press('Control+V');
+    await expect(side(page).getByLabel('Besplatni (Google)')).toHaveValue('neki-drugi-kljuc');
+    await expect(side(page).locator('.lektor-keys-pasted')).toHaveCount(0);
+  });
+});
+
 test.describe('the corrections window', () => {
   test('shows the kinds with nothing picked, then Slova i zarezi said rather than asked, with the tick box', async ({ page }) => {
     await setUp(page);
